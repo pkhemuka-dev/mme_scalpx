@@ -21,3 +21,5 @@ etc/*.local.*
 .vscode/
 .idea/
 .DS_Store
+etc/project.env
+secrets
