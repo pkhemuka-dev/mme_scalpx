@@ -1,0 +1,125 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: "%(asctime)s | %(levelname)s | %(name)s | %(process)d | %(threadName)s | %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+
+  detailed:
+    format: "%(asctime)s | %(levelname)s | %(name)s | %(filename)s:%(lineno)d | %(process)d | %(threadName)s | %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: standard
+    stream: ext://sys.stdout
+
+  app_file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: INFO
+    formatter: detailed
+    filename: /home/<user>/scalpx/projects/mme_scalpx/logs/mme_scalpx.log
+    when: midnight
+    interval: 1
+    backupCount: 14
+    encoding: utf-8
+    delay: true
+
+  error_file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: ERROR
+    formatter: detailed
+    filename: /home/<user>/scalpx/projects/mme_scalpx/logs/mme_scalpx.error.log
+    when: midnight
+    interval: 1
+    backupCount: 30
+    encoding: utf-8
+    delay: true
+
+loggers:
+  mme_scalpx:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.main:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.core:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.domain:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.integrations:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.services:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.ops:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.services.feeds:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.services.features:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.services.strategy:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.services.execution:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.services.risk:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.services.monitor:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.services.report:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.integrations.login:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+  mme_scalpx.domain.instruments:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+
+root:
+  level: INFO
+  handlers: [console, app_file, error_file]

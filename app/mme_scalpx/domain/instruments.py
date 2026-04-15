@@ -146,6 +146,12 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _ensure_aware_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def _ensure_path(value: str | Path) -> Path:
     path = value if isinstance(value, Path) else Path(value)
     return path.expanduser().resolve()
@@ -729,7 +735,6 @@ def _canonical_key_map(config: InstrumentConfig) -> dict[str, tuple[str, ...]]:
         "segment": (
             explicit.get("segment", ""),
             "segment",
-            "instrument_type",
             "segment_name",
             "exchange_segment",
         ),
@@ -754,9 +759,11 @@ def _canonical_key_map(config: InstrumentConfig) -> dict[str, tuple[str, ...]]:
         ),
         "option_right": (
             explicit.get("option_right", ""),
+            "option_right",
             "option_type",
             "right",
             "cp_type",
+            "instrument_type",
         ),
         "tick_size": (
             explicit.get("tick_size", ""),
@@ -843,16 +850,43 @@ def _infer_kind(
     option_right: OptionRight | None,
     strike: Decimal | None,
     expiry: date | None,
+    symbol_text: str,
+    contract_type_text: str,
 ) -> InstrumentKind:
     seg = _normalize_upper(segment_text)
-    if option_right is not None or strike is not None:
+    sym = _normalize_upper(symbol_text)
+    ctype = _normalize_upper(contract_type_text)
+
+    if option_right is not None:
+        return InstrumentKind.OPTION
+
+    if ctype in {"CE", "PE", "CALL", "PUT", "C", "P"}:
+        return InstrumentKind.OPTION
+    if ctype in {"FUT", "FUTURE"}:
+        return InstrumentKind.FUTURE
+
+    if "OPT" in seg:
         return InstrumentKind.OPTION
     if "FUT" in seg or "FUTURE" in seg:
         return InstrumentKind.FUTURE
-    if expiry is not None and ("OPT" not in seg) and ("EQ" not in seg):
+
+    if sym.endswith("CE") or sym.endswith("PE"):
+        return InstrumentKind.OPTION
+    if sym.endswith("FUT"):
         return InstrumentKind.FUTURE
+
+    if expiry is not None and strike is not None:
+        if strike > EPSILON:
+            return InstrumentKind.OPTION
+        if abs(strike) <= EPSILON:
+            return InstrumentKind.FUTURE
+
     if "EQ" in seg or "SPOT" in seg or "INDEX" in seg:
         return InstrumentKind.SPOT
+
+    if expiry is not None and ("OPT" not in seg) and ("EQ" not in seg):
+        return InstrumentKind.FUTURE
+
     return InstrumentKind.UNKNOWN
 
 
@@ -871,6 +905,7 @@ def _row_to_contract(
     expiry_raw = _pick_field(row, key_map["expiry"])
     strike_raw = _pick_field(row, key_map["strike"])
     option_right_raw = _pick_field(row, key_map["option_right"])
+    contract_type_raw = _pick_field(row, ("instrument_type", "contract_type", "type"))
     tick_size_raw = _pick_field(row, key_map["tick_size"])
     lot_size_raw = _pick_field(row, key_map["lot_size"])
     broker_raw = _pick_field(row, key_map["broker"])
@@ -886,7 +921,10 @@ def _row_to_contract(
 
     expiry = _to_date(expiry_raw, field_name="expiry", allow_empty=True)
     strike = _to_decimal(strike_raw, field_name="strike", allow_empty=True)
-    option_right = _normalize_option_right(option_right_raw)
+    option_right = (
+        _normalize_option_right(option_right_raw)
+        or _normalize_option_right(contract_type_raw)
+    )
 
     tick_size = _to_decimal(tick_size_raw, field_name="tick_size", allow_empty=False)
     assert tick_size is not None
@@ -902,6 +940,8 @@ def _row_to_contract(
         option_right=option_right,
         strike=strike,
         expiry=expiry,
+        symbol_text=tradingsymbol,
+        contract_type_text=_normalize_upper(contract_type_raw),
     )
     if kind is InstrumentKind.UNKNOWN:
         raise InstrumentValidationError(
@@ -1006,8 +1046,10 @@ class InstrumentRepository:
             raise InstrumentLoadError("repository initialized with no put options")
 
     def assert_fresh(self, *, now: datetime | None = None) -> None:
-        current = now or _utc_now()
-        updated_at = self.source_meta.source_updated_at or self.source_meta.loaded_at
+        current = _ensure_aware_utc(now or _utc_now())
+        updated_at = _ensure_aware_utc(
+            self.source_meta.source_updated_at or self.source_meta.loaded_at
+        )
         age = current - updated_at
         if age > self.config.freshness_max_age:
             raise MetadataStaleError(

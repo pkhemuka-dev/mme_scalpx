@@ -202,63 +202,47 @@ ALLOWED_COMMAND_TYPES: Final[tuple[str, ...]] = (
 
 
 class InstrumentRole:
-    FUTURES = "FUTURES"
-    CE_ATM = "CE_ATM"
-    CE_ATM1 = "CE_ATM1"
-    PE_ATM = "PE_ATM"
-    PE_ATM1 = "PE_ATM1"
+    FUTURES: Final[str] = "FUTURES"
+    CALL_SELECTED: Final[str] = "CALL_SELECTED"
+    PUT_SELECTED: Final[str] = "PUT_SELECTED"
 
 
 ALLOWED_INSTRUMENT_ROLES: Final[tuple[str, ...]] = (
     InstrumentRole.FUTURES,
-    InstrumentRole.CE_ATM,
-    InstrumentRole.CE_ATM1,
-    InstrumentRole.PE_ATM,
-    InstrumentRole.PE_ATM1,
+    InstrumentRole.CALL_SELECTED,
+    InstrumentRole.PUT_SELECTED,
 )
 
 
 class TickValidity:
-    OK: Final[str] = "OK"
-    MISSING_LTP: Final[str] = "MISSING_LTP"
-    NON_POSITIVE_LTP: Final[str] = "NON_POSITIVE_LTP"
-    NEGATIVE_QUANTITY: Final[str] = "NEGATIVE_QUANTITY"
-    INCOMPLETE_QUOTE: Final[str] = "INCOMPLETE_QUOTE"
-    BAD_TICK_SIZE: Final[str] = "BAD_TICK_SIZE"
-    NON_POSITIVE_SPREAD: Final[str] = "NON_POSITIVE_SPREAD"
-    ANOMALY_CLAMPED: Final[str] = "ANOMALY_CLAMPED"
+    VALID: Final[str] = "VALID"
     STALE: Final[str] = "STALE"
     MALFORMED: Final[str] = "MALFORMED"
+    REJECTED: Final[str] = "REJECTED"
 
 
 ALLOWED_TICK_VALIDITY: Final[tuple[str, ...]] = (
-    TickValidity.OK,
-    TickValidity.MISSING_LTP,
-    TickValidity.NON_POSITIVE_LTP,
-    TickValidity.NEGATIVE_QUANTITY,
-    TickValidity.INCOMPLETE_QUOTE,
-    TickValidity.BAD_TICK_SIZE,
-    TickValidity.NON_POSITIVE_SPREAD,
-    TickValidity.ANOMALY_CLAMPED,
+    TickValidity.VALID,
     TickValidity.STALE,
     TickValidity.MALFORMED,
+    TickValidity.REJECTED,
 )
 
 
 class SnapshotValidity:
-    OK: Final[str] = "OK"
+    VALID: Final[str] = "VALID"
     INCOMPLETE: Final[str] = "INCOMPLETE"
-    INVALID_MEMBER: Final[str] = "INVALID_MEMBER"
-    UNSYNCED: Final[str] = "UNSYNCED"
+    OUT_OF_SYNC: Final[str] = "OUT_OF_SYNC"
     STALE: Final[str] = "STALE"
+    REJECTED: Final[str] = "REJECTED"
 
 
 ALLOWED_SNAPSHOT_VALIDITY: Final[tuple[str, ...]] = (
-    SnapshotValidity.OK,
+    SnapshotValidity.VALID,
     SnapshotValidity.INCOMPLETE,
-    SnapshotValidity.INVALID_MEMBER,
-    SnapshotValidity.UNSYNCED,
+    SnapshotValidity.OUT_OF_SYNC,
     SnapshotValidity.STALE,
+    SnapshotValidity.REJECTED,
 )
 
 
@@ -532,7 +516,7 @@ class FeedTick(SchemaBase):
     option_side: str | None = None
     strike: float | None = None
     expiry: str | None = None
-    tick_validity: str = TickValidity.OK
+    tick_validity: str = TickValidity.VALID
     reject_reason: str | None = None
 
     _TYPE: ClassVar[str] = "feed_tick"
@@ -683,96 +667,31 @@ class OptionSnapshot(SchemaBase):
 
 
 @dataclass(frozen=True, slots=True)
-class SnapshotMember(SchemaBase):
-    role: str
-    instrument_token: str
-    trading_symbol: str
-    ts_event_ns: int
-    ltp: float
-    best_bid: float = 0.0
-    best_ask: float = 0.0
-    bid_qty_5: int = 0
-    ask_qty_5: int = 0
-    spread: float = 0.0
-    spread_ticks: float = 0.0
-    age_ms: int = 0
-    tick_size: float = 0.0
-    lot_size: int = 0
-    strike: float | None = None
-    validity: str = TickValidity.OK
-
-    _TYPE: ClassVar[str] = "snapshot_member"
-
-    def validate(self) -> None:
-        _require_literal(
-            self.role,
-            "role",
-            allowed=ALLOWED_INSTRUMENT_ROLES,
-        )
-        _require_non_empty_str(self.instrument_token, "instrument_token")
-        _require_non_empty_str(self.trading_symbol, "trading_symbol")
-        _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
-        _require_float(self.ltp, "ltp", min_value=0.0)
-        _require_float(self.best_bid, "best_bid", min_value=0.0)
-        _require_float(self.best_ask, "best_ask", min_value=0.0)
-        _require_int(self.bid_qty_5, "bid_qty_5", min_value=0)
-        _require_int(self.ask_qty_5, "ask_qty_5", min_value=0)
-        _require_float(self.spread, "spread", min_value=0.0)
-        _require_float(self.spread_ticks, "spread_ticks", min_value=0.0)
-        _require_int(self.age_ms, "age_ms", min_value=0)
-        _require_float(self.tick_size, "tick_size", min_value=0.0)
-        _require_int(self.lot_size, "lot_size", min_value=0)
-        if self.strike is not None:
-            _require_float(self.strike, "strike", min_value=0.0)
-        _require_literal(
-            self.validity,
-            "validity",
-            allowed=ALLOWED_TICK_VALIDITY,
-        )
-        if self.best_ask > 0.0 and self.best_bid > 0.0:
-            _require(self.best_ask >= self.best_bid, "best_ask must be >= best_bid")
-
-
-@dataclass(frozen=True, slots=True)
 class SnapshotFrame(SchemaBase):
-    frame_id: str
-    selection_version: str
-    ts_frame_ns: int
-    ts_min_member_ns: int
-    ts_max_member_ns: int
-    ts_span_ms: int
-    validity: str
-    validity_reason: str | None = None
-    sync_ok: bool = False
-    stale_mask: tuple[str, ...] = ()
-    future: SnapshotMember | None = None
-    ce_atm: SnapshotMember | None = None
-    ce_atm1: SnapshotMember | None = None
-    pe_atm: SnapshotMember | None = None
-    pe_atm1: SnapshotMember | None = None
+    ts_event_ns: int
+    ts_ingest_ns: int
+    frame_complete: bool
+    frame_valid: bool
+    snapshot_validity: str
+    futures_snapshot: FuturesSnapshot
+    selected_call: OptionSnapshot | None = None
+    selected_put: OptionSnapshot | None = None
+    explain: str | None = None
 
     _TYPE: ClassVar[str] = "snapshot_frame"
 
     def validate(self) -> None:
-        _require_non_empty_str(self.frame_id, "frame_id")
-        _require_non_empty_str(self.selection_version, "selection_version")
-        _require_int(self.ts_frame_ns, "ts_frame_ns", min_value=0)
-        _require_int(self.ts_min_member_ns, "ts_min_member_ns", min_value=0)
-        _require_int(self.ts_max_member_ns, "ts_max_member_ns", min_value=0)
-        _require_int(self.ts_span_ms, "ts_span_ms", min_value=0)
+        _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
+        _require_int(self.ts_ingest_ns, "ts_ingest_ns", min_value=0)
+        _require_bool(self.frame_complete, "frame_complete")
+        _require_bool(self.frame_valid, "frame_valid")
         _require_literal(
-            self.validity,
-            "validity",
+            self.snapshot_validity,
+            "snapshot_validity",
             allowed=ALLOWED_SNAPSHOT_VALIDITY,
         )
-        if self.validity_reason is not None:
-            _optional_non_empty_str(self.validity_reason, "validity_reason")
-        _require_bool(self.sync_ok, "sync_ok")
-        object.__setattr__(self, "stale_mask", _require_str_sequence(self.stale_mask, "stale_mask"))
-        _require(
-            self.ts_max_member_ns >= self.ts_min_member_ns,
-            "ts_max_member_ns must be >= ts_min_member_ns",
-        )
+        if self.explain is not None:
+            _optional_non_empty_str(self.explain, "explain")
 
 
 # ============================================================================
@@ -1774,7 +1693,6 @@ MODEL_REGISTRY: Final[Mapping[str, type[SchemaBase]]] = MappingProxyType(
             FeedTick,
             FuturesSnapshot,
             OptionSnapshot,
-            SnapshotMember,
             SnapshotFrame,
             EconomicViability,
             FourPillarSignal,
@@ -1859,7 +1777,6 @@ __all__ = [
     "RiskState",
     "SchemaBase",
     "SnapshotFrame",
-    "SnapshotMember",
     "SnapshotValidity",
     "StopPlan",
     "StrategyDecision",

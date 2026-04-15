@@ -543,61 +543,6 @@ class RuntimeContext:
         return self.app.env
 
 
-@dataclass(frozen=True, slots=True)
-class RuntimeInstrumentSetCompat:
-    """
-    Thin compatibility view for frozen services that expect `.future` while the
-    canonical domain object exposes `.current_future`.
-    """
-
-    raw: Any
-
-    @property
-    def selection_version(self) -> Any:
-        return getattr(self.raw, "selection_version")
-
-    @property
-    def future(self) -> Any:
-        return getattr(self.raw, "current_future")
-
-    @property
-    def ce_atm(self) -> Any:
-        return getattr(self.raw, "ce_atm")
-
-    @property
-    def ce_atm1(self) -> Any:
-        return getattr(self.raw, "ce_atm1")
-
-    @property
-    def pe_atm(self) -> Any:
-        return getattr(self.raw, "pe_atm")
-
-    @property
-    def pe_atm1(self) -> Any:
-        return getattr(self.raw, "pe_atm1")
-
-
-
-    @property
-    def current_future(self):
-        return self.raw.current_future
-
-    @property
-    def option_expiry(self):
-        return self.raw.option_expiry
-
-    @property
-    def strike_step(self):
-        return self.raw.strike_step
-
-    @property
-    def underlying_reference(self):
-        return self.raw.underlying_reference
-
-    @property
-    def underlying_symbol(self):
-        return self.raw.underlying_symbol
-
 def build_app_context(*, settings: AppSettings, clock: BaseClock) -> AppContext:
     """Build immutable process context after settings + clock are ready."""
     try:
@@ -670,27 +615,6 @@ def _require_service_dependencies(app: AppContext, service_name: str) -> None:
             )
 
 
-
-def _normalize_runtime_instruments_for_services(runtime_instruments: Any | None) -> Any | None:
-    """
-    Normalize domain runtime instruments into the exact frozen service-facing
-    attribute surface required by feeds.py.
-
-    Current proven compatibility rule:
-    - if object has current_future but not future, expose a thin compat view
-    """
-    if runtime_instruments is None:
-        return None
-
-    has_current_future = hasattr(runtime_instruments, "current_future")
-    has_future = hasattr(runtime_instruments, "future")
-
-    if has_current_future and not has_future:
-        return RuntimeInstrumentSetCompat(runtime_instruments)
-
-    return runtime_instruments
-
-
 def build_runtime_context(
     *,
     app: AppContext,
@@ -700,10 +624,6 @@ def build_runtime_context(
 ) -> RuntimeContext:
     identity = build_service_identity(app, service_name)
     _require_service_dependencies(app, identity.service_name)
-
-    normalized_runtime_instruments = _normalize_runtime_instruments_for_services(
-        app.dependencies.runtime_instruments
-    )
 
     return RuntimeContext(
         settings=app.settings,
@@ -715,8 +635,8 @@ def build_runtime_context(
         service_name=identity.service_name,
         instance_id=identity.instance_id,
         replay_start_wall_time_ns=replay_start_wall_time_ns,
-        runtime_instruments=normalized_runtime_instruments,
-        instrument_set=normalized_runtime_instruments,
+        runtime_instruments=app.dependencies.runtime_instruments,
+        instrument_set=app.dependencies.runtime_instruments,
         feed_adapter=app.dependencies.feed_adapter,
         market_data_adapter=app.dependencies.feed_adapter,
         broker=app.dependencies.broker,

@@ -209,15 +209,6 @@ class InstrumentRole:
     PE_ATM1 = "PE_ATM1"
 
 
-ALLOWED_INSTRUMENT_ROLES: Final[tuple[str, ...]] = (
-    InstrumentRole.FUTURES,
-    InstrumentRole.CE_ATM,
-    InstrumentRole.CE_ATM1,
-    InstrumentRole.PE_ATM,
-    InstrumentRole.PE_ATM1,
-)
-
-
 class TickValidity:
     OK: Final[str] = "OK"
     MISSING_LTP: Final[str] = "MISSING_LTP"

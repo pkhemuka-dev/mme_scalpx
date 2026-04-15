@@ -1,0 +1,174 @@
+version: 1
+
+project:
+  name: mme_scalpx
+  timezone: Asia/Kolkata
+  strategy_family: scalpx_mme_call_put
+  parameter_scope: runtime_tunables_only
+
+governance:
+  strategy_doctrine_source: load_call_put
+  config_must_not_override_core_contracts: true
+  config_must_not_change_ownership_boundaries: true
+  config_must_not_embed_broker_specific_fields: true
+  fail_closed_on_invalid_values: true
+
+runtime:
+  enabled: true
+  allow_call_entries: true
+  allow_put_entries: true
+  allow_new_entries: true
+  allow_exit_logic: true
+
+feature_freshness:
+  enabled: true
+  max_feature_age_ms_for_entries: 2000
+  max_snapshot_age_ms_for_entries: 2000
+  max_option_confirmation_age_ms: 1500
+
+entry_modes:
+  allowed:
+    - ATM
+    - ATM1
+    - DIRECT
+    - FALLBACK
+  default: ATM
+
+strike_selection:
+  enabled: true
+  reference_price_source: future_ltp
+  strike_step: 50
+  allow_atm: true
+  allow_atm1: true
+  allow_direct: true
+  allow_fallback: true
+  require_resolved_option_contract: true
+
+call_strategy:
+  enabled: true
+
+  gates:
+    require_regime_pass: true
+    require_feature_freshness: true
+    require_option_confirmation: true
+    require_execution_mode_allows_entry: true
+    require_risk_allows_entry: true
+
+  confirmations:
+    min_confirmation_count: 1
+    require_option_side_match: true
+
+  timing:
+    min_seconds_between_same_side_entries: 30
+
+put_strategy:
+  enabled: true
+
+  gates:
+    require_regime_pass: true
+    require_feature_freshness: true
+    require_option_confirmation: true
+    require_execution_mode_allows_entry: true
+    require_risk_allows_entry: true
+
+  confirmations:
+    min_confirmation_count: 1
+    require_option_side_match: true
+
+  timing:
+    min_seconds_between_same_side_entries: 30
+
+position_management:
+  enabled: true
+  single_position_only: true
+  allow_opposite_side_entry_when_position_open: false
+  require_flat_before_side_change: true
+
+targets_and_stops:
+  enabled: true
+
+  initial_stop:
+    mode: required
+    max_stop_points: 20.0
+    min_stop_points: 2.0
+
+  target:
+    mode: required
+    min_target_points: 3.0
+
+  trailing:
+    enabled: true
+    activate_after_points: 4.0
+    trail_step_points: 2.0
+
+  break_even:
+    enabled: true
+    activate_after_points: 3.0
+
+early_exit_guards:
+  enabled: true
+  adverse_selection_guard: true
+  flow_failure_guard: true
+  liquidity_failure_guard: true
+  stale_signal_guard: true
+  max_seconds_in_trade_without_progress: 120
+
+option_confirmation:
+  enabled: true
+  require_selected_option_snapshot: true
+  max_snapshot_age_ms: 1500
+  require_ltp_positive: true
+  require_bid_ask_present: false
+
+market_microstructure:
+  enabled: true
+
+  spread_guard:
+    enabled: true
+    max_spread_points_for_entry: 10.0
+
+  depth_guard:
+    enabled: false
+    min_combined_top5_qty: 0
+
+  impulse_guard:
+    enabled: true
+    require_non_stale_impulse_signal: true
+
+session_controls:
+  enabled: true
+  require_session_open_for_new_entries: true
+  block_new_entries_near_close: true
+  near_close_buffer_seconds: 300
+
+paper_mode:
+  enabled: true
+  synthetic_fill_latency_ms: 300
+  allow_simulated_order_lifecycle: true
+
+reporting:
+  emit_parameter_snapshot_on_start: true
+  include_strategy_side_flags_in_reports: true
+  include_entry_mode_in_reports: true
+
+validation:
+  strike_step_must_be_positive: true
+  max_feature_age_ms_for_entries_must_be_positive: true
+  max_snapshot_age_ms_for_entries_must_be_positive: true
+  min_seconds_between_same_side_entries_must_be_non_negative: true
+  max_stop_points_must_be_positive: true
+  min_stop_points_must_be_positive: true
+  min_target_points_must_be_positive: true
+  activate_after_points_must_be_non_negative: true
+  trail_step_points_must_be_positive: true
+  near_close_buffer_seconds_must_be_non_negative: true
+  allowed_entry_modes_must_be_non_empty: true
+  default_entry_mode_must_be_member_of_allowed: true
+
+notes:
+  - "This file contains tunable runtime parameters only."
+  - "This file must not redefine Redis contracts, service ownership, or position truth."
+  - "Risk veto logic belongs to risk_limits.yaml and risk service, not here."
+  - "Execution transport behavior belongs to execution policy and execution service, not here."
+  - "If strategy.py, features.py, or validators.py expect a different schema, this file must be changed to code truth exactly."
+  - "Threshold values here are placeholders until matched line-by-line against frozen service code."

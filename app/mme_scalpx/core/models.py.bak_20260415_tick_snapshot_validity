@@ -209,56 +209,35 @@ class InstrumentRole:
     PE_ATM1 = "PE_ATM1"
 
 
-ALLOWED_INSTRUMENT_ROLES: Final[tuple[str, ...]] = (
-    InstrumentRole.FUTURES,
-    InstrumentRole.CE_ATM,
-    InstrumentRole.CE_ATM1,
-    InstrumentRole.PE_ATM,
-    InstrumentRole.PE_ATM1,
-)
-
-
 class TickValidity:
-    OK: Final[str] = "OK"
-    MISSING_LTP: Final[str] = "MISSING_LTP"
-    NON_POSITIVE_LTP: Final[str] = "NON_POSITIVE_LTP"
-    NEGATIVE_QUANTITY: Final[str] = "NEGATIVE_QUANTITY"
-    INCOMPLETE_QUOTE: Final[str] = "INCOMPLETE_QUOTE"
-    BAD_TICK_SIZE: Final[str] = "BAD_TICK_SIZE"
-    NON_POSITIVE_SPREAD: Final[str] = "NON_POSITIVE_SPREAD"
-    ANOMALY_CLAMPED: Final[str] = "ANOMALY_CLAMPED"
+    VALID: Final[str] = "VALID"
     STALE: Final[str] = "STALE"
     MALFORMED: Final[str] = "MALFORMED"
+    REJECTED: Final[str] = "REJECTED"
 
 
 ALLOWED_TICK_VALIDITY: Final[tuple[str, ...]] = (
-    TickValidity.OK,
-    TickValidity.MISSING_LTP,
-    TickValidity.NON_POSITIVE_LTP,
-    TickValidity.NEGATIVE_QUANTITY,
-    TickValidity.INCOMPLETE_QUOTE,
-    TickValidity.BAD_TICK_SIZE,
-    TickValidity.NON_POSITIVE_SPREAD,
-    TickValidity.ANOMALY_CLAMPED,
+    TickValidity.VALID,
     TickValidity.STALE,
     TickValidity.MALFORMED,
+    TickValidity.REJECTED,
 )
 
 
 class SnapshotValidity:
-    OK: Final[str] = "OK"
+    VALID: Final[str] = "VALID"
     INCOMPLETE: Final[str] = "INCOMPLETE"
-    INVALID_MEMBER: Final[str] = "INVALID_MEMBER"
     UNSYNCED: Final[str] = "UNSYNCED"
     STALE: Final[str] = "STALE"
+    REJECTED: Final[str] = "REJECTED"
 
 
 ALLOWED_SNAPSHOT_VALIDITY: Final[tuple[str, ...]] = (
-    SnapshotValidity.OK,
+    SnapshotValidity.VALID,
     SnapshotValidity.INCOMPLETE,
-    SnapshotValidity.INVALID_MEMBER,
     SnapshotValidity.UNSYNCED,
     SnapshotValidity.STALE,
+    SnapshotValidity.REJECTED,
 )
 
 
@@ -532,7 +511,7 @@ class FeedTick(SchemaBase):
     option_side: str | None = None
     strike: float | None = None
     expiry: str | None = None
-    tick_validity: str = TickValidity.OK
+    tick_validity: str = TickValidity.VALID
     reject_reason: str | None = None
 
     _TYPE: ClassVar[str] = "feed_tick"
@@ -699,7 +678,7 @@ class SnapshotMember(SchemaBase):
     tick_size: float = 0.0
     lot_size: int = 0
     strike: float | None = None
-    validity: str = TickValidity.OK
+    validity: str = TickValidity.VALID
 
     _TYPE: ClassVar[str] = "snapshot_member"
 
@@ -736,7 +715,7 @@ class SnapshotMember(SchemaBase):
 @dataclass(frozen=True, slots=True)
 class SnapshotFrame(SchemaBase):
     frame_id: str
-    selection_version: str
+    selection_version: int
     ts_frame_ns: int
     ts_min_member_ns: int
     ts_max_member_ns: int
@@ -755,7 +734,7 @@ class SnapshotFrame(SchemaBase):
 
     def validate(self) -> None:
         _require_non_empty_str(self.frame_id, "frame_id")
-        _require_non_empty_str(self.selection_version, "selection_version")
+        _require_int(self.selection_version, "selection_version", min_value=0)
         _require_int(self.ts_frame_ns, "ts_frame_ns", min_value=0)
         _require_int(self.ts_min_member_ns, "ts_min_member_ns", min_value=0)
         _require_int(self.ts_max_member_ns, "ts_max_member_ns", min_value=0)

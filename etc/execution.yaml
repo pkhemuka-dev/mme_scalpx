@@ -1,0 +1,111 @@
+version: 1
+
+project:
+  name: mme_scalpx
+  timezone: Asia/Kolkata
+  policy_scope: execution_behavior
+
+execution:
+  enabled: true
+  mode: NORMAL
+  allow_entries: true
+  allow_exits: true
+  allow_exit_when_entry_blocked: true
+
+order_submission:
+  default_order_type: MARKET
+  entry_order_type: MARKET
+  exit_order_type: MARKET
+  default_tif: DAY
+  require_non_empty_instrument_key: true
+  require_positive_quantity_lots: true
+
+timeouts:
+  entry_order_timeout_seconds: 10
+  exit_order_timeout_seconds: 15
+  pending_order_stale_after_seconds: 30
+  ack_wait_timeout_seconds: 5
+
+retry_policy:
+  enabled: true
+  max_entry_submit_retries: 1
+  max_exit_submit_retries: 2
+  retry_backoff_seconds: 1
+  retry_only_on_transient_errors: true
+
+partial_fill_policy:
+  enabled: true
+  allow_partial_fill_tracking: true
+  treat_partial_fill_as_open_position: true
+  require_position_state_update_on_partial_fill: true
+
+cancel_policy:
+  enabled: true
+  cancel_stale_pending_entry: true
+  cancel_stale_pending_exit: false
+  cancel_before_replace: false
+
+exit_policy:
+  prioritize_exit_over_entry: true
+  allow_force_flatten_command: true
+  allow_exit_in_degraded_mode: true
+  allow_exit_without_new_entries: true
+  exit_on_shutdown_if_position_open: false
+
+state_policy:
+  execution_is_position_truth_owner: true
+  write_execution_state_hash: true
+  write_position_state_hash: true
+  persist_last_ack_type: true
+  persist_last_order_id: true
+  persist_last_trade_id: true
+
+broker_mapping:
+  require_broker_order_id_for_terminal_tracking: false
+  normalize_broker_rejects: true
+  normalize_broker_fills: true
+  normalize_broker_cancelled: true
+
+paper_mode:
+  enabled: true
+  synthetic_fill_latency_ms: 300
+  synthetic_ack_delay_ms: 50
+  simulate_terminal_fill_for_market_orders: true
+
+safety:
+  block_entries_when_execution_mode_not_normal: true
+  allow_exits_when_execution_mode_is:
+    - NORMAL
+    - EXIT_ONLY
+    - DEGRADED
+  fail_closed_on_invalid_policy: true
+
+reporting:
+  emit_ack_events: true
+  emit_order_events: true
+  emit_trade_ledger_rows: true
+  include_reason_metadata_when_available: true
+
+validation:
+  mode_must_be_one_of:
+    - NORMAL
+    - EXIT_ONLY
+    - DEGRADED
+    - FATAL
+
+  default_order_type_must_be_non_empty: true
+  default_tif_must_be_non_empty: true
+  entry_order_timeout_seconds_must_be_positive: true
+  exit_order_timeout_seconds_must_be_positive: true
+  pending_order_stale_after_seconds_must_be_positive: true
+  ack_wait_timeout_seconds_must_be_positive: true
+  retry_backoff_seconds_must_be_non_negative: true
+  synthetic_fill_latency_ms_must_be_non_negative: true
+  synthetic_ack_delay_ms_must_be_non_negative: true
+
+notes:
+  - "This file defines execution-policy behavior only."
+  - "This file must not redefine broker credential handling, Redis contracts, or risk ownership."
+  - "Execution remains the sole position truth owner."
+  - "Risk may veto entries but must not block exits."
+  - "If execution.py expects a different execution.yaml schema, this file must be adjusted to exact code truth."

@@ -23,3 +23,8 @@ etc/*.local.*
 .DS_Store
 etc/project.env
 secrets
+
+# local secrets
+secrets/
+/home/Lenovo/scalpx/common/secrets/
+*.env

@@ -577,27 +577,6 @@ class RuntimeInstrumentSetCompat:
         return getattr(self.raw, "pe_atm1")
 
 
-
-    @property
-    def current_future(self):
-        return self.raw.current_future
-
-    @property
-    def option_expiry(self):
-        return self.raw.option_expiry
-
-    @property
-    def strike_step(self):
-        return self.raw.strike_step
-
-    @property
-    def underlying_reference(self):
-        return self.raw.underlying_reference
-
-    @property
-    def underlying_symbol(self):
-        return self.raw.underlying_symbol
-
 def build_app_context(*, settings: AppSettings, clock: BaseClock) -> AppContext:
     """Build immutable process context after settings + clock are ready."""
     try:

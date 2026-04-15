@@ -1,0 +1,221 @@
+version: 1
+
+project:
+  name: mme_scalpx
+  timezone: Asia/Kolkata
+  policy_scope: intraday_options_scalping
+
+runtime_defaults:
+  startup_mode: NORMAL
+  allow_entries: true
+  allow_exits: true
+
+core_rules:
+  risk_may_block_entries: true
+  risk_must_never_block_exits: true
+  require_explicit_units: true
+  require_positive_numeric_thresholds: true
+  fail_closed_on_invalid_policy: true
+
+daily_limits:
+  enabled: true
+
+  max_daily_realized_loss_inr: 3000.0
+  max_daily_total_loss_inr: 3500.0
+
+  actions_on_breach:
+    veto_new_entries: true
+    force_exit_only_mode: true
+    require_manual_resume_next_session: true
+
+trade_frequency:
+  enabled: true
+
+  max_completed_entries_per_session: 8
+  max_reentries_per_direction_per_setup: 2
+  min_seconds_between_new_entries: 30
+
+  actions_on_breach:
+    veto_new_entries: true
+    do_not_block_exits: true
+
+consecutive_loss_guard:
+  enabled: true
+
+  max_consecutive_losing_trades: 3
+  cooldown_after_breach_seconds: 900
+
+  actions_on_breach:
+    veto_new_entries: true
+    do_not_block_exits: true
+
+cooldowns:
+  enabled: true
+
+  post_loss_cooldown_seconds: 300
+  post_stoploss_cooldown_seconds: 300
+  post_rejection_burst_cooldown_seconds: 300
+
+  rejection_burst:
+    enabled: true
+    max_rejections_in_window: 3
+    window_seconds: 300
+
+  actions_on_breach:
+    veto_new_entries: true
+    do_not_block_exits: true
+
+slippage_guard:
+  enabled: true
+
+  max_entry_slippage_points: 5.0
+  max_exit_slippage_points: 10.0
+
+  actions_on_entry_breach:
+    veto_entry: true
+
+  actions_on_exit_breach:
+    allow_exit_anyway: true
+    raise_warning: true
+
+heartbeat_guards:
+  enabled: true
+
+  require_risk_heartbeat_fresh: true
+  require_feeds_heartbeat_fresh_for_entries: true
+  require_strategy_heartbeat_fresh_for_entries: true
+  require_execution_heartbeat_fresh_for_entries: true
+
+  stale_after_ms:
+    risk: 20000
+    feeds: 10000
+    strategy: 10000
+    execution: 10000
+
+  actions_on_breach:
+    veto_new_entries: true
+    do_not_block_exits: true
+    raise_health_warning: true
+
+position_guards:
+  enabled: true
+
+  max_open_positions: 1
+  allow_position_flip_without_flatten: false
+  require_execution_as_position_truth: true
+
+  actions_on_breach:
+    veto_new_entries: true
+    do_not_block_exit_management: true
+
+market_health_guards:
+  enabled: true
+
+  max_feed_staleness_ms_for_entries: 3000
+  max_quote_age_ms_for_entries: 3000
+
+  spread_guard:
+    enabled: true
+    max_spread_points: 10.0
+
+  depth_guard:
+    enabled: false
+    min_total_top5_bid_qty: 0
+    min_total_top5_ask_qty: 0
+
+  actions_on_breach:
+    veto_new_entries: true
+    do_not_block_exits: true
+
+session_guards:
+  enabled: true
+
+  require_allowed_session_window: true
+  block_new_entries_after_squareoff_buffer: true
+  squareoff_buffer_seconds: 300
+
+  actions_on_breach:
+    veto_new_entries: true
+    do_not_block_exits: true
+
+order_safety:
+  enabled: true
+
+  max_pending_entry_orders: 1
+  max_pending_exit_orders: 1
+  max_order_failures_before_entry_veto: 3
+
+  actions_on_breach:
+    veto_new_entries: true
+    do_not_block_exits: true
+    raise_warning: true
+
+manual_controls:
+  enabled: true
+
+  honour_pause_trading_command: true
+  honour_exit_only_mode: true
+  honour_force_flatten_command: true
+
+  command_priority:
+    force_flatten: 1
+    exit_only: 2
+    pause_trading: 3
+    normal_operation: 4
+
+paper_mode_policy:
+  enabled: true
+
+  allow_relaxed_order_failure_guard: true
+  simulate_broker_reject_impact: true
+  preserve_daily_loss_guard: true
+
+live_mode_policy:
+  enabled: true
+
+  require_valid_login: true
+  require_trading_enabled_flag: true
+  require_allow_live_orders_flag: true
+
+reporting:
+  emit_risk_breach_events: true
+  persist_latest_risk_state: true
+  include_breach_reason_codes: true
+
+reason_codes:
+  daily_loss_breached: RISK_DAILY_LOSS_BREACHED
+  session_loss_breached: RISK_SESSION_LOSS_BREACHED
+  max_entries_breached: RISK_MAX_ENTRIES_BREACHED
+  cooldown_active: RISK_COOLDOWN_ACTIVE
+  consecutive_losses_breached: RISK_CONSECUTIVE_LOSSES_BREACHED
+  stale_risk_heartbeat: RISK_STALE_RISK_HEARTBEAT
+  stale_feeds_heartbeat: RISK_STALE_FEEDS_HEARTBEAT
+  stale_strategy_heartbeat: RISK_STALE_STRATEGY_HEARTBEAT
+  stale_execution_heartbeat: RISK_STALE_EXECUTION_HEARTBEAT
+  spread_guard_breached: RISK_SPREAD_GUARD_BREACHED
+  market_depth_breached: RISK_MARKET_DEPTH_BREACHED
+  position_limit_breached: RISK_POSITION_LIMIT_BREACHED
+  pending_order_limit_breached: RISK_PENDING_ORDER_LIMIT_BREACHED
+  manual_pause_active: RISK_MANUAL_PAUSE_ACTIVE
+  exit_only_active: RISK_EXIT_ONLY_ACTIVE
+  session_window_blocked: RISK_SESSION_WINDOW_BLOCKED
+  squareoff_buffer_active: RISK_SQUAREOFF_BUFFER_ACTIVE
+  live_order_guard_blocked: RISK_LIVE_ORDER_GUARD_BLOCKED
+
+validation:
+  max_daily_realized_loss_inr_must_be_positive: true
+  max_daily_total_loss_inr_must_be_positive: true
+  max_completed_entries_per_session_must_be_positive: true
+  cooldown_values_must_be_non_negative: true
+  stale_thresholds_must_be_positive: true
+  squareoff_buffer_seconds_must_be_non_negative: true
+  max_open_positions_must_be_positive: true
+  command_priorities_must_be_unique: true
+  reason_codes_must_be_unique: true
+
+notes:
+  - "This file defines risk-policy thresholds and operational gating rules only."
+  - "Exits must remain allowed even when entry veto rules are active."
+  - "Execution remains sole position truth; this file must not redefine position ownership."
+  - "Any threshold values here must be aligned with the actual implementation in services/risk.py and services/execution.py before permanent freeze."
+  - "If risk.py expects different field names or a different schema, this file must be changed to match code truth exactly."

@@ -1,0 +1,113 @@
+version: 1
+
+project:
+  name: mme_scalpx
+  timezone: Asia/Kolkata
+  runtime_scope: session_policy
+
+runtime:
+  mode: paper
+  trading_enabled: false
+  allow_live_orders: false
+  enforce_session_window: true
+  strict_startup: true
+
+session:
+  market_timezone: Asia/Kolkata
+
+  open:
+    enabled: true
+    hour: 9
+    minute: 15
+    second: 0
+
+  close:
+    enabled: true
+    hour: 15
+    minute: 30
+    second: 0
+
+  squareoff:
+    enabled: true
+    buffer_seconds_before_close: 300
+
+  weekdays:
+    - MON
+    - TUE
+    - WED
+    - THU
+    - FRI
+
+startup:
+  run_preflight: true
+  strict_preflight: true
+  bootstrap_groups_on_start: false
+  bootstrap_start_id: "0"
+  require_flat_on_start: false
+  require_valid_login_on_start: false
+
+shutdown:
+  require_flat_on_stop: true
+  publish_close_report: true
+  audit_export_on_close: true
+
+service_enablement:
+  feeds: true
+  features: true
+  strategy: true
+  execution: true
+  risk: true
+  monitor: true
+  report: true
+
+safety:
+  startup_execution_mode: NORMAL
+  startup_exit_only: false
+  pause_new_entries_on_session_violation: true
+  allow_exits_outside_session_window: true
+
+replay:
+  enabled: false
+  speed_multiplier: 1.0
+  use_replay_streams_only: true
+
+paper_mode:
+  enabled: true
+  synthetic_fill_latency_ms: 300
+
+reporting:
+  enable_report_output: true
+  eod_report_enabled: true
+  audit_export_enabled: true
+  audit_export_format: jsonl
+
+validation:
+  mode_must_be_one_of:
+    - paper
+    - live
+    - replay
+
+  startup_execution_mode_must_be_one_of:
+    - NORMAL
+    - EXIT_ONLY
+    - DEGRADED
+    - FATAL
+
+  weekdays_must_be_subset_of:
+    - MON
+    - TUE
+    - WED
+    - THU
+    - FRI
+    - SAT
+    - SUN
+
+  replay_speed_multiplier_must_be_positive: true
+  squareoff_buffer_seconds_must_be_non_negative: true
+  synthetic_fill_latency_ms_must_be_non_negative: true
+
+notes:
+  - "This file defines runtime and session policy only."
+  - "This file does not redefine Redis names, model schemas, or service ownership."
+  - "Live trading must remain disabled until the full platform is operationally validated."
+  - "If settings.py expects a different runtime.yaml schema, this file must be adjusted to exact code truth."

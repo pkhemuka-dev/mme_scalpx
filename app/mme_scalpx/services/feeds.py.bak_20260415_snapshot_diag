@@ -444,15 +444,10 @@ class FeedState:
     latest_snapshot_reason: str
     last_frame_id: str | None
     last_frame_ts_ns: int | None
-    last_seen_roles: tuple[str, ...] = ()
-    last_missing_roles: tuple[str, ...] = ()
-    last_invalid_roles: tuple[str, ...] = ()
-    last_stale_roles: tuple[str, ...] = ()
-    last_frame_sync_ok: bool = False
-    ticks_received_total: int = 0
-    ticks_accepted_total: int = 0
-    ticks_rejected_total: int = 0
-    snapshots_published_total: int = 0
+    ticks_received_total: int
+    ticks_accepted_total: int
+    ticks_rejected_total: int
+    snapshots_published_total: int
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -1005,7 +1000,6 @@ class FeedService:
             cache_by_token=self._cache_by_token,
             now_ns=now_ns,
         )
-        self._last_snapshot = frame
 
         should_publish_snapshot = (
             not self._cfg.publish_snapshots_only_when_complete
@@ -1054,29 +1048,6 @@ class FeedService:
         seen_tokens = sum(
             1 for cache in self._cache_by_token.values() if cache.last_event_ns > 0
         )
-        last_seen_roles: tuple[str, ...] = ()
-        last_missing_roles: tuple[str, ...] = ()
-        last_invalid_roles: tuple[str, ...] = ()
-        last_stale_roles: tuple[str, ...] = ()
-        last_frame_sync_ok = False
-
-        if self._last_snapshot is not None:
-            members = (
-                ("future", self._last_snapshot.future),
-                ("ce_atm", self._last_snapshot.ce_atm),
-                ("ce_atm1", self._last_snapshot.ce_atm1),
-                ("pe_atm", self._last_snapshot.pe_atm),
-                ("pe_atm1", self._last_snapshot.pe_atm1),
-            )
-            last_seen_roles = tuple(role for role, member in members if member is not None)
-            last_missing_roles = tuple(role for role, member in members if member is None)
-            last_invalid_roles = tuple(
-                role for role, member in members
-                if member is not None and member.validity != TickValidity.OK
-            )
-            last_stale_roles = tuple(getattr(self._last_snapshot, "stale_mask", ()) or ())
-            last_frame_sync_ok = bool(getattr(self._last_snapshot, "sync_ok", False))
-
         state = FeedState(
             selection_version=self._universe.selection_version,
             provider=self._provider,
@@ -1093,11 +1064,6 @@ class FeedService:
             last_frame_ts_ns=None
             if self._last_snapshot is None
             else int(self._last_snapshot.ts_frame_ns),
-            last_seen_roles=last_seen_roles,
-            last_missing_roles=last_missing_roles,
-            last_invalid_roles=last_invalid_roles,
-            last_stale_roles=last_stale_roles,
-            last_frame_sync_ok=last_frame_sync_ok,
             ticks_received_total=self._counters.ticks_received_total,
             ticks_accepted_total=self._counters.ticks_accepted_total,
             ticks_rejected_total=self._counters.ticks_rejected_total,
@@ -1276,18 +1242,8 @@ def run(context: Any) -> int:
     if not RX.ping_redis(client=redis_client):
         raise FeedStartupError("feeds redis ping failed during startup")
 
-    adapter_info = None
-    with contextlib.suppress(Exception):
-        adapter_info = adapter.info() if hasattr(adapter, "info") and callable(adapter.info) else None
-
-    provider_name = str(getattr(settings, "feed_provider", "")).strip()
-    if not provider_name and adapter_info is not None:
-        provider_name = str(getattr(adapter_info, "broker", "")).strip()
-    if not provider_name:
-        provider_name = "OTHER"
-
     cfg = FeedConfig(
-        provider=provider_name.upper(),
+        provider=str(getattr(settings, "feed_provider", "OTHER")),
         heartbeat_interval_ms=int(
             getattr(settings, "feeds_heartbeat_interval_ms", DEFAULT_HEARTBEAT_INTERVAL_MS)
         ),

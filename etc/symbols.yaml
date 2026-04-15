@@ -1,0 +1,101 @@
+version: 1
+
+project:
+  name: mme_scalpx
+  market: india_index_derivatives
+  timezone: Asia/Kolkata
+
+underlying:
+  canonical: NIFTY
+  display_name: NIFTY 50
+  asset_class: index
+  exchange: NSE
+  currency: INR
+
+derivatives:
+  exchange: NFO
+  segment: index_derivatives
+
+instrument_family:
+  underlying_root: NIFTY
+  futures_root: NIFTY
+  options_root: NIFTY
+
+futures:
+  enabled: true
+
+  primary:
+    alias: NIFTY
+    root: NIFTY
+    instrument_type: FUTIDX
+    exchange: NFO
+    lot_size_source: instrument_master
+    expiry_selection:
+      mode: nearest_valid
+      include_weekly: false
+      include_monthly: true
+      offset: 0
+
+  fallback:
+    allow_next_expiry: true
+    max_expiry_offset: 1
+
+options:
+  enabled: true
+
+  root: NIFTY
+  instrument_type_call: CE
+  instrument_type_put: PE
+  exchange: NFO
+  strike_step: 50
+  strike_step_source: config
+
+  expiry_selection:
+    mode: nearest_valid
+    include_weekly: true
+    include_monthly: true
+    offset: 0
+
+  fallback:
+    allow_next_expiry: true
+    max_expiry_offset: 1
+
+selection_policy:
+  underlying_reference_for_strike: future
+  strike_reference_price: ltp
+  strike_rounding:
+    mode: nearest_step
+    step: 50
+
+  allowed_entry_modes:
+    - ATM
+    - ATM1
+    - DIRECT
+    - FALLBACK
+
+  default_entry_mode: ATM
+
+normalization:
+  option_side_labels:
+    call: CE
+    put: PE
+
+  position_side_labels:
+    flat: FLAT
+    long_call: LONG_CALL
+    long_put: LONG_PUT
+
+validation:
+  require_underlying: true
+  require_futures_family: true
+  require_options_family: true
+  require_positive_strike_step: true
+  require_known_exchange_codes: true
+  require_expiry_offset_non_negative: true
+
+notes:
+  - "This file stores static symbol-domain metadata and controlled selection preferences only."
+  - "Actual tradable instrument identifiers must be resolved from the broker/exchange instrument master at runtime."
+  - "Lot size must be sourced from instrument master or canonical broker metadata, not frozen here unless separately governed."
+  - "No live expiry date, token, security_id, or broker-specific symbol string is frozen in this file."
+  - "If domain/instruments.py expects different field names, this file must follow that code contract exactly."

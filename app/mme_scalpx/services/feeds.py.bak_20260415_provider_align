@@ -1276,18 +1276,8 @@ def run(context: Any) -> int:
     if not RX.ping_redis(client=redis_client):
         raise FeedStartupError("feeds redis ping failed during startup")
 
-    adapter_info = None
-    with contextlib.suppress(Exception):
-        adapter_info = adapter.info() if hasattr(adapter, "info") and callable(adapter.info) else None
-
-    provider_name = str(getattr(settings, "feed_provider", "")).strip()
-    if not provider_name and adapter_info is not None:
-        provider_name = str(getattr(adapter_info, "broker", "")).strip()
-    if not provider_name:
-        provider_name = "OTHER"
-
     cfg = FeedConfig(
-        provider=provider_name.upper(),
+        provider=str(getattr(settings, "feed_provider", "OTHER")),
         heartbeat_interval_ms=int(
             getattr(settings, "feeds_heartbeat_interval_ms", DEFAULT_HEARTBEAT_INTERVAL_MS)
         ),

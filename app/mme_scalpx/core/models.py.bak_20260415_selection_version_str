@@ -209,15 +209,6 @@ class InstrumentRole:
     PE_ATM1 = "PE_ATM1"
 
 
-ALLOWED_INSTRUMENT_ROLES: Final[tuple[str, ...]] = (
-    InstrumentRole.FUTURES,
-    InstrumentRole.CE_ATM,
-    InstrumentRole.CE_ATM1,
-    InstrumentRole.PE_ATM,
-    InstrumentRole.PE_ATM1,
-)
-
-
 class TickValidity:
     OK: Final[str] = "OK"
     MISSING_LTP: Final[str] = "MISSING_LTP"
@@ -736,7 +727,7 @@ class SnapshotMember(SchemaBase):
 @dataclass(frozen=True, slots=True)
 class SnapshotFrame(SchemaBase):
     frame_id: str
-    selection_version: str
+    selection_version: int
     ts_frame_ns: int
     ts_min_member_ns: int
     ts_max_member_ns: int
@@ -755,7 +746,7 @@ class SnapshotFrame(SchemaBase):
 
     def validate(self) -> None:
         _require_non_empty_str(self.frame_id, "frame_id")
-        _require_non_empty_str(self.selection_version, "selection_version")
+        _require_int(self.selection_version, "selection_version", min_value=0)
         _require_int(self.ts_frame_ns, "ts_frame_ns", min_value=0)
         _require_int(self.ts_min_member_ns, "ts_min_member_ns", min_value=0)
         _require_int(self.ts_max_member_ns, "ts_max_member_ns", min_value=0)
