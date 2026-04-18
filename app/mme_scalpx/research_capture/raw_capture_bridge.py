@@ -1,7 +1,7 @@
 """
 app.mme_scalpx.research_capture.raw_capture_bridge
 
-Freeze-grade first real raw-capture bridge for the research-capture chapter.
+Freeze-grade real raw-capture bridge for the research-capture chapter.
 
 Ownership
 ---------
@@ -22,10 +22,10 @@ This module DOES NOT own:
 Design laws
 -----------
 - raw capture first
-- light live-derived later
+- light live-derived second
 - heavy offline-derived later
 - use frozen archive/manifest/integrity/health surfaces, not ad hoc writes
-- no jsonl fallback
+- required raw outputs and optional audit outputs should flow through the same canonical archive lane
 """
 
 from __future__ import annotations
@@ -97,7 +97,7 @@ class RawCaptureWrittenFile:
 
 @dataclass(frozen=True, slots=True)
 class RawCaptureBridgeResult:
-    """Deterministic result of the first real raw-capture bridge."""
+    """Deterministic result of the real raw-capture bridge."""
 
     entrypoint: str
     lane: str
@@ -191,7 +191,7 @@ def _default_row_batch(
         "normalization_version": "v1",
         "derived_version": "v1",
         "heartbeat_ok": True,
-        "runtime_mode": "first_real_raw_capture",
+        "runtime_mode": "real_raw_capture_with_audit_routes",
         "candidate_found": False,
         "blocker_found": False,
         "regime_ok": False,
@@ -490,6 +490,49 @@ def _write_reports(
     return integrity_report_path, health_snapshot_path
 
 
+def _write_route_optional_outputs(
+    *,
+    route_plan,
+    capture_plan: CapturePlan,
+) -> tuple[Mapping[str, tuple[str, ...]], Mapping[str, int], Mapping[str, int]]:
+    route_buckets = dict(route_plan.items())
+
+    runtime_records = tuple(route_buckets.get(ROUTE_RUNTIME_AUDIT, ()))
+    signals_records = tuple(route_buckets.get(ROUTE_SIGNALS_AUDIT, ()))
+
+    merged_file_paths: dict[str, tuple[str, ...]] = {}
+    merged_row_counts: dict[str, int] = {}
+    merged_bytes: dict[str, int] = {}
+
+    optional_targets = {item.name for item in capture_plan.optional_outputs}
+
+    if runtime_records and "runtime_audit.parquet" in optional_targets:
+        file_paths, row_counts, bytes_written = write_capture_records(
+            runtime_records,
+            archive_root_relative="run/research_capture",
+            partition_columns=None,
+            write_mode="overwrite",
+            compression="snappy",
+        )
+        merged_file_paths.update(file_paths)
+        merged_row_counts.update(row_counts)
+        merged_bytes.update(bytes_written)
+
+    if signals_records and "signals_audit.parquet" in optional_targets:
+        file_paths, row_counts, bytes_written = write_capture_records(
+            signals_records,
+            archive_root_relative="run/research_capture",
+            partition_columns=None,
+            write_mode="overwrite",
+            compression="snappy",
+        )
+        merged_file_paths.update(file_paths)
+        merged_row_counts.update(row_counts)
+        merged_bytes.update(bytes_written)
+
+    return merged_file_paths, merged_row_counts, merged_bytes
+
+
 def run_first_real_raw_capture(
     entrypoint: str,
     *,
@@ -539,7 +582,7 @@ def run_first_real_raw_capture(
     )
 
     if entrypoint not in {"run", "backfill"}:
-        raise RawCaptureBridgeError(f"first real raw capture only supports run/backfill, got {entrypoint}")
+        raise RawCaptureBridgeError(f"real raw capture only supports run/backfill, got {entrypoint}")
 
     if not capture_plan.required_outputs:
         raise RawCaptureBridgeError(
@@ -569,10 +612,23 @@ def run_first_real_raw_capture(
 
     route_plan = build_route_plan(records)
 
+    optional_file_paths, optional_row_counts, optional_bytes_written = _write_route_optional_outputs(
+        route_plan=route_plan,
+        capture_plan=capture_plan,
+    )
+
+    merged_file_paths = dict(dataset_file_paths)
+    merged_row_counts = dict(dataset_row_counts)
+    merged_bytes_written = dict(dataset_bytes_written)
+
+    merged_file_paths.update(optional_file_paths)
+    merged_row_counts.update(optional_row_counts)
+    merged_bytes_written.update(optional_bytes_written)
+
     source_availability = build_source_availability_from_records(
         records,
         extra_sources={seed.source: True},
-        notes=("first_real_raw_capture",),
+        notes=("real_raw_capture_with_audit_routes",),
     )
     integrity_summary = build_integrity_summary(
         records=records,
@@ -580,8 +636,8 @@ def run_first_real_raw_capture(
         errors=(),
     )
     archive_outputs = build_archive_outputs_from_counts(
-        dataset_row_counts=dataset_row_counts,
-        bytes_written_by_dataset=dataset_bytes_written,
+        dataset_row_counts=merged_row_counts,
+        bytes_written_by_dataset=merged_bytes_written,
         include_zero_count_outputs=False,
     )
     manifest = build_session_manifest(
@@ -591,7 +647,7 @@ def run_first_real_raw_capture(
         archive_outputs=archive_outputs,
         created_at=_utc_now_z(),
         status="session_written",
-        notes=("first_real_raw_capture",),
+        notes=("real_raw_capture_with_audit_routes",),
     )
     validate_manifest_payload(manifest_to_dict(manifest))
 
@@ -603,9 +659,9 @@ def run_first_real_raw_capture(
     archive_write_result = _archive_write_result(
         session_date=capture_session_date,
         manifest_paths=manifest_paths,
-        dataset_file_paths=dataset_file_paths,
-        dataset_row_counts=dataset_row_counts,
-        dataset_bytes_written=dataset_bytes_written,
+        dataset_file_paths=merged_file_paths,
+        dataset_row_counts=merged_row_counts,
+        dataset_bytes_written=merged_bytes_written,
     )
 
     integrity_report = build_integrity_report(
@@ -614,7 +670,7 @@ def run_first_real_raw_capture(
         route_plan=route_plan,
         manifest=manifest,
         archive_write_result=archive_write_result,
-        notes=("first_real_raw_capture",),
+        notes=("real_raw_capture_with_audit_routes",),
     )
     health_snapshot = build_capture_health_snapshot(
         session_date=capture_session_date,
@@ -623,7 +679,7 @@ def run_first_real_raw_capture(
         manifest=manifest,
         route_plan=route_plan,
         archive_write_result=archive_write_result,
-        notes=("first_real_raw_capture",),
+        notes=("real_raw_capture_with_audit_routes",),
     )
     integrity_report_path, health_snapshot_path = _write_reports(
         manifest_result=manifest_result,
@@ -631,12 +687,12 @@ def run_first_real_raw_capture(
         health_snapshot=health_snapshot,
     )
 
-    primary_capture_target = _first_actual_capture_target(dataset_file_paths)
+    primary_capture_target = _first_actual_capture_target(merged_file_paths)
 
     written_files: list[RawCaptureWrittenFile] = []
     seen_paths: set[str] = set()
 
-    for paths in dataset_file_paths.values():
+    for paths in merged_file_paths.values():
         for raw_path in paths:
             p = str(Path(raw_path).resolve())
             if p in seen_paths:
