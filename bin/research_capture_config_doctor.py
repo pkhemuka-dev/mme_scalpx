@@ -7,14 +7,14 @@ Freeze-grade config doctor for the research-capture chapter.
 Purpose
 -------
 - prove that the canonical config registry loads successfully
-- prove that registered entrypoint bundles resolve successfully
-- prove that registered profile-group bundles resolve successfully
-- prove that effective registry snapshots can be built successfully
-- emit one auditable doctor report without mutating runtime/archive state
+- prove that the config bootstrap layer resolves successfully
+- prove that registered entrypoints map to policy-consistent bootstrap packages
+- emit one auditable doctor artifact without mutating runtime/archive state
 
 This script is intentionally thin and operational:
 - no runtime business logic
 - no archive writing
+- no broker/source I/O
 - no report generation beyond the doctor artifact itself
 """
 
@@ -31,13 +31,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from app.mme_scalpx.research_capture.config_bootstrap import (  # noqa: E402
+    build_bootstrap_package,
+)
 from app.mme_scalpx.research_capture.config_loader import (  # noqa: E402
     DEFAULT_CONFIG_REGISTRY_PATH,
-    build_effective_registry_snapshot,
     load_config_registry,
-    load_registered_json_contract,
-    resolve_entrypoint_bundle,
-    resolve_profile_group_bundle,
 )
 
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "run" / "_smokes" / "research_capture" / "config_doctor"
@@ -57,7 +56,7 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Research-capture config registry doctor."
+        description="Research-capture config registry/bootstrap doctor."
     )
     parser.add_argument(
         "--config-registry",
@@ -81,34 +80,47 @@ def main() -> int:
 
     registry = load_config_registry(config_registry_path, project_root=PROJECT_ROOT)
 
-    entrypoint_names = ("verify", "run", "backfill", "research")
-    profile_group_names = ("base", "live_capture", "historical_backfill", "offline_research", "full_bundle")
-
-    entrypoint_bundles = {
-        name: resolve_entrypoint_bundle(name, registry=registry, project_root=PROJECT_ROOT).to_dict()
-        for name in entrypoint_names
-    }
-    profile_group_bundles = {
-        name: resolve_profile_group_bundle(name, registry=registry, project_root=PROJECT_ROOT).to_dict()
-        for name in profile_group_names
-    }
-
-    runtime_policy = load_registered_json_contract("runtime_policy", registry=registry, project_root=PROJECT_ROOT)
-    report_policy = load_registered_json_contract("report_policy", registry=registry, project_root=PROJECT_ROOT)
-    export_policy = load_registered_json_contract("export_policy", registry=registry, project_root=PROJECT_ROOT)
-
-    effective_snapshots = {
-        name: build_effective_registry_snapshot(
-            entrypoint=name,
-            registry=registry,
-            project_root=PROJECT_ROOT,
-        ).to_dict()
-        for name in entrypoint_names
-    }
+    verify_pkg = build_bootstrap_package(
+        "verify",
+        registry=registry,
+        project_root=PROJECT_ROOT,
+    )
+    run_pkg = build_bootstrap_package(
+        "run",
+        registry=registry,
+        project_root=PROJECT_ROOT,
+    )
+    run_dry_pkg = build_bootstrap_package(
+        "run",
+        lane_override="dry_run",
+        source_override="zerodha",
+        registry=registry,
+        project_root=PROJECT_ROOT,
+    )
+    backfill_pkg = build_bootstrap_package(
+        "backfill",
+        registry=registry,
+        project_root=PROJECT_ROOT,
+    )
+    research_pkg = build_bootstrap_package(
+        "research",
+        registry=registry,
+        project_root=PROJECT_ROOT,
+    )
+    research_override_pkg = build_bootstrap_package(
+        "research",
+        export_format_overrides={
+            "research_summary": "csv",
+            "ml_ready": "parquet",
+            "audit_export": "json",
+        },
+        registry=registry,
+        project_root=PROJECT_ROOT,
+    )
 
     report = {
         "doctor_name": "MME Research Capture Config Doctor",
-        "doctor_version": "v1",
+        "doctor_version": "v2",
         "doctor_ok": True,
         "ts_utc": _utc_now_z(),
         "config_registry_path": str(config_registry_path),
@@ -121,14 +133,25 @@ def main() -> int:
             "profile_group_count": len(registry.profile_groups),
             "load_order": list(registry.load_order),
         },
-        "entrypoint_bundles": entrypoint_bundles,
-        "profile_group_bundles": profile_group_bundles,
-        "policy_surface_check": {
-            "runtime_policy_schema_name": runtime_policy["schema_name"],
-            "report_policy_schema_name": report_policy["schema_name"],
-            "export_policy_schema_name": export_policy["schema_name"],
+        "bootstrap_packages": {
+            "verify": verify_pkg.to_dict(),
+            "run": run_pkg.to_dict(),
+            "run_dry": run_dry_pkg.to_dict(),
+            "backfill": backfill_pkg.to_dict(),
+            "research": research_pkg.to_dict(),
+            "research_override": research_override_pkg.to_dict(),
         },
-        "effective_registry_snapshots": effective_snapshots,
+        "assertions": {
+            "verify_lane": verify_pkg.selected_lane,
+            "run_lane": run_pkg.selected_lane,
+            "run_dry_lane": run_dry_pkg.selected_lane,
+            "backfill_lane": backfill_pkg.selected_lane,
+            "research_lane": research_pkg.selected_lane,
+            "verify_source": verify_pkg.selected_source,
+            "run_source": run_pkg.selected_source,
+            "backfill_source": backfill_pkg.selected_source,
+            "research_source": research_pkg.selected_source,
+        },
         "artifact_inventory": {
             "doctor_report": "config_doctor_report.json",
         },
@@ -140,6 +163,11 @@ def main() -> int:
     print("registry_contract_count", len(registry.all_contracts()))
     print("entrypoint_count", len(registry.entrypoint_contracts))
     print("profile_group_count", len(registry.profile_groups))
+    print("verify_lane", verify_pkg.selected_lane)
+    print("run_lane", run_pkg.selected_lane)
+    print("run_dry_lane", run_dry_pkg.selected_lane)
+    print("backfill_lane", backfill_pkg.selected_lane)
+    print("research_lane", research_pkg.selected_lane)
     print("doctor_report", str(output_dir / "config_doctor_report.json"))
     return 0
 
