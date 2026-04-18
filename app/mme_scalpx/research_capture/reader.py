@@ -382,4 +382,303 @@ __all__ = [
     "read_manifest",
     "read_source_availability",
     "session_exists",
+    "read_capture_session",
+    "load_capture_session",
+    "read_capture_report",
+    "load_capture_report",
+    "read_capture_report_dir",
+    "load_capture_report_dir",
 ]
+
+# RC_CANONICAL_PUBLIC_READER_ENTRYPOINTS_BEGIN
+def _rc_reader_load_json(path):
+    import json
+    from pathlib import Path
+
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"required json file not found: {p}")
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def _rc_reader_find_first_str(obj, candidate_keys):
+    if isinstance(obj, dict):
+        for key in candidate_keys:
+            value = obj.get(key)
+            if isinstance(value, str) and value:
+                return value
+        for value in obj.values():
+            found = _rc_reader_find_first_str(value, candidate_keys)
+            if found:
+                return found
+    elif isinstance(obj, (list, tuple)):
+        for item in obj:
+            found = _rc_reader_find_first_str(item, candidate_keys)
+            if found:
+                return found
+    return None
+
+
+def _rc_reader_find_first_singleton_date_list(obj, candidate_keys):
+    if isinstance(obj, dict):
+        for key in candidate_keys:
+            value = obj.get(key)
+            if isinstance(value, (list, tuple)):
+                dates = [item for item in value if isinstance(item, str) and item]
+                if len(dates) == 1:
+                    return dates[0]
+        for value in obj.values():
+            found = _rc_reader_find_first_singleton_date_list(value, candidate_keys)
+            if found:
+                return found
+    elif isinstance(obj, (list, tuple)):
+        for item in obj:
+            found = _rc_reader_find_first_singleton_date_list(item, candidate_keys)
+            if found:
+                return found
+    return None
+
+
+def _rc_reader_report_dir_session_date_fallback(report_dir):
+    import re
+    from pathlib import Path
+
+    report_dir = Path(report_dir).resolve()
+
+    for json_name in ("effective_inputs.json", "manifest.json", "source_availability.json"):
+        json_path = report_dir / json_name
+        if not json_path.exists():
+            continue
+        try:
+            payload = _rc_reader_load_json(json_path)
+        except Exception:
+            continue
+
+        found = _rc_reader_find_first_str(
+            payload,
+            (
+                "session_date",
+                "date",
+                "start_date",
+            ),
+        )
+        if found:
+            end_date = _rc_reader_find_first_str(payload, ("end_date",))
+            if json_name == "effective_inputs.json" and end_date and end_date != found:
+                pass
+            else:
+                return found
+
+        singleton = _rc_reader_find_first_singleton_date_list(
+            payload,
+            (
+                "session_dates",
+                "dates",
+            ),
+        )
+        if singleton:
+            return singleton
+
+        start_date = _rc_reader_find_first_str(payload, ("start_date",))
+        end_date = _rc_reader_find_first_str(payload, ("end_date",))
+        if start_date and end_date and start_date == end_date:
+            return start_date
+
+    archive_root = report_dir.parent.parent
+    date_dirs = sorted(
+        path.name
+        for path in archive_root.iterdir()
+        if path.is_dir() and re.fullmatch(r"\d{4}-\d{2}-\d{2}", path.name)
+    )
+    if len(date_dirs) == 1:
+        return date_dirs[0]
+
+    return None
+
+
+def _rc_reader_manifest_session_date(manifest_payload, report_dir=None):
+    if not isinstance(manifest_payload, dict):
+        return _rc_reader_report_dir_session_date_fallback(report_dir) if report_dir else None
+
+    direct = _rc_reader_find_first_str(
+        manifest_payload,
+        (
+            "session_date",
+        ),
+    )
+    if direct:
+        return direct
+
+    singleton = _rc_reader_find_first_singleton_date_list(
+        manifest_payload,
+        (
+            "session_dates",
+            "dates",
+        ),
+    )
+    if singleton:
+        return singleton
+
+    start_date = _rc_reader_find_first_str(manifest_payload, ("start_date",))
+    end_date = _rc_reader_find_first_str(manifest_payload, ("end_date",))
+    if start_date and end_date and start_date == end_date:
+        return start_date
+
+    return _rc_reader_report_dir_session_date_fallback(report_dir) if report_dir else None
+
+
+def _rc_reader_parquet_row_count(path):
+    from pathlib import Path
+
+    p = Path(path)
+    if not p.exists():
+        return None
+
+    try:
+        import pyarrow.parquet as pq
+        return int(pq.ParquetFile(p).metadata.num_rows)
+    except Exception:
+        try:
+            import pandas as pd
+            return int(len(pd.read_parquet(p)))
+        except Exception:
+            return None
+
+
+def _rc_reader_dataset_names():
+    return ("ticks_fut", "ticks_opt", "runtime_audit", "signals_audit")
+
+
+def _rc_reader_collect_dataset_files(session_root):
+    from pathlib import Path
+
+    root = Path(session_root).resolve()
+    dataset_file_paths = {}
+
+    for dataset_name in _rc_reader_dataset_names():
+        files = tuple(sorted(str(p.resolve()) for p in root.rglob(f"{dataset_name}.parquet")))
+        if files:
+            dataset_file_paths[dataset_name] = files
+
+    return dataset_file_paths
+
+
+def _rc_reader_collect_dataset_counts(dataset_file_paths):
+    dataset_row_counts = {}
+
+    for dataset_name, files in dict(dataset_file_paths).items():
+        total = 0
+        for raw_path in files:
+            rows = _rc_reader_parquet_row_count(raw_path)
+            if rows is None:
+                raise ValueError(f"unable to determine parquet row count for {raw_path}")
+            total += int(rows)
+        dataset_row_counts[dataset_name] = total
+
+    return dataset_row_counts
+
+
+def _rc_reader_extract_dataset_row_counts(payload):
+    if isinstance(payload, dict):
+        raw_counts = payload.get("dataset_row_counts")
+        if isinstance(raw_counts, dict):
+            return {str(k): int(v) for k, v in raw_counts.items()}
+
+        for value in payload.values():
+            extracted = _rc_reader_extract_dataset_row_counts(value)
+            if extracted:
+                return extracted
+
+    elif isinstance(payload, (list, tuple)):
+        for item in payload:
+            extracted = _rc_reader_extract_dataset_row_counts(item)
+            if extracted:
+                return extracted
+
+    return {}
+
+
+def _rc_reader_expected_counts_from_integrity(report_dir):
+    from pathlib import Path
+
+    report_dir = Path(report_dir).resolve()
+
+    for json_name in ("integrity_summary.json", "integrity_report.json", "health_snapshot.json"):
+        json_path = report_dir / json_name
+        if not json_path.exists():
+            continue
+        try:
+            payload = _rc_reader_load_json(json_path)
+        except Exception:
+            continue
+
+        extracted = _rc_reader_extract_dataset_row_counts(payload)
+        if extracted:
+            return extracted
+
+    return {}
+
+
+def _rc_reader_validate_counts(actual_counts, expected_counts):
+    for dataset_name, expected in dict(expected_counts).items():
+        actual = int(actual_counts.get(dataset_name, 0))
+        if actual != int(expected):
+            raise ValueError(
+                f"reader count mismatch for {dataset_name}: actual={actual} expected={expected}"
+            )
+
+
+def read_capture_session(session_root):
+    from pathlib import Path
+
+    root = Path(session_root).resolve()
+    dataset_file_paths = _rc_reader_collect_dataset_files(root)
+    dataset_row_counts = _rc_reader_collect_dataset_counts(dataset_file_paths)
+
+    return {
+        "session_root": str(root),
+        "dataset_file_paths": dataset_file_paths,
+        "dataset_row_counts": dataset_row_counts,
+    }
+
+
+def load_capture_session(session_root):
+    return read_capture_session(session_root)
+
+
+def read_capture_report(report_dir):
+    from pathlib import Path
+
+    report_dir = Path(report_dir).resolve()
+    manifest_path = report_dir / "manifest.json"
+    manifest_payload = _rc_reader_load_json(manifest_path)
+
+    session_date = _rc_reader_manifest_session_date(manifest_payload, report_dir=report_dir)
+    if not session_date:
+        raise ValueError(f"unable to derive session_date from manifest: {manifest_path}")
+
+    session_root = report_dir.parent.parent / session_date
+    session_bundle = read_capture_session(session_root)
+    expected_counts = _rc_reader_expected_counts_from_integrity(report_dir)
+    _rc_reader_validate_counts(session_bundle["dataset_row_counts"], expected_counts)
+
+    return {
+        "report_dir": str(report_dir),
+        "session_root": session_bundle["session_root"],
+        "dataset_file_paths": session_bundle["dataset_file_paths"],
+        "dataset_row_counts": session_bundle["dataset_row_counts"],
+        "integrity_summary_dataset_row_counts": expected_counts,
+    }
+
+
+def load_capture_report(report_dir):
+    return read_capture_report(report_dir)
+
+
+def read_capture_report_dir(report_dir):
+    return read_capture_report(report_dir)
+
+
+def load_capture_report_dir(report_dir):
+    return read_capture_report(report_dir)
+# RC_CANONICAL_PUBLIC_READER_ENTRYPOINTS_END

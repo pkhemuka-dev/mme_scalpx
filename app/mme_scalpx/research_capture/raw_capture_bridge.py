@@ -490,6 +490,45 @@ def _write_reports(
     return integrity_report_path, health_snapshot_path
 
 
+# RC_OPTIONAL_ROUTE_DATASET_RELABEL_HELPERS
+def _clone_capture_record_with_dataset(record, dataset_name: str):
+    from dataclasses import is_dataclass, replace as dataclass_replace
+    from app.mme_scalpx.research_capture.models import CaptureDatasetName
+
+    dataset_enum = (
+        dataset_name
+        if isinstance(dataset_name, CaptureDatasetName)
+        else CaptureDatasetName(str(dataset_name))
+    )
+
+    if hasattr(record, "model_copy") and callable(record.model_copy):
+        return record.model_copy(update={"dataset": dataset_enum})
+
+    if hasattr(record, "copy") and callable(record.copy):
+        try:
+            return record.copy(update={"dataset": dataset_enum})
+        except TypeError:
+            pass
+
+    if is_dataclass(record):
+        return dataclass_replace(record, dataset=dataset_enum)
+
+    if hasattr(record, "__dict__"):
+        payload = dict(record.__dict__)
+        payload["dataset"] = dataset_enum
+        return type(record)(**payload)
+
+    raise TypeError(
+        f"unsupported capture record type for dataset relabel: {type(record)!r}"
+    )
+
+
+def _records_for_optional_dataset(records, dataset_name: str):
+    return tuple(
+        _clone_capture_record_with_dataset(record, dataset_name)
+        for record in records
+    )
+
 def _write_route_optional_outputs(
     *,
     route_plan,
@@ -507,8 +546,12 @@ def _write_route_optional_outputs(
     optional_targets = {item.name for item in capture_plan.optional_outputs}
 
     if runtime_records and "runtime_audit.parquet" in optional_targets:
-        file_paths, row_counts, bytes_written = write_capture_records(
+        runtime_dataset_records = _records_for_optional_dataset(
             runtime_records,
+            "runtime_audit",
+        )
+        file_paths, row_counts, bytes_written = write_capture_records(
+            runtime_dataset_records,
             archive_root_relative="run/research_capture",
             partition_columns=None,
             write_mode="overwrite",
@@ -519,8 +562,12 @@ def _write_route_optional_outputs(
         merged_bytes.update(bytes_written)
 
     if signals_records and "signals_audit.parquet" in optional_targets:
-        file_paths, row_counts, bytes_written = write_capture_records(
+        signals_dataset_records = _records_for_optional_dataset(
             signals_records,
+            "signals_audit",
+        )
+        file_paths, row_counts, bytes_written = write_capture_records(
+            signals_dataset_records,
             archive_root_relative="run/research_capture",
             partition_columns=None,
             write_mode="overwrite",
@@ -531,7 +578,6 @@ def _write_route_optional_outputs(
         merged_bytes.update(bytes_written)
 
     return merged_file_paths, merged_row_counts, merged_bytes
-
 
 def run_first_real_raw_capture(
     entrypoint: str,
@@ -612,6 +658,21 @@ def run_first_real_raw_capture(
 
     route_plan = build_route_plan(records)
 
+    optional_targets = {item.name for item in capture_plan.optional_outputs}
+    optional_integrity_records: list[object] = []
+
+    runtime_route_records = tuple(route_plan.get(ROUTE_RUNTIME_AUDIT, ()))
+    if runtime_route_records and "runtime_audit.parquet" in optional_targets:
+        optional_integrity_records.extend(
+            _records_for_optional_dataset(runtime_route_records, "runtime_audit")
+        )
+
+    signals_route_records = tuple(route_plan.get(ROUTE_SIGNALS_AUDIT, ()))
+    if signals_route_records and "signals_audit.parquet" in optional_targets:
+        optional_integrity_records.extend(
+            _records_for_optional_dataset(signals_route_records, "signals_audit")
+        )
+
     optional_file_paths, optional_row_counts, optional_bytes_written = _write_route_optional_outputs(
         route_plan=route_plan,
         capture_plan=capture_plan,
@@ -630,8 +691,9 @@ def run_first_real_raw_capture(
         extra_sources={seed.source: True},
         notes=("real_raw_capture_with_audit_routes",),
     )
+    integrity_records = tuple(records) + tuple(optional_integrity_records)
     integrity_summary = build_integrity_summary(
-        records=records,
+        records=integrity_records,
         warnings=(),
         errors=(),
     )
