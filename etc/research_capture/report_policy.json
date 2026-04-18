@@ -1,0 +1,169 @@
+{
+  "schema_name": "MME Research Capture Report Policy",
+  "policy_version": "v1",
+  "schema_version_ref": "etc/research_capture/schema_version.json",
+  "field_dictionary_ref": "etc/research_capture/field_dictionary.csv",
+  "source_policy_ref": "etc/research_capture/source_policy.json",
+  "integrity_policy_ref": "etc/research_capture/integrity_policy.json",
+  "runtime_policy_ref": "etc/research_capture/runtime_policy.json",
+  "governance": {
+    "report_policy_required_for_run": true,
+    "report_policy_required_for_verify": true,
+    "run_report_required": true,
+    "verify_report_required": true,
+    "source_availability_required": true,
+    "integrity_summary_required": true,
+    "output_inventory_required": true,
+    "explicit_versions_snapshot_required": true,
+    "reporting_does_not_change_production_contract": true,
+    "reporting_surfaces_are_contract_first": true,
+    "all_reports_must_be_json_serializable": true,
+    "all_reports_must_include_run_id": true,
+    "all_reports_must_include_schema_version": true
+  },
+  "artifact_filenames": {
+    "run_report": "run_report.json",
+    "verify_report": "verify_report.json",
+    "source_availability": "source_availability.json",
+    "integrity_summary": "integrity_summary.json",
+    "manifest": "manifest.json"
+  },
+  "required_report_sections": {
+    "run_report": [
+      "run_identity",
+      "selected_lane_source",
+      "versions_snapshot",
+      "artifact_inventory",
+      "health_summary",
+      "integrity_verdict",
+      "source_availability_summary",
+      "output_summary",
+      "operator_notes"
+    ],
+    "verify_report": [
+      "run_identity",
+      "versions_snapshot",
+      "artifact_inventory",
+      "health_summary",
+      "integrity_verdict",
+      "verification_summary",
+      "operator_notes"
+    ],
+    "source_availability": [
+      "run_id",
+      "lane",
+      "source",
+      "session_date",
+      "sources_checked",
+      "available_sources",
+      "missing_sources",
+      "availability_verdict",
+      "ts_utc"
+    ],
+    "integrity_summary": [
+      "run_id",
+      "lane",
+      "source",
+      "session_date",
+      "verdict",
+      "failed_checks",
+      "warned_checks",
+      "waived_checks",
+      "threshold_snapshot",
+      "ts_utc"
+    ]
+  },
+  "run_identity_fields": [
+    "run_id",
+    "session_date",
+    "lane",
+    "source",
+    "ts_started_utc",
+    "ts_finished_utc",
+    "policy_version"
+  ],
+  "versions_snapshot_fields": [
+    "schema_version",
+    "normalization_version",
+    "derived_version",
+    "policy_version"
+  ],
+  "artifact_inventory_fields": [
+    "manifest_present",
+    "source_availability_present",
+    "integrity_summary_present",
+    "run_report_present",
+    "verify_report_present",
+    "ticks_fut_present",
+    "ticks_opt_present",
+    "runtime_audit_present",
+    "signals_audit_present"
+  ],
+  "health_summary_fields": [
+    "status",
+    "service",
+    "run_id",
+    "lane",
+    "source",
+    "ts_utc",
+    "message"
+  ],
+  "integrity_verdict_fields": [
+    "verdict",
+    "failed_check_count",
+    "warned_check_count",
+    "waived_check_count",
+    "threshold_snapshot_present"
+  ],
+  "source_availability_fields": [
+    "sources_checked",
+    "available_sources",
+    "missing_sources",
+    "availability_verdict"
+  ],
+  "output_summary_fields": [
+    "archive_written",
+    "archive_files_written",
+    "archive_rows_written",
+    "parquet_outputs",
+    "report_outputs"
+  ],
+  "verification_summary_fields": [
+    "verify_ok",
+    "health_ok",
+    "integrity_ok",
+    "required_artifacts_present",
+    "notes"
+  ],
+  "operator_notes_fields": [
+    "notes",
+    "tags",
+    "authored_by",
+    "ts_utc"
+  ],
+  "verdicts": {
+    "pass": "PASS",
+    "warn": "WARN",
+    "fail": "FAIL"
+  },
+  "reporting_behavior": {
+    "emit_pretty_json": true,
+    "emit_sorted_keys": true,
+    "emit_utf8": true,
+    "emit_terminal_newline": true,
+    "include_null_optional_sections": false,
+    "include_empty_lists_when_no_items": true,
+    "include_counts_for_all_check_buckets": true,
+    "include_output_inventory_even_on_failure": true,
+    "include_versions_snapshot_even_on_failure": true
+  },
+  "minimum_output_requirements": {
+    "run_requires_manifest": true,
+    "run_requires_source_availability": true,
+    "run_requires_integrity_summary": true,
+    "run_requires_run_report": true,
+    "run_requires_minimum_one_archive_output": true,
+    "verify_requires_verify_report": true,
+    "verify_requires_integrity_summary_reference": true
+  }
+}
