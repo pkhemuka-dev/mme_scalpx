@@ -1,0 +1,150 @@
+{
+  "schema_name": "MME Research Capture Backfill Policy",
+  "policy_version": "v1",
+  "schema_version_ref": "etc/research_capture/schema_version.json",
+  "field_dictionary_ref": "etc/research_capture/field_dictionary.csv",
+  "source_policy_ref": "etc/research_capture/source_policy.json",
+  "integrity_policy_ref": "etc/research_capture/integrity_policy.json",
+  "runtime_policy_ref": "etc/research_capture/runtime_policy.json",
+  "report_policy_ref": "etc/research_capture/report_policy.json",
+  "governance": {
+    "backfill_policy_required_for_backfill_runs": true,
+    "backfill_is_separate_lane_from_live_capture": true,
+    "backfill_feeds_same_canonical_archive": true,
+    "backfill_must_preserve_source_lineage": true,
+    "backfill_must_not_silently_modify_live_manifest": true,
+    "backfill_must_not_mutate_production_contract": true,
+    "backfill_runs_require_distinct_run_id": true,
+    "backfill_runs_require_explicit_source": true,
+    "backfill_runs_require_explicit_date_scope": true,
+    "backfill_runs_require_manifest_integrity_reports": true,
+    "fail_closed_on_unknown_backfill_source": true,
+    "fail_closed_on_missing_date_scope": true
+  },
+  "allowed_sources": {
+    "primary_preferred": "dhan",
+    "allowed": [
+      "zerodha",
+      "dhan"
+    ],
+    "source_strengths": {
+      "zerodha": "usable_for_limited_historical_and_source-consistent_backfill",
+      "dhan": "preferred_for_option_specific_historical_and_expired_options_backfill"
+    }
+  },
+  "date_scope_contract": {
+    "required_fields": [
+      "start_date",
+      "end_date"
+    ],
+    "optional_fields": [
+      "session_dates",
+      "start_ts",
+      "end_ts",
+      "instrument_scope",
+      "notes"
+    ],
+    "allow_single_day_backfill": true,
+    "allow_contiguous_range_backfill": true,
+    "allow_explicit_session_list_backfill": true,
+    "reject_empty_scope": true,
+    "reject_end_before_start": true
+  },
+  "run_identity_contract": {
+    "required_fields": [
+      "run_id",
+      "lane",
+      "source",
+      "start_date",
+      "end_date",
+      "ts_started_utc"
+    ],
+    "lane_value": "historical_backfill",
+    "distinct_run_id_required": true
+  },
+  "archive_behavior": {
+    "writes_normalized_archive": true,
+    "writes_source_provenance": true,
+    "writes_manifest": true,
+    "writes_source_availability": true,
+    "writes_integrity_summary": true,
+    "writes_run_report": true,
+    "may_write_verify_report": false,
+    "may_write_runtime_audit": true,
+    "may_write_signals_audit": true,
+    "partition_resolution_required": true,
+    "minimum_archive_output_one_of": [
+      "ticks_fut.parquet",
+      "ticks_opt.parquet"
+    ]
+  },
+  "merge_and_overwrite_policy": {
+    "allow_append_new_partitions": true,
+    "allow_append_existing_partition_files": false,
+    "allow_in_place_overwrite_existing_live_capture_manifest": false,
+    "allow_in_place_overwrite_existing_integrity_summary": false,
+    "allow_in_place_overwrite_existing_source_availability": false,
+    "require_distinct_run_root": true,
+    "require_output_inventory": true
+  },
+  "integrity_requirements": {
+    "require_integrity_pass_for_success": true,
+    "require_manifest_present": true,
+    "require_source_availability_present": true,
+    "require_integrity_summary_present": true,
+    "require_partition_keys_resolvable": true,
+    "require_source_provenance_present": true,
+    "allow_warn_only_completion": false
+  },
+  "reporting_requirements": {
+    "require_run_report": true,
+    "require_selected_source_and_scope": true,
+    "require_versions_snapshot": true,
+    "require_output_inventory": true,
+    "require_archive_row_counts": true,
+    "require_backfill_scope_summary": true
+  },
+  "backfill_scope_summary_fields": [
+    "source",
+    "start_date",
+    "end_date",
+    "session_dates",
+    "instrument_scope",
+    "requested_range_days",
+    "completed_range_days",
+    "notes"
+  ],
+  "source_consistency_rules": {
+    "preserve_broker_name_on_every_record": true,
+    "preserve_native_ids_when_available": true,
+    "preserve_raw_payload_when_available": true,
+    "normalize_into_canonical_archive": true,
+    "do_not_drop_source_fields_silently": true
+  },
+  "failure_policy": {
+    "stop_on_unknown_source": true,
+    "stop_on_missing_scope": true,
+    "stop_on_invalid_date_order": true,
+    "stop_on_manifest_write_failure": true,
+    "stop_on_source_availability_failure": true,
+    "stop_on_integrity_summary_failure": true,
+    "stop_on_archive_write_failure": true,
+    "stop_on_partition_resolution_failure": true
+  },
+  "output_files": {
+    "required": [
+      "manifest.json",
+      "source_availability.json",
+      "integrity_summary.json",
+      "run_report.json"
+    ],
+    "minimum_archive_one_of": [
+      "ticks_fut.parquet",
+      "ticks_opt.parquet"
+    ],
+    "recommended": [
+      "runtime_audit.parquet",
+      "signals_audit.parquet"
+    ]
+  }
+}
