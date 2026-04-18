@@ -1,4 +1,9 @@
 {
+  "schema_name": "MME Research Data Capture Schema",
+  "schema_version": "v1",
+  "chapter_name": "research_capture",
+  "archive_root_relative": "run/research_capture",
+  "session_root_pattern": "run/research_capture/{session_date}",
   "primary_partitions": [
     "session_date",
     "instrument_type",
@@ -9,9 +14,31 @@
   "secondary_partitions": [
     "strike"
   ],
-  "notes": [
-    "use loose partitioning first; avoid overly fragmented output",
-    "raw capture must remain replay-friendly",
-    "do not over-optimize partition layout before stable capture exists"
+  "default_partition_columns": [
+    "session_date",
+    "instrument_type",
+    "underlying_symbol",
+    "expiry",
+    "option_type",
+    "strike"
+  ],
+  "partition_value_tokens": {
+    "null_token": "__null__",
+    "empty_string_token": "__empty__",
+    "true_token": "true",
+    "false_token": "false"
+  },
+  "dataset_relative_directory_patterns": {
+    "ticks_fut": "ticks_fut/instrument_type={instrument_type}/underlying_symbol={underlying_symbol}/expiry={expiry}/option_type={option_type}/strike={strike}",
+    "ticks_opt": "ticks_opt/instrument_type={instrument_type}/underlying_symbol={underlying_symbol}/expiry={expiry}/option_type={option_type}/strike={strike}",
+    "signals_audit": "signals_audit/instrument_type={instrument_type}/underlying_symbol={underlying_symbol}/expiry={expiry}/option_type={option_type}/strike={strike}",
+    "runtime_audit": "runtime_audit/instrument_type={instrument_type}/underlying_symbol={underlying_symbol}/expiry={expiry}/option_type={option_type}/strike={strike}"
+  },
+  "path_laws": [
+    "session_date_owns_session_root",
+    "partition_paths_are_deterministic",
+    "partition_tokens_are_filesystem_safe",
+    "schema_is_broker_agnostic_but_payloads_preserve_broker_provenance",
+    "path_building_must_not_infer_hidden_partitions"
   ]
 }
