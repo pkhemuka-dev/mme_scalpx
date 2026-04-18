@@ -1,0 +1,139 @@
+{
+  "schema_name": "MME Research Capture Operator Defaults",
+  "policy_version": "v1",
+  "schema_version_ref": "etc/research_capture/schema_version.json",
+  "field_dictionary_ref": "etc/research_capture/field_dictionary.csv",
+  "source_policy_ref": "etc/research_capture/source_policy.json",
+  "integrity_policy_ref": "etc/research_capture/integrity_policy.json",
+  "runtime_policy_ref": "etc/research_capture/runtime_policy.json",
+  "report_policy_ref": "etc/research_capture/report_policy.json",
+  "backfill_policy_ref": "etc/research_capture/backfill_policy.json",
+  "research_policy_ref": "etc/research_capture/research_policy.json",
+  "export_policy_ref": "etc/research_capture/export_policy.json",
+  "governance": {
+    "operator_defaults_required": true,
+    "defaults_apply_only_when_operator_input_omitted": true,
+    "explicit_operator_input_overrides_defaults": true,
+    "effective_inputs_must_record_all_defaulted_values": true,
+    "defaults_must_be_policy_consistent": true,
+    "defaults_must_not_silently_modify_production_contract": true,
+    "defaults_must_not_silently_modify_canonical_archive": true,
+    "fail_closed_on_unknown_entrypoint": true,
+    "fail_closed_on_unknown_lane": true,
+    "fail_closed_on_unknown_source": true,
+    "fail_closed_on_unknown_export_family": true,
+    "fail_closed_on_unknown_export_format": true,
+    "fail_closed_on_inconsistent_default_combination": true
+  },
+  "entrypoint_defaults": {
+    "verify": {
+      "lane": "verify_only",
+      "source": "canonical_archive",
+      "emit_verify_report": true,
+      "emit_integrity_summary_reference": true
+    },
+    "run": {
+      "lane": "live_capture",
+      "source": "zerodha",
+      "emit_manifest": true,
+      "emit_source_availability": true,
+      "emit_integrity_summary": true,
+      "emit_run_report": true
+    },
+    "backfill": {
+      "lane": "historical_backfill",
+      "source": "dhan",
+      "emit_manifest": true,
+      "emit_source_availability": true,
+      "emit_integrity_summary": true,
+      "emit_run_report": true
+    },
+    "research": {
+      "lane": "research_export",
+      "source": "canonical_archive",
+      "emit_research_report": true,
+      "emit_research_inventory": true,
+      "emit_effective_inputs": true
+    }
+  },
+  "default_export_formats_by_family": {
+    "runtime_report": "json",
+    "backfill_report": "json",
+    "research_flat": "parquet",
+    "research_summary": "json",
+    "ml_ready": "parquet",
+    "audit_export": "parquet"
+  },
+  "default_paths": {
+    "config_root": "etc/research_capture",
+    "run_root": "run/research_capture",
+    "smoke_root": "run/_smokes/research_capture",
+    "backup_root": "run/_code_backups/research_capture",
+    "report_root": "run/research_capture/reports",
+    "export_root": "run/research_capture/exports"
+  },
+  "default_output_files": {
+    "verify": [
+      "verify_report.json"
+    ],
+    "run": [
+      "manifest.json",
+      "source_availability.json",
+      "integrity_summary.json",
+      "run_report.json"
+    ],
+    "backfill": [
+      "manifest.json",
+      "source_availability.json",
+      "integrity_summary.json",
+      "run_report.json"
+    ],
+    "research": [
+      "research_report.json",
+      "research_inventory.json",
+      "effective_inputs.json"
+    ]
+  },
+  "default_health_and_verdicts": {
+    "successful_run_status": "OK",
+    "successful_verify_statuses": [
+      "OK",
+      "WARN"
+    ],
+    "integrity_pass": "PASS",
+    "integrity_warn": "WARN",
+    "integrity_fail": "FAIL"
+  },
+  "default_reporting_toggles": {
+    "pretty_json": true,
+    "sorted_keys": true,
+    "terminal_newline": true,
+    "include_output_inventory": true,
+    "include_versions_snapshot": true,
+    "include_effective_inputs": true
+  },
+  "default_operator_notes": {
+    "authored_by": "system",
+    "tags": [
+      "research_capture",
+      "contract_first",
+      "defaulted"
+    ]
+  },
+  "required_effective_inputs_fields": [
+    "run_id",
+    "entrypoint",
+    "lane",
+    "source",
+    "selected_export_formats",
+    "selected_outputs",
+    "ts_utc"
+  ],
+  "failure_policy": {
+    "stop_on_missing_required_path": true,
+    "stop_on_missing_required_output_name": true,
+    "stop_on_default_conflict_with_policy": true,
+    "stop_on_invalid_health_default": true,
+    "stop_on_invalid_integrity_default": true
+  }
+}
