@@ -1,0 +1,141 @@
+{
+  "schema_name": "MME Research Capture Source Policy",
+  "policy_version": "v1",
+  "schema_version_ref": "etc/research_capture/schema_version.json",
+  "field_dictionary_ref": "etc/research_capture/field_dictionary.csv",
+  "archive_config_ref": "etc/research_capture/archive_config.json",
+  "partitions_ref": "etc/research_capture/partitions.json",
+  "governance": {
+    "canonical_archive_schema_broker_agnostic": true,
+    "preserve_raw_source_provenance": true,
+    "recorded_not_strategy_approved": true,
+    "derived_not_production_used": true,
+    "researched_not_contract_changed": true,
+    "fail_on_unknown_source": true,
+    "fail_on_unknown_lane": true,
+    "require_source_availability_manifest": true,
+    "require_integrity_summary": true,
+    "allow_source_specific_raw_extensions": true,
+    "normalize_into_canonical_archive": true,
+    "promote_to_production_only_by_separate_contract_revision": true
+  },
+  "lanes": {
+    "live_capture": {
+      "enabled": true,
+      "description": "Live broker-aware intake lane for research archive and runtime-adjacent capture.",
+      "writes_normalized_archive": true,
+      "writes_raw_provenance": true,
+      "requires_manifest": true,
+      "requires_integrity_summary": true,
+      "mix_with_historical_backfill_in_same_job": false
+    },
+    "historical_backfill": {
+      "enabled": true,
+      "description": "Broker-aware historical/backfill lane feeding the same canonical research archive.",
+      "writes_normalized_archive": true,
+      "writes_raw_provenance": true,
+      "requires_manifest": true,
+      "requires_integrity_summary": true,
+      "mix_with_live_capture_in_same_job": false
+    },
+    "offline_research": {
+      "enabled": true,
+      "description": "Offline read/derive/export lane over canonical archive outputs.",
+      "writes_normalized_archive": false,
+      "may_write_report_artifacts": true,
+      "may_write_research_exports": true,
+      "must_not_mutate_production_contract": true
+    }
+  },
+  "normalized_archive_rules": {
+    "store_broker_name": true,
+    "store_exchange": true,
+    "store_exchange_segment": true,
+    "store_instrument_token": true,
+    "store_tradingsymbol": true,
+    "store_symbol": true,
+    "store_contract_name": true,
+    "store_schema_version": true,
+    "store_normalization_version": true,
+    "store_derived_version": true,
+    "required_source_columns": [
+      "broker_name",
+      "exchange",
+      "exchange_segment",
+      "instrument_token",
+      "tradingsymbol"
+    ],
+    "required_version_columns": [
+      "schema_version",
+      "normalization_version",
+      "derived_version"
+    ]
+  },
+  "source_registry": {
+    "zerodha": {
+      "enabled": true,
+      "source_kind": "broker",
+      "priority_rank": 1,
+      "supported_lanes": [
+        "live_capture",
+        "historical_backfill"
+      ],
+      "primary_role": "live_raw_feed_execution_adjacent",
+      "broker_aware_adapter_required": true,
+      "preserve_native_ids": true,
+      "preserve_raw_payload": true,
+      "normalize_to_canonical_archive": true,
+      "capture_depth_when_available": true,
+      "supports_execution_adjacent_capture": true,
+      "historical_expired_options_strength": "limited",
+      "notes": "Primary live source for runtime-adjacent capture; retain source provenance on every record."
+    },
+    "dhan": {
+      "enabled": true,
+      "source_kind": "broker",
+      "priority_rank": 2,
+      "supported_lanes": [
+        "historical_backfill",
+        "offline_research"
+      ],
+      "primary_role": "historical_options_research_backfill",
+      "broker_aware_adapter_required": true,
+      "preserve_native_ids": true,
+      "preserve_raw_payload": true,
+      "normalize_to_canonical_archive": true,
+      "capture_depth_when_available": true,
+      "supports_execution_adjacent_capture": false,
+      "historical_expired_options_strength": "strong",
+      "notes": "Preferred source for option-specific historical research and expired-options backfill."
+    }
+  },
+  "operator_defaults": {
+    "default_live_capture_source": "zerodha",
+    "default_historical_backfill_source": "dhan",
+    "default_offline_research_source": "canonical_archive",
+    "require_explicit_source_on_run": true,
+    "require_explicit_lane_on_run": true,
+    "reject_cross_source_silent_merge": true,
+    "reject_missing_provenance": true
+  },
+  "backfill_policy": {
+    "enabled": true,
+    "shares_canonical_archive_with_live_capture": true,
+    "must_preserve_source_lineage": true,
+    "must_write_manifest": true,
+    "must_write_source_availability_summary": true,
+    "must_write_integrity_summary": true,
+    "must_not_overwrite_live_capture_manifest": true,
+    "must_use_distinct_run_id": true
+  },
+  "research_policy": {
+    "allow_raw_exports": true,
+    "allow_normalized_exports": true,
+    "allow_report_artifacts": true,
+    "allow_ml_ready_exports": true,
+    "must_label_usage_class": true,
+    "must_label_compute_stage": true,
+    "must_label_storage_target": true,
+    "must_not_silently_promote_to_production": true
+  }
+}
