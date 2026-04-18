@@ -1,0 +1,192 @@
+{
+  "schema_name": "MME Research Capture Research Policy",
+  "policy_version": "v1",
+  "schema_version_ref": "etc/research_capture/schema_version.json",
+  "field_dictionary_ref": "etc/research_capture/field_dictionary.csv",
+  "source_policy_ref": "etc/research_capture/source_policy.json",
+  "integrity_policy_ref": "etc/research_capture/integrity_policy.json",
+  "runtime_policy_ref": "etc/research_capture/runtime_policy.json",
+  "report_policy_ref": "etc/research_capture/report_policy.json",
+  "backfill_policy_ref": "etc/research_capture/backfill_policy.json",
+  "governance": {
+    "research_policy_required_for_offline_research": true,
+    "research_lane_is_separate_from_live_capture": true,
+    "research_lane_is_separate_from_historical_backfill": true,
+    "research_uses_canonical_archive_as_input": true,
+    "research_outputs_must_not_silently_modify_production_contract": true,
+    "research_outputs_must_not_silently_modify_canonical_archive": true,
+    "research_exports_require_explicit_run_id": true,
+    "research_exports_require_explicit_input_scope": true,
+    "research_exports_require_versions_snapshot": true,
+    "research_exports_require_usage_labels": true,
+    "research_exports_require_compute_stage_labels": true,
+    "research_exports_require_storage_target_labels": true,
+    "research_exports_require_manifestable_output_inventory": true,
+    "research_and_ml_exports_are_contract_governed": true
+  },
+  "input_contract": {
+    "primary_source": "canonical_archive",
+    "allowed_sources": [
+      "canonical_archive"
+    ],
+    "required_inputs": [
+      "run_id",
+      "input_scope",
+      "session_date_or_range",
+      "research_profile"
+    ],
+    "optional_inputs": [
+      "instrument_scope",
+      "feature_families",
+      "export_formats",
+      "notes"
+    ],
+    "reject_empty_input_scope": true,
+    "reject_unknown_input_source": true
+  },
+  "offline_lanes": {
+    "research_export": {
+      "enabled": true,
+      "writes_flat_exports": true,
+      "writes_summary_reports": true,
+      "writes_ml_ready_exports": true,
+      "writes_canonical_archive": false
+    },
+    "analysis_report": {
+      "enabled": true,
+      "writes_flat_exports": false,
+      "writes_summary_reports": true,
+      "writes_ml_ready_exports": false,
+      "writes_canonical_archive": false
+    },
+    "ml_export": {
+      "enabled": true,
+      "writes_flat_exports": true,
+      "writes_summary_reports": true,
+      "writes_ml_ready_exports": true,
+      "writes_canonical_archive": false
+    }
+  },
+  "allowed_export_formats": [
+    "json",
+    "csv",
+    "parquet"
+  ],
+  "required_output_files": {
+    "research_report": "research_report.json",
+    "research_inventory": "research_inventory.json",
+    "effective_inputs": "effective_inputs.json"
+  },
+  "optional_output_files": {
+    "flat_features_export": "features_export.parquet",
+    "flat_signals_export": "signals_export.parquet",
+    "ml_ready_export": "ml_ready_export.parquet",
+    "summary_csv": "research_summary.csv"
+  },
+  "required_report_sections": {
+    "research_report": [
+      "run_identity",
+      "input_scope_summary",
+      "versions_snapshot",
+      "output_inventory",
+      "export_summary",
+      "label_summary",
+      "operator_notes"
+    ],
+    "research_inventory": [
+      "run_id",
+      "produced_files",
+      "export_formats",
+      "row_counts",
+      "ts_utc"
+    ],
+    "effective_inputs": [
+      "run_id",
+      "input_source",
+      "input_scope",
+      "research_profile",
+      "instrument_scope",
+      "feature_families",
+      "ts_utc"
+    ]
+  },
+  "label_contract": {
+    "required_per_export": [
+      "usage_class",
+      "compute_stage",
+      "storage_target"
+    ],
+    "allowed_usage_class": [
+      "research_only",
+      "audit_only",
+      "production_candidate"
+    ],
+    "allowed_compute_stage": [
+      "raw_capture",
+      "live_compute",
+      "offline_compute"
+    ],
+    "allowed_storage_target": [
+      "archive_parquet",
+      "manifest_json",
+      "report_artifact"
+    ],
+    "label_summary_required": true
+  },
+  "ml_export_contract": {
+    "ml_ready_exports_allowed": true,
+    "ml_ready_exports_require_versions_snapshot": true,
+    "ml_ready_exports_require_input_scope_summary": true,
+    "ml_ready_exports_require_label_summary": true,
+    "ml_ready_exports_must_not_be_treated_as_production_truth": true,
+    "ml_ready_exports_require_explicit_operator_intent": true
+  },
+  "output_inventory_fields": [
+    "research_report_present",
+    "research_inventory_present",
+    "effective_inputs_present",
+    "features_export_present",
+    "signals_export_present",
+    "ml_ready_export_present",
+    "summary_csv_present"
+  ],
+  "export_summary_fields": [
+    "flat_export_written",
+    "summary_report_written",
+    "ml_export_written",
+    "export_formats",
+    "row_counts"
+  ],
+  "input_scope_summary_fields": [
+    "input_source",
+    "session_date_or_range",
+    "instrument_scope",
+    "feature_families",
+    "research_profile",
+    "notes"
+  ],
+  "operator_notes_fields": [
+    "notes",
+    "tags",
+    "authored_by",
+    "ts_utc"
+  ],
+  "failure_policy": {
+    "stop_on_unknown_input_source": true,
+    "stop_on_empty_input_scope": true,
+    "stop_on_missing_required_report_file": true,
+    "stop_on_missing_effective_inputs": true,
+    "stop_on_missing_versions_snapshot": true,
+    "stop_on_missing_label_summary": true,
+    "stop_on_export_write_failure": true
+  },
+  "reporting_behavior": {
+    "emit_pretty_json": true,
+    "emit_sorted_keys": true,
+    "emit_utf8": true,
+    "emit_terminal_newline": true,
+    "include_empty_lists_when_no_items": true,
+    "include_output_inventory_even_on_failure": true,
+    "include_effective_inputs_even_on_failure": true
+  }
+}
