@@ -1,24 +1,42 @@
 {
-  "archive_root": "run/research_capture",
-  "write_manifest_first": true,
-  "format": "parquet",
-  "compression": "snappy",
-  "write_mode": "append",
-  "separate_outputs": {
+  "schema_name": "MME Research Data Capture Schema",
+  "schema_version": "v1",
+  "chapter_name": "research_capture",
+  "archive_root_relative": "run/research_capture",
+  "archive_format": "parquet",
+  "archive_write_mode": "append",
+  "archive_compression": "snappy",
+  "primary_partitions": [
+    "session_date",
+    "instrument_type",
+    "underlying_symbol",
+    "expiry",
+    "option_type"
+  ],
+  "secondary_partitions": [
+    "strike"
+  ],
+  "dataset_output_filenames": {
     "ticks_fut": "ticks_fut.parquet",
     "ticks_opt": "ticks_opt.parquet",
     "signals_audit": "signals_audit.parquet",
     "runtime_audit": "runtime_audit.parquet"
   },
-  "session_files": {
+  "session_file_filenames": {
     "manifest": "manifest.json",
     "source_availability": "source_availability.json",
     "integrity_summary": "integrity_summary.json"
   },
-  "rules": [
-    "redis is hot/latest/live only",
-    "archive parquet is long-term research/replay truth",
-    "store hard-to-reconstruct data as raw capture",
-    "no silent promotion of research fields into production doctrine"
+  "storage_policy": {
+    "hot_layer": "redis_latest_and_streams_only",
+    "cold_layer": "partitioned_parquet_archive",
+    "manifest_layer": "json_sidecar_files"
+  },
+  "governance_laws": [
+    "raw_first_light_live_derived_second_heavy_offline_third",
+    "broker_agnostic_schema_with_broker_specific_adapters",
+    "recorded_not_strategy_approved",
+    "derived_not_production_used",
+    "researched_not_contract_changed"
   ]
 }
