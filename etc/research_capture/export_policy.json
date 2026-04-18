@@ -1,0 +1,240 @@
+{
+  "schema_name": "MME Research Capture Export Policy",
+  "policy_version": "v1",
+  "schema_version_ref": "etc/research_capture/schema_version.json",
+  "field_dictionary_ref": "etc/research_capture/field_dictionary.csv",
+  "source_policy_ref": "etc/research_capture/source_policy.json",
+  "integrity_policy_ref": "etc/research_capture/integrity_policy.json",
+  "runtime_policy_ref": "etc/research_capture/runtime_policy.json",
+  "report_policy_ref": "etc/research_capture/report_policy.json",
+  "backfill_policy_ref": "etc/research_capture/backfill_policy.json",
+  "research_policy_ref": "etc/research_capture/research_policy.json",
+  "governance": {
+    "export_policy_required_for_all_export_writers": true,
+    "exports_are_contract_governed": true,
+    "exports_must_not_silently_modify_canonical_archive": true,
+    "exports_must_not_silently_modify_production_contract": true,
+    "exports_require_run_id": true,
+    "exports_require_versions_snapshot": true,
+    "exports_require_output_inventory": true,
+    "exports_require_label_propagation": true,
+    "exports_require_utf8_or_binary_safe_encoding": true,
+    "exports_require_explicit_export_family": true,
+    "exports_require_explicit_export_format": true,
+    "fail_closed_on_unknown_export_family": true,
+    "fail_closed_on_unknown_export_format": true
+  },
+  "allowed_export_families": {
+    "runtime_report": {
+      "enabled": true,
+      "allowed_formats": [
+        "json"
+      ],
+      "writes_archive": false
+    },
+    "backfill_report": {
+      "enabled": true,
+      "allowed_formats": [
+        "json"
+      ],
+      "writes_archive": false
+    },
+    "research_flat": {
+      "enabled": true,
+      "allowed_formats": [
+        "parquet",
+        "csv"
+      ],
+      "writes_archive": false
+    },
+    "research_summary": {
+      "enabled": true,
+      "allowed_formats": [
+        "json",
+        "csv"
+      ],
+      "writes_archive": false
+    },
+    "ml_ready": {
+      "enabled": true,
+      "allowed_formats": [
+        "parquet",
+        "csv"
+      ],
+      "writes_archive": false
+    },
+    "audit_export": {
+      "enabled": true,
+      "allowed_formats": [
+        "parquet",
+        "csv",
+        "json"
+      ],
+      "writes_archive": false
+    }
+  },
+  "format_contract": {
+    "allowed_formats": [
+      "json",
+      "csv",
+      "parquet"
+    ],
+    "json_pretty": true,
+    "json_sorted_keys": true,
+    "json_terminal_newline": true,
+    "csv_header_required": true,
+    "csv_utf8_required": true,
+    "parquet_binary_required": true,
+    "parquet_schema_stable_required": true
+  },
+  "required_common_fields": [
+    "run_id",
+    "schema_version",
+    "normalization_version",
+    "derived_version",
+    "policy_version",
+    "usage_class",
+    "compute_stage",
+    "storage_target",
+    "ts_utc"
+  ],
+  "required_inventory_fields": [
+    "export_family",
+    "export_format",
+    "filename",
+    "row_count",
+    "bytes_written",
+    "content_kind",
+    "ts_utc"
+  ],
+  "required_effective_inputs_fields": [
+    "run_id",
+    "export_family",
+    "export_format",
+    "input_source",
+    "input_scope",
+    "research_profile",
+    "instrument_scope",
+    "ts_utc"
+  ],
+  "export_files": {
+    "runtime_report_json": "run_report.json",
+    "verify_report_json": "verify_report.json",
+    "source_availability_json": "source_availability.json",
+    "integrity_summary_json": "integrity_summary.json",
+    "research_report_json": "research_report.json",
+    "research_inventory_json": "research_inventory.json",
+    "effective_inputs_json": "effective_inputs.json",
+    "features_export_parquet": "features_export.parquet",
+    "signals_export_parquet": "signals_export.parquet",
+    "ml_ready_export_parquet": "ml_ready_export.parquet",
+    "audit_export_parquet": "audit_export.parquet",
+    "research_summary_csv": "research_summary.csv"
+  },
+  "content_contract": {
+    "runtime_report_json": {
+      "content_kind": "report_artifact",
+      "required_family": "runtime_report",
+      "required_format": "json"
+    },
+    "verify_report_json": {
+      "content_kind": "report_artifact",
+      "required_family": "runtime_report",
+      "required_format": "json"
+    },
+    "source_availability_json": {
+      "content_kind": "report_artifact",
+      "required_family": "runtime_report",
+      "required_format": "json"
+    },
+    "integrity_summary_json": {
+      "content_kind": "report_artifact",
+      "required_family": "runtime_report",
+      "required_format": "json"
+    },
+    "research_report_json": {
+      "content_kind": "report_artifact",
+      "required_family": "research_summary",
+      "required_format": "json"
+    },
+    "research_inventory_json": {
+      "content_kind": "report_artifact",
+      "required_family": "research_summary",
+      "required_format": "json"
+    },
+    "effective_inputs_json": {
+      "content_kind": "manifest_json",
+      "required_family": "research_summary",
+      "required_format": "json"
+    },
+    "features_export_parquet": {
+      "content_kind": "report_artifact",
+      "required_family": "research_flat",
+      "required_format": "parquet"
+    },
+    "signals_export_parquet": {
+      "content_kind": "report_artifact",
+      "required_family": "research_flat",
+      "required_format": "parquet"
+    },
+    "ml_ready_export_parquet": {
+      "content_kind": "report_artifact",
+      "required_family": "ml_ready",
+      "required_format": "parquet"
+    },
+    "audit_export_parquet": {
+      "content_kind": "report_artifact",
+      "required_family": "audit_export",
+      "required_format": "parquet"
+    },
+    "research_summary_csv": {
+      "content_kind": "report_artifact",
+      "required_family": "research_summary",
+      "required_format": "csv"
+    }
+  },
+  "label_propagation_rules": {
+    "usage_class_required": true,
+    "compute_stage_required": true,
+    "storage_target_required": true,
+    "allowed_usage_class": [
+      "research_only",
+      "audit_only",
+      "production_candidate"
+    ],
+    "allowed_compute_stage": [
+      "raw_capture",
+      "live_compute",
+      "offline_compute"
+    ],
+    "allowed_storage_target": [
+      "archive_parquet",
+      "manifest_json",
+      "report_artifact"
+    ]
+  },
+  "row_count_policy": {
+    "row_count_required_for_tabular_exports": true,
+    "row_count_required_for_inventory": true,
+    "allow_zero_row_json_reports": true,
+    "allow_zero_row_tabular_exports": false,
+    "bytes_written_required": true
+  },
+  "ordering_policy": {
+    "json_key_sorting_required": true,
+    "csv_column_order_stable": true,
+    "parquet_column_order_stable": true,
+    "inventory_order_by_filename": true,
+    "inventory_order_by_family_then_format": true
+  },
+  "failure_policy": {
+    "stop_on_unknown_export_family": true,
+    "stop_on_unknown_export_format": true,
+    "stop_on_missing_common_fields": true,
+    "stop_on_missing_inventory_fields": true,
+    "stop_on_missing_effective_inputs_fields": true,
+    "stop_on_missing_label_fields": true,
+    "stop_on_write_failure": true,
+    "stop_on_zero_row_tabular_export": true
+  }
+}
