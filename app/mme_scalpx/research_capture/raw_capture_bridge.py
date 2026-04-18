@@ -30,7 +30,6 @@ Design laws
 
 from __future__ import annotations
 
-import inspect
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -70,7 +69,11 @@ from app.mme_scalpx.research_capture.health import (
     build_capture_health_snapshot,
     health_snapshot_to_dict,
 )
-from app.mme_scalpx.research_capture.router import build_route_plan
+from app.mme_scalpx.research_capture.router import (
+    ROUTE_RUNTIME_AUDIT,
+    ROUTE_SIGNALS_AUDIT,
+    build_route_plan,
+)
 from app.mme_scalpx.research_capture.utils import atomic_write_json
 
 
@@ -317,33 +320,6 @@ def _default_row_batch(
     return rows
 
 
-def _build_capture_record_via_models(row: Mapping[str, Any]):
-    try:
-        from app.mme_scalpx.research_capture import models as rc_models
-    except Exception as exc:
-        raise RawCaptureBridgeError(f"unable to import research_capture.models: {exc!r}") from exc
-
-    record_type = getattr(rc_models, "CaptureRecord", None)
-    if record_type is None:
-        raise RawCaptureBridgeError("research_capture.models.CaptureRecord not found")
-
-    if hasattr(record_type, "from_mapping"):
-        return record_type.from_mapping(dict(row))
-
-    if hasattr(record_type, "model_validate"):
-        return record_type.model_validate(dict(row))
-
-    if hasattr(record_type, "parse_obj"):
-        return record_type.parse_obj(dict(row))
-
-    try:
-        return record_type(**dict(row))
-    except TypeError:
-        params = inspect.signature(record_type).parameters
-        filtered = {key: value for key, value in dict(row).items() if key in params}
-        return record_type(**filtered)
-
-
 def _build_capture_record_via_normalizer(row: Mapping[str, Any]):
     from app.mme_scalpx.research_capture.normalizer import (
         InstrumentReference,
@@ -534,9 +510,6 @@ def run_first_real_raw_capture(
     config_registry_path: Path | str = DEFAULT_CONFIG_REGISTRY_PATH,
     project_root: Path | None = None,
 ) -> RawCaptureBridgeResult:
-    """
-    Execute the first real raw-capture write path through the frozen research-data stack.
-    """
     reg = registry if registry is not None else load_config_registry(
         config_registry_path,
         project_root=project_root,
@@ -594,6 +567,8 @@ def run_first_real_raw_capture(
         compression="snappy",
     )
 
+    route_plan = build_route_plan(records)
+
     source_availability = build_source_availability_from_records(
         records,
         extra_sources={seed.source: True},
@@ -619,6 +594,7 @@ def run_first_real_raw_capture(
         notes=("first_real_raw_capture",),
     )
     validate_manifest_payload(manifest_to_dict(manifest))
+
     manifest_paths = write_manifest_files(
         manifest,
         archive_root_relative="run/research_capture",
@@ -631,7 +607,6 @@ def run_first_real_raw_capture(
         dataset_row_counts=dataset_row_counts,
         dataset_bytes_written=dataset_bytes_written,
     )
-    route_plan = build_route_plan(records)
 
     integrity_report = build_integrity_report(
         session_date=capture_session_date,
@@ -658,22 +633,29 @@ def run_first_real_raw_capture(
 
     primary_capture_target = _first_actual_capture_target(dataset_file_paths)
 
-    written_files = []
+    written_files: list[RawCaptureWrittenFile] = []
+    seen_paths: set[str] = set()
+
     for paths in dataset_file_paths.values():
         for raw_path in paths:
-            p = Path(raw_path).resolve()
-            written_files.append(RawCaptureWrittenFile(name=p.name, path=str(p)))
+            p = str(Path(raw_path).resolve())
+            if p in seen_paths:
+                continue
+            seen_paths.add(p)
+            written_files.append(RawCaptureWrittenFile(name=Path(p).name, path=p))
 
-    for key, value in manifest_paths.items():
-        p = Path(value).resolve()
-        written_files.append(RawCaptureWrittenFile(name=p.name, path=str(p)))
+    for _, value in manifest_paths.items():
+        p = str(Path(value).resolve())
+        if p in seen_paths:
+            continue
+        seen_paths.add(p)
+        written_files.append(RawCaptureWrittenFile(name=Path(p).name, path=p))
 
-    written_files.append(
-        RawCaptureWrittenFile(name=Path(integrity_report_path).name, path=str(integrity_report_path))
-    )
-    written_files.append(
-        RawCaptureWrittenFile(name=Path(health_snapshot_path).name, path=str(health_snapshot_path))
-    )
+    for extra_path in (str(integrity_report_path), str(health_snapshot_path)):
+        if extra_path in seen_paths:
+            continue
+        seen_paths.add(extra_path)
+        written_files.append(RawCaptureWrittenFile(name=Path(extra_path).name, path=extra_path))
 
     return RawCaptureBridgeResult(
         entrypoint=manifest_result.entrypoint,
