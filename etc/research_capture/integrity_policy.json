@@ -1,0 +1,161 @@
+{
+  "schema_name": "MME Research Capture Integrity Policy",
+  "policy_version": "v1",
+  "schema_version_ref": "etc/research_capture/schema_version.json",
+  "field_dictionary_ref": "etc/research_capture/field_dictionary.csv",
+  "source_policy_ref": "etc/research_capture/source_policy.json",
+  "archive_config_ref": "etc/research_capture/archive_config.json",
+  "partitions_ref": "etc/research_capture/partitions.json",
+  "governance": {
+    "integrity_required_for_every_run": true,
+    "integrity_summary_mandatory": true,
+    "source_availability_summary_mandatory": true,
+    "manifest_mandatory": true,
+    "fail_closed_on_missing_required_check": true,
+    "fail_closed_on_unknown_check": true,
+    "record_all_waivers_explicitly": true,
+    "waiver_does_not_equal_pass": true,
+    "capture_integrity_separate_from_strategy_truth": true,
+    "research_integrity_does_not_modify_production_contract": true
+  },
+  "verdicts": {
+    "pass": "PASS",
+    "warn": "WARN",
+    "fail": "FAIL"
+  },
+  "required_checks": [
+    "schema_version_present",
+    "normalization_version_present",
+    "derived_version_present",
+    "manifest_present",
+    "source_availability_present",
+    "integrity_summary_present",
+    "session_date_present",
+    "exchange_ts_present",
+    "recv_ts_ns_present",
+    "process_ts_ns_present",
+    "instrument_identity_present",
+    "ltp_present",
+    "best_bid_ask_present",
+    "depth_shape_valid",
+    "monotonic_event_seq",
+    "non_negative_latency",
+    "acceptable_latency_budget",
+    "acceptable_gap_budget",
+    "no_crossed_book_unless_flagged",
+    "no_locked_book_unless_flagged",
+    "source_provenance_present",
+    "partition_keys_resolvable"
+  ],
+  "thresholds": {
+    "latency_ns_warn": 50000000,
+    "latency_ns_fail": 250000000,
+    "gap_from_prev_tick_ms_warn": 2000.0,
+    "gap_from_prev_tick_ms_fail": 10000.0,
+    "missing_depth_ratio_warn": 0.05,
+    "missing_depth_ratio_fail": 0.20,
+    "missing_oi_ratio_warn": 0.05,
+    "missing_oi_ratio_fail": 0.20,
+    "crossed_book_ratio_warn": 0.001,
+    "crossed_book_ratio_fail": 0.010,
+    "locked_book_ratio_warn": 0.010,
+    "locked_book_ratio_fail": 0.050,
+    "stale_tick_ratio_warn": 0.05,
+    "stale_tick_ratio_fail": 0.20,
+    "out_of_order_event_ratio_warn": 0.001,
+    "out_of_order_event_ratio_fail": 0.010,
+    "null_required_field_ratio_warn": 0.001,
+    "null_required_field_ratio_fail": 0.010
+  },
+  "required_columns": {
+    "timing_identity": [
+      "session_date",
+      "exchange_ts",
+      "recv_ts_ns",
+      "process_ts_ns",
+      "event_seq",
+      "snapshot_id"
+    ],
+    "instrument_identity": [
+      "broker_name",
+      "exchange",
+      "exchange_segment",
+      "instrument_token",
+      "tradingsymbol",
+      "symbol",
+      "instrument_type"
+    ],
+    "market_core": [
+      "ltp",
+      "volume",
+      "oi",
+      "best_bid",
+      "best_ask",
+      "best_bid_qty",
+      "best_ask_qty"
+    ],
+    "audit_flags": [
+      "is_stale_tick",
+      "missing_depth_flag",
+      "missing_oi_flag",
+      "crossed_book_flag",
+      "locked_book_flag",
+      "integrity_flags"
+    ],
+    "versions": [
+      "schema_version",
+      "normalization_version",
+      "derived_version"
+    ]
+  },
+  "artifact_requirements": {
+    "required_run_files": [
+      "manifest.json",
+      "source_availability.json",
+      "integrity_summary.json"
+    ],
+    "required_data_outputs_minimum_one_of": [
+      "ticks_fut.parquet",
+      "ticks_opt.parquet"
+    ],
+    "recommended_run_files": [
+      "runtime_audit.parquet",
+      "signals_audit.parquet"
+    ]
+  },
+  "waiver_policy": {
+    "allow_waivers": true,
+    "allowed_only_for": [
+      "missing_depth_ratio_warn",
+      "missing_oi_ratio_warn",
+      "locked_book_ratio_warn",
+      "crossed_book_ratio_warn"
+    ],
+    "disallowed_for": [
+      "manifest_present",
+      "source_availability_present",
+      "integrity_summary_present",
+      "schema_version_present",
+      "normalization_version_present",
+      "derived_version_present",
+      "source_provenance_present",
+      "partition_keys_resolvable"
+    ],
+    "waiver_record_fields": [
+      "check_name",
+      "reason",
+      "approved_by",
+      "ts_utc",
+      "scope"
+    ]
+  },
+  "reporting": {
+    "emit_integrity_summary_json": true,
+    "emit_integrity_counts": true,
+    "emit_failed_checks": true,
+    "emit_warned_checks": true,
+    "emit_waived_checks": true,
+    "emit_threshold_snapshot": true,
+    "emit_source_breakdown": true
+  }
+}
