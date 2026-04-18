@@ -7,9 +7,9 @@ Ownership
 ---------
 This module OWNS:
 - taking the frozen manifest/capture-plan stack and preparing a first real raw record batch
-- normalizing a minimal raw batch into canonical dict rows
+- coercing a minimal raw batch into CaptureRecord objects
 - routing the batch into the frozen archive writer
-- updating seeded manifest/source/integrity surfaces after the first raw write
+- building canonical manifest / integrity / health surfaces from the real write result
 - returning a deterministic raw-capture result
 
 This module DOES NOT own:
@@ -24,22 +24,21 @@ Design laws
 - raw capture first
 - light live-derived later
 - heavy offline-derived later
-- use frozen archive/integrity/health surfaces, not ad hoc writes
-- write one narrow real raw path only
+- use frozen archive/manifest/integrity/health surfaces, not ad hoc writes
+- no jsonl fallback
 """
 
 from __future__ import annotations
 
-import json
+import inspect
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 from app.mme_scalpx.research_capture.capture_plan import (
     CapturePlan,
     build_capture_plan,
-    build_capture_plan_from_operator_inputs,
 )
 from app.mme_scalpx.research_capture.config_loader import (
     ConfigRegistry,
@@ -50,21 +49,29 @@ from app.mme_scalpx.research_capture.manifest_materializer import (
     ManifestMaterializationResult,
     build_and_materialize_manifest_seed,
 )
-
-try:
-    from app.mme_scalpx.research_capture.archive_writer import ArchiveWriter  # type: ignore
-except Exception:
-    ArchiveWriter = None  # type: ignore
-
-try:
-    from app.mme_scalpx.research_capture.integrity import IntegrityEvaluator  # type: ignore
-except Exception:
-    IntegrityEvaluator = None  # type: ignore
-
-try:
-    from app.mme_scalpx.research_capture.health import HealthSnapshot  # type: ignore
-except Exception:
-    HealthSnapshot = None  # type: ignore
+from app.mme_scalpx.research_capture.manifest import (
+    build_archive_outputs_from_counts,
+    build_integrity_summary,
+    build_session_manifest,
+    build_source_availability_from_records,
+    manifest_to_dict,
+    validate_manifest_payload,
+)
+from app.mme_scalpx.research_capture.archive_writer import (
+    ArchiveWriteResult,
+    write_capture_records,
+    write_manifest_files,
+)
+from app.mme_scalpx.research_capture.integrity import (
+    build_integrity_report,
+    integrity_report_to_dict,
+)
+from app.mme_scalpx.research_capture.health import (
+    build_capture_health_snapshot,
+    health_snapshot_to_dict,
+)
+from app.mme_scalpx.research_capture.router import build_route_plan
+from app.mme_scalpx.research_capture.utils import atomic_write_json
 
 
 class RawCaptureBridgeError(RuntimeError):
@@ -117,288 +124,394 @@ def _utc_now_z() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def _write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-
-
 def _require_nonempty_str(value: Any, name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise RawCaptureBridgeError(f"{name} must be a non-empty string")
     return value.strip()
 
 
-def _primary_capture_target(capture_plan: CapturePlan) -> Path:
-    if not capture_plan.required_outputs:
-        raise RawCaptureBridgeError("capture_plan has no required outputs")
-    first = capture_plan.required_outputs[0]
-    return Path(first.path).resolve()
+def _capture_session_date(seed) -> str:
+    if seed.session_date:
+        return seed.session_date
+    if seed.session_dates:
+        return seed.session_dates[0]
+    if seed.start_date:
+        return seed.start_date
+    if seed.end_date:
+        return seed.end_date
+    return date.today().isoformat()
 
 
-def _default_batch(
+def _report_root(manifest_result: ManifestMaterializationResult) -> Path:
+    return Path(manifest_result.manifest_seed.metadata["report_root"]).resolve()
+
+
+def _default_row_batch(
     *,
     source: str,
-    session_date: str | None,
+    session_date: str,
     instrument_scope: str | None,
 ) -> list[dict[str, Any]]:
-    base_ts = "2026-04-18T09:15:00Z"
     symbol = instrument_scope or "NIFTY_OPTIONS"
+    common = {
+        "session_date": session_date,
+        "exchange": "NSE",
+        "exchange_segment": "NFO",
+        "symbol_root": symbol,
+        "underlying_symbol": "NIFTY",
+        "tick_size": 0.05,
+        "lot_size": 75,
+        "expiry": "2026-04-23",
+        "expiry_type": "weekly",
+        "freeze_qty": 1800,
+        "strike_step": 50,
+        "spot": 22010.0,
+        "fut_ltp": 22020.0,
+        "trading_minute_index": 1,
+        "is_preopen": False,
+        "is_postclose": False,
+        "weekday": 5,
+        "month": 4,
+        "spread": 0.10,
+        "spread_pct": 0.001,
+        "half_spread": 0.05,
+        "nof": 0.0,
+        "vwap": 100.0,
+        "vwap_dist": 0.0,
+        "is_stale_tick": False,
+        "missing_depth_flag": False,
+        "missing_oi_flag": False,
+        "crossed_book_flag": False,
+        "locked_book_flag": False,
+        "integrity_flags": [],
+        "schema_version": "v1",
+        "normalization_version": "v1",
+        "derived_version": "v1",
+        "heartbeat_ok": True,
+        "runtime_mode": "first_real_raw_capture",
+        "candidate_found": False,
+        "blocker_found": False,
+        "regime_ok": False,
+        "broker_name": source,
+    }
+
     rows: list[dict[str, Any]] = []
-    for idx, px in enumerate((100.0, 100.5, 101.0), start=1):
-        rows.append(
-            {
-                "session_date": session_date or "2026-04-18",
-                "exchange_ts": 1776464700000000000 + idx,
-                "recv_ts_ns": 1776464700000001000 + idx,
-                "process_ts_ns": 1776464700000002000 + idx,
-                "event_seq": idx,
-                "snapshot_id": f"seed-snapshot-{idx}",
-                "latency_ns": 1000,
-                "gap_from_prev_tick_ms": 0.0,
-                "broker_name": source,
-                "exchange": "NSE",
-                "exchange_segment": "NFO",
-                "instrument_token": f"seed-token-{idx}",
-                "tradingsymbol": f"{symbol}-SEED-{idx}",
-                "symbol": symbol,
-                "contract_name": f"{symbol}-CONTRACT",
-                "instrument_type": "OPT",
-                "symbol_root": symbol,
-                "underlying_symbol": "NIFTY",
-                "option_type": "CE",
-                "strike": 22000.0,
-                "expiry": "2026-04-23",
-                "tick_size": 0.05,
-                "lot_size": 75,
-                "ltp": px,
-                "volume": 100 * idx,
-                "oi": 1000 * idx,
-                "best_bid": px - 0.05,
-                "best_ask": px + 0.05,
-                "best_bid_qty": 10 * idx,
-                "best_ask_qty": 12 * idx,
-                "mid_price": px,
-                "microprice": px,
-                "bid_prices": [px - 0.05],
-                "bid_qty": [10 * idx],
-                "ask_prices": [px + 0.05],
-                "ask_qty": [12 * idx],
-                "depth_levels_present_bid": 1,
-                "depth_levels_present_ask": 1,
-                "spot": 22010.0,
-                "fut_ltp": 22020.0,
-                "trading_minute_index": 1,
-                "is_preopen": False,
-                "is_postclose": False,
-                "weekday": 5,
-                "month": 4,
-                "spread": 0.10,
-                "spread_pct": 0.001,
-                "half_spread": 0.05,
-                "sum_bid_qty": 10 * idx,
-                "sum_ask_qty": 12 * idx,
-                "nof": 0.0,
-                "vwap": px,
-                "vwap_dist": 0.0,
-                "premium": px,
-                "strike_dist_pts": 10.0,
-                "is_stale_tick": False,
-                "missing_depth_flag": False,
-                "missing_oi_flag": False,
-                "crossed_book_flag": False,
-                "locked_book_flag": False,
-                "integrity_flags": [],
-                "schema_version": "v1",
-                "normalization_version": "v1",
-                "derived_version": "v1",
-                "heartbeat_ok": True,
-                "runtime_mode": "seeded_raw_capture",
-                "candidate_found": False,
-                "blocker_found": False,
-                "regime_ok": False,
-                "ts_utc": base_ts,
-            }
-        )
+
+    rows.append(
+        {
+            **common,
+            "exchange_ts": 1776464700000000001,
+            "recv_ts_ns": 1776464700000001001,
+            "process_ts_ns": 1776464700000002001,
+            "event_seq": 1,
+            "snapshot_id": "seed-fut-1",
+            "instrument_token": "seed-fut-1",
+            "tradingsymbol": f"{symbol}-FUT",
+            "symbol": f"{symbol}-FUT",
+            "contract_name": f"{symbol}-FUT-CONTRACT",
+            "instrument_type": "FUT",
+            "option_type": None,
+            "strike": None,
+            "latency_ns": 1000,
+            "gap_from_prev_tick_ms": 0,
+            "ltp": 22020.0,
+            "volume": 100,
+            "oi": 1000,
+            "best_bid": 22019.95,
+            "best_ask": 22020.05,
+            "best_bid_qty": 10,
+            "best_ask_qty": 12,
+            "mid_price": 22020.0,
+            "microprice": 22020.0,
+            "bid_prices": [22019.95],
+            "bid_qty": [10],
+            "ask_prices": [22020.05],
+            "ask_qty": [12],
+            "depth_levels_present_bid": 1,
+            "depth_levels_present_ask": 1,
+            "sum_bid_qty": 10,
+            "sum_ask_qty": 12,
+            "premium": 22020.0,
+            "strike_dist_pts": 0.0,
+        }
+    )
+
+    rows.append(
+        {
+            **common,
+            "exchange_ts": 1776464700000000002,
+            "recv_ts_ns": 1776464700000001002,
+            "process_ts_ns": 1776464700000002002,
+            "event_seq": 2,
+            "snapshot_id": "seed-opt-1",
+            "instrument_token": "seed-opt-1",
+            "tradingsymbol": f"{symbol}-CE-22000",
+            "symbol": f"{symbol}-CE-22000",
+            "contract_name": f"{symbol}-CE-22000-CONTRACT",
+            "instrument_type": "CE",
+            "option_type": "CE",
+            "strike": 22000,
+            "latency_ns": 1000,
+            "gap_from_prev_tick_ms": 0,
+            "ltp": 100.0,
+            "volume": 200,
+            "oi": 2000,
+            "best_bid": 99.95,
+            "best_ask": 100.05,
+            "best_bid_qty": 20,
+            "best_ask_qty": 22,
+            "mid_price": 100.0,
+            "microprice": 100.0,
+            "bid_prices": [99.95],
+            "bid_qty": [20],
+            "ask_prices": [100.05],
+            "ask_qty": [22],
+            "depth_levels_present_bid": 1,
+            "depth_levels_present_ask": 1,
+            "sum_bid_qty": 20,
+            "sum_ask_qty": 22,
+            "premium": 100.0,
+            "strike_dist_pts": 10.0,
+        }
+    )
+
+    rows.append(
+        {
+            **common,
+            "exchange_ts": 1776464700000000003,
+            "recv_ts_ns": 1776464700000001003,
+            "process_ts_ns": 1776464700000002003,
+            "event_seq": 3,
+            "snapshot_id": "seed-opt-2",
+            "instrument_token": "seed-opt-2",
+            "tradingsymbol": f"{symbol}-PE-22000",
+            "symbol": f"{symbol}-PE-22000",
+            "contract_name": f"{symbol}-PE-22000-CONTRACT",
+            "instrument_type": "PE",
+            "option_type": "PE",
+            "strike": 22000,
+            "latency_ns": 1000,
+            "gap_from_prev_tick_ms": 0,
+            "ltp": 101.0,
+            "volume": 300,
+            "oi": 3000,
+            "best_bid": 100.95,
+            "best_ask": 101.05,
+            "best_bid_qty": 30,
+            "best_ask_qty": 32,
+            "mid_price": 101.0,
+            "microprice": 101.0,
+            "bid_prices": [100.95],
+            "bid_qty": [30],
+            "ask_prices": [101.05],
+            "ask_qty": [32],
+            "depth_levels_present_bid": 1,
+            "depth_levels_present_ask": 1,
+            "sum_bid_qty": 30,
+            "sum_ask_qty": 32,
+            "premium": 101.0,
+            "strike_dist_pts": 10.0,
+        }
+    )
+
     return rows
 
 
-def _write_jsonl_fallback(path: Path, rows: Sequence[Mapping[str, Any]]) -> Path:
-    fallback_path = path.with_suffix(path.suffix + ".jsonl")
-    fallback_path.parent.mkdir(parents=True, exist_ok=True)
-    with fallback_path.open("w", encoding="utf-8") as fh:
-        for row in rows:
-            fh.write(json.dumps(dict(row), ensure_ascii=False, sort_keys=True) + "\n")
-    return fallback_path.resolve()
+def _build_capture_record_via_models(row: Mapping[str, Any]):
+    try:
+        from app.mme_scalpx.research_capture import models as rc_models
+    except Exception as exc:
+        raise RawCaptureBridgeError(f"unable to import research_capture.models: {exc!r}") from exc
+
+    record_type = getattr(rc_models, "CaptureRecord", None)
+    if record_type is None:
+        raise RawCaptureBridgeError("research_capture.models.CaptureRecord not found")
+
+    if hasattr(record_type, "from_mapping"):
+        return record_type.from_mapping(dict(row))
+
+    if hasattr(record_type, "model_validate"):
+        return record_type.model_validate(dict(row))
+
+    if hasattr(record_type, "parse_obj"):
+        return record_type.parse_obj(dict(row))
+
+    try:
+        return record_type(**dict(row))
+    except TypeError:
+        params = inspect.signature(record_type).parameters
+        filtered = {key: value for key, value in dict(row).items() if key in params}
+        return record_type(**filtered)
 
 
-def _archive_write(
-    target_path: Path,
-    rows: Sequence[Mapping[str, Any]],
-) -> Path:
-    """
-    Write a first real raw capture output.
-
-    Preference:
-    1. frozen ArchiveWriter if importable and usable
-    2. deterministic jsonl fallback beside the canonical parquet target
-    """
-    target_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if ArchiveWriter is not None:
-        try:
-            writer = ArchiveWriter()  # type: ignore[call-arg]
-            if hasattr(writer, "write_rows"):
-                writer.write_rows(str(target_path), list(rows))  # type: ignore[attr-defined]
-                return target_path.resolve()
-            if hasattr(writer, "write_parquet"):
-                writer.write_parquet(str(target_path), list(rows))  # type: ignore[attr-defined]
-                return target_path.resolve()
-        except Exception:
-            pass
-
-    return _write_jsonl_fallback(target_path, rows)
-
-
-def _seeded_integrity_summary(
-    manifest_result: ManifestMaterializationResult,
-    rows: Sequence[Mapping[str, Any]],
-    primary_capture_target: str,
-) -> dict[str, Any]:
-    seed = manifest_result.manifest_seed
-    payload = {
-        "integrity_summary_kind": "research_capture_integrity_seed",
-        "seeded": False,
-        "run_id": seed.run_id,
-        "lane": seed.lane,
-        "source": seed.source,
-        "session_date": seed.session_date,
-        "verdict": "PASS",
-        "failed_checks": [],
-        "warned_checks": [],
-        "waived_checks": [],
-        "threshold_snapshot": {},
-        "capture_rows_written": len(rows),
-        "primary_capture_target": primary_capture_target,
-        "versions_snapshot": dict(seed.versions_snapshot),
-        "ts_utc": _utc_now_z(),
-    }
-
-    if IntegrityEvaluator is not None:
-        try:
-            evaluator = IntegrityEvaluator()  # type: ignore[call-arg]
-            if hasattr(evaluator, "evaluate_rows"):
-                evaluated = evaluator.evaluate_rows(list(rows))  # type: ignore[attr-defined]
-                if isinstance(evaluated, dict):
-                    payload.update(evaluated)
-        except Exception:
-            pass
-
-    return payload
-
-
-def _seeded_source_availability(
-    manifest_result: ManifestMaterializationResult,
-    primary_capture_target: str,
-) -> dict[str, Any]:
-    seed = manifest_result.manifest_seed
-    return {
-        "source_availability_kind": "research_capture_source_availability_seed",
-        "seeded": False,
-        "run_id": seed.run_id,
-        "lane": seed.lane,
-        "source": seed.source,
-        "session_date": seed.session_date,
-        "sources_checked": [seed.source],
-        "available_sources": [seed.source],
-        "missing_sources": [],
-        "availability_verdict": "PASS",
-        "primary_capture_target": primary_capture_target,
-        "versions_snapshot": dict(seed.versions_snapshot),
-        "ts_utc": _utc_now_z(),
-    }
-
-
-def _seeded_manifest(
-    manifest_result: ManifestMaterializationResult,
-    rows: Sequence[Mapping[str, Any]],
-    primary_capture_target: str,
-) -> dict[str, Any]:
-    seed = manifest_result.manifest_seed
-    return {
-        "manifest_kind": "research_capture_manifest_seed",
-        "manifest_version": "v1",
-        "seeded": False,
-        "run_id": seed.run_id,
-        "entrypoint": seed.entrypoint,
-        "lane": seed.lane,
-        "source": seed.source,
-        "session_date": seed.session_date,
-        "start_date": seed.start_date,
-        "end_date": seed.end_date,
-        "session_dates": list(seed.session_dates),
-        "input_scope": seed.input_scope,
-        "versions_snapshot": dict(seed.versions_snapshot),
-        "capture_rows_written": len(rows),
-        "primary_capture_target": primary_capture_target,
-        "metadata": dict(seed.metadata),
-    }
-
-
-def _health_payload(
-    manifest_result: ManifestMaterializationResult,
-    rows: Sequence[Mapping[str, Any]],
-    primary_capture_target: str,
-) -> dict[str, Any]:
-    seed = manifest_result.manifest_seed
-    payload = {
-        "status": "OK",
-        "service": "research_capture_raw_capture_bridge",
-        "run_id": seed.run_id,
-        "lane": seed.lane,
-        "source": seed.source,
-        "ts_utc": _utc_now_z(),
-        "message": "first_real_raw_capture_written",
-        "rows_written": len(rows),
-        "primary_capture_target": primary_capture_target,
-    }
-
-    if HealthSnapshot is not None:
-        try:
-            snap = HealthSnapshot()  # type: ignore[call-arg]
-            if hasattr(snap, "to_dict"):
-                base = snap.to_dict()  # type: ignore[attr-defined]
-                if isinstance(base, dict):
-                    base.update(payload)
-                    payload = base
-        except Exception:
-            pass
-
-    return payload
-
-
-def _write_seeded_updates(
-    manifest_result: ManifestMaterializationResult,
-    rows: Sequence[Mapping[str, Any]],
-    primary_capture_target: str,
-) -> tuple[Path, Path, Path, Path]:
-    seed = manifest_result.manifest_seed
-    manifest_path = Path(seed.manifest_path).resolve()
-    source_availability_path = Path(seed.source_availability_path).resolve()
-    integrity_summary_path = Path(seed.integrity_summary_path).resolve()
-    health_path = (Path(seed.metadata["report_root"]).resolve() / "health_snapshot.json").resolve()
-
-    _write_json(manifest_path, _seeded_manifest(manifest_result, rows, primary_capture_target))
-    _write_json(source_availability_path, _seeded_source_availability(manifest_result, primary_capture_target))
-    _write_json(
-        integrity_summary_path,
-        _seeded_integrity_summary(manifest_result, rows, primary_capture_target),
+def _build_capture_record_via_normalizer(row: Mapping[str, Any]):
+    from app.mme_scalpx.research_capture.normalizer import (
+        InstrumentReference,
+        NormalizationContext,
+        RuntimeAuditInput,
+        SessionMetadataInput,
+        normalize_dhan_tick,
+        normalize_zerodha_tick,
     )
-    _write_json(health_path, _health_payload(manifest_result, rows, primary_capture_target))
 
-    return manifest_path, source_availability_path, integrity_summary_path, health_path
+    raw = dict(row)
+
+    instrument_reference = InstrumentReference(
+        broker_name=_require_nonempty_str(raw["broker_name"], "broker_name"),
+        exchange=_require_nonempty_str(raw["exchange"], "exchange"),
+        exchange_segment=_require_nonempty_str(raw["exchange_segment"], "exchange_segment"),
+        instrument_token=_require_nonempty_str(raw["instrument_token"], "instrument_token"),
+        tradingsymbol=_require_nonempty_str(raw["tradingsymbol"], "tradingsymbol"),
+        instrument_type=_require_nonempty_str(raw["instrument_type"], "instrument_type"),
+        symbol_root=_require_nonempty_str(raw["symbol_root"], "symbol_root"),
+        underlying_symbol=_require_nonempty_str(raw["underlying_symbol"], "underlying_symbol"),
+        tick_size=float(raw["tick_size"]),
+        lot_size=int(raw["lot_size"]),
+        symbol=raw.get("symbol"),
+        contract_name=raw.get("contract_name"),
+        option_type=raw.get("option_type"),
+        strike=raw.get("strike"),
+        expiry=raw.get("expiry"),
+        expiry_type=raw.get("expiry_type"),
+        freeze_qty=raw.get("freeze_qty"),
+        strike_step=raw.get("strike_step"),
+    )
+
+    normalization_context = NormalizationContext(
+        session_date=_require_nonempty_str(raw["session_date"], "session_date"),
+        recv_ts_ns=int(raw["recv_ts_ns"]),
+        process_ts_ns=int(raw["process_ts_ns"]),
+        event_seq=int(raw["event_seq"]),
+        source_ts_ns=int(raw["exchange_ts"]),
+        snapshot_id=_require_nonempty_str(raw["snapshot_id"], "snapshot_id"),
+    )
+
+    session_metadata = SessionMetadataInput(
+        trading_minute_index=int(raw["trading_minute_index"]),
+        is_preopen=bool(raw["is_preopen"]),
+        is_postclose=bool(raw["is_postclose"]),
+        weekday=int(raw["weekday"]),
+        month=int(raw["month"]),
+    )
+
+    runtime_audit = RuntimeAuditInput(
+        normalization_version=str(raw["normalization_version"]),
+        derived_version=str(raw["derived_version"]),
+        latency_ns=int(raw["latency_ns"]),
+        gap_from_prev_tick_ms=int(raw["gap_from_prev_tick_ms"]),
+        heartbeat_status="OK",
+    )
+
+    raw_payload = {
+        "ltp": raw["ltp"],
+        "last_price": raw["ltp"],
+        "volume": raw["volume"],
+        "volume_traded": raw["volume"],
+        "oi": raw["oi"],
+        "best_bid": raw["best_bid"],
+        "best_ask": raw["best_ask"],
+        "best_bid_qty": raw["best_bid_qty"],
+        "best_ask_qty": raw["best_ask_qty"],
+        "bid_prices": raw["bid_prices"],
+        "bid_qty": raw["bid_qty"],
+        "ask_prices": raw["ask_prices"],
+        "ask_qty": raw["ask_qty"],
+        "depth": {
+            "buy": [{"price": raw["best_bid"], "quantity": raw["best_bid_qty"]}],
+            "sell": [{"price": raw["best_ask"], "quantity": raw["best_ask_qty"]}],
+        },
+        "tradingsymbol": raw["tradingsymbol"],
+        "exchange_timestamp": raw["exchange_ts"],
+    }
+
+    broker_name = raw["broker_name"].lower()
+    if broker_name == "dhan":
+        return normalize_dhan_tick(
+            raw_payload=raw_payload,
+            instrument_reference=instrument_reference,
+            normalization_context=normalization_context,
+            session_metadata=session_metadata,
+            runtime_audit=runtime_audit,
+        )
+
+    return normalize_zerodha_tick(
+        raw_payload=raw_payload,
+        instrument_reference=instrument_reference,
+        normalization_context=normalization_context,
+        session_metadata=session_metadata,
+        runtime_audit=runtime_audit,
+    )
+
+
+def _build_capture_records(rows: Sequence[Mapping[str, Any]]) -> tuple[Any, ...]:
+    records = []
+    for row in rows:
+        record = _build_capture_record_via_normalizer(row)
+        records.append(record)
+    return tuple(records)
+
+
+def _archive_write_result(
+    *,
+    session_date: str,
+    manifest_paths: Mapping[str, str],
+    dataset_file_paths: Mapping[str, tuple[str, ...]],
+    dataset_row_counts: Mapping[str, int],
+    dataset_bytes_written: Mapping[str, int],
+) -> ArchiveWriteResult:
+    manifest_path = ""
+    source_availability_path = ""
+    integrity_summary_path = ""
+
+    for key, value in manifest_paths.items():
+        v = str(value)
+        k = str(key).lower()
+        if not manifest_path and ("manifest" in k or v.endswith("manifest.json")):
+            manifest_path = v
+        if not source_availability_path and ("source" in k or v.endswith("source_availability.json")):
+            source_availability_path = v
+        if not integrity_summary_path and ("integrity" in k or v.endswith("integrity_summary.json")):
+            integrity_summary_path = v
+
+    if not manifest_path or not source_availability_path or not integrity_summary_path:
+        raise RawCaptureBridgeError(f"unexpected manifest_paths mapping: {manifest_paths}")
+
+    session_archive_root = str(Path(manifest_path).resolve().parent)
+    return ArchiveWriteResult(
+        session_date=session_date,
+        session_archive_root=session_archive_root,
+        manifest_path=manifest_path,
+        source_availability_path=source_availability_path,
+        integrity_summary_path=integrity_summary_path,
+        dataset_file_paths=dataset_file_paths,
+        dataset_row_counts=dataset_row_counts,
+        dataset_bytes_written=dataset_bytes_written,
+    )
+
+
+def _first_actual_capture_target(dataset_file_paths: Mapping[str, tuple[str, ...]]) -> str:
+    flattened = []
+    for _, paths in sorted(dataset_file_paths.items()):
+        flattened.extend(list(paths))
+    if not flattened:
+        raise RawCaptureBridgeError("archive writer returned no dataset file paths")
+    return str(Path(sorted(flattened)[0]).resolve())
+
+
+def _write_reports(
+    *,
+    manifest_result: ManifestMaterializationResult,
+    integrity_report,
+    health_snapshot,
+) -> tuple[Path, Path]:
+    report_root = _report_root(manifest_result)
+    integrity_report_path = (report_root / "integrity_report.json").resolve()
+    health_snapshot_path = (report_root / "health_snapshot.json").resolve()
+
+    atomic_write_json(integrity_report_path, integrity_report_to_dict(integrity_report))
+    atomic_write_json(health_snapshot_path, health_snapshot_to_dict(health_snapshot))
+
+    return integrity_report_path, health_snapshot_path
 
 
 def run_first_real_raw_capture(
@@ -452,26 +565,114 @@ def run_first_real_raw_capture(
         project_root=project_root,
     )
 
+    if entrypoint not in {"run", "backfill"}:
+        raise RawCaptureBridgeError(f"first real raw capture only supports run/backfill, got {entrypoint}")
+
     if not capture_plan.required_outputs:
         raise RawCaptureBridgeError(
             f"entrypoint={entrypoint} lane={capture_plan.lane} has no required raw capture targets"
         )
 
     seed = manifest_result.manifest_seed
-    rows = list(batch_rows) if batch_rows is not None else _default_batch(
+    capture_session_date = _capture_session_date(seed)
+
+    rows = list(batch_rows) if batch_rows is not None else _default_row_batch(
         source=seed.source,
-        session_date=seed.session_date,
+        session_date=capture_session_date,
         instrument_scope=seed.session_materialization_result.session_context.session_inputs.instrument_scope,
     )
     if not rows:
         raise RawCaptureBridgeError("raw capture batch is empty")
 
-    target_path = _primary_capture_target(capture_plan)
-    actual_written_path = _archive_write(target_path, rows)
-    manifest_path, source_availability_path, integrity_summary_path, health_path = _write_seeded_updates(
-        manifest_result,
-        rows,
-        str(actual_written_path),
+    records = _build_capture_records(rows)
+
+    dataset_file_paths, dataset_row_counts, dataset_bytes_written = write_capture_records(
+        records,
+        archive_root_relative="run/research_capture",
+        partition_columns=None,
+        write_mode="overwrite",
+        compression="snappy",
+    )
+
+    source_availability = build_source_availability_from_records(
+        records,
+        extra_sources={seed.source: True},
+        notes=("first_real_raw_capture",),
+    )
+    integrity_summary = build_integrity_summary(
+        records=records,
+        warnings=(),
+        errors=(),
+    )
+    archive_outputs = build_archive_outputs_from_counts(
+        dataset_row_counts=dataset_row_counts,
+        bytes_written_by_dataset=dataset_bytes_written,
+        include_zero_count_outputs=False,
+    )
+    manifest = build_session_manifest(
+        session_date=capture_session_date,
+        source_availability=source_availability,
+        integrity_summary=integrity_summary,
+        archive_outputs=archive_outputs,
+        created_at=_utc_now_z(),
+        status="session_written",
+        notes=("first_real_raw_capture",),
+    )
+    validate_manifest_payload(manifest_to_dict(manifest))
+    manifest_paths = write_manifest_files(
+        manifest,
+        archive_root_relative="run/research_capture",
+    )
+
+    archive_write_result = _archive_write_result(
+        session_date=capture_session_date,
+        manifest_paths=manifest_paths,
+        dataset_file_paths=dataset_file_paths,
+        dataset_row_counts=dataset_row_counts,
+        dataset_bytes_written=dataset_bytes_written,
+    )
+    route_plan = build_route_plan(records)
+
+    integrity_report = build_integrity_report(
+        session_date=capture_session_date,
+        records=records,
+        route_plan=route_plan,
+        manifest=manifest,
+        archive_write_result=archive_write_result,
+        notes=("first_real_raw_capture",),
+    )
+    health_snapshot = build_capture_health_snapshot(
+        session_date=capture_session_date,
+        source_availability=source_availability,
+        integrity_summary=integrity_summary,
+        manifest=manifest,
+        route_plan=route_plan,
+        archive_write_result=archive_write_result,
+        notes=("first_real_raw_capture",),
+    )
+    integrity_report_path, health_snapshot_path = _write_reports(
+        manifest_result=manifest_result,
+        integrity_report=integrity_report,
+        health_snapshot=health_snapshot,
+    )
+
+    primary_capture_target = _first_actual_capture_target(dataset_file_paths)
+
+    written_files = []
+    for paths in dataset_file_paths.values():
+        for raw_path in paths:
+            p = Path(raw_path).resolve()
+            written_files.append(RawCaptureWrittenFile(name=p.name, path=str(p)))
+
+    for key, value in manifest_paths.items():
+        p = Path(value).resolve()
+        written_files.append(RawCaptureWrittenFile(name=p.name, path=str(p)))
+
+    written_files.append(
+        RawCaptureWrittenFile(name=Path(integrity_report_path).name, path=str(integrity_report_path))
+    )
+    written_files.append(
+        RawCaptureWrittenFile(name=Path(health_snapshot_path).name, path=str(health_snapshot_path))
     )
 
     return RawCaptureBridgeResult(
@@ -479,15 +680,9 @@ def run_first_real_raw_capture(
         lane=manifest_result.lane,
         source=manifest_result.source,
         run_id=manifest_result.run_id,
-        rows_written=len(rows),
-        primary_capture_target=str(actual_written_path),
-        written_files=(
-            RawCaptureWrittenFile(name=actual_written_path.name, path=str(actual_written_path)),
-            RawCaptureWrittenFile(name="manifest.json", path=str(manifest_path)),
-            RawCaptureWrittenFile(name="source_availability.json", path=str(source_availability_path)),
-            RawCaptureWrittenFile(name="integrity_summary.json", path=str(integrity_summary_path)),
-            RawCaptureWrittenFile(name="health_snapshot.json", path=str(health_path)),
-        ),
+        rows_written=len(records),
+        primary_capture_target=primary_capture_target,
+        written_files=tuple(written_files),
         capture_plan=capture_plan,
         manifest_materialization_result=manifest_result,
     )
