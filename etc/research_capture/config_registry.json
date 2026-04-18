@@ -1,0 +1,182 @@
+{
+  "schema_name": "MME Research Capture Config Registry",
+  "policy_version": "v1",
+  "governance": {
+    "config_registry_required": true,
+    "config_registry_is_canonical_config_bundle_index": true,
+    "all_entrypoints_must_resolve_configs_via_registry": true,
+    "registry_must_only_point_to_frozen_contract_files": true,
+    "registry_must_not_embed_runtime_logic": true,
+    "registry_must_not_silently_modify_production_contract": true,
+    "registry_must_not_silently_modify_canonical_archive": true,
+    "fail_closed_on_missing_registered_file": true,
+    "fail_closed_on_unknown_entrypoint": true,
+    "fail_closed_on_unknown_profile_group": true,
+    "fail_closed_on_duplicate_registered_key": true
+  },
+  "registry_roots": {
+    "config_root": "etc/research_capture",
+    "run_root": "run/research_capture",
+    "smoke_root": "run/_smokes/research_capture",
+    "backup_root": "run/_code_backups/research_capture"
+  },
+  "core_contracts": {
+    "schema_version": "etc/research_capture/schema_version.json",
+    "archive_config": "etc/research_capture/archive_config.json",
+    "partitions": "etc/research_capture/partitions.json",
+    "field_dictionary": "etc/research_capture/field_dictionary.csv"
+  },
+  "policy_contracts": {
+    "source_policy": "etc/research_capture/source_policy.json",
+    "integrity_policy": "etc/research_capture/integrity_policy.json",
+    "runtime_policy": "etc/research_capture/runtime_policy.json",
+    "report_policy": "etc/research_capture/report_policy.json",
+    "backfill_policy": "etc/research_capture/backfill_policy.json",
+    "research_policy": "etc/research_capture/research_policy.json",
+    "export_policy": "etc/research_capture/export_policy.json",
+    "operator_defaults": "etc/research_capture/operator_defaults.json"
+  },
+  "entrypoint_contracts": {
+    "verify": {
+      "script": "bin/research_capture_verify.py",
+      "required_configs": [
+        "schema_version",
+        "field_dictionary",
+        "source_policy",
+        "integrity_policy",
+        "runtime_policy",
+        "report_policy",
+        "operator_defaults"
+      ],
+      "default_lane": "verify_only",
+      "default_source": "canonical_archive"
+    },
+    "run": {
+      "script": "bin/research_capture_run.py",
+      "required_configs": [
+        "schema_version",
+        "archive_config",
+        "partitions",
+        "field_dictionary",
+        "source_policy",
+        "integrity_policy",
+        "runtime_policy",
+        "report_policy",
+        "operator_defaults"
+      ],
+      "default_lane": "live_capture",
+      "default_source": "zerodha"
+    },
+    "backfill": {
+      "script": "bin/research_capture_run.py",
+      "required_configs": [
+        "schema_version",
+        "archive_config",
+        "partitions",
+        "field_dictionary",
+        "source_policy",
+        "integrity_policy",
+        "runtime_policy",
+        "report_policy",
+        "backfill_policy",
+        "operator_defaults"
+      ],
+      "default_lane": "historical_backfill",
+      "default_source": "dhan"
+    },
+    "research": {
+      "script": "bin/research_capture_run.py",
+      "required_configs": [
+        "schema_version",
+        "field_dictionary",
+        "research_policy",
+        "report_policy",
+        "export_policy",
+        "operator_defaults"
+      ],
+      "default_lane": "research_export",
+      "default_source": "canonical_archive"
+    }
+  },
+  "profile_groups": {
+    "base": [
+      "schema_version",
+      "field_dictionary",
+      "source_policy",
+      "integrity_policy",
+      "runtime_policy",
+      "report_policy",
+      "operator_defaults"
+    ],
+    "live_capture": [
+      "schema_version",
+      "archive_config",
+      "partitions",
+      "field_dictionary",
+      "source_policy",
+      "integrity_policy",
+      "runtime_policy",
+      "report_policy",
+      "operator_defaults"
+    ],
+    "historical_backfill": [
+      "schema_version",
+      "archive_config",
+      "partitions",
+      "field_dictionary",
+      "source_policy",
+      "integrity_policy",
+      "runtime_policy",
+      "report_policy",
+      "backfill_policy",
+      "operator_defaults"
+    ],
+    "offline_research": [
+      "schema_version",
+      "field_dictionary",
+      "research_policy",
+      "report_policy",
+      "export_policy",
+      "operator_defaults"
+    ],
+    "full_bundle": [
+      "schema_version",
+      "archive_config",
+      "partitions",
+      "field_dictionary",
+      "source_policy",
+      "integrity_policy",
+      "runtime_policy",
+      "report_policy",
+      "backfill_policy",
+      "research_policy",
+      "export_policy",
+      "operator_defaults"
+    ]
+  },
+  "load_order": [
+    "schema_version",
+    "archive_config",
+    "partitions",
+    "field_dictionary",
+    "source_policy",
+    "integrity_policy",
+    "runtime_policy",
+    "report_policy",
+    "backfill_policy",
+    "research_policy",
+    "export_policy",
+    "operator_defaults"
+  ],
+  "output_contract": {
+    "required_effective_registry_fields": [
+      "registry_version",
+      "resolved_profile_group",
+      "resolved_entrypoint",
+      "resolved_configs",
+      "ts_utc"
+    ],
+    "emit_effective_registry_snapshot": true,
+    "effective_registry_snapshot_filename": "effective_registry_snapshot.json"
+  }
+}
