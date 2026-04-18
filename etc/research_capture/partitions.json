@@ -1,0 +1,17 @@
+{
+  "primary_partitions": [
+    "session_date",
+    "instrument_type",
+    "underlying_symbol",
+    "expiry",
+    "option_type"
+  ],
+  "secondary_partitions": [
+    "strike"
+  ],
+  "notes": [
+    "use loose partitioning first; avoid overly fragmented output",
+    "raw capture must remain replay-friendly",
+    "do not over-optimize partition layout before stable capture exists"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "archive_root": "run/research_capture",
+  "write_manifest_first": true,
+  "format": "parquet",
+  "compression": "snappy",
+  "write_mode": "append",
+  "separate_outputs": {
+    "ticks_fut": "ticks_fut.parquet",
+    "ticks_opt": "ticks_opt.parquet",
+    "signals_audit": "signals_audit.parquet",
+    "runtime_audit": "runtime_audit.parquet"
+  },
+  "session_files": {
+    "manifest": "manifest.json",
+    "source_availability": "source_availability.json",
+    "integrity_summary": "integrity_summary.json"
+  },
+  "rules": [
+    "redis is hot/latest/live only",
+    "archive parquet is long-term research/replay truth",
+    "store hard-to-reconstruct data as raw capture",
+    "no silent promotion of research fields into production doctrine"
+  ]
+}

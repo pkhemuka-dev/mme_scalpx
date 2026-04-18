@@ -1,0 +1,14 @@
+{
+  "schema_name": "MME Research Data Capture Schema",
+  "schema_version": "v1",
+  "constitution_name": "MME Research Data Capture Constitution v1",
+  "status": "frozen_for_initial_implementation",
+  "chapter": "research_capture",
+  "notes": [
+    "research/archive contract only",
+    "not the frozen production strategy contract",
+    "recorded != strategy-approved",
+    "derived != production-used",
+    "researched != contract-changed"
+  ]
+}
