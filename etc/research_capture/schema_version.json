@@ -1,14 +1,20 @@
 {
   "schema_name": "MME Research Data Capture Schema",
   "schema_version": "v1",
+  "schema_status": "frozen_for_initial_implementation",
   "constitution_name": "MME Research Data Capture Constitution v1",
-  "status": "frozen_for_initial_implementation",
-  "chapter": "research_capture",
+  "chapter_name": "research_capture",
+  "field_count": 265,
+  "field_dictionary_file": "etc/research_capture/field_dictionary.csv",
+  "archive_root_relative": "run/research_capture",
+  "archive_format": "parquet",
+  "archive_compression": "snappy",
+  "storage_law": "raw_first_light_live_derived_second_heavy_offline_third",
+  "architecture_law": "broker_agnostic_schema_with_broker_specific_adapters",
   "notes": [
-    "research/archive contract only",
-    "not the frozen production strategy contract",
-    "recorded != strategy-approved",
-    "derived != production-used",
-    "researched != contract-changed"
+    "research_archive_contract_only",
+    "recorded_not_strategy_approved",
+    "derived_not_production_used",
+    "researched_not_contract_changed"
   ]
 }
