@@ -1,0 +1,176 @@
+{
+  "schema_name": "MME Research Capture Runtime Policy",
+  "policy_version": "v1",
+  "schema_version_ref": "etc/research_capture/schema_version.json",
+  "field_dictionary_ref": "etc/research_capture/field_dictionary.csv",
+  "source_policy_ref": "etc/research_capture/source_policy.json",
+  "integrity_policy_ref": "etc/research_capture/integrity_policy.json",
+  "archive_config_ref": "etc/research_capture/archive_config.json",
+  "partitions_ref": "etc/research_capture/partitions.json",
+  "entrypoints": {
+    "verify": "bin/research_capture_verify.py",
+    "run": "bin/research_capture_run.py"
+  },
+  "governance": {
+    "runtime_policy_required_for_run": true,
+    "runtime_policy_required_for_verify": true,
+    "contract_first_config_surface": true,
+    "explicit_lane_required": true,
+    "explicit_source_required": true,
+    "explicit_run_id_required": false,
+    "generate_run_id_if_missing": true,
+    "fail_closed_on_unknown_lane": true,
+    "fail_closed_on_unknown_source": true,
+    "fail_closed_on_missing_required_config": true,
+    "no_silent_production_mutation": true,
+    "live_capture_and_historical_backfill_must_not_share_same_job": true,
+    "verify_must_not_write_normalized_archive": true,
+    "run_must_write_manifest_and_integrity": true
+  },
+  "run_modes": {
+    "verify_only": {
+      "enabled": true,
+      "writes_archive": false,
+      "writes_run_report": true,
+      "writes_verify_report": true,
+      "requires_health_summary": true,
+      "requires_integrity_evaluation": true
+    },
+    "live_capture": {
+      "enabled": true,
+      "writes_archive": true,
+      "writes_run_report": true,
+      "writes_verify_report": false,
+      "requires_health_ok": true,
+      "requires_integrity_pass": true
+    },
+    "historical_backfill": {
+      "enabled": true,
+      "writes_archive": true,
+      "writes_run_report": true,
+      "writes_verify_report": false,
+      "requires_health_ok": true,
+      "requires_integrity_pass": true
+    },
+    "dry_run": {
+      "enabled": true,
+      "writes_archive": false,
+      "writes_run_report": true,
+      "writes_verify_report": false,
+      "requires_health_summary": true,
+      "requires_integrity_evaluation": true
+    }
+  },
+  "operator_inputs": {
+    "required_for_run": [
+      "lane",
+      "source",
+      "session_date"
+    ],
+    "required_for_verify": [],
+    "optional_for_run": [
+      "run_id",
+      "instrument_scope",
+      "start_ts",
+      "end_ts",
+      "notes"
+    ],
+    "optional_for_verify": [
+      "run_root",
+      "notes"
+    ]
+  },
+  "runtime_outputs": {
+    "required_for_run": [
+      "manifest.json",
+      "source_availability.json",
+      "integrity_summary.json",
+      "run_report.json"
+    ],
+    "required_archive_minimum_one_of": [
+      "ticks_fut.parquet",
+      "ticks_opt.parquet"
+    ],
+    "recommended_for_run": [
+      "runtime_audit.parquet",
+      "signals_audit.parquet"
+    ],
+    "required_for_verify": [
+      "verify_report.json"
+    ]
+  },
+  "health_contract": {
+    "allowed_statuses": [
+      "OK",
+      "WARN",
+      "ERROR"
+    ],
+    "successful_run_final_status": "OK",
+    "successful_verify_allowed_final_statuses": [
+      "OK",
+      "WARN"
+    ],
+    "error_status_blocks_success": true,
+    "health_summary_required": true,
+    "health_summary_fields": [
+      "status",
+      "service",
+      "run_id",
+      "lane",
+      "source",
+      "ts_utc",
+      "message"
+    ]
+  },
+  "runtime_behavior": {
+    "write_manifest_before_archive": true,
+    "write_source_availability_before_archive": true,
+    "write_integrity_summary_after_archive": true,
+    "write_run_report_at_end": true,
+    "verify_report_at_end": true,
+    "archive_write_atomic_by_file": true,
+    "preserve_source_provenance": true,
+    "preserve_versions_in_outputs": true,
+    "partition_resolution_required": true,
+    "router_must_choose_single_lane": true,
+    "normalizer_required_for_archive_write": true,
+    "enricher_allowed_in_live_capture": true,
+    "heavy_offline_derivations_disallowed_in_live_capture": true
+  },
+  "failure_policy": {
+    "stop_on_manifest_write_failure": true,
+    "stop_on_source_availability_failure": true,
+    "stop_on_partition_resolution_failure": true,
+    "stop_on_archive_write_failure": true,
+    "stop_on_integrity_summary_failure": true,
+    "stop_on_unknown_source": true,
+    "stop_on_unknown_lane": true,
+    "allow_verify_to_finish_with_warn": true,
+    "allow_run_to_finish_with_warn": false
+  },
+  "lane_source_matrix": {
+    "live_capture": [
+      "zerodha"
+    ],
+    "historical_backfill": [
+      "zerodha",
+      "dhan"
+    ],
+    "dry_run": [
+      "zerodha",
+      "dhan"
+    ],
+    "verify_only": [
+      "canonical_archive"
+    ]
+  },
+  "reporting": {
+    "emit_run_report_json": true,
+    "emit_verify_report_json": true,
+    "emit_health_snapshot": true,
+    "emit_output_inventory": true,
+    "emit_selected_lane_and_source": true,
+    "emit_versions_snapshot": true,
+    "emit_integrity_verdict": true
+  }
+}
