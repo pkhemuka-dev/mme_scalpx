@@ -30,6 +30,7 @@ Design laws
 
 from __future__ import annotations
 
+import shutil
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -529,10 +530,36 @@ def _records_for_optional_dataset(records, dataset_name: str):
         for record in records
     )
 
+
+def _optional_dataset_root(
+    *,
+    session_date: str,
+    dataset_name: str,
+    archive_root_relative: str = "run/research_capture",
+) -> Path:
+    return (Path(archive_root_relative) / session_date / dataset_name).resolve()
+
+
+def _purge_optional_dataset_if_absent(
+    *,
+    session_date: str,
+    dataset_name: str,
+    archive_root_relative: str = "run/research_capture",
+) -> None:
+    dataset_root = _optional_dataset_root(
+        session_date=session_date,
+        dataset_name=dataset_name,
+        archive_root_relative=archive_root_relative,
+    )
+    if dataset_root.exists():
+        shutil.rmtree(dataset_root)
+
+
 def _write_route_optional_outputs(
     *,
     route_plan,
     capture_plan: CapturePlan,
+    session_date: str,
 ) -> tuple[Mapping[str, tuple[str, ...]], Mapping[str, int], Mapping[str, int]]:
     route_buckets = dict(route_plan.items())
 
@@ -544,6 +571,12 @@ def _write_route_optional_outputs(
     merged_bytes: dict[str, int] = {}
 
     optional_targets = {item.name for item in capture_plan.optional_outputs}
+
+    if "runtime_audit.parquet" in optional_targets and not runtime_records:
+        _purge_optional_dataset_if_absent(
+            session_date=session_date,
+            dataset_name="runtime_audit",
+        )
 
     if runtime_records and "runtime_audit.parquet" in optional_targets:
         runtime_dataset_records = _records_for_optional_dataset(
@@ -560,6 +593,12 @@ def _write_route_optional_outputs(
         merged_file_paths.update(file_paths)
         merged_row_counts.update(row_counts)
         merged_bytes.update(bytes_written)
+
+    if "signals_audit.parquet" in optional_targets and not signals_records:
+        _purge_optional_dataset_if_absent(
+            session_date=session_date,
+            dataset_name="signals_audit",
+        )
 
     if signals_records and "signals_audit.parquet" in optional_targets:
         signals_dataset_records = _records_for_optional_dataset(
@@ -676,6 +715,7 @@ def run_first_real_raw_capture(
     optional_file_paths, optional_row_counts, optional_bytes_written = _write_route_optional_outputs(
         route_plan=route_plan,
         capture_plan=capture_plan,
+        session_date=capture_session_date,
     )
 
     merged_file_paths = dict(dataset_file_paths)
