@@ -1,0 +1,60 @@
+schema_version: 1
+config_name: provider_roles
+config_revision: 2026-04-22-a
+
+provider_roles:
+  futures_marketdata:
+    allowed_providers:
+      - ZERODHA
+      - DHAN
+    preferred_provider: ZERODHA
+    backup_provider: DHAN
+    require_flat_for_switch: true
+    allow_mid_position_switch: false
+    preposition_switch_requires_setup_rebuild: true
+
+  selected_option_marketdata:
+    allowed_providers:
+      - DHAN
+      - ZERODHA
+    preferred_provider: DHAN
+    backup_provider: ZERODHA
+    require_flat_for_switch: true
+    allow_mid_position_switch: false
+    preposition_switch_requires_setup_rebuild: true
+
+  option_context:
+    allowed_providers:
+      - DHAN
+    preferred_provider: DHAN
+    backup_provider: null
+    require_flat_for_switch: true
+    allow_mid_position_switch: false
+    preposition_switch_requires_setup_rebuild: true
+
+  execution_primary:
+    allowed_providers:
+      - ZERODHA
+      - DHAN
+    preferred_provider: ZERODHA
+    backup_provider: DHAN
+    require_flat_for_switch: true
+    allow_mid_position_switch: false
+    preposition_switch_requires_setup_rebuild: true
+
+  execution_fallback:
+    allowed_providers:
+      - DHAN
+      - ZERODHA
+    preferred_provider: DHAN
+    backup_provider: ZERODHA
+    require_flat_for_switch: true
+    allow_mid_position_switch: false
+    preposition_switch_requires_setup_rebuild: false
+
+provider_role_laws:
+  selected_option_tradability_truth_provider: execution_primary
+  fallback_execution_provider_must_differ_from_primary: true
+  option_context_may_not_silently_default_to_zerodha: true
+  miso_requires_dhan_option_context: true
+  miso_requires_dhan_selected_option_marketdata: true

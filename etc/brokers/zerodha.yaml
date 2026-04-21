@@ -1,0 +1,66 @@
+schema_version: 1
+provider_id: ZERODHA
+config_revision: 2026-04-22-a
+
+enabled: true
+
+capabilities:
+  futures_marketdata:
+    enabled: true
+    preferred: true
+  selected_option_marketdata:
+    enabled: true
+    preferred: false
+  option_context:
+    enabled: false
+    preferred: false
+  execution:
+    enabled: true
+    preferred_primary: true
+    preferred_fallback: false
+
+health_contract:
+  auth_required: true
+  marketdata_required: true
+  execution_auth_required_for_execution_roles: true
+  stale_after_ms:
+    futures_marketdata: 1500
+    selected_option_marketdata: 1500
+  dead_after_ms:
+    futures_marketdata: 5000
+    selected_option_marketdata: 5000
+
+transport_contract:
+  selected_option_depth_mode: TOP5
+  futures_depth_mode: TOP5
+  chain_snapshot_required: false
+  context_refresh_ms: null
+
+execution_contract:
+  allow_primary_execution: true
+  allow_fallback_execution: true
+  require_auth_for_order_send: true
+  require_position_reconciliation: true
+
+strategy_relevance:
+  mist:
+    futures_marketdata_used: true
+    selected_option_marketdata_used: true
+    execution_primary_supported: true
+  misb:
+    futures_marketdata_used: true
+    selected_option_marketdata_used: true
+    execution_primary_supported: true
+  misc:
+    futures_marketdata_used: true
+    selected_option_marketdata_used: true
+    execution_primary_supported: true
+  misr:
+    futures_marketdata_used: true
+    selected_option_marketdata_used: true
+    execution_primary_supported: true
+  miso:
+    futures_marketdata_used: false
+    selected_option_marketdata_used: false
+    execution_primary_supported: true
+    execution_fallback_supported: false

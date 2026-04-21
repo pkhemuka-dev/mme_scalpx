@@ -1,0 +1,66 @@
+schema_version: 1
+provider_id: DHAN
+config_revision: 2026-04-22-a
+
+enabled: true
+
+capabilities:
+  futures_marketdata:
+    enabled: true
+    preferred: false
+  selected_option_marketdata:
+    enabled: true
+    preferred: true
+  option_context:
+    enabled: true
+    preferred: true
+  execution:
+    enabled: true
+    preferred_primary: false
+    preferred_fallback: true
+
+health_contract:
+  auth_required: true
+  marketdata_required: true
+  execution_auth_required_for_execution_roles: true
+  stale_after_ms:
+    futures_marketdata: 1500
+    selected_option_marketdata: 1200
+    option_context: 5000
+  dead_after_ms:
+    futures_marketdata: 5000
+    selected_option_marketdata: 4000
+    option_context: 15000
+
+transport_contract:
+  selected_option_depth_mode: TOP20_ENHANCED
+  selected_option_base_depth_mode: TOP5
+  futures_depth_mode: TOP20_ENHANCED
+  chain_snapshot_required: true
+  chain_snapshot_refresh_ms: 1000
+  context_refresh_ms: 1000
+
+execution_contract:
+  allow_primary_execution: true
+  allow_fallback_execution: true
+  require_auth_for_order_send: true
+  require_position_reconciliation: true
+
+strategy_relevance:
+  mist:
+    option_context_used: true
+    selected_option_marketdata_used: true
+  misb:
+    option_context_used: true
+    selected_option_marketdata_used: true
+  misc:
+    option_context_used: true
+    selected_option_marketdata_used: true
+  misr:
+    option_context_used: true
+    selected_option_marketdata_used: true
+  miso:
+    option_context_used: true
+    selected_option_marketdata_used: true
+    futures_marketdata_used: true
+    mandatory_for_live_signal_path: true

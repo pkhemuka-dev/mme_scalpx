@@ -1,0 +1,35 @@
+schema_version: 1
+config_name: provider_runtime
+config_revision: 2026-04-22-a
+
+provider_runtime:
+  enabled: true
+  family_runtime_mode: OBSERVE_ONLY
+  failover_mode: MANUAL
+  override_mode: AUTO
+  allow_failback_when_recovered: true
+  require_flat_for_role_switch: true
+  invalidate_preposition_setup_on_switch: true
+
+policy_laws:
+  prohibit_silent_provider_switch: true
+  prohibit_mid_position_provider_migration: true
+  preposition_provider_change_requires_setup_rebuild: true
+  emit_provider_transition_events: true
+  provider_runtime_hash_enabled: true
+  provider_runtime_stream_enabled: true
+
+operating_defaults:
+  selected_option_tradability_truth_provider: execution_primary
+  option_context_required_for_miso: true
+  zerodha_preferred_for_futures: true
+  dhan_preferred_for_selected_option: true
+  dhan_preferred_for_option_context: true
+  zerodha_preferred_for_execution_primary: true
+  dhan_preferred_for_execution_fallback: true
+
+rollout_guardrails:
+  current_rollout_stage: OBSERVE_ONLY
+  allow_family_live_without_manual_promotion: false
+  allow_auto_after_proof_before_formal_enablement: false
+  allow_override_while_position_open: false
