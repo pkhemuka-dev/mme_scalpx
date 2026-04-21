@@ -1,0 +1,603 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import os
+import sys
+from datetime import date, datetime
+from io import StringIO
+from pathlib import Path
+from typing import Any
+
+import requests
+
+
+API_BASE = "https://api.dhan.co/v2"
+INSTRUMENT_CSV_URL = "https://images.dhan.co/api-data/api-scrip-master-detailed.csv"
+TIMEOUT = 30
+
+
+def _pick(row: dict[str, Any], *keys: str) -> str:
+    for key in keys:
+        value = row.get(key)
+        if value not in (None, ""):
+            return str(value).strip()
+    return ""
+
+
+def _upper(value: Any) -> str:
+    return str(value or "").strip().upper()
+
+
+def _as_int(value: Any) -> int | None:
+    if value in (None, "", "NA", "null"):
+        return None
+    try:
+        return int(float(value))
+    except Exception:
+        return None
+
+
+def _as_float(value: Any) -> float | None:
+    if value in (None, "", "NA", "null"):
+        return None
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def _parse_date(value: str) -> date | None:
+    value = (value or "").strip()
+    if not value:
+        return None
+    for fmt in ("%Y-%m-%d", "%d-%b-%Y", "%d-%B-%Y", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(value, fmt).date()
+        except ValueError:
+            pass
+    return None
+
+
+def _security_id(row: dict[str, Any]) -> int | None:
+    return _as_int(
+        _pick(
+            row,
+            "SECURITY_ID",
+            "SM_SECURITY_ID",
+            "SEM_SMST_SECURITY_ID",
+            "SEM_SECURITY_ID",
+            "SCRIP_ID",
+            "ID",
+        )
+    )
+
+
+def _instrument_enum(row: dict[str, Any], fallback: str) -> str:
+    candidates = [
+        _upper(_pick(row, "INSTRUMENT", "SEM_INSTRUMENT_NAME")),
+        _upper(_pick(row, "INSTRUMENT_TYPE", "SEM_EXCH_INSTRUMENT_TYPE")),
+    ]
+    for cand in candidates:
+        if cand.startswith(("FUT", "OPT", "EQUITY", "INDEX")):
+            return cand
+    return fallback
+
+
+def _post_json(
+    session: requests.Session,
+    path: str,
+    client_id: str,
+    access_token: str,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "client-id": client_id,
+        "access-token": access_token,
+    }
+    r = session.post(f"{API_BASE}{path}", headers=headers, json=payload, timeout=TIMEOUT)
+    try:
+        data = r.json()
+    except Exception as exc:
+        raise RuntimeError(f"{path} returned non-JSON: HTTP {r.status_code}, body={r.text[:1000]!r}") from exc
+
+    if r.status_code >= 400:
+        raise RuntimeError(
+            f"{path} failed: HTTP {r.status_code}, response={json.dumps(data, ensure_ascii=False)}"
+        )
+    return data
+
+
+def fetch_instrument_rows(session: requests.Session) -> list[dict[str, str]]:
+    r = session.get(INSTRUMENT_CSV_URL, timeout=TIMEOUT)
+    r.raise_for_status()
+    text = r.text.lstrip("\ufeff")
+    return list(csv.DictReader(StringIO(text)))
+
+
+def resolve_nifty_underlying(rows: list[dict[str, str]], symbol: str) -> tuple[int, list[dict[str, str]]]:
+    option_rows: list[dict[str, str]] = []
+    for row in rows:
+        exch = _upper(_pick(row, "EXCH_ID", "SEM_EXM_EXCH_ID"))
+        underlying_symbol = _upper(_pick(row, "UNDERLYING_SYMBOL"))
+        option_type = _upper(_pick(row, "OPTION_TYPE", "SEM_OPTION_TYPE"))
+        if exch != "NSE":
+            continue
+        if underlying_symbol == symbol and option_type in {"CE", "PE"}:
+            option_rows.append(row)
+
+    if not option_rows:
+        raise RuntimeError(f"No NSE option rows found for underlying symbol={symbol!r}")
+
+    underlying_ids = {
+        _as_int(_pick(row, "UNDERLYING_SECURITY_ID"))
+        for row in option_rows
+        if _as_int(_pick(row, "UNDERLYING_SECURITY_ID")) is not None
+    }
+    if not underlying_ids:
+        raise RuntimeError(f"Could not resolve UNDERLYING_SECURITY_ID for {symbol}")
+    if len(underlying_ids) != 1:
+        raise RuntimeError(f"Expected one underlying security id for {symbol}, got {sorted(underlying_ids)}")
+
+    return next(iter(underlying_ids)), option_rows
+
+
+def resolve_nearest_future(rows: list[dict[str, str]], symbol: str) -> dict[str, str]:
+    today = date.today()
+    futures: list[tuple[date, dict[str, str]]] = []
+
+    for row in rows:
+        exch = _upper(_pick(row, "EXCH_ID", "SEM_EXM_EXCH_ID"))
+        if exch != "NSE":
+            continue
+
+        combined = " ".join(
+            [
+                _upper(_pick(row, "INSTRUMENT", "SEM_INSTRUMENT_NAME")),
+                _upper(_pick(row, "INSTRUMENT_TYPE", "SEM_EXCH_INSTRUMENT_TYPE")),
+                _upper(_pick(row, "DISPLAY_NAME", "SEM_CUSTOM_SYMBOL")),
+                _upper(_pick(row, "SYMBOL_NAME", "SM_SYMBOL_NAME")),
+                _upper(_pick(row, "UNDERLYING_SYMBOL")),
+            ]
+        )
+
+        if "FUT" not in combined:
+            continue
+
+        under = _upper(_pick(row, "UNDERLYING_SYMBOL"))
+        sym = _upper(_pick(row, "SYMBOL_NAME", "SM_SYMBOL_NAME"))
+        disp = _upper(_pick(row, "DISPLAY_NAME", "SEM_CUSTOM_SYMBOL"))
+        if symbol not in {under, sym} and symbol not in disp and symbol not in combined:
+            continue
+
+        sid = _security_id(row)
+        if sid is None:
+            continue
+
+        expiry = _parse_date(_pick(row, "SM_EXPIRY_DATE", "SEM_EXPIRY_DATE"))
+        if expiry is None:
+            continue
+
+        futures.append((expiry, row))
+
+    if not futures:
+        raise RuntimeError(f"No futures rows found for {symbol}")
+
+    future_or_today = sorted(
+        ((exp, row) for exp, row in futures if exp >= today),
+        key=lambda item: item[0],
+    )
+    if future_or_today:
+        return future_or_today[0][1]
+
+    return sorted(futures, key=lambda item: item[0])[0][1]
+
+
+def get_option_expiries(
+    session: requests.Session,
+    client_id: str,
+    access_token: str,
+    underlying_scrip: int,
+) -> list[str]:
+    data = _post_json(
+        session,
+        "/optionchain/expirylist",
+        client_id,
+        access_token,
+        {
+            "UnderlyingScrip": underlying_scrip,
+            "UnderlyingSeg": "IDX_I",
+        },
+    )
+    expiries = data.get("data") or data.get("expiries") or data.get("expiryList") or []
+    expiries = [str(x) for x in expiries if str(x).strip()]
+    if not expiries:
+        raise RuntimeError(f"No option expiries returned for underlying_scrip={underlying_scrip}")
+    return expiries
+
+
+def choose_expiry(expiries: list[str], explicit: str | None) -> str:
+    if explicit:
+        if explicit not in expiries:
+            raise RuntimeError(f"Requested expiry {explicit} not in active expiries {expiries}")
+        return explicit
+
+    today = date.today()
+    parsed: list[tuple[date, str]] = []
+    for raw in expiries:
+        d = _parse_date(raw)
+        if d is not None:
+            parsed.append((d, raw))
+
+    if parsed:
+        future_or_today = sorted((d, raw) for d, raw in parsed if d >= today)
+        if future_or_today:
+            return future_or_today[0][1]
+        return sorted(parsed)[0][1]
+
+    return expiries[0]
+
+
+def get_option_chain(
+    session: requests.Session,
+    client_id: str,
+    access_token: str,
+    underlying_scrip: int,
+    expiry: str,
+) -> dict[str, Any]:
+    return _post_json(
+        session,
+        "/optionchain",
+        client_id,
+        access_token,
+        {
+            "UnderlyingScrip": underlying_scrip,
+            "UnderlyingSeg": "IDX_I",
+            "Expiry": expiry,
+        },
+    )
+
+
+def parse_option_chain(chain: dict[str, Any]) -> tuple[float | None, list[dict[str, Any]]]:
+    data = chain.get("data") or {}
+    underlying_last = _as_float(data.get("last_price"))
+    oc = data.get("oc") or {}
+    if not isinstance(oc, dict) or not oc:
+        raise RuntimeError("Option chain contains no strike data")
+
+    contracts: list[dict[str, Any]] = []
+    for strike_raw, strike_block in oc.items():
+        strike = _as_float(strike_raw)
+        if strike is None or not isinstance(strike_block, dict):
+            continue
+        for side_key in ("ce", "pe"):
+            side = strike_block.get(side_key)
+            if not isinstance(side, dict):
+                continue
+            sid = _as_int(side.get("security_id"))
+            if sid is None:
+                continue
+            contracts.append(
+                {
+                    "security_id": sid,
+                    "option_type": side_key.upper(),
+                    "strike": float(strike),
+                    "last_price": _as_float(side.get("last_price")),
+                    "top_bid_price": _as_float(side.get("top_bid_price")),
+                    "top_ask_price": _as_float(side.get("top_ask_price")),
+                    "top_bid_quantity": _as_int(side.get("top_bid_quantity")),
+                    "top_ask_quantity": _as_int(side.get("top_ask_quantity")),
+                    "volume": _as_int(side.get("volume")),
+                    "oi": _as_int(side.get("oi")),
+                    "implied_volatility": _as_float(side.get("implied_volatility")),
+                    "greeks": side.get("greeks") if isinstance(side.get("greeks"), dict) else {},
+                }
+            )
+
+    if not contracts:
+        raise RuntimeError("Parsed zero contracts from option chain")
+    return underlying_last, contracts
+
+
+def pick_atm_contracts(
+    underlying_last: float | None,
+    contracts: list[dict[str, Any]],
+) -> tuple[float, dict[str, Any] | None, dict[str, Any] | None]:
+    strikes = sorted({float(c["strike"]) for c in contracts})
+    if not strikes:
+        raise RuntimeError("No strikes available in parsed option chain")
+
+    if underlying_last is None:
+        atm_strike = strikes[len(strikes) // 2]
+    else:
+        atm_strike = min(strikes, key=lambda s: abs(s - underlying_last))
+
+    ce = next((c for c in contracts if c["strike"] == atm_strike and c["option_type"] == "CE"), None)
+    pe = next((c for c in contracts if c["strike"] == atm_strike and c["option_type"] == "PE"), None)
+    return atm_strike, ce, pe
+
+
+def get_quote(
+    session: requests.Session,
+    client_id: str,
+    access_token: str,
+    security_ids: list[int],
+) -> dict[str, Any]:
+    return _post_json(
+        session,
+        "/marketfeed/quote",
+        client_id,
+        access_token,
+        {"NSE_FNO": security_ids},
+    )
+
+
+def quote_entry(quote: dict[str, Any], security_id: int) -> dict[str, Any]:
+    data = quote.get("data") or {}
+    fno = data.get("NSE_FNO") or {}
+    item = fno.get(str(security_id)) or fno.get(security_id)
+    if not isinstance(item, dict):
+        raise RuntimeError(f"Quote data missing for security_id={security_id}")
+    return item
+
+
+def get_intraday(
+    session: requests.Session,
+    client_id: str,
+    access_token: str,
+    security_id: int,
+    instrument: str,
+    trading_date: str,
+) -> dict[str, Any]:
+    payload = {
+        "securityId": str(security_id),
+        "exchangeSegment": "NSE_FNO",
+        "instrument": instrument,
+        "interval": "1",
+        "oi": True,
+        "fromDate": f"{trading_date} 09:15:00",
+        "toDate": f"{trading_date} 15:30:00",
+    }
+    return _post_json(session, "/charts/intraday", client_id, access_token, payload)
+
+
+def hist_summary(payload: dict[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for key in ("open", "high", "low", "close", "volume", "timestamp", "open_interest"):
+        value = payload.get(key)
+        out[f"{key}_count"] = len(value) if isinstance(value, list) else 0
+    out["has_ohlcv"] = all(out[f"{k}_count"] > 0 for k in ("open", "high", "low", "close", "volume", "timestamp"))
+    out["has_oi"] = out["open_interest_count"] > 0
+    return out
+
+
+def has_depth_5(entry: dict[str, Any]) -> bool:
+    depth = entry.get("depth") or {}
+    buy = depth.get("buy") if isinstance(depth, dict) else None
+    sell = depth.get("sell") if isinstance(depth, dict) else None
+    return isinstance(buy, list) and isinstance(sell, list) and len(buy) >= 5 and len(sell) >= 5
+
+
+def chain_contract_fields_ok(contract: dict[str, Any] | None) -> bool:
+    if not contract:
+        return False
+    greeks = contract.get("greeks") or {}
+    return all(
+        [
+            contract.get("security_id") is not None,
+            contract.get("strike") is not None,
+            contract.get("last_price") is not None,
+            contract.get("top_bid_price") is not None,
+            contract.get("top_ask_price") is not None,
+            contract.get("top_bid_quantity") is not None,
+            contract.get("top_ask_quantity") is not None,
+            contract.get("volume") is not None,
+            contract.get("oi") is not None,
+            contract.get("implied_volatility") is not None,
+            isinstance(greeks, dict),
+            greeks.get("delta") is not None,
+            greeks.get("theta") is not None,
+            greeks.get("gamma") is not None,
+            greeks.get("vega") is not None,
+        ]
+    )
+
+
+def clean_cred(value: str | None) -> str:
+    value = (value or "").strip()
+    if value.lower().startswith("bearer "):
+        value = value[7:].strip()
+    return value
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Post-close Dhan NIFTY field capability audit for strategy migration.")
+    parser.add_argument("--symbol", default="NIFTY", help="Underlying symbol. Default: NIFTY")
+    parser.add_argument("--date", default=date.today().isoformat(), help="Trading date YYYY-MM-DD. Default: today")
+    parser.add_argument("--expiry", default=None, help="Exact NIFTY option expiry YYYY-MM-DD to audit")
+    parser.add_argument("--client-id", default=os.getenv("DHAN_CLIENT_ID"))
+    parser.add_argument("--access-token", default=os.getenv("DHAN_ACCESS_TOKEN"))
+    args = parser.parse_args()
+
+    args.client_id = clean_cred(args.client_id)
+    args.access_token = clean_cred(args.access_token)
+
+    bad_markers = {
+        "",
+        "YOUR_CLIENT_ID",
+        "YOUR_ACCESS_TOKEN",
+        "PASTE_EXACT_CLIENT_ID",
+        "PASTE_EXACT_ACCESS_TOKEN",
+    }
+    if args.client_id in bad_markers or args.access_token in bad_markers:
+        print("ERROR: real DHAN_CLIENT_ID and DHAN_ACCESS_TOKEN are required.", file=sys.stderr)
+        return 2
+
+    session = requests.Session()
+
+    try:
+        rows = fetch_instrument_rows(session)
+        row_by_sid = {sid: row for row in rows if (sid := _security_id(row)) is not None}
+
+        underlying_scrip, option_rows = resolve_nifty_underlying(rows, _upper(args.symbol))
+        future_row = resolve_nearest_future(rows, _upper(args.symbol))
+        future_sid = _security_id(future_row)
+        if future_sid is None:
+            raise RuntimeError("Could not resolve NIFTY futures security id")
+
+        active_expiries = get_option_expiries(session, args.client_id, args.access_token, underlying_scrip)
+        chosen_expiry = choose_expiry(active_expiries, args.expiry)
+        option_chain = get_option_chain(session, args.client_id, args.access_token, underlying_scrip, chosen_expiry)
+        underlying_last, contracts = parse_option_chain(option_chain)
+        atm_strike, atm_ce, atm_pe = pick_atm_contracts(underlying_last, contracts)
+
+        if not atm_ce or not atm_pe:
+            raise RuntimeError("Could not resolve ATM CE/PE from option chain")
+
+        ce_row = row_by_sid.get(int(atm_ce["security_id"]))
+        pe_row = row_by_sid.get(int(atm_pe["security_id"]))
+
+        future_instrument = _instrument_enum(future_row, "FUTIDX")
+        ce_instrument = _instrument_enum(ce_row or {}, "OPTIDX")
+        pe_instrument = _instrument_enum(pe_row or {}, "OPTIDX")
+
+        quote = get_quote(
+            session,
+            args.client_id,
+            args.access_token,
+            [future_sid, int(atm_ce["security_id"]), int(atm_pe["security_id"])],
+        )
+
+        q_future = quote_entry(quote, future_sid)
+        q_ce = quote_entry(quote, int(atm_ce["security_id"]))
+        q_pe = quote_entry(quote, int(atm_pe["security_id"]))
+
+        hist_future = get_intraday(session, args.client_id, args.access_token, future_sid, future_instrument, args.date)
+        hist_ce = get_intraday(session, args.client_id, args.access_token, int(atm_ce["security_id"]), ce_instrument, args.date)
+        hist_pe = get_intraday(session, args.client_id, args.access_token, int(atm_pe["security_id"]), pe_instrument, args.date)
+
+        hist_future_s = hist_summary(hist_future)
+        hist_ce_s = hist_summary(hist_ce)
+        hist_pe_s = hist_summary(hist_pe)
+
+        field_matrix = {
+            "futures_historical_ohlcv_oi": "PROVED" if hist_future_s["has_ohlcv"] and hist_future_s["has_oi"] else "NOT_PROVED",
+            "option_historical_ohlcv_oi_ce": "PROVED" if hist_ce_s["has_ohlcv"] and hist_ce_s["has_oi"] else "NOT_PROVED",
+            "option_historical_ohlcv_oi_pe": "PROVED" if hist_pe_s["has_ohlcv"] and hist_pe_s["has_oi"] else "NOT_PROVED",
+            "futures_quote_snapshot_5depth": "PROVED" if has_depth_5(q_future) else "NOT_PROVED",
+            "option_quote_snapshot_5depth_ce": "PROVED" if has_depth_5(q_ce) else "NOT_PROVED",
+            "option_quote_snapshot_5depth_pe": "PROVED" if has_depth_5(q_pe) else "NOT_PROVED",
+            "option_chain_iv_greeks_oi_volume_best_bid_ask_ce": "PROVED" if chain_contract_fields_ok(atm_ce) else "NOT_PROVED",
+            "option_chain_iv_greeks_oi_volume_best_bid_ask_pe": "PROVED" if chain_contract_fields_ok(atm_pe) else "NOT_PROVED",
+            "cross_strike_option_chain_surface": "PROVED" if len(contracts) >= 20 else "NOT_PROVED",
+            "nifty_futures_top20_depth": "PENDING_LIVE_ONLY",
+            "nifty_options_top20_depth": "PENDING_LIVE_ONLY",
+            "historical_top20_depth": "NOT_AVAILABLE_FROM_HISTORICAL_API",
+            "live_sync_packet_gap_behavior": "PENDING_LIVE_ONLY",
+        }
+
+        overall_after_close = all(
+            field_matrix[k] == "PROVED"
+            for k in [
+                "futures_historical_ohlcv_oi",
+                "option_historical_ohlcv_oi_ce",
+                "option_historical_ohlcv_oi_pe",
+                "futures_quote_snapshot_5depth",
+                "option_quote_snapshot_5depth_ce",
+                "option_quote_snapshot_5depth_pe",
+                "option_chain_iv_greeks_oi_volume_best_bid_ask_ce",
+                "option_chain_iv_greeks_oi_volume_best_bid_ask_pe",
+                "cross_strike_option_chain_surface",
+            ]
+        )
+
+        report = {
+            "audit_ok": True,
+            "scope": {
+                "underlying_symbol": _upper(args.symbol),
+                "trading_date": args.date,
+                "exchange_segment": "NSE_FNO",
+                "underlying_segment_for_option_chain": "IDX_I",
+            },
+            "resolved_instruments": {
+                "underlying_scrip": underlying_scrip,
+                "active_option_expiries": active_expiries,
+                "chosen_option_expiry": chosen_expiry,
+                "future_security_id": future_sid,
+                "future_instrument": future_instrument,
+                "future_display_name": _pick(future_row, "DISPLAY_NAME", "SEM_CUSTOM_SYMBOL"),
+                "atm_underlying_last_price": underlying_last,
+                "atm_strike": atm_strike,
+                "atm_ce_security_id": atm_ce["security_id"],
+                "atm_pe_security_id": atm_pe["security_id"],
+                "atm_ce_instrument": ce_instrument,
+                "atm_pe_instrument": pe_instrument,
+            },
+            "proofs": {
+                "instrument_master_option_rows_found": len(option_rows),
+                "option_chain_contracts_found": len(contracts),
+                "future_intraday_summary": hist_future_s,
+                "ce_intraday_summary": hist_ce_s,
+                "pe_intraday_summary": hist_pe_s,
+                "future_quote_depth_levels_buy": len((q_future.get("depth") or {}).get("buy") or []),
+                "future_quote_depth_levels_sell": len((q_future.get("depth") or {}).get("sell") or []),
+                "ce_quote_depth_levels_buy": len((q_ce.get("depth") or {}).get("buy") or []),
+                "ce_quote_depth_levels_sell": len((q_ce.get("depth") or {}).get("sell") or []),
+                "pe_quote_depth_levels_buy": len((q_pe.get("depth") or {}).get("buy") or []),
+                "pe_quote_depth_levels_sell": len((q_pe.get("depth") or {}).get("sell") or []),
+                "atm_ce_chain_fields": atm_ce,
+                "atm_pe_chain_fields": atm_pe,
+                "future_quote_excerpt": {
+                    "last_price": q_future.get("last_price"),
+                    "volume": q_future.get("volume"),
+                    "oi": q_future.get("oi"),
+                    "last_trade_time": q_future.get("last_trade_time"),
+                },
+                "ce_quote_excerpt": {
+                    "last_price": q_ce.get("last_price"),
+                    "volume": q_ce.get("volume"),
+                    "oi": q_ce.get("oi"),
+                    "last_trade_time": q_ce.get("last_trade_time"),
+                },
+                "pe_quote_excerpt": {
+                    "last_price": q_pe.get("last_price"),
+                    "volume": q_pe.get("volume"),
+                    "oi": q_pe.get("oi"),
+                    "last_trade_time": q_pe.get("last_trade_time"),
+                },
+            },
+            "strategy_field_matrix": field_matrix,
+            "verdict": {
+                "after_close_rest_audit_passed": overall_after_close,
+                "top20_depth_runtime_proved": False,
+                "top20_depth_reason": "Dhan 20-level depth is a live websocket surface, not a historical candle surface.",
+                "full_all_fields_proved_after_close": False,
+                "remaining_live_only_gap": [
+                    "NSE_FNO 20-level depth runtime packets",
+                    "live sequencing / packet-gap behavior",
+                    "live cross-leg synchronization behavior",
+                ],
+            },
+        }
+
+        out_dir = Path("run/dhan_audit")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = out_dir / f"dhan_nifty_capability_audit_{args.date}_{ts}.json"
+        out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        print(json.dumps(report, indent=2, ensure_ascii=False))
+        print(f"\nREPORT_WRITTEN={out_path}")
+        return 0
+
+    except Exception as exc:
+        print(f"AUDIT FAILED: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -243,6 +243,158 @@ INSTRUMENT_KEYS: Final[tuple[str, ...]] = (
 )
 
 # ============================================================================
+# Strategy family / doctrine identifiers
+# ============================================================================
+
+STRATEGY_FAMILY_MIST: Final[str] = "MIST"
+STRATEGY_FAMILY_MISB: Final[str] = "MISB"
+STRATEGY_FAMILY_MISC: Final[str] = "MISC"
+STRATEGY_FAMILY_MISR: Final[str] = "MISR"
+STRATEGY_FAMILY_MISO: Final[str] = "MISO"
+
+STRATEGY_FAMILY_IDS: Final[tuple[str, ...]] = (
+    STRATEGY_FAMILY_MIST,
+    STRATEGY_FAMILY_MISB,
+    STRATEGY_FAMILY_MISC,
+    STRATEGY_FAMILY_MISR,
+    STRATEGY_FAMILY_MISO,
+)
+
+DOCTRINE_MIST: Final[str] = STRATEGY_FAMILY_MIST
+DOCTRINE_MISB: Final[str] = STRATEGY_FAMILY_MISB
+DOCTRINE_MISC: Final[str] = STRATEGY_FAMILY_MISC
+DOCTRINE_MISR: Final[str] = STRATEGY_FAMILY_MISR
+DOCTRINE_MISO: Final[str] = STRATEGY_FAMILY_MISO
+
+DOCTRINE_IDS: Final[tuple[str, ...]] = (
+    DOCTRINE_MIST,
+    DOCTRINE_MISB,
+    DOCTRINE_MISC,
+    DOCTRINE_MISR,
+    DOCTRINE_MISO,
+)
+
+BRANCH_CALL: Final[str] = "CALL"
+BRANCH_PUT: Final[str] = "PUT"
+
+BRANCH_IDS: Final[tuple[str, ...]] = (
+    BRANCH_CALL,
+    BRANCH_PUT,
+)
+
+# ============================================================================
+# Provider identifiers / roles / migration runtime modes
+# ============================================================================
+
+PROVIDER_ZERODHA: Final[str] = "ZERODHA"
+PROVIDER_DHAN: Final[str] = "DHAN"
+
+PROVIDER_IDS: Final[tuple[str, ...]] = (
+    PROVIDER_ZERODHA,
+    PROVIDER_DHAN,
+)
+
+PROVIDER_ROLE_FUTURES_MARKETDATA: Final[str] = "futures_marketdata"
+PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: Final[str] = "selected_option_marketdata"
+PROVIDER_ROLE_OPTION_CONTEXT: Final[str] = "option_context"
+PROVIDER_ROLE_EXECUTION_PRIMARY: Final[str] = "execution_primary"
+PROVIDER_ROLE_EXECUTION_FALLBACK: Final[str] = "execution_fallback"
+
+PROVIDER_ROLES: Final[tuple[str, ...]] = (
+    PROVIDER_ROLE_FUTURES_MARKETDATA,
+    PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA,
+    PROVIDER_ROLE_OPTION_CONTEXT,
+    PROVIDER_ROLE_EXECUTION_PRIMARY,
+    PROVIDER_ROLE_EXECUTION_FALLBACK,
+)
+
+PROVIDER_STATUS_HEALTHY: Final[str] = "HEALTHY"
+PROVIDER_STATUS_DEGRADED: Final[str] = "DEGRADED"
+PROVIDER_STATUS_STALE: Final[str] = "STALE"
+PROVIDER_STATUS_AUTH_FAILED: Final[str] = "AUTH_FAILED"
+PROVIDER_STATUS_UNAVAILABLE: Final[str] = "UNAVAILABLE"
+PROVIDER_STATUS_DISABLED: Final[str] = "DISABLED"
+PROVIDER_STATUS_FAILOVER_ACTIVE: Final[str] = "FAILOVER_ACTIVE"
+
+PROVIDER_STATUSES: Final[tuple[str, ...]] = (
+    PROVIDER_STATUS_HEALTHY,
+    PROVIDER_STATUS_DEGRADED,
+    PROVIDER_STATUS_STALE,
+    PROVIDER_STATUS_AUTH_FAILED,
+    PROVIDER_STATUS_UNAVAILABLE,
+    PROVIDER_STATUS_DISABLED,
+    PROVIDER_STATUS_FAILOVER_ACTIVE,
+)
+
+PROVIDER_FAILOVER_MODE_MANUAL: Final[str] = "MANUAL"
+PROVIDER_FAILOVER_MODE_ARMED_MANUAL: Final[str] = "ARMED_MANUAL"
+PROVIDER_FAILOVER_MODE_AUTO_AFTER_PROOF: Final[str] = "AUTO_AFTER_PROOF"
+
+PROVIDER_FAILOVER_MODES: Final[tuple[str, ...]] = (
+    PROVIDER_FAILOVER_MODE_MANUAL,
+    PROVIDER_FAILOVER_MODE_ARMED_MANUAL,
+    PROVIDER_FAILOVER_MODE_AUTO_AFTER_PROOF,
+)
+
+PROVIDER_OVERRIDE_MODE_AUTO: Final[str] = "AUTO"
+PROVIDER_OVERRIDE_MODE_FORCE_ZERODHA: Final[str] = "FORCE_ZERODHA"
+PROVIDER_OVERRIDE_MODE_FORCE_DHAN: Final[str] = "FORCE_DHAN"
+
+PROVIDER_OVERRIDE_MODES: Final[tuple[str, ...]] = (
+    PROVIDER_OVERRIDE_MODE_AUTO,
+    PROVIDER_OVERRIDE_MODE_FORCE_ZERODHA,
+    PROVIDER_OVERRIDE_MODE_FORCE_DHAN,
+)
+
+PROVIDER_TRANSITION_REASON_BOOTSTRAP: Final[str] = "BOOTSTRAP"
+PROVIDER_TRANSITION_REASON_CONFIG_RELOAD: Final[str] = "CONFIG_RELOAD"
+PROVIDER_TRANSITION_REASON_MANUAL_OVERRIDE: Final[str] = "MANUAL_OVERRIDE"
+PROVIDER_TRANSITION_REASON_HEALTH_FAIL: Final[str] = "HEALTH_FAIL"
+PROVIDER_TRANSITION_REASON_STALE_DATA: Final[str] = "STALE_DATA"
+PROVIDER_TRANSITION_REASON_AUTH_FAILED: Final[str] = "AUTH_FAILED"
+PROVIDER_TRANSITION_REASON_PROOF_PROMOTION: Final[str] = "PROOF_PROMOTION"
+PROVIDER_TRANSITION_REASON_FAILOVER_ACTIVATED: Final[str] = "FAILOVER_ACTIVATED"
+PROVIDER_TRANSITION_REASON_FAILBACK_RECOVERY: Final[str] = "FAILBACK_RECOVERY"
+
+PROVIDER_TRANSITION_REASONS: Final[tuple[str, ...]] = (
+    PROVIDER_TRANSITION_REASON_BOOTSTRAP,
+    PROVIDER_TRANSITION_REASON_CONFIG_RELOAD,
+    PROVIDER_TRANSITION_REASON_MANUAL_OVERRIDE,
+    PROVIDER_TRANSITION_REASON_HEALTH_FAIL,
+    PROVIDER_TRANSITION_REASON_STALE_DATA,
+    PROVIDER_TRANSITION_REASON_AUTH_FAILED,
+    PROVIDER_TRANSITION_REASON_PROOF_PROMOTION,
+    PROVIDER_TRANSITION_REASON_FAILOVER_ACTIVATED,
+    PROVIDER_TRANSITION_REASON_FAILBACK_RECOVERY,
+)
+
+STRATEGY_RUNTIME_MODE_NORMAL: Final[str] = "NORMAL"
+STRATEGY_RUNTIME_MODE_DHAN_DEGRADED: Final[str] = "DHAN_DEGRADED"
+STRATEGY_RUNTIME_MODE_BASE_5DEPTH: Final[str] = "BASE_5DEPTH"
+STRATEGY_RUNTIME_MODE_DEPTH20_ENHANCED: Final[str] = "DEPTH20_ENHANCED"
+STRATEGY_RUNTIME_MODE_DISABLED: Final[str] = "DISABLED"
+
+STRATEGY_RUNTIME_MODES: Final[tuple[str, ...]] = (
+    STRATEGY_RUNTIME_MODE_NORMAL,
+    STRATEGY_RUNTIME_MODE_DHAN_DEGRADED,
+    STRATEGY_RUNTIME_MODE_BASE_5DEPTH,
+    STRATEGY_RUNTIME_MODE_DEPTH20_ENHANCED,
+    STRATEGY_RUNTIME_MODE_DISABLED,
+)
+
+FAMILY_RUNTIME_MODE_OBSERVE_ONLY: Final[str] = "OBSERVE_ONLY"
+FAMILY_RUNTIME_MODE_LEGACY_LIVE_FAMILY_SHADOW: Final[str] = "LEGACY_LIVE_FAMILY_SHADOW"
+FAMILY_RUNTIME_MODE_FAMILY_LIVE_LEGACY_SHADOW: Final[str] = "FAMILY_LIVE_LEGACY_SHADOW"
+FAMILY_RUNTIME_MODE_FAMILY_LIVE_ONLY: Final[str] = "FAMILY_LIVE_ONLY"
+
+FAMILY_RUNTIME_MODES: Final[tuple[str, ...]] = (
+    FAMILY_RUNTIME_MODE_OBSERVE_ONLY,
+    FAMILY_RUNTIME_MODE_LEGACY_LIVE_FAMILY_SHADOW,
+    FAMILY_RUNTIME_MODE_FAMILY_LIVE_LEGACY_SHADOW,
+    FAMILY_RUNTIME_MODE_FAMILY_LIVE_ONLY,
+)
+
+# ============================================================================
 # Live streams
 # ============================================================================
 
@@ -270,6 +422,22 @@ LIVE_STREAM_NAMES: Final[tuple[str, ...]] = (
     STREAM_SYSTEM_ERRORS,
 )
 
+STREAM_TICKS_MME_FUT_ZERODHA: Final[str] = "ticks:mme:fut:zerodha:stream"
+STREAM_TICKS_MME_FUT_DHAN: Final[str] = "ticks:mme:fut:dhan:stream"
+STREAM_TICKS_MME_OPT_SELECTED_ZERODHA: Final[str] = "ticks:mme:opt:selected:zerodha:stream"
+STREAM_TICKS_MME_OPT_SELECTED_DHAN: Final[str] = "ticks:mme:opt:selected:dhan:stream"
+STREAM_TICKS_MME_OPT_CONTEXT_DHAN: Final[str] = "ticks:mme:opt:context:dhan:stream"
+STREAM_PROVIDER_RUNTIME: Final[str] = "provider:runtime:stream"
+
+LIVE_PROVIDER_STREAM_NAMES: Final[tuple[str, ...]] = (
+    STREAM_TICKS_MME_FUT_ZERODHA,
+    STREAM_TICKS_MME_FUT_DHAN,
+    STREAM_TICKS_MME_OPT_SELECTED_ZERODHA,
+    STREAM_TICKS_MME_OPT_SELECTED_DHAN,
+    STREAM_TICKS_MME_OPT_CONTEXT_DHAN,
+    STREAM_PROVIDER_RUNTIME,
+)
+
 # ============================================================================
 # Replay streams
 # ============================================================================
@@ -285,6 +453,19 @@ STREAM_REPLAY_CMD_MME: Final[str] = replay_name(STREAM_CMD_MME)
 STREAM_REPLAY_SYSTEM_HEALTH: Final[str] = replay_name(STREAM_SYSTEM_HEALTH)
 STREAM_REPLAY_SYSTEM_ERRORS: Final[str] = replay_name(STREAM_SYSTEM_ERRORS)
 
+STREAM_REPLAY_TICKS_MME_FUT_ZERODHA: Final[str] = replay_name(STREAM_TICKS_MME_FUT_ZERODHA)
+STREAM_REPLAY_TICKS_MME_FUT_DHAN: Final[str] = replay_name(STREAM_TICKS_MME_FUT_DHAN)
+STREAM_REPLAY_TICKS_MME_OPT_SELECTED_ZERODHA: Final[str] = replay_name(
+    STREAM_TICKS_MME_OPT_SELECTED_ZERODHA
+)
+STREAM_REPLAY_TICKS_MME_OPT_SELECTED_DHAN: Final[str] = replay_name(
+    STREAM_TICKS_MME_OPT_SELECTED_DHAN
+)
+STREAM_REPLAY_TICKS_MME_OPT_CONTEXT_DHAN: Final[str] = replay_name(
+    STREAM_TICKS_MME_OPT_CONTEXT_DHAN
+)
+STREAM_REPLAY_PROVIDER_RUNTIME: Final[str] = replay_name(STREAM_PROVIDER_RUNTIME)
+
 REPLAY_STREAM_NAMES: Final[tuple[str, ...]] = (
     STREAM_REPLAY_TICKS_MME_FUT,
     STREAM_REPLAY_TICKS_MME_OPT,
@@ -296,6 +477,15 @@ REPLAY_STREAM_NAMES: Final[tuple[str, ...]] = (
     STREAM_REPLAY_CMD_MME,
     STREAM_REPLAY_SYSTEM_HEALTH,
     STREAM_REPLAY_SYSTEM_ERRORS,
+)
+
+REPLAY_PROVIDER_STREAM_NAMES: Final[tuple[str, ...]] = (
+    STREAM_REPLAY_TICKS_MME_FUT_ZERODHA,
+    STREAM_REPLAY_TICKS_MME_FUT_DHAN,
+    STREAM_REPLAY_TICKS_MME_OPT_SELECTED_ZERODHA,
+    STREAM_REPLAY_TICKS_MME_OPT_SELECTED_DHAN,
+    STREAM_REPLAY_TICKS_MME_OPT_CONTEXT_DHAN,
+    STREAM_REPLAY_PROVIDER_RUNTIME,
 )
 
 # ============================================================================
@@ -336,6 +526,32 @@ LIVE_STATE_HASH_NAMES: Final[tuple[str, ...]] = (
     HASH_PARAMS_MME_META,
 )
 
+HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA: Final[str] = "state:snapshot:mme:fut:zerodha"
+HASH_STATE_SNAPSHOT_MME_FUT_DHAN: Final[str] = "state:snapshot:mme:fut:dhan"
+HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE: Final[str] = "state:snapshot:mme:fut:active"
+HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA: Final[str] = (
+    "state:snapshot:mme:opt:selected:zerodha"
+)
+HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN: Final[str] = (
+    "state:snapshot:mme:opt:selected:dhan"
+)
+HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE: Final[str] = (
+    "state:snapshot:mme:opt:selected:active"
+)
+HASH_STATE_DHAN_CONTEXT: Final[str] = "state:context:mme:dhan"
+HASH_STATE_PROVIDER_RUNTIME: Final[str] = "state:provider:runtime"
+
+LIVE_PROVIDER_STATE_HASH_NAMES: Final[tuple[str, ...]] = (
+    HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA,
+    HASH_STATE_SNAPSHOT_MME_FUT_DHAN,
+    HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE,
+    HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA,
+    HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN,
+    HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE,
+    HASH_STATE_DHAN_CONTEXT,
+    HASH_STATE_PROVIDER_RUNTIME,
+)
+
 # ============================================================================
 # Replay latest-state hashes / keys
 # ============================================================================
@@ -358,6 +574,27 @@ HASH_REPLAY_STATE_REPORT: Final[str] = replay_name(HASH_STATE_REPORT)
 HASH_REPLAY_PARAMS_MME: Final[str] = replay_name(HASH_PARAMS_MME)
 HASH_REPLAY_PARAMS_MME_META: Final[str] = replay_name(HASH_PARAMS_MME_META)
 
+HASH_REPLAY_STATE_SNAPSHOT_MME_FUT_ZERODHA: Final[str] = replay_name(
+    HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA
+)
+HASH_REPLAY_STATE_SNAPSHOT_MME_FUT_DHAN: Final[str] = replay_name(
+    HASH_STATE_SNAPSHOT_MME_FUT_DHAN
+)
+HASH_REPLAY_STATE_SNAPSHOT_MME_FUT_ACTIVE: Final[str] = replay_name(
+    HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE
+)
+HASH_REPLAY_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA: Final[str] = replay_name(
+    HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA
+)
+HASH_REPLAY_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN: Final[str] = replay_name(
+    HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN
+)
+HASH_REPLAY_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE: Final[str] = replay_name(
+    HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE
+)
+HASH_REPLAY_STATE_DHAN_CONTEXT: Final[str] = replay_name(HASH_STATE_DHAN_CONTEXT)
+HASH_REPLAY_STATE_PROVIDER_RUNTIME: Final[str] = replay_name(HASH_STATE_PROVIDER_RUNTIME)
+
 REPLAY_STATE_HASH_NAMES: Final[tuple[str, ...]] = (
     HASH_REPLAY_STATE_INSTRUMENTS_MME,
     HASH_REPLAY_STATE_SNAPSHOT_MME_FUT,
@@ -374,6 +611,17 @@ REPLAY_STATE_HASH_NAMES: Final[tuple[str, ...]] = (
     HASH_REPLAY_STATE_REPORT,
     HASH_REPLAY_PARAMS_MME,
     HASH_REPLAY_PARAMS_MME_META,
+)
+
+REPLAY_PROVIDER_STATE_HASH_NAMES: Final[tuple[str, ...]] = (
+    HASH_REPLAY_STATE_SNAPSHOT_MME_FUT_ZERODHA,
+    HASH_REPLAY_STATE_SNAPSHOT_MME_FUT_DHAN,
+    HASH_REPLAY_STATE_SNAPSHOT_MME_FUT_ACTIVE,
+    HASH_REPLAY_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA,
+    HASH_REPLAY_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN,
+    HASH_REPLAY_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE,
+    HASH_REPLAY_STATE_DHAN_CONTEXT,
+    HASH_REPLAY_STATE_PROVIDER_RUNTIME,
 )
 
 # ============================================================================
@@ -402,6 +650,24 @@ LIVE_HEALTH_KEYS: Final[tuple[str, ...]] = (
     KEY_HEALTH_REPORT,
 )
 
+KEY_HEALTH_ZERODHA_AUTH: Final[str] = "health:zerodha:auth"
+KEY_HEALTH_ZERODHA_MARKETDATA: Final[str] = "health:zerodha:marketdata"
+KEY_HEALTH_ZERODHA_EXECUTION: Final[str] = "health:zerodha:execution"
+KEY_HEALTH_DHAN_AUTH: Final[str] = "health:dhan:auth"
+KEY_HEALTH_DHAN_MARKETDATA: Final[str] = "health:dhan:marketdata"
+KEY_HEALTH_DHAN_EXECUTION: Final[str] = "health:dhan:execution"
+KEY_HEALTH_PROVIDER_RUNTIME: Final[str] = "health:provider:runtime"
+
+LIVE_PROVIDER_HEALTH_KEYS: Final[tuple[str, ...]] = (
+    KEY_HEALTH_ZERODHA_AUTH,
+    KEY_HEALTH_ZERODHA_MARKETDATA,
+    KEY_HEALTH_ZERODHA_EXECUTION,
+    KEY_HEALTH_DHAN_AUTH,
+    KEY_HEALTH_DHAN_MARKETDATA,
+    KEY_HEALTH_DHAN_EXECUTION,
+    KEY_HEALTH_PROVIDER_RUNTIME,
+)
+
 KEY_REPLAY_HEALTH_LOGIN: Final[str] = replay_name(KEY_HEALTH_LOGIN)
 KEY_REPLAY_HEALTH_INSTRUMENTS: Final[str] = replay_name(KEY_HEALTH_INSTRUMENTS)
 KEY_REPLAY_HEALTH_FEEDS: Final[str] = replay_name(KEY_HEALTH_FEEDS)
@@ -411,6 +677,24 @@ KEY_REPLAY_HEALTH_RISK: Final[str] = replay_name(KEY_HEALTH_RISK)
 KEY_REPLAY_HEALTH_EXECUTION: Final[str] = replay_name(KEY_HEALTH_EXECUTION)
 KEY_REPLAY_HEALTH_MONITOR: Final[str] = replay_name(KEY_HEALTH_MONITOR)
 KEY_REPLAY_HEALTH_REPORT: Final[str] = replay_name(KEY_HEALTH_REPORT)
+
+KEY_REPLAY_HEALTH_ZERODHA_AUTH: Final[str] = replay_name(KEY_HEALTH_ZERODHA_AUTH)
+KEY_REPLAY_HEALTH_ZERODHA_MARKETDATA: Final[str] = replay_name(
+    KEY_HEALTH_ZERODHA_MARKETDATA
+)
+KEY_REPLAY_HEALTH_ZERODHA_EXECUTION: Final[str] = replay_name(
+    KEY_HEALTH_ZERODHA_EXECUTION
+)
+KEY_REPLAY_HEALTH_DHAN_AUTH: Final[str] = replay_name(KEY_HEALTH_DHAN_AUTH)
+KEY_REPLAY_HEALTH_DHAN_MARKETDATA: Final[str] = replay_name(
+    KEY_HEALTH_DHAN_MARKETDATA
+)
+KEY_REPLAY_HEALTH_DHAN_EXECUTION: Final[str] = replay_name(
+    KEY_HEALTH_DHAN_EXECUTION
+)
+KEY_REPLAY_HEALTH_PROVIDER_RUNTIME: Final[str] = replay_name(
+    KEY_HEALTH_PROVIDER_RUNTIME
+)
 
 REPLAY_HEALTH_KEYS: Final[tuple[str, ...]] = (
     KEY_REPLAY_HEALTH_LOGIN,
@@ -422,6 +706,16 @@ REPLAY_HEALTH_KEYS: Final[tuple[str, ...]] = (
     KEY_REPLAY_HEALTH_EXECUTION,
     KEY_REPLAY_HEALTH_MONITOR,
     KEY_REPLAY_HEALTH_REPORT,
+)
+
+REPLAY_PROVIDER_HEALTH_KEYS: Final[tuple[str, ...]] = (
+    KEY_REPLAY_HEALTH_ZERODHA_AUTH,
+    KEY_REPLAY_HEALTH_ZERODHA_MARKETDATA,
+    KEY_REPLAY_HEALTH_ZERODHA_EXECUTION,
+    KEY_REPLAY_HEALTH_DHAN_AUTH,
+    KEY_REPLAY_HEALTH_DHAN_MARKETDATA,
+    KEY_REPLAY_HEALTH_DHAN_EXECUTION,
+    KEY_REPLAY_HEALTH_PROVIDER_RUNTIME,
 )
 
 # ============================================================================
@@ -720,8 +1014,10 @@ HEALTH_STATUSES: Final[tuple[str, ...]] = (
 
 STATE_IDLE: Final[str] = "IDLE"
 STATE_SCANNING: Final[str] = "SCANNING"
+STATE_ARMED: Final[str] = "ARMED"
 STATE_SIGNAL_READY: Final[str] = "SIGNAL_READY"
 STATE_CONFIRMING: Final[str] = "CONFIRMING"
+STATE_RETEST_MONITOR: Final[str] = "RETEST_MONITOR"
 STATE_ENTRY_PENDING: Final[str] = "ENTRY_PENDING"
 STATE_POSITION_OPEN: Final[str] = "POSITION_OPEN"
 STATE_EXIT_PENDING: Final[str] = "EXIT_PENDING"
@@ -732,8 +1028,10 @@ STATE_WAIT: Final[str] = "WAIT"
 SYSTEM_STATES: Final[tuple[str, ...]] = (
     STATE_IDLE,
     STATE_SCANNING,
+    STATE_ARMED,
     STATE_SIGNAL_READY,
     STATE_CONFIRMING,
+    STATE_RETEST_MONITOR,
     STATE_ENTRY_PENDING,
     STATE_POSITION_OPEN,
     STATE_EXIT_PENDING,
@@ -805,6 +1103,23 @@ LOCK_STRATEGY: Final[str] = KEY_LOCK_STRATEGY
 LOCK_EXECUTION: Final[str] = KEY_LOCK_EXECUTION
 LOCK_MONITOR: Final[str] = KEY_LOCK_MONITOR
 
+STATE_SNAPSHOT_FUT_ZERODHA: Final[str] = HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA
+STATE_SNAPSHOT_FUT_DHAN: Final[str] = HASH_STATE_SNAPSHOT_MME_FUT_DHAN
+STATE_SNAPSHOT_FUT_ACTIVE: Final[str] = HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE
+STATE_SNAPSHOT_OPT_SELECTED_ZERODHA: Final[str] = HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA
+STATE_SNAPSHOT_OPT_SELECTED_DHAN: Final[str] = HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN
+STATE_SNAPSHOT_OPT_SELECTED_ACTIVE: Final[str] = HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE
+STATE_DHAN_CONTEXT: Final[str] = HASH_STATE_DHAN_CONTEXT
+STATE_PROVIDER_RUNTIME: Final[str] = HASH_STATE_PROVIDER_RUNTIME
+
+HB_ZERODHA_AUTH: Final[str] = KEY_HEALTH_ZERODHA_AUTH
+HB_ZERODHA_MARKETDATA: Final[str] = KEY_HEALTH_ZERODHA_MARKETDATA
+HB_ZERODHA_EXECUTION: Final[str] = KEY_HEALTH_ZERODHA_EXECUTION
+HB_DHAN_AUTH: Final[str] = KEY_HEALTH_DHAN_AUTH
+HB_DHAN_MARKETDATA: Final[str] = KEY_HEALTH_DHAN_MARKETDATA
+HB_DHAN_EXECUTION: Final[str] = KEY_HEALTH_DHAN_EXECUTION
+HB_PROVIDER_RUNTIME: Final[str] = KEY_HEALTH_PROVIDER_RUNTIME
+
 # ============================================================================
 # Public aliases for model validation
 # ============================================================================
@@ -822,6 +1137,19 @@ ALLOWED_POSITION_SIDES: Final[tuple[str, ...]] = POSITION_SIDE_TYPES
 ALLOWED_SIDE_TYPES: Final[tuple[str, ...]] = SIDE_TYPES
 ALLOWED_STRATEGY_MODES: Final[tuple[str, ...]] = STRATEGY_MODES
 ALLOWED_SYSTEM_STATES: Final[tuple[str, ...]] = SYSTEM_STATES
+ALLOWED_STRATEGY_FAMILY_IDS: Final[tuple[str, ...]] = STRATEGY_FAMILY_IDS
+ALLOWED_DOCTRINE_IDS: Final[tuple[str, ...]] = DOCTRINE_IDS
+ALLOWED_BRANCH_IDS: Final[tuple[str, ...]] = BRANCH_IDS
+ALLOWED_STRATEGY_RUNTIME_MODES: Final[tuple[str, ...]] = STRATEGY_RUNTIME_MODES
+ALLOWED_FAMILY_RUNTIME_MODES: Final[tuple[str, ...]] = FAMILY_RUNTIME_MODES
+ALLOWED_PROVIDER_IDS: Final[tuple[str, ...]] = PROVIDER_IDS
+ALLOWED_PROVIDER_ROLES: Final[tuple[str, ...]] = PROVIDER_ROLES
+ALLOWED_PROVIDER_STATUSES: Final[tuple[str, ...]] = PROVIDER_STATUSES
+ALLOWED_PROVIDER_FAILOVER_MODES: Final[tuple[str, ...]] = PROVIDER_FAILOVER_MODES
+ALLOWED_PROVIDER_OVERRIDE_MODES: Final[tuple[str, ...]] = PROVIDER_OVERRIDE_MODES
+ALLOWED_PROVIDER_TRANSITION_REASONS: Final[tuple[str, ...]] = (
+    PROVIDER_TRANSITION_REASONS
+)
 
 # ============================================================================
 # Ownership registries
@@ -839,6 +1167,12 @@ STREAM_OWNERS: Final[Mapping[str, str]] = MappingProxyType(
         STREAM_CMD_MME: SERVICE_MONITOR,
         STREAM_SYSTEM_HEALTH: SERVICE_MONITOR,
         STREAM_SYSTEM_ERRORS: SERVICE_MONITOR,
+        STREAM_TICKS_MME_FUT_ZERODHA: SERVICE_FEEDS,
+        STREAM_TICKS_MME_FUT_DHAN: SERVICE_FEEDS,
+        STREAM_TICKS_MME_OPT_SELECTED_ZERODHA: SERVICE_FEEDS,
+        STREAM_TICKS_MME_OPT_SELECTED_DHAN: SERVICE_FEEDS,
+        STREAM_TICKS_MME_OPT_CONTEXT_DHAN: SERVICE_FEEDS,
+        STREAM_PROVIDER_RUNTIME: SERVICE_MAIN,
     }
 )
 
@@ -859,6 +1193,14 @@ STATE_HASH_OWNERS: Final[Mapping[str, str]] = MappingProxyType(
         HASH_STATE_REPORT: SERVICE_REPORT,
         HASH_PARAMS_MME: SERVICE_MAIN,
         HASH_PARAMS_MME_META: SERVICE_MAIN,
+        HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA: SERVICE_FEEDS,
+        HASH_STATE_SNAPSHOT_MME_FUT_DHAN: SERVICE_FEEDS,
+        HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE: SERVICE_FEEDS,
+        HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA: SERVICE_FEEDS,
+        HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN: SERVICE_FEEDS,
+        HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE: SERVICE_FEEDS,
+        HASH_STATE_DHAN_CONTEXT: SERVICE_FEEDS,
+        HASH_STATE_PROVIDER_RUNTIME: SERVICE_MAIN,
     }
 )
 
@@ -873,6 +1215,13 @@ HEALTH_OWNERS: Final[Mapping[str, str]] = MappingProxyType(
         KEY_HEALTH_EXECUTION: SERVICE_EXECUTION,
         KEY_HEALTH_MONITOR: SERVICE_MONITOR,
         KEY_HEALTH_REPORT: SERVICE_REPORT,
+        KEY_HEALTH_ZERODHA_AUTH: SERVICE_LOGIN,
+        KEY_HEALTH_ZERODHA_MARKETDATA: SERVICE_FEEDS,
+        KEY_HEALTH_ZERODHA_EXECUTION: SERVICE_EXECUTION,
+        KEY_HEALTH_DHAN_AUTH: SERVICE_LOGIN,
+        KEY_HEALTH_DHAN_MARKETDATA: SERVICE_FEEDS,
+        KEY_HEALTH_DHAN_EXECUTION: SERVICE_EXECUTION,
+        KEY_HEALTH_PROVIDER_RUNTIME: SERVICE_MAIN,
     }
 )
 
@@ -1059,6 +1408,39 @@ class GroupSet:
     monitor_mme: str
 
 
+@dataclass(frozen=True, slots=True)
+class ProviderStreamSet:
+    ticks_mme_fut_zerodha: str
+    ticks_mme_fut_dhan: str
+    ticks_mme_opt_selected_zerodha: str
+    ticks_mme_opt_selected_dhan: str
+    ticks_mme_opt_context_dhan: str
+    provider_runtime: str
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderStateHashSet:
+    snapshot_mme_fut_zerodha: str
+    snapshot_mme_fut_dhan: str
+    snapshot_mme_fut_active: str
+    snapshot_mme_opt_selected_zerodha: str
+    snapshot_mme_opt_selected_dhan: str
+    snapshot_mme_opt_selected_active: str
+    dhan_context: str
+    provider_runtime: str
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderHealthSet:
+    zerodha_auth: str
+    zerodha_marketdata: str
+    zerodha_execution: str
+    dhan_auth: str
+    dhan_marketdata: str
+    dhan_execution: str
+    provider_runtime: str
+
+
 # ============================================================================
 # Live / replay bundles
 # ============================================================================
@@ -1149,6 +1531,66 @@ REPLAY_HEALTH: Final[HealthSet] = HealthSet(
     report=KEY_REPLAY_HEALTH_REPORT,
 )
 
+LIVE_PROVIDER_STREAMS: Final[ProviderStreamSet] = ProviderStreamSet(
+    ticks_mme_fut_zerodha=STREAM_TICKS_MME_FUT_ZERODHA,
+    ticks_mme_fut_dhan=STREAM_TICKS_MME_FUT_DHAN,
+    ticks_mme_opt_selected_zerodha=STREAM_TICKS_MME_OPT_SELECTED_ZERODHA,
+    ticks_mme_opt_selected_dhan=STREAM_TICKS_MME_OPT_SELECTED_DHAN,
+    ticks_mme_opt_context_dhan=STREAM_TICKS_MME_OPT_CONTEXT_DHAN,
+    provider_runtime=STREAM_PROVIDER_RUNTIME,
+)
+
+REPLAY_PROVIDER_STREAMS: Final[ProviderStreamSet] = ProviderStreamSet(
+    ticks_mme_fut_zerodha=STREAM_REPLAY_TICKS_MME_FUT_ZERODHA,
+    ticks_mme_fut_dhan=STREAM_REPLAY_TICKS_MME_FUT_DHAN,
+    ticks_mme_opt_selected_zerodha=STREAM_REPLAY_TICKS_MME_OPT_SELECTED_ZERODHA,
+    ticks_mme_opt_selected_dhan=STREAM_REPLAY_TICKS_MME_OPT_SELECTED_DHAN,
+    ticks_mme_opt_context_dhan=STREAM_REPLAY_TICKS_MME_OPT_CONTEXT_DHAN,
+    provider_runtime=STREAM_REPLAY_PROVIDER_RUNTIME,
+)
+
+LIVE_PROVIDER_STATE_HASHES: Final[ProviderStateHashSet] = ProviderStateHashSet(
+    snapshot_mme_fut_zerodha=HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA,
+    snapshot_mme_fut_dhan=HASH_STATE_SNAPSHOT_MME_FUT_DHAN,
+    snapshot_mme_fut_active=HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE,
+    snapshot_mme_opt_selected_zerodha=HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA,
+    snapshot_mme_opt_selected_dhan=HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN,
+    snapshot_mme_opt_selected_active=HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE,
+    dhan_context=HASH_STATE_DHAN_CONTEXT,
+    provider_runtime=HASH_STATE_PROVIDER_RUNTIME,
+)
+
+REPLAY_PROVIDER_STATE_HASHES: Final[ProviderStateHashSet] = ProviderStateHashSet(
+    snapshot_mme_fut_zerodha=HASH_REPLAY_STATE_SNAPSHOT_MME_FUT_ZERODHA,
+    snapshot_mme_fut_dhan=HASH_REPLAY_STATE_SNAPSHOT_MME_FUT_DHAN,
+    snapshot_mme_fut_active=HASH_REPLAY_STATE_SNAPSHOT_MME_FUT_ACTIVE,
+    snapshot_mme_opt_selected_zerodha=HASH_REPLAY_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA,
+    snapshot_mme_opt_selected_dhan=HASH_REPLAY_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN,
+    snapshot_mme_opt_selected_active=HASH_REPLAY_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE,
+    dhan_context=HASH_REPLAY_STATE_DHAN_CONTEXT,
+    provider_runtime=HASH_REPLAY_STATE_PROVIDER_RUNTIME,
+)
+
+LIVE_PROVIDER_HEALTH: Final[ProviderHealthSet] = ProviderHealthSet(
+    zerodha_auth=KEY_HEALTH_ZERODHA_AUTH,
+    zerodha_marketdata=KEY_HEALTH_ZERODHA_MARKETDATA,
+    zerodha_execution=KEY_HEALTH_ZERODHA_EXECUTION,
+    dhan_auth=KEY_HEALTH_DHAN_AUTH,
+    dhan_marketdata=KEY_HEALTH_DHAN_MARKETDATA,
+    dhan_execution=KEY_HEALTH_DHAN_EXECUTION,
+    provider_runtime=KEY_HEALTH_PROVIDER_RUNTIME,
+)
+
+REPLAY_PROVIDER_HEALTH: Final[ProviderHealthSet] = ProviderHealthSet(
+    zerodha_auth=KEY_REPLAY_HEALTH_ZERODHA_AUTH,
+    zerodha_marketdata=KEY_REPLAY_HEALTH_ZERODHA_MARKETDATA,
+    zerodha_execution=KEY_REPLAY_HEALTH_ZERODHA_EXECUTION,
+    dhan_auth=KEY_REPLAY_HEALTH_DHAN_AUTH,
+    dhan_marketdata=KEY_REPLAY_HEALTH_DHAN_MARKETDATA,
+    dhan_execution=KEY_REPLAY_HEALTH_DHAN_EXECUTION,
+    provider_runtime=KEY_REPLAY_HEALTH_PROVIDER_RUNTIME,
+)
+
 LIVE_LOCKS: Final[LockSet] = LockSet(
     feeds=KEY_LOCK_FEEDS,
     strategy=KEY_LOCK_STRATEGY,
@@ -1215,8 +1657,11 @@ REPLAY_GROUP_SPECS: Final[Mapping[str, tuple[str, ...]]] = MappingProxyType(
 
 LIVE_ALL_NAMES: Final[tuple[str, ...]] = (
     *LIVE_STREAM_NAMES,
+    *LIVE_PROVIDER_STREAM_NAMES,
     *LIVE_STATE_HASH_NAMES,
+    *LIVE_PROVIDER_STATE_HASH_NAMES,
     *LIVE_HEALTH_KEYS,
+    *LIVE_PROVIDER_HEALTH_KEYS,
     *LIVE_LOCK_KEYS,
     *LIVE_NOTIFY_CHANNELS,
     *LIVE_GROUP_NAMES,
@@ -1224,8 +1669,11 @@ LIVE_ALL_NAMES: Final[tuple[str, ...]] = (
 
 REPLAY_ALL_NAMES: Final[tuple[str, ...]] = (
     *REPLAY_STREAM_NAMES,
+    *REPLAY_PROVIDER_STREAM_NAMES,
     *REPLAY_STATE_HASH_NAMES,
+    *REPLAY_PROVIDER_STATE_HASH_NAMES,
     *REPLAY_HEALTH_KEYS,
+    *REPLAY_PROVIDER_HEALTH_KEYS,
     *REPLAY_LOCK_KEYS,
     *REPLAY_NOTIFY_CHANNELS,
     *REPLAY_GROUP_NAMES,
@@ -1244,8 +1692,20 @@ def get_state_hashes(*, replay: bool = False) -> StateHashSet:
     return REPLAY_STATE_HASHES if replay else LIVE_STATE_HASHES
 
 
+def get_provider_streams(*, replay: bool = False) -> ProviderStreamSet:
+    return REPLAY_PROVIDER_STREAMS if replay else LIVE_PROVIDER_STREAMS
+
+
+def get_provider_state_hashes(*, replay: bool = False) -> ProviderStateHashSet:
+    return REPLAY_PROVIDER_STATE_HASHES if replay else LIVE_PROVIDER_STATE_HASHES
+
+
 def get_health_keys(*, replay: bool = False) -> HealthSet:
     return REPLAY_HEALTH if replay else LIVE_HEALTH
+
+
+def get_provider_health_keys(*, replay: bool = False) -> ProviderHealthSet:
+    return REPLAY_PROVIDER_HEALTH if replay else LIVE_PROVIDER_HEALTH
 
 
 def get_heartbeats(*, replay: bool = False) -> HealthSet:
@@ -1305,11 +1765,29 @@ def _validate_group_spec_entry(stream_name: str, groups: Sequence[str]) -> None:
 
 def validate_names_contract() -> None:
     _assert_no_duplicates(LIVE_STREAM_NAMES, label="LIVE_STREAM_NAMES")
+    _assert_no_duplicates(LIVE_PROVIDER_STREAM_NAMES, label="LIVE_PROVIDER_STREAM_NAMES")
     _assert_no_duplicates(REPLAY_STREAM_NAMES, label="REPLAY_STREAM_NAMES")
+    _assert_no_duplicates(REPLAY_PROVIDER_STREAM_NAMES, label="REPLAY_PROVIDER_STREAM_NAMES")
     _assert_no_duplicates(LIVE_STATE_HASH_NAMES, label="LIVE_STATE_HASH_NAMES")
+    _assert_no_duplicates(
+        LIVE_PROVIDER_STATE_HASH_NAMES,
+        label="LIVE_PROVIDER_STATE_HASH_NAMES",
+    )
     _assert_no_duplicates(REPLAY_STATE_HASH_NAMES, label="REPLAY_STATE_HASH_NAMES")
+    _assert_no_duplicates(
+        REPLAY_PROVIDER_STATE_HASH_NAMES,
+        label="REPLAY_PROVIDER_STATE_HASH_NAMES",
+    )
     _assert_no_duplicates(LIVE_HEALTH_KEYS, label="LIVE_HEALTH_KEYS")
+    _assert_no_duplicates(
+        LIVE_PROVIDER_HEALTH_KEYS,
+        label="LIVE_PROVIDER_HEALTH_KEYS",
+    )
     _assert_no_duplicates(REPLAY_HEALTH_KEYS, label="REPLAY_HEALTH_KEYS")
+    _assert_no_duplicates(
+        REPLAY_PROVIDER_HEALTH_KEYS,
+        label="REPLAY_PROVIDER_HEALTH_KEYS",
+    )
     _assert_no_duplicates(LIVE_LOCK_KEYS, label="LIVE_LOCK_KEYS")
     _assert_no_duplicates(REPLAY_LOCK_KEYS, label="REPLAY_LOCK_KEYS")
     _assert_no_duplicates(LIVE_NOTIFY_CHANNELS, label="LIVE_NOTIFY_CHANNELS")
@@ -1334,6 +1812,20 @@ def validate_names_contract() -> None:
     _assert_no_duplicates(SYSTEM_STATES, label="SYSTEM_STATES")
     _assert_no_duplicates(CONTROL_MODES, label="CONTROL_MODES")
     _assert_no_duplicates(INSTRUMENT_KEYS, label="INSTRUMENT_KEYS")
+    _assert_no_duplicates(STRATEGY_FAMILY_IDS, label="STRATEGY_FAMILY_IDS")
+    _assert_no_duplicates(DOCTRINE_IDS, label="DOCTRINE_IDS")
+    _assert_no_duplicates(BRANCH_IDS, label="BRANCH_IDS")
+    _assert_no_duplicates(STRATEGY_RUNTIME_MODES, label="STRATEGY_RUNTIME_MODES")
+    _assert_no_duplicates(FAMILY_RUNTIME_MODES, label="FAMILY_RUNTIME_MODES")
+    _assert_no_duplicates(PROVIDER_IDS, label="PROVIDER_IDS")
+    _assert_no_duplicates(PROVIDER_ROLES, label="PROVIDER_ROLES")
+    _assert_no_duplicates(PROVIDER_STATUSES, label="PROVIDER_STATUSES")
+    _assert_no_duplicates(PROVIDER_FAILOVER_MODES, label="PROVIDER_FAILOVER_MODES")
+    _assert_no_duplicates(PROVIDER_OVERRIDE_MODES, label="PROVIDER_OVERRIDE_MODES")
+    _assert_no_duplicates(
+        PROVIDER_TRANSITION_REASONS,
+        label="PROVIDER_TRANSITION_REASONS",
+    )
 
     for live_name in LIVE_ALL_NAMES:
         ensure_live_name(live_name)
@@ -1347,6 +1839,12 @@ def validate_names_contract() -> None:
         if owner not in SERVICE_NAMES:
             raise NamesContractError(
                 f"Unknown stream owner {owner!r} for stream {stream_name!r}"
+            )
+
+    for stream_name in (*LIVE_STREAM_NAMES, *LIVE_PROVIDER_STREAM_NAMES):
+        if stream_name not in STREAM_OWNERS:
+            raise NamesContractError(
+                f"Missing stream owner registry entry for live stream {stream_name!r}"
             )
 
     for stream_name, publishers in STREAM_ADDITIVE_PUBLISHERS.items():
@@ -1378,12 +1876,24 @@ def validate_names_contract() -> None:
                 f"Unknown state-hash owner {owner!r} for hash {hash_name!r}"
             )
 
+    for hash_name in (*LIVE_STATE_HASH_NAMES, *LIVE_PROVIDER_STATE_HASH_NAMES):
+        if hash_name not in STATE_HASH_OWNERS:
+            raise NamesContractError(
+                f"Missing state-hash owner registry entry for live hash {hash_name!r}"
+            )
+
     for health_key, owner in HEALTH_OWNERS.items():
         ensure_live_name(health_key)
         _require_non_empty_str(owner, field_name=f"HEALTH_OWNERS[{health_key!r}]")
         if owner not in SERVICE_NAMES:
             raise NamesContractError(
                 f"Unknown health owner {owner!r} for key {health_key!r}"
+            )
+
+    for health_key in (*LIVE_HEALTH_KEYS, *LIVE_PROVIDER_HEALTH_KEYS):
+        if health_key not in HEALTH_OWNERS:
+            raise NamesContractError(
+                f"Missing health owner registry entry for live key {health_key!r}"
             )
 
     for lock_key, owner in LOCK_OWNERS.items():
@@ -1426,18 +1936,28 @@ def validate_names_contract() -> None:
     for stream_name, groups in LIVE_GROUP_SPECS.items():
         ensure_live_name(stream_name)
         _validate_group_spec_entry(stream_name, groups)
-        if stream_name not in LIVE_STREAM_NAMES:
+        if stream_name not in (*LIVE_STREAM_NAMES, *LIVE_PROVIDER_STREAM_NAMES):
             raise NamesContractError(
                 f"Live group spec references unknown stream {stream_name!r}"
             )
+        for group_name in groups:
+            if group_name not in LIVE_GROUP_NAMES:
+                raise NamesContractError(
+                    f"Live group spec for {stream_name!r} references unknown group {group_name!r}"
+                )
 
     for stream_name, groups in REPLAY_GROUP_SPECS.items():
         ensure_replay_name(stream_name)
         _validate_group_spec_entry(stream_name, groups)
-        if stream_name not in REPLAY_STREAM_NAMES:
+        if stream_name not in (*REPLAY_STREAM_NAMES, *REPLAY_PROVIDER_STREAM_NAMES):
             raise NamesContractError(
                 f"Replay group spec references unknown stream {stream_name!r}"
             )
+        for group_name in groups:
+            if group_name not in REPLAY_GROUP_NAMES:
+                raise NamesContractError(
+                    f"Replay group spec for {stream_name!r} references unknown group {group_name!r}"
+                )
 
     alias_map: dict[str, str] = {
         "STREAM_CMD": STREAM_CMD,
@@ -1459,6 +1979,14 @@ def validate_names_contract() -> None:
         "STATE_REPORT": STATE_REPORT,
         "STATE_PARAMS": STATE_PARAMS,
         "STATE_PARAMS_META": STATE_PARAMS_META,
+        "STATE_SNAPSHOT_FUT_ZERODHA": STATE_SNAPSHOT_FUT_ZERODHA,
+        "STATE_SNAPSHOT_FUT_DHAN": STATE_SNAPSHOT_FUT_DHAN,
+        "STATE_SNAPSHOT_FUT_ACTIVE": STATE_SNAPSHOT_FUT_ACTIVE,
+        "STATE_SNAPSHOT_OPT_SELECTED_ZERODHA": STATE_SNAPSHOT_OPT_SELECTED_ZERODHA,
+        "STATE_SNAPSHOT_OPT_SELECTED_DHAN": STATE_SNAPSHOT_OPT_SELECTED_DHAN,
+        "STATE_SNAPSHOT_OPT_SELECTED_ACTIVE": STATE_SNAPSHOT_OPT_SELECTED_ACTIVE,
+        "STATE_DHAN_CONTEXT": STATE_DHAN_CONTEXT,
+        "STATE_PROVIDER_RUNTIME": STATE_PROVIDER_RUNTIME,
         "HB_LOGIN": HB_LOGIN,
         "HB_INSTRUMENTS": HB_INSTRUMENTS,
         "HB_FEEDS": HB_FEEDS,
@@ -1468,6 +1996,13 @@ def validate_names_contract() -> None:
         "HB_EXECUTION": HB_EXECUTION,
         "HB_MONITOR": HB_MONITOR,
         "HB_REPORT": HB_REPORT,
+        "HB_ZERODHA_AUTH": HB_ZERODHA_AUTH,
+        "HB_ZERODHA_MARKETDATA": HB_ZERODHA_MARKETDATA,
+        "HB_ZERODHA_EXECUTION": HB_ZERODHA_EXECUTION,
+        "HB_DHAN_AUTH": HB_DHAN_AUTH,
+        "HB_DHAN_MARKETDATA": HB_DHAN_MARKETDATA,
+        "HB_DHAN_EXECUTION": HB_DHAN_EXECUTION,
+        "HB_PROVIDER_RUNTIME": HB_PROVIDER_RUNTIME,
         "GROUP_EXEC": GROUP_EXEC,
         "GROUP_RISK": GROUP_RISK,
         "GROUP_MONITOR": GROUP_MONITOR,
@@ -1533,13 +2068,19 @@ __all__ = tuple(
         "HealthSet",
         "LockSet",
         "GroupSet",
+        "ProviderStreamSet",
+        "ProviderStateHashSet",
+        "ProviderHealthSet",
         "ensure_live_name",
         "ensure_replay_name",
         "replay_name",
         "is_replay_name",
         "get_streams",
         "get_state_hashes",
+        "get_provider_streams",
+        "get_provider_state_hashes",
         "get_health_keys",
+        "get_provider_health_keys",
         "get_heartbeats",
         "get_locks",
         "get_groups",
