@@ -1,13 +1,10 @@
 [Unit]
-Description=ScalpX MME weekday close-session timer
-Documentation=/home/Lenovo/scalpx/projects/mme_scalpx/README.md
-Requires=scalpx-mme-close.service
+Description=Stop ScalpX MME at 15:35 IST on weekdays
 
 [Timer]
-Unit=scalpx-mme-close.service
-OnCalendar=Mon..Fri 15:30:00
+OnCalendar=Mon..Fri 15:35:00 Asia/Kolkata
 Persistent=true
-AccuracySec=1s
+Unit=scalpx-mme-close.service
 
 [Install]
 WantedBy=timers.target

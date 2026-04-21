@@ -1,0 +1,35 @@
+{
+  "contract_version": "v1",
+  "economics_enriched_recorded_example": {
+    "ask": 121.5,
+    "bid": 120.5,
+    "economics_reason": "reward_cost_pass",
+    "entry_mode": "ATM",
+    "ltp": 121.0,
+    "reward_cost_ratio": 1.5,
+    "reward_ticks": 30,
+    "selected_leg": "CALL_ATM",
+    "side": "CALL",
+    "source_file": "opt_ticks_enriched.jsonl",
+    "source_frame_id": "feature_frame_000002",
+    "source_mode": "economics_enriched_recorded",
+    "source_stem": "opt_ticks_enriched",
+    "stop_ticks": 20,
+    "symbol": "NIFTY_CE",
+    "target_ticks": 30,
+    "tick_size": 0.05,
+    "trading_day": "2026-04-17",
+    "ts_event": "2026-04-17T09:15:01+05:30"
+  },
+  "quote_only_recorded_example": {
+    "ask": 120.5,
+    "bid": 119.5,
+    "ltp": 120.0,
+    "source_file": "opt_ticks.jsonl",
+    "source_mode": "quote_only_recorded",
+    "source_stem": "opt_ticks",
+    "symbol": "NIFTY_CE",
+    "trading_day": "2026-04-17",
+    "ts_event": "2026-04-17T09:15:00+05:30"
+  }
+}

@@ -1,0 +1,393 @@
+"""
+app/mme_scalpx/replay/contracts.py
+
+Replay-local contract surfaces for the MME-ScalpX Permanent Replay & Validation
+Framework.
+
+R1 Constitution Freeze
+----------------------
+This module owns:
+- replay-local constants and artifact names
+- manifest field-name surfaces
+- profile kind labels
+- replay contract dataclasses
+- replay-local validation helpers
+- replay manifest serialization helpers
+"""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field, is_dataclass
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+from .modes import (
+    DoctrineMode,
+    ExperimentFamily,
+    IntegrityVerdict,
+    MarketDayTag,
+    ReplayScope,
+    ReplaySelectionMode,
+    ReplaySideMode,
+    ReplaySpeedMode,
+    ReplayVerdictTag,
+)
+
+REPLAY_CHAPTER_NAME = "replay"
+REPLAY_RUNS_DIRNAME = "run/replay"
+
+ARTIFACT_MANIFEST = "00_manifest.json"
+ARTIFACT_DATASET_SUMMARY = "01_dataset_summary.json"
+ARTIFACT_SCOPE_PROFILE = "02_scope_profile.json"
+ARTIFACT_INTEGRITY_REPORT = "03_integrity_report.json"
+ARTIFACT_METRICS_SUMMARY = "04_metrics_summary.json"
+ARTIFACT_TRADE_LOG = "05_trade_log.csv"
+ARTIFACT_CANDIDATE_AUDIT = "06_candidate_audit.csv"
+ARTIFACT_BLOCKER_BREAKDOWN = "07_blocker_breakdown.json"
+ARTIFACT_EXIT_BREAKDOWN = "08_exit_breakdown.json"
+ARTIFACT_DIFFERENTIAL_REPORT = "09_differential_report.json"
+
+REQUIRED_ARTIFACT_FILENAMES = (
+    ARTIFACT_MANIFEST,
+    ARTIFACT_DATASET_SUMMARY,
+    ARTIFACT_SCOPE_PROFILE,
+    ARTIFACT_INTEGRITY_REPORT,
+    ARTIFACT_METRICS_SUMMARY,
+)
+
+OPTIONAL_ARTIFACT_FILENAMES = (
+    ARTIFACT_TRADE_LOG,
+    ARTIFACT_CANDIDATE_AUDIT,
+    ARTIFACT_BLOCKER_BREAKDOWN,
+    ARTIFACT_EXIT_BREAKDOWN,
+    ARTIFACT_DIFFERENTIAL_REPORT,
+)
+
+ARTIFACTS_SUBDIR = "artifacts"
+LOGS_SUBDIR = "logs"
+
+MANIFEST_FIELD_RUN_ID = "run_id"
+MANIFEST_FIELD_CHAPTER = "chapter"
+MANIFEST_FIELD_CREATED_AT = "created_at"
+MANIFEST_FIELD_CODE_REVISION = "code_revision"
+MANIFEST_FIELD_DATASET = "dataset"
+MANIFEST_FIELD_SELECTION = "selection"
+MANIFEST_FIELD_REPLAY = "replay"
+MANIFEST_FIELD_PROFILES = "profiles"
+MANIFEST_FIELD_EXPERIMENT = "experiment"
+MANIFEST_FIELD_RESET = "reset"
+MANIFEST_FIELD_INTEGRITY = "integrity"
+MANIFEST_FIELD_ARTIFACTS = "artifacts"
+MANIFEST_FIELD_VERDICT_TAGS = "verdict_tags"
+MANIFEST_FIELD_NOTES = "notes"
+
+MANIFEST_REQUIRED_TOP_LEVEL_FIELDS = (
+    MANIFEST_FIELD_RUN_ID,
+    MANIFEST_FIELD_CHAPTER,
+    MANIFEST_FIELD_CREATED_AT,
+    MANIFEST_FIELD_CODE_REVISION,
+    MANIFEST_FIELD_DATASET,
+    MANIFEST_FIELD_SELECTION,
+    MANIFEST_FIELD_REPLAY,
+    MANIFEST_FIELD_PROFILES,
+    MANIFEST_FIELD_EXPERIMENT,
+    MANIFEST_FIELD_RESET,
+    MANIFEST_FIELD_INTEGRITY,
+    MANIFEST_FIELD_ARTIFACTS,
+    MANIFEST_FIELD_VERDICT_TAGS,
+    MANIFEST_FIELD_NOTES,
+)
+
+PROFILE_KIND_DATASET = "dataset_profile"
+PROFILE_KIND_REPLAY = "replay_profile"
+PROFILE_KIND_EXPERIMENT = "experiment_profile"
+PROFILE_KIND_BATCH = "batch_profile"
+PROFILE_KIND_FORENSIC = "forensic_profile"
+PROFILE_KIND_INTEGRITY = "integrity_profile"
+
+ALL_PROFILE_KINDS = (
+    PROFILE_KIND_DATASET,
+    PROFILE_KIND_REPLAY,
+    PROFILE_KIND_EXPERIMENT,
+    PROFILE_KIND_BATCH,
+    PROFILE_KIND_FORENSIC,
+    PROFILE_KIND_INTEGRITY,
+)
+
+INTEGRITY_CHECK_HEARTBEAT = "heartbeat_integrity"
+INTEGRITY_CHECK_HASH_FRESHNESS = "hash_freshness"
+INTEGRITY_CHECK_SNAPSHOT_SYNC = "snapshot_sync_validity"
+INTEGRITY_CHECK_STALE_LEG = "stale_leg_detection"
+INTEGRITY_CHECK_RESET_CLEANLINESS = "reset_cleanliness"
+INTEGRITY_CHECK_REPRODUCIBILITY = "reproducibility_proof"
+
+REQUIRED_INTEGRITY_CHECKS = (
+    INTEGRITY_CHECK_HEARTBEAT,
+    INTEGRITY_CHECK_HASH_FRESHNESS,
+    INTEGRITY_CHECK_SNAPSHOT_SYNC,
+    INTEGRITY_CHECK_STALE_LEG,
+    INTEGRITY_CHECK_RESET_CLEANLINESS,
+    INTEGRITY_CHECK_REPRODUCIBILITY,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class DatasetSection:
+    dataset_id: str
+    dataset_fingerprint: str
+    source_path: str
+    coverage_summary: Mapping[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class SelectionWindow:
+    start: str | None = None
+    end: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SelectionSection:
+    selection_mode: ReplaySelectionMode
+    trading_dates: tuple[str, ...]
+    window: SelectionWindow = field(default_factory=SelectionWindow)
+    session_segment: str | None = None
+    market_tags: tuple[MarketDayTag, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class ReplaySection:
+    scope: ReplayScope
+    speed_mode: ReplaySpeedMode
+    doctrine_mode: DoctrineMode
+    side_mode: ReplaySideMode
+    fill_model: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ProfilesSection:
+    dataset_profile: str | None = None
+    replay_profile: str | None = None
+    experiment_profile: str | None = None
+    batch_profile: str | None = None
+    forensic_profile: str | None = None
+    integrity_profile: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ExperimentSection:
+    family: ExperimentFamily | None = None
+    baseline_ref: str | None = None
+    override_pack_id: str | None = None
+    shadow_label: str | None = None
+    differential_pair_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ResetSection:
+    policy: str
+    reset_started_at: str | None = None
+    reset_completed_at: str | None = None
+    reset_verdict: IntegrityVerdict | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class IntegritySection:
+    required_checks: tuple[str, ...]
+    verdict: IntegrityVerdict | None = None
+    waivers: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class ArtifactsSection:
+    root_dir: str
+    manifest_path: str
+    log_dir: str
+    report_paths: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class ReplayRunManifest:
+    run_id: str
+    chapter: str
+    created_at: str
+    code_revision: str | None
+    dataset: DatasetSection
+    selection: SelectionSection
+    replay: ReplaySection
+    profiles: ProfilesSection
+    experiment: ExperimentSection
+    reset: ResetSection
+    integrity: IntegritySection
+    artifacts: ArtifactsSection
+    verdict_tags: tuple[ReplayVerdictTag, ...] = field(default_factory=tuple)
+    notes: tuple[str, ...] = field(default_factory=tuple)
+
+
+def validate_run_id(run_id: str) -> None:
+    if not run_id or not run_id.strip():
+        raise ValueError("run_id must be non-empty")
+
+
+def validate_manifest_chapter(chapter: str) -> None:
+    if chapter != REPLAY_CHAPTER_NAME:
+        raise ValueError(
+            f"manifest chapter must be {REPLAY_CHAPTER_NAME!r}, got {chapter!r}"
+        )
+
+
+def validate_required_integrity_checks(required_checks: Sequence[str]) -> None:
+    present = set(required_checks)
+    missing = [name for name in REQUIRED_INTEGRITY_CHECKS if name not in present]
+    if missing:
+        raise ValueError(f"missing required integrity checks: {missing}")
+
+
+def validate_required_artifact_paths(
+    manifest_path: str,
+    report_paths: Sequence[str],
+) -> None:
+    filenames_present = {Path(manifest_path).name}
+    filenames_present.update(Path(path).name for path in report_paths)
+
+    missing = sorted(
+        filename
+        for filename in REQUIRED_ARTIFACT_FILENAMES
+        if filename not in filenames_present
+    )
+    if missing:
+        raise ValueError(f"missing required artifact paths: {missing}")
+
+
+def validate_shadow_visibility(
+    doctrine_mode: DoctrineMode,
+    experiment_profile: str | None,
+    override_pack_id: str | None,
+) -> None:
+    if doctrine_mode is DoctrineMode.SHADOW:
+        if not experiment_profile:
+            raise ValueError("shadow replay requires experiment_profile")
+        if not override_pack_id:
+            raise ValueError("shadow replay requires override_pack_id")
+
+
+def validate_differential_visibility(
+    doctrine_mode: DoctrineMode,
+    differential_pair_id: str | None,
+    baseline_ref: str | None,
+) -> None:
+    if doctrine_mode is DoctrineMode.DIFFERENTIAL:
+        if not differential_pair_id:
+            raise ValueError("differential replay requires differential_pair_id")
+        if not baseline_ref:
+            raise ValueError("differential replay requires baseline_ref")
+
+
+def validate_locked_visibility(
+    doctrine_mode: DoctrineMode,
+    override_pack_id: str | None,
+    differential_pair_id: str | None,
+) -> None:
+    if doctrine_mode is DoctrineMode.LOCKED:
+        if override_pack_id:
+            raise ValueError("locked replay must not carry override_pack_id")
+        if differential_pair_id:
+            raise ValueError("locked replay must not carry differential_pair_id")
+
+
+def validate_selection_section(selection: SelectionSection) -> None:
+    if not selection.trading_dates:
+        raise ValueError("selection.trading_dates must be non-empty")
+
+
+def validate_integrity_section(integrity: IntegritySection) -> None:
+    validate_required_integrity_checks(integrity.required_checks)
+
+
+def validate_artifacts_section(artifacts: ArtifactsSection) -> None:
+    if not artifacts.root_dir.strip():
+        raise ValueError("artifacts.root_dir must be non-empty")
+    if not artifacts.manifest_path.strip():
+        raise ValueError("artifacts.manifest_path must be non-empty")
+    if not artifacts.log_dir.strip():
+        raise ValueError("artifacts.log_dir must be non-empty")
+    validate_required_artifact_paths(
+        manifest_path=artifacts.manifest_path,
+        report_paths=artifacts.report_paths,
+    )
+
+
+def validate_manifest(manifest: ReplayRunManifest) -> None:
+    validate_run_id(manifest.run_id)
+    validate_manifest_chapter(manifest.chapter)
+    validate_selection_section(manifest.selection)
+    validate_integrity_section(manifest.integrity)
+    validate_artifacts_section(manifest.artifacts)
+    validate_shadow_visibility(
+        doctrine_mode=manifest.replay.doctrine_mode,
+        experiment_profile=manifest.profiles.experiment_profile,
+        override_pack_id=manifest.experiment.override_pack_id,
+    )
+    validate_differential_visibility(
+        doctrine_mode=manifest.replay.doctrine_mode,
+        differential_pair_id=manifest.experiment.differential_pair_id,
+        baseline_ref=manifest.experiment.baseline_ref,
+    )
+    validate_locked_visibility(
+        doctrine_mode=manifest.replay.doctrine_mode,
+        override_pack_id=manifest.experiment.override_pack_id,
+        differential_pair_id=manifest.experiment.differential_pair_id,
+    )
+
+
+def _serialize_value(value: Any) -> Any:
+    if value is None:
+        return None
+    if hasattr(value, "value"):
+        return value.value
+    if is_dataclass(value):
+        return {k: _serialize_value(v) for k, v in asdict(value).items()}
+    if isinstance(value, dict):
+        return {str(k): _serialize_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_serialize_value(v) for v in value]
+    return value
+
+
+def manifest_to_dict(manifest: ReplayRunManifest) -> dict[str, Any]:
+    validate_manifest(manifest)
+    return _serialize_value(manifest)
+
+
+__all__ = [
+    "REPLAY_CHAPTER_NAME",
+    "REPLAY_RUNS_DIRNAME",
+    "ARTIFACT_MANIFEST",
+    "ARTIFACT_DATASET_SUMMARY",
+    "ARTIFACT_SCOPE_PROFILE",
+    "ARTIFACT_INTEGRITY_REPORT",
+    "ARTIFACT_METRICS_SUMMARY",
+    "ARTIFACT_TRADE_LOG",
+    "ARTIFACT_CANDIDATE_AUDIT",
+    "ARTIFACT_BLOCKER_BREAKDOWN",
+    "ARTIFACT_EXIT_BREAKDOWN",
+    "ARTIFACT_DIFFERENTIAL_REPORT",
+    "REQUIRED_ARTIFACT_FILENAMES",
+    "OPTIONAL_ARTIFACT_FILENAMES",
+    "ARTIFACTS_SUBDIR",
+    "LOGS_SUBDIR",
+    "MANIFEST_REQUIRED_TOP_LEVEL_FIELDS",
+    "ALL_PROFILE_KINDS",
+    "REQUIRED_INTEGRITY_CHECKS",
+    "DatasetSection",
+    "SelectionWindow",
+    "SelectionSection",
+    "ReplaySection",
+    "ProfilesSection",
+    "ExperimentSection",
+    "ResetSection",
+    "IntegritySection",
+    "ArtifactsSection",
+    "ReplayRunManifest",
+    "validate_manifest",
+    "manifest_to_dict",
+]

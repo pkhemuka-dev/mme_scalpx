@@ -1,0 +1,11 @@
+{
+  "capability_profile_id": "replay_dataset_capability_quote_only_v1",
+  "capability_profile_version": "v1",
+  "dataset_id": "replay_dataset_2026_04_17",
+  "dataset_root": "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay",
+  "declaration_version": "v1",
+  "notes": [
+    "declares this replay dataset as quote-only recorded",
+    "economics truth must remain non-conclusive unless a richer dataset is supplied"
+  ]
+}

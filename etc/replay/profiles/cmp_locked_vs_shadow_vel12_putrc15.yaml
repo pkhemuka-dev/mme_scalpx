@@ -1,0 +1,81 @@
+run_id: replay_cmp_2026_04_17_vel12_putrc15
+chapter: replay_comparison_execution
+
+dataset:
+  dataset_id: dataset_2026_04_17_full_session
+  source_type: recorded_market_data
+  instrument_set: nfo_runtime_resolved
+  session_date: 2026-04-17
+  time_zone: Asia/Kolkata
+
+selection:
+  mode: single_day
+  session_date: 2026-04-17
+  intraday_window: full_session
+  custom_windows: []
+  market_day_tags: []
+  identical_input_basis_required: true
+
+replay:
+  doctrine_mode_parent: differential
+  replay_scope: feeds_features_strategy_risk
+  speed_mode: accelerated
+  deterministic_reset: true
+  namespace_mode: isolated_replay
+  clock_mode: replay_clock
+  execution_shadow_enabled: false
+
+profiles:
+  dataset_profile: dataset_2026_04_17_full_session
+  replay_profile: cmp_locked_vs_shadow_vel12_putrc15
+  experiment_profile: shadow_put_surface_probe_v1
+  integrity_profile: standard_replay_integrity_v1
+  forensic_profile: candidate_blocker_economics_focus_v1
+
+experiment:
+  family: differential_comparison
+  purpose: baseline_vs_shadow_put_surface_comparison
+  baseline_label: baseline_locked
+  shadow_label: shadow_vel12_putrc15
+  hypothesis:
+    - lower_velocity_threshold admits disciplined additional put-side frames
+    - reward_cost adjustment improves downstream economics acceptance
+    - admissions should concentrate in PUT_ATM1 then PUT_ATM
+
+integrity:
+  required_checks:
+    - heartbeat_integrity
+    - hash_freshness
+    - snapshot_sync_validity
+    - stale_leg_detection
+    - reset_cleanliness
+    - reproducibility_proof
+  fail_policy: tag_unreliable_not_silent
+  waiver: null
+
+artifacts:
+  root: run/replay/replay_cmp_2026_04_17_vel12_putrc15
+  required_files:
+    - 00_manifest.json
+    - 01_dataset_summary.json
+    - 02_scope_profile.json
+    - 03_integrity_report.json
+    - 04_metrics_summary.json
+    - 05_candidate_diff_report.csv
+    - 06_blocker_diff_report.json
+    - 07_economics_diff_report.json
+    - 08_side_split_report.json
+    - 09_put_leg_focus_report.json
+    - 10_trade_log.csv
+    - 11_differential_report.json
+    - 12_operator_verdict.txt
+
+verdict_tags:
+  - shadow_evidence_only
+  - differential_comparison
+  - contractual_baseline_reference
+
+notes:
+  - no_production_doctrine_mutation
+  - test_not_contract_change
+  - replay_result_not_production_truth

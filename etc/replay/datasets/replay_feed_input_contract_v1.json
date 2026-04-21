@@ -1,0 +1,98 @@
+{
+  "common_required_fields": [
+    "ts_event",
+    "symbol",
+    "bid",
+    "ask",
+    "ltp"
+  ],
+  "contract_version": "v1",
+  "economics_enriched_mode": {
+    "economics_evaluable": true,
+    "never_invent_fields": [
+      "source_frame_id",
+      "side",
+      "selected_leg",
+      "entry_mode",
+      "tick_size",
+      "target_ticks",
+      "stop_ticks",
+      "reward_ticks",
+      "reward_cost_ratio",
+      "economics_reason"
+    ],
+    "optional_fields": [],
+    "required_fields": [
+      "source_frame_id",
+      "side",
+      "selected_leg",
+      "entry_mode",
+      "tick_size",
+      "target_ticks",
+      "stop_ticks",
+      "reward_ticks",
+      "reward_cost_ratio",
+      "economics_reason"
+    ],
+    "source_mode": "economics_enriched_recorded"
+  },
+  "governance": [
+    "recorded != strategy-approved",
+    "derived != production-used",
+    "researched != contract-changed",
+    "test != contract change",
+    "quote-only rows remain valid but are not economics-evaluable",
+    "economics-enriched rows may be economics-evaluable only when recorded source truth is actually present",
+    "never silently invent source_frame_id, side, selected_leg, entry_mode, tick_size, target_ticks, stop_ticks, reward_ticks, reward_cost_ratio, or economics_reason"
+  ],
+  "never_invent_fields": [
+    "source_frame_id",
+    "side",
+    "selected_leg",
+    "entry_mode",
+    "tick_size",
+    "target_ticks",
+    "stop_ticks",
+    "reward_ticks",
+    "reward_cost_ratio",
+    "economics_reason"
+  ],
+  "optional_provenance_fields": [
+    "source_file",
+    "source_stem",
+    "trading_day"
+  ],
+  "quote_only_mode": {
+    "economics_evaluable": false,
+    "never_invent_fields": [
+      "source_frame_id",
+      "side",
+      "selected_leg",
+      "entry_mode",
+      "tick_size",
+      "target_ticks",
+      "stop_ticks",
+      "reward_ticks",
+      "reward_cost_ratio",
+      "economics_reason"
+    ],
+    "optional_fields": [
+      "source_frame_id",
+      "side",
+      "selected_leg",
+      "entry_mode",
+      "tick_size",
+      "target_ticks",
+      "stop_ticks",
+      "reward_ticks",
+      "reward_cost_ratio",
+      "economics_reason"
+    ],
+    "required_fields": [],
+    "source_mode": "quote_only_recorded"
+  },
+  "source_modes": [
+    "quote_only_recorded",
+    "economics_enriched_recorded"
+  ]
+}

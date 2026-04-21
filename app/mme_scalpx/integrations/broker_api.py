@@ -91,7 +91,7 @@ class BrokerAdapter(Protocol):
     def reconcile_position(self) -> dict[str, Any]:
         ...
 
-    def reconcile_open_orders(self) -> dict[str, Any]:
+    def reconcile_open_orders(self) -> list[Mapping[str, Any]] | None:
         ...
 
     def place_entry_order(
@@ -222,7 +222,7 @@ class BaseBrokerAdapter:
     def reconcile_position(self) -> dict[str, Any]:
         raise NotImplementedError("reconcile_position() not implemented")
 
-    def reconcile_open_orders(self) -> dict[str, Any]:
+    def reconcile_open_orders(self) -> list[Mapping[str, Any]] | None:
         raise NotImplementedError("reconcile_open_orders() not implemented")
 
     def place_entry_order(
@@ -314,7 +314,7 @@ class NullBrokerAdapter(BaseBrokerAdapter):
             "detail": "null broker adapter",
         }
 
-    def reconcile_open_orders(self) -> dict[str, Any]:
+    def reconcile_open_orders(self) -> list[Mapping[str, Any]] | None:
         return {
             "ok": False,
             "broker": "none",
@@ -539,11 +539,14 @@ class ZerodhaBrokerAdapter(BaseBrokerAdapter):
             "raw": _normalize_payload(positions),
         }
 
-    def reconcile_open_orders(self) -> dict[str, Any]:
+    def reconcile_open_orders(self) -> list[Mapping[str, Any]] | None:
         try:
             orders = self._kite.orders()
         except Exception as exc:
             raise BrokerAdapterRequestError(f"orders() failed: {exc}") from exc
+
+        if orders is None:
+            return None
 
         if not isinstance(orders, list):
             raise BrokerAdapterRequestError("orders() returned non-list payload")
@@ -553,20 +556,34 @@ class ZerodhaBrokerAdapter(BaseBrokerAdapter):
             "CANCELLED",
             "REJECTED",
         }
-        open_orders = []
+
+        open_orders: list[dict[str, Any]] = []
         for row in orders:
             if not isinstance(row, dict):
                 continue
-            status = str(row.get("status", "")).strip().upper()
-            if status not in terminal_statuses:
-                open_orders.append(row)
 
-        return {
-            "ok": True,
-            "broker": "zerodha",
-            "orders": _normalize_payload(open_orders),
-            "count": len(open_orders),
-        }
+            status = str(row.get("status", "")).strip().upper()
+            if status in terminal_statuses:
+                continue
+
+            open_orders.append(
+                {
+                    "broker_order_id": str(row.get("order_id", "")).strip(),
+                    "client_order_id": str(row.get("tag", "")).strip(),
+                    "status": status,
+                    "option_symbol": str(row.get("tradingsymbol", "")).strip(),
+                    "option_token": str(row.get("instrument_token", "")).strip(),
+                    "qty_lots": int(row.get("quantity") or 0),
+                    "filled_quantity": int(row.get("filled_quantity") or 0),
+                    "avg_fill_price": str(row.get("average_price", "")).strip(),
+                    "limit_price": str(row.get("price", "")).strip(),
+                    "entry_mode": "",
+                    "strike": "",
+                    "created_ts_ns": 0,
+                }
+            )
+
+        return open_orders
 
     def place_entry_order(
         self,

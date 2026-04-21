@@ -1,0 +1,33 @@
+{
+  "declared_source_mode": "economics_enriched_recorded",
+  "economics_evaluable": true,
+  "feed_input_contract_version": "v1",
+  "notes": [
+    "valid for economics-enriched recorded replay datasets",
+    "enriched fields must be genuinely recorded, never invented downstream"
+  ],
+  "optional_normalized_observed_fields": [
+    "source_file",
+    "source_stem",
+    "trading_day"
+  ],
+  "profile_id": "replay_dataset_capability_economics_enriched_v1",
+  "profile_version": "v1",
+  "required_normalized_observed_fields": [
+    "ts_event",
+    "symbol",
+    "bid",
+    "ask",
+    "ltp",
+    "source_frame_id",
+    "side",
+    "selected_leg",
+    "entry_mode",
+    "tick_size",
+    "target_ticks",
+    "stop_ticks",
+    "reward_ticks",
+    "reward_cost_ratio",
+    "economics_reason"
+  ]
+}

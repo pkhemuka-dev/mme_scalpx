@@ -1,0 +1,26 @@
+shadow_override_pack:
+  doctrine_mode: shadow
+  labels:
+    shadow_id: shadow_vel12_putrc15
+    baseline_reference: baseline_locked
+
+  strategy_overrides:
+    regime:
+      velocity_regime_min: 1.2
+
+    economics:
+      put_reward_cost_multiplier: 1.5
+
+  reporting_overrides:
+    put_leg_focus:
+      primary: PUT_ATM1
+      secondary: PUT_ATM
+    emit_newly_admitted_shadow_frames: true
+    emit_put_leg_focus_breakdown: true
+    emit_blocker_path_breakdown: true
+    emit_ambiguity_classification: true
+
+  mutation_guards:
+    production_params_write_forbidden: true
+    live_namespace_write_forbidden: true
+    override_manifest_required: true

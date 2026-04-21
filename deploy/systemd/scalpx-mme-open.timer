@@ -1,13 +1,10 @@
 [Unit]
-Description=ScalpX MME weekday open-session timer
-Documentation=/home/Lenovo/scalpx/projects/mme_scalpx/README.md
-Requires=scalpx-mme-open.service
+Description=Start ScalpX MME at 08:55 IST on weekdays
 
 [Timer]
-Unit=scalpx-mme-open.service
-OnCalendar=Mon..Fri 09:00:00
+OnCalendar=Mon..Fri 08:55:00 Asia/Kolkata
 Persistent=true
-AccuracySec=1s
+Unit=scalpx-mme-open.service
 
 [Install]
 WantedBy=timers.target

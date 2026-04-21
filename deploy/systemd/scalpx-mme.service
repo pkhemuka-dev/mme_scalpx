@@ -1,39 +1,18 @@
 [Unit]
-Description=ScalpX MME runtime service
-Documentation=/home/Lenovo/scalpx/projects/mme_scalpx/README.md
+Description=ScalpX MME Canonical Runtime
 After=network-online.target
 Wants=network-online.target
-StartLimitIntervalSec=300
-StartLimitBurst=5
 
 [Service]
 Type=simple
 User=Lenovo
-Group=Lenovo
 WorkingDirectory=/home/Lenovo/scalpx/projects/mme_scalpx
-
-Environment=PYTHONUNBUFFERED=1
-Environment=PYTHONDONTWRITEBYTECODE=1
-Environment=PYTHONPATH=/home/Lenovo/scalpx/projects/mme_scalpx/app
-EnvironmentFile=/home/Lenovo/scalpx/projects/mme_scalpx/etc/project.env
-
-ExecStart=/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python -m mme_scalpx.main
-
+Environment=MME_BOOTSTRAP_PROVIDER=app.mme_scalpx.integrations.bootstrap_provider:provide
+ExecStart=/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python -m app.mme_scalpx.main
 Restart=on-failure
 RestartSec=5
-TimeoutStartSec=60
-TimeoutStopSec=60
-KillSignal=SIGTERM
-NoNewPrivileges=true
-
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=scalpx-mme
-
-ReadWritePaths=/home/Lenovo/scalpx/projects/mme_scalpx/logs
-ReadWritePaths=/home/Lenovo/scalpx/projects/mme_scalpx/run
-ReadWritePaths=/home/Lenovo/scalpx/projects/mme_scalpx/reports
-ReadWritePaths=/home/Lenovo/scalpx/projects/mme_scalpx/data
+KillSignal=SIGINT
+TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target

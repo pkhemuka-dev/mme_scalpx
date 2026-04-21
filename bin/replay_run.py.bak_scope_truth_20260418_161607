@@ -1,0 +1,1635 @@
+#!/usr/bin/env python3
+"""
+bin/replay_run.py
+
+Freeze-grade operational CLI entrypoint for one replay run of the
+MME-ScalpX Permanent Replay & Validation Framework.
+
+This version upgrades the feeds stage from placeholder output to a real
+dataset->clock->injector replay bridge, while keeping downstream stages
+explicitly thin until their replay wiring is frozen.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any, Mapping
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from app.mme_scalpx.replay.artifacts import ReplayArtifactsWriter
+from app.mme_scalpx.replay.clock import ReplayClock, ReplayClockConfig
+from app.mme_scalpx.replay.contracts import ProfilesSection
+from app.mme_scalpx.replay.dataset import DatasetDiscoveryConfig, ReplayDatasetRepository
+from app.mme_scalpx.replay.engine import ReplayEngine
+from app.mme_scalpx.replay.fill_model import (
+    ReplayFillModelConfig,
+    ReplayFillModelFactory,
+    ReplayFillRequest,
+)
+from app.mme_scalpx.replay.injector import (
+    ReplayInjectionEvent,
+    ReplayInjector,
+)
+from app.mme_scalpx.replay.integrity import (
+    ReplayIntegrityEvaluator,
+    placeholder_pass_check,
+    integrity_bundle_to_dict,
+    INTEGRITY_CHECK_HASH_FRESHNESS,
+    INTEGRITY_CHECK_HEARTBEAT,
+    INTEGRITY_CHECK_REPRODUCIBILITY,
+    INTEGRITY_CHECK_RESET_CLEANLINESS,
+    INTEGRITY_CHECK_SNAPSHOT_SYNC,
+    INTEGRITY_CHECK_STALE_LEG,
+)
+from app.mme_scalpx.replay.modes import (
+    DoctrineMode,
+    ReplayScope,
+    ReplaySelectionMode,
+    ReplaySpeedMode,
+)
+from app.mme_scalpx.replay.reports import build_report_bundle, report_bundle_to_dict
+from app.mme_scalpx.replay.runner import ReplayRunConfig, ReplayRunner
+from app.mme_scalpx.replay.selectors import (
+    ReplaySelectionRequest,
+    ReplaySelector,
+    ReplayTimeWindow,
+    selection_plan_to_dict,
+)
+from app.mme_scalpx.replay.topology import ReplayTopologyBuilder, topology_plan_to_dict
+
+
+REQUIRED_CHECKS = (
+    INTEGRITY_CHECK_HEARTBEAT,
+    INTEGRITY_CHECK_HASH_FRESHNESS,
+    INTEGRITY_CHECK_SNAPSHOT_SYNC,
+    INTEGRITY_CHECK_STALE_LEG,
+    INTEGRITY_CHECK_RESET_CLEANLINESS,
+    INTEGRITY_CHECK_REPRODUCIBILITY,
+)
+
+
+class ReplayRunCliError(RuntimeError):
+    """CLI-layer replay run error."""
+
+
+
+
+
+
+class LocalReplayTransport:
+    """
+    Replay-safe local transport used by this CLI phase.
+
+    It does not publish to live/runtime infrastructure. It stores replay-safe
+    publications locally so later stages can consume deterministic upstream
+    outputs without contaminating live namespaces.
+    """
+
+    def __init__(self) -> None:
+        self._published_requests: list[Any] = []
+        self._feature_frames: list[dict[str, Any]] = []
+        self._strategy_decisions: list[dict[str, Any]] = []
+        self._risk_outputs: list[dict[str, Any]] = []
+        self._execution_shadow_results: list[dict[str, Any]] = []
+
+    @property
+    def published_requests(self) -> tuple[Any, ...]:
+        return tuple(self._published_requests)
+
+    @property
+    def feature_frames(self) -> tuple[dict[str, Any], ...]:
+        return tuple(self._feature_frames)
+
+    @property
+    def strategy_decisions(self) -> tuple[dict[str, Any], ...]:
+        return tuple(self._strategy_decisions)
+
+    @property
+    def risk_outputs(self) -> tuple[dict[str, Any], ...]:
+        return tuple(self._risk_outputs)
+
+    @property
+    def execution_shadow_results(self) -> tuple[dict[str, Any], ...]:
+        return tuple(self._execution_shadow_results)
+
+    def publish(self, request) -> Mapping[str, Any] | None:
+        self._published_requests.append(request)
+        return {
+            "published": True,
+            "channel": request.event.channel,
+            "sequence_id": request.event.sequence_id,
+            "event_time": request.event.event_time,
+        }
+
+    def feed_requests(self, *, channel_prefix: str) -> tuple[Any, ...]:
+        return tuple(
+            request
+            for request in self._published_requests
+            if request.event.channel.startswith(channel_prefix)
+        )
+
+    def publish_feature_frame(self, frame: Mapping[str, Any]) -> Mapping[str, Any]:
+        stored = dict(frame)
+        self._feature_frames.append(stored)
+        return {
+            "published": True,
+            "channel": stored.get("feature_channel"),
+            "frame_id": stored.get("frame_id"),
+            "event_time": stored.get("event_time"),
+        }
+
+    def publish_strategy_decision(self, decision: Mapping[str, Any]) -> Mapping[str, Any]:
+        stored = dict(decision)
+        self._strategy_decisions.append(stored)
+        return {
+            "published": True,
+            "channel": stored.get("decision_channel"),
+            "decision_id": stored.get("decision_id"),
+            "event_time": stored.get("event_time"),
+            "action": stored.get("action"),
+        }
+
+    def publish_risk_output(self, risk_output: Mapping[str, Any]) -> Mapping[str, Any]:
+        stored = dict(risk_output)
+        self._risk_outputs.append(stored)
+        return {
+            "published": True,
+            "channel": stored.get("risk_channel"),
+            "risk_id": stored.get("risk_id"),
+            "event_time": stored.get("event_time"),
+            "risk_action": stored.get("risk_action"),
+            "veto_entry": stored.get("veto_entry"),
+        }
+
+    def publish_execution_shadow_result(
+        self,
+        execution_result: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        stored = dict(execution_result)
+        self._execution_shadow_results.append(stored)
+        return {
+            "published": True,
+            "channel": stored.get("execution_channel"),
+            "execution_id": stored.get("execution_id"),
+            "event_time": stored.get("event_time"),
+            "filled": stored.get("filled"),
+        }
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="replay_run.py",
+        description="Run one frozen replay backbone execution.",
+    )
+
+    parser.add_argument("--dataset-root", required=True, help="Replay dataset root directory")
+    parser.add_argument(
+        "--selection-mode",
+        required=True,
+        choices=[mode.value for mode in ReplaySelectionMode],
+        help="Canonical replay selection mode",
+    )
+    parser.add_argument("--single-day", help="YYYY-MM-DD for single_day / intraday_window / session_segment")
+    parser.add_argument("--start-date", help="YYYY-MM-DD for date_range")
+    parser.add_argument("--end-date", help="YYYY-MM-DD for date_range")
+    parser.add_argument("--custom-dates", help="Comma-separated YYYY-MM-DD list for custom_date_list")
+    parser.add_argument("--weekdays", help="Comma-separated weekday integers 0..6 for weekday_batch")
+    parser.add_argument("--months", help="Comma-separated month integers 1..12 for monthly_batch")
+    parser.add_argument("--window-start", help="HH:MM[:SS] intraday window start")
+    parser.add_argument("--window-end", help="HH:MM[:SS] intraday window end")
+    parser.add_argument("--session-segment", help="Named session segment for session_segment mode")
+    parser.add_argument(
+        "--doctrine-mode",
+        required=True,
+        choices=[mode.value for mode in DoctrineMode],
+        help="locked or shadow",
+    )
+    parser.add_argument(
+        "--scope",
+        required=True,
+        choices=[scope.value for scope in ReplayScope],
+        help="Replay topology scope",
+    )
+    parser.add_argument(
+        "--speed-mode",
+        default=ReplaySpeedMode.ACCELERATED.value,
+        choices=[mode.value for mode in ReplaySpeedMode],
+        help="Replay clock speed mode",
+    )
+    parser.add_argument("--run-label", default=None)
+    parser.add_argument("--experiment-profile", default=None)
+    parser.add_argument("--override-pack-id", default=None)
+    parser.add_argument("--dataset-id", default=None)
+    parser.add_argument("--fill-model", default=None)
+    parser.add_argument("--run-root", default=None)
+    parser.add_argument("--required-file-stems", default="")
+    parser.add_argument("--optional-file-stems", default="")
+    parser.add_argument("--supported-suffixes", default=".jsonl,.json,.csv")
+    parser.add_argument("--recurse", action="store_true")
+    parser.add_argument(
+        "--clock-start-time",
+        default="2026-04-17T03:45:00Z",
+        help="Replay clock start time in ISO-8601",
+    )
+    parser.add_argument(
+        "--channel-prefix",
+        default="replay:file",
+        help="Logical replay channel prefix for feed injections",
+    )
+    return parser
+
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    return build_parser().parse_args(argv)
+
+
+def split_csv(value: str | None) -> tuple[str, ...]:
+    if not value:
+        return tuple()
+    return tuple(item.strip() for item in value.split(",") if item.strip())
+
+
+def split_int_csv(value: str | None) -> tuple[int, ...]:
+    if not value:
+        return tuple()
+    return tuple(int(item.strip()) for item in value.split(",") if item.strip())
+
+
+def build_selection_request(args: argparse.Namespace) -> ReplaySelectionRequest:
+    return ReplaySelectionRequest(
+        selection_mode=ReplaySelectionMode(args.selection_mode),
+        single_day=args.single_day,
+        start_date=args.start_date,
+        end_date=args.end_date,
+        custom_dates=split_csv(args.custom_dates),
+        intraday_window=ReplayTimeWindow(
+            start=args.window_start,
+            end=args.window_end,
+        ),
+        session_segment=args.session_segment,
+        weekdays=split_int_csv(args.weekdays),
+        months=split_int_csv(args.months),
+        market_tags=tuple(),
+    )
+
+
+def build_dataset_repository(args: argparse.Namespace) -> ReplayDatasetRepository:
+    return ReplayDatasetRepository(
+        DatasetDiscoveryConfig(
+            root=args.dataset_root,
+            required_file_stems=split_csv(args.required_file_stems),
+            optional_file_stems=split_csv(args.optional_file_stems),
+            supported_suffixes=split_csv(args.supported_suffixes),
+            recurse=bool(args.recurse),
+        )
+    )
+
+
+def build_run_config(args: argparse.Namespace) -> ReplayRunConfig:
+    return ReplayRunConfig(
+        doctrine_mode=DoctrineMode(args.doctrine_mode),
+        run_label=args.run_label,
+        dataset_id=args.dataset_id,
+        profiles=ProfilesSection(
+            experiment_profile=args.experiment_profile,
+        ),
+        override_pack_id=args.override_pack_id,
+        fill_model=args.fill_model,
+        run_root=args.run_root,
+        integrity_required_checks=REQUIRED_CHECKS,
+    )
+
+
+def build_placeholder_checks() -> dict[str, Any]:
+    return {
+        INTEGRITY_CHECK_HEARTBEAT: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_HEARTBEAT),
+        INTEGRITY_CHECK_HASH_FRESHNESS: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_HASH_FRESHNESS),
+        INTEGRITY_CHECK_SNAPSHOT_SYNC: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_SNAPSHOT_SYNC),
+        INTEGRITY_CHECK_STALE_LEG: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_STALE_LEG),
+        INTEGRITY_CHECK_RESET_CLEANLINESS: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_RESET_CLEANLINESS),
+        INTEGRITY_CHECK_REPRODUCIBILITY: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_REPRODUCIBILITY),
+    }
+
+
+def resolve_event_timestamp(record: Mapping[str, Any]) -> str:
+    for key in ("ts", "timestamp", "event_time"):
+        value = record.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    raise ReplayRunCliError(f"JSONL replay record missing timestamp field: {record!r}")
+
+
+def build_feed_events_for_day(
+    *,
+    repository: ReplayDatasetRepository,
+    trading_day,
+    channel_prefix: str,
+) -> list[ReplayInjectionEvent]:
+    raw_events: list[dict[str, Any]] = []
+
+    for file_summary in trading_day.files:
+        if file_summary.suffix != ".jsonl":
+            continue
+
+        relative_path = Path(trading_day.date_str) / file_summary.relative_path
+        rows = repository.read_jsonl(relative_path)
+        logical_channel = f"{channel_prefix}:{file_summary.stem}"
+
+        for row in rows:
+            event_time = resolve_event_timestamp(row)
+            raw_events.append(
+                {
+                    "event_time": event_time,
+                    "channel": logical_channel,
+                    "payload": dict(row),
+                    "metadata": {
+                        "trading_day": trading_day.date_str,
+                        "source_file": file_summary.relative_path,
+                        "source_stem": file_summary.stem,
+                    },
+                }
+            )
+
+    raw_events.sort(key=lambda item: (item["event_time"], item["channel"]))
+
+    events: list[ReplayInjectionEvent] = []
+    for seq, item in enumerate(raw_events, start=1):
+        events.append(
+            ReplayInjectionEvent(
+                sequence_id=seq,
+                event_time=item["event_time"],
+                channel=item["channel"],
+                payload=item["payload"],
+                metadata=item["metadata"],
+            )
+        )
+
+    return events
+
+
+
+def _to_float_or_none(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+
+
+
+def build_feature_frames_from_feed_requests(
+    *,
+    feed_requests: Sequence[Any],
+) -> list[dict[str, Any]]:
+    """
+    Build replay feature frames from replay feed requests.
+
+    Replay-only bridge:
+    - normalize through ReplayInjectionRequest.event when present
+    - preserve raw replay fields where available
+    - capture event/payload source surface for auditability
+    - do not mutate production doctrine
+    """
+
+    def _coalesce(*values: Any) -> Any:
+        for value in values:
+            if value is None:
+                continue
+            if isinstance(value, str) and not value.strip():
+                continue
+            return value
+        return None
+
+    def _mapping_keys(value: Mapping[str, Any]) -> list[str]:
+        return sorted(str(key) for key in value.keys())
+
+    def _object_dict_keys(value: Any) -> list[str]:
+        raw = getattr(value, "__dict__", None)
+        if isinstance(raw, dict):
+            return sorted(str(key) for key in raw.keys())
+        return []
+
+    def _public_attr_names(value: Any) -> list[str]:
+        names: list[str] = []
+        for name in dir(value):
+            if name.startswith("_"):
+                continue
+            try:
+                attr = getattr(value, name)
+            except Exception:
+                continue
+            if callable(attr):
+                continue
+            names.append(str(name))
+        return sorted(names)
+
+    def _to_mapping(value: Any) -> dict[str, Any]:
+        if value is None:
+            return {}
+        if isinstance(value, Mapping):
+            return dict(value)
+        if hasattr(value, "model_dump"):
+            dumped = value.model_dump()
+            if isinstance(dumped, Mapping):
+                return dict(dumped)
+        if hasattr(value, "dict"):
+            dumped = value.dict()
+            if isinstance(dumped, Mapping):
+                return dict(dumped)
+        raw = getattr(value, "__dict__", None)
+        if isinstance(raw, dict):
+            return dict(raw)
+        return {}
+
+    def _json_safe_probe(value: Any) -> Any:
+        if value is None or isinstance(value, (str, int, float, bool)):
+            return value
+        if isinstance(value, Mapping):
+            return {
+                "type": type(value).__name__,
+                "keys": _mapping_keys(value),
+            }
+        if isinstance(value, (list, tuple, set)):
+            return {
+                "type": type(value).__name__,
+                "length": len(value),
+            }
+        return {
+            "type": type(value).__name__,
+            "dict_keys": _object_dict_keys(value),
+            "public_attrs": _public_attr_names(value)[:40],
+        }
+
+    def _probe_attrs(source: Any, names: tuple[str, ...]) -> dict[str, Any]:
+        if source is None:
+            return {}
+        out: dict[str, Any] = {}
+        for name in names:
+            if not hasattr(source, name):
+                continue
+            try:
+                out[name] = _json_safe_probe(getattr(source, name))
+            except Exception as exc:
+                out[name] = {"error": type(exc).__name__}
+        return out
+
+    def _read(source: Any, *names: str) -> Any:
+        if source is None:
+            return None
+        for name in names:
+            if isinstance(source, Mapping) and name in source:
+                return source[name]
+            if hasattr(source, name):
+                return getattr(source, name)
+        return None
+
+    def _to_float(value: Any) -> float | None:
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+        text = str(value).strip()
+        if not text:
+            return None
+        try:
+            return float(text)
+        except (TypeError, ValueError):
+            return None
+
+    def _to_bool(value: Any) -> bool | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        text = str(value).strip().lower()
+        if text in {"true", "1", "yes", "y"}:
+            return True
+        if text in {"false", "0", "no", "n"}:
+            return False
+        return None
+
+    def _norm_symbol(value: Any) -> str:
+        return str(value or "").strip().upper()
+
+    def _classify_side_leg(symbol: str) -> tuple[str | None, str | None]:
+        if not symbol:
+            return (None, None)
+        if symbol.endswith("_CE") or symbol.endswith("CE"):
+            return ("CALL", "CALL_ATM")
+        if symbol.endswith("_PE") or symbol.endswith("PE"):
+            return ("PUT", "PUT_ATM")
+        if "FUT" in symbol:
+            return ("CONTEXT", "FUTURES")
+        return (None, None)
+
+    outputs: list[dict[str, Any]] = []
+
+    for index, request in enumerate(feed_requests, start=1):
+        request_row = _to_mapping(request)
+
+        event_obj = _coalesce(
+            _read(request, "event"),
+            request_row.get("event"),
+        )
+        event_row = _to_mapping(event_obj)
+
+        event_metadata_obj = _coalesce(
+            _read(event_obj, "metadata"),
+            event_row.get("metadata"),
+        )
+        event_payload_obj = _coalesce(
+            _read(event_obj, "payload"),
+            event_row.get("payload"),
+        )
+
+        payload = _to_mapping(event_payload_obj)
+        metadata = _to_mapping(
+            _coalesce(
+                _read(request, "metadata"),
+                request_row.get("metadata"),
+                event_metadata_obj,
+                payload.get("metadata"),
+                _read(event_payload_obj, "metadata"),
+            )
+        )
+        regime = _to_mapping(
+            _coalesce(
+                payload.get("regime"),
+                payload.get("regime_state"),
+                _read(event_payload_obj, "regime", "regime_state"),
+            )
+        )
+        economics = _to_mapping(
+            _coalesce(
+                payload.get("economics"),
+                payload.get("economics_state"),
+                _read(event_payload_obj, "economics", "economics_state"),
+            )
+        )
+        candidate_state = _to_mapping(
+            _coalesce(
+                payload.get("candidate_state"),
+                payload.get("candidate"),
+                _read(event_payload_obj, "candidate_state", "candidate"),
+            )
+        )
+
+        raw_symbol = _coalesce(
+            _read(event_payload_obj, "symbol", "tradingsymbol"),
+            payload.get("symbol"),
+            payload.get("tradingsymbol"),
+            metadata.get("symbol"),
+            metadata.get("tradingsymbol"),
+        )
+        symbol_norm = _norm_symbol(raw_symbol)
+
+        event_time = _coalesce(
+            _read(event_obj, "event_time"),
+            event_row.get("event_time"),
+            _read(event_payload_obj, "event_time", "exchange_ts", "ts_event", "ts_event_ns"),
+            payload.get("event_time"),
+            payload.get("exchange_ts"),
+            payload.get("ts_event"),
+            payload.get("ts_event_ns"),
+        )
+        source_channel = _coalesce(
+            _read(event_obj, "channel"),
+            event_row.get("channel"),
+            _read(request, "source_channel", "channel"),
+            request_row.get("source_channel"),
+            metadata.get("source_channel"),
+        )
+        source_sequence_id = _coalesce(
+            _read(event_obj, "sequence_id"),
+            event_row.get("sequence_id"),
+            _read(request, "source_sequence_id", "sequence_id"),
+            request_row.get("source_sequence_id"),
+            request_row.get("sequence_id"),
+            metadata.get("source_sequence_id"),
+        )
+
+        bid = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "bid", "best_bid", "best_bid_price"),
+                payload.get("bid"),
+                payload.get("best_bid"),
+                payload.get("best_bid_price"),
+            )
+        )
+        ask = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "ask", "best_ask", "best_ask_price"),
+                payload.get("ask"),
+                payload.get("best_ask"),
+                payload.get("best_ask_price"),
+            )
+        )
+        ltp = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "ltp", "last_price", "price"),
+                payload.get("ltp"),
+                payload.get("last_price"),
+                payload.get("price"),
+            )
+        )
+        spread = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "spread"),
+                payload.get("spread"),
+            )
+        )
+        mid_price = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "mid_price"),
+                payload.get("mid_price"),
+            )
+        )
+
+        if spread is None and bid is not None and ask is not None:
+            spread = ask - bid
+        if mid_price is None and bid is not None and ask is not None:
+            mid_price = (bid + ask) / 2.0
+
+        inferred_side, inferred_leg = _classify_side_leg(symbol_norm)
+
+        healthy = _to_bool(
+            _coalesce(
+                _read(event_payload_obj, "healthy"),
+                payload.get("healthy"),
+                metadata.get("healthy"),
+            )
+        )
+        if healthy is None:
+            healthy = bool(
+                bid is not None
+                and ask is not None
+                and ask >= bid
+                and ltp is not None
+                and spread is not None
+                and spread >= 0.0
+            )
+
+        regime_ok = _to_bool(
+            _coalesce(
+                _read(event_payload_obj, "regime_ok"),
+                payload.get("regime_ok"),
+                regime.get("ok"),
+                regime.get("regime_ok"),
+            )
+        )
+        regime_pass = _to_bool(
+            _coalesce(
+                _read(event_payload_obj, "regime_pass"),
+                payload.get("regime_pass"),
+                regime.get("pass"),
+                regime.get("regime_pass"),
+            )
+        )
+        economics_valid = _to_bool(
+            _coalesce(
+                _read(event_payload_obj, "economics_valid"),
+                payload.get("economics_valid"),
+                economics.get("valid"),
+                economics.get("economics_valid"),
+            )
+        )
+        reward_cost_valid = _to_bool(
+            _coalesce(
+                _read(event_payload_obj, "reward_cost_valid"),
+                payload.get("reward_cost_valid"),
+                economics.get("reward_cost_valid"),
+                economics.get("reward_cost_ok"),
+            )
+        )
+        candidate = _to_bool(
+            _coalesce(
+                _read(event_payload_obj, "candidate", "candidate_found"),
+                payload.get("candidate"),
+                payload.get("candidate_found"),
+                candidate_state.get("candidate"),
+                candidate_state.get("selected"),
+            )
+        )
+        side = _coalesce(
+            _read(event_payload_obj, "side"),
+            payload.get("side"),
+            candidate_state.get("side"),
+            metadata.get("side"),
+            inferred_side,
+        )
+        leg = _coalesce(
+            _read(event_payload_obj, "leg"),
+            payload.get("leg"),
+            candidate_state.get("leg"),
+            metadata.get("leg"),
+            inferred_leg,
+        )
+        blocker = _coalesce(
+            _read(event_payload_obj, "blocker", "blocker_reason"),
+            payload.get("blocker"),
+            payload.get("blocker_reason"),
+            candidate_state.get("blocker"),
+        )
+        ambiguity = _to_bool(
+            _coalesce(
+                _read(event_payload_obj, "ambiguity", "ambiguous"),
+                payload.get("ambiguity"),
+                payload.get("ambiguous"),
+                candidate_state.get("ambiguity"),
+            )
+        )
+        if ambiguity is None:
+            ambiguity = False
+
+        reward_cost_ratio = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "reward_cost_ratio"),
+                payload.get("reward_cost_ratio"),
+                economics.get("reward_cost_ratio"),
+                economics.get("reward_risk_ratio"),
+                economics.get("rr"),
+            )
+        )
+        reward_ticks = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "reward_ticks", "expected_reward_ticks"),
+                payload.get("reward_ticks"),
+                payload.get("expected_reward_ticks"),
+                economics.get("reward_ticks"),
+                economics.get("expected_reward_ticks"),
+            )
+        )
+        cost_ticks = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "cost_ticks", "estimated_cost_ticks"),
+                payload.get("cost_ticks"),
+                payload.get("estimated_cost_ticks"),
+                economics.get("cost_ticks"),
+                economics.get("estimated_cost_ticks"),
+                spread,
+            )
+        )
+        target_ticks = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "target_ticks"),
+                payload.get("target_ticks"),
+                economics.get("target_ticks"),
+            )
+        )
+        stop_ticks = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "stop_ticks"),
+                payload.get("stop_ticks"),
+                economics.get("stop_ticks"),
+            )
+        )
+
+        regime_reason = _coalesce(
+            _read(event_payload_obj, "regime_reason"),
+            payload.get("regime_reason"),
+            regime.get("reason"),
+        )
+        economics_reason = _coalesce(
+            _read(event_payload_obj, "economics_reason"),
+            payload.get("economics_reason"),
+            economics.get("reason"),
+            economics.get("reject_reason"),
+        )
+
+        source_surface = {
+            "request_type": type(request).__name__,
+            "request_dict_keys": _object_dict_keys(request),
+            "request_public_attrs": _public_attr_names(request),
+            "request_attr_probe": _probe_attrs(
+                request,
+                ("batch_id", "event", "notes", "replay_time_before", "replay_time_after", "run_id"),
+            ),
+            "event_type": type(event_obj).__name__ if event_obj is not None else None,
+            "event_dict_keys": _object_dict_keys(event_obj),
+            "event_public_attrs": _public_attr_names(event_obj) if event_obj is not None else [],
+            "event_attr_probe": _probe_attrs(
+                event_obj,
+                ("channel", "event_time", "metadata", "payload", "sequence_id"),
+            ),
+            "payload_type": type(event_payload_obj).__name__ if event_payload_obj is not None else None,
+            "payload_keys": _mapping_keys(payload),
+            "payload_public_attrs": (
+                _public_attr_names(event_payload_obj)
+                if event_payload_obj is not None and not isinstance(event_payload_obj, Mapping)
+                else []
+            ),
+            "payload_attr_probe": (
+                _probe_attrs(
+                    event_payload_obj,
+                    (
+                        "symbol",
+                        "tradingsymbol",
+                        "ltp",
+                        "last_price",
+                        "price",
+                        "bid",
+                        "ask",
+                        "best_bid",
+                        "best_ask",
+                        "best_bid_price",
+                        "best_ask_price",
+                        "mid_price",
+                        "spread",
+                        "regime",
+                        "economics",
+                        "candidate_state",
+                        "metadata",
+                    ),
+                )
+                if event_payload_obj is not None and not isinstance(event_payload_obj, Mapping)
+                else {}
+            ),
+            "metadata_keys": _mapping_keys(metadata),
+            "regime_keys": _mapping_keys(regime),
+            "economics_keys": _mapping_keys(economics),
+            "candidate_state_keys": _mapping_keys(candidate_state),
+            "resolved_inputs": {
+                "symbol": raw_symbol if raw_symbol is not None else symbol_norm,
+                "event_time": event_time,
+                "source_channel": source_channel,
+                "source_sequence_id": source_sequence_id,
+                "bid": bid,
+                "ask": ask,
+                "ltp": ltp,
+                "mid_price": mid_price,
+                "spread": spread,
+                "healthy": healthy,
+                "regime_ok": regime_ok,
+                "regime_pass": regime_pass,
+                "economics_valid": economics_valid,
+                "reward_cost_valid": reward_cost_valid,
+                "candidate": candidate,
+                "side": side,
+                "leg": leg,
+                "blocker": blocker,
+                "ambiguity": ambiguity,
+            },
+        }
+
+        feature_row = {
+            "frame_id": f"feature_frame_{index:06d}",
+            "event_time": event_time,
+            "feature_channel": "replay:features",
+            "source_channel": source_channel,
+            "source_sequence_id": source_sequence_id,
+            "symbol": raw_symbol if raw_symbol is not None else symbol_norm,
+            "ltp": ltp,
+            "bid": bid,
+            "ask": ask,
+            "mid_price": mid_price,
+            "spread": spread,
+            "metadata": {
+                **metadata,
+                "replay_feature_bridge_version": "v3_event_normalized",
+                "feature_truth_mode": "replay_bridge_v3_event_normalized",
+            },
+            "healthy": healthy,
+            "regime_ok": regime_ok,
+            "regime_pass": regime_pass,
+            "regime_reason": regime_reason,
+            "economics_valid": economics_valid,
+            "reward_cost_valid": reward_cost_valid,
+            "reward_cost_ratio": reward_cost_ratio,
+            "reward_ticks": reward_ticks,
+            "cost_ticks": cost_ticks,
+            "target_ticks": target_ticks,
+            "stop_ticks": stop_ticks,
+            "economics_reason": economics_reason,
+            "candidate": candidate,
+            "side": side,
+            "leg": leg,
+            "blocker": blocker,
+            "ambiguity": ambiguity,
+            "replay_source_surface": dict(source_surface),
+        }
+
+        outputs.append(feature_row)
+
+    return outputs
+
+
+def _resolve_strategy_action(frame: Mapping[str, Any]) -> tuple[str, str]:
+    """
+    Replay-only strategy action resolver.
+
+    This helper is intentionally thin. It does not define or mutate production
+    doctrine. It only converts replay feature truth into a deterministic replay
+    bridge action so artifact generation and downstream comparison can proceed.
+    """
+
+    def _as_bool(value: Any) -> bool | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        text = str(value).strip().lower()
+        if text in {"true", "1", "yes", "y"}:
+            return True
+        if text in {"false", "0", "no", "n"}:
+            return False
+        return None
+
+    side = str(frame.get("side") or "").strip().upper()
+    blocker = str(frame.get("blocker") or "").strip()
+    ambiguity = _as_bool(frame.get("ambiguity"))
+    candidate = _as_bool(frame.get("candidate"))
+    regime_pass = _as_bool(frame.get("regime_pass"))
+    economics_valid = _as_bool(frame.get("economics_valid"))
+
+    if ambiguity is True:
+        return ("HOLD", "ambiguous_feature_state")
+
+    if candidate is False:
+        return ("HOLD", blocker or "no_entry_condition")
+
+    if regime_pass is False:
+        return ("HOLD", blocker or "regime_fail")
+
+    if economics_valid is False:
+        return ("HOLD", blocker or "economics_invalid")
+
+    if candidate is True and side == "CALL":
+        return ("ENTER_CALL", "candidate_entry")
+
+    if candidate is True and side == "PUT":
+        return ("ENTER_PUT", "candidate_entry")
+
+    return ("HOLD", blocker or "no_entry_condition")
+
+
+def build_strategy_decisions_from_feature_frames(
+    *,
+    feature_frames: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+) -> list[dict[str, Any]]:
+    ordered_frames = sorted(
+        feature_frames,
+        key=lambda frame: (
+            str(frame.get("event_time") or ""),
+            str(frame.get("feature_channel") or ""),
+            str(frame.get("frame_id") or ""),
+        ),
+    )
+
+    decisions: list[dict[str, Any]] = []
+    for index, frame in enumerate(ordered_frames, start=1):
+        action, reason = _resolve_strategy_action(frame)
+
+        decisions.append(
+            {
+                "decision_id": f"strategy_decision_{index:06d}",
+                "event_time": frame.get("event_time"),
+                "decision_channel": "replay:decisions",
+                "source_frame_id": frame.get("frame_id"),
+                "symbol": frame.get("symbol"),
+                "action": action,
+                "reason": reason,
+                "spread": frame.get("spread"),
+                "mid_price": frame.get("mid_price"),
+                "ltp": frame.get("ltp"),
+                "metadata": dict(frame.get("metadata") or {}),
+            }
+        )
+
+    return decisions
+
+
+
+def _resolve_risk_verdict(decision: Mapping[str, Any]) -> tuple[str, bool, str]:
+    action = str(decision.get("action") or "HOLD")
+    spread = decision.get("spread")
+
+    if action == "HOLD":
+        return "HOLD", False, "hold_passthrough"
+
+    if action not in ("ENTER_CALL", "ENTER_PUT"):
+        return "HOLD", True, "unknown_action_blocked"
+
+    if spread is None:
+        return "HOLD", True, "missing_spread_blocked"
+
+    try:
+        spread_value = float(spread)
+    except (TypeError, ValueError):
+        return "HOLD", True, "invalid_spread_blocked"
+
+    if spread_value > 1.0:
+        return "HOLD", True, "spread_too_wide_blocked"
+
+    return action, False, "entry_allowed"
+
+
+def build_risk_outputs_from_strategy_decisions(
+    *,
+    strategy_decisions: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+) -> list[dict[str, Any]]:
+    ordered_decisions = sorted(
+        strategy_decisions,
+        key=lambda decision: (
+            str(decision.get("event_time") or ""),
+            str(decision.get("decision_channel") or ""),
+            str(decision.get("decision_id") or ""),
+        ),
+    )
+
+    outputs: list[dict[str, Any]] = []
+    for index, decision in enumerate(ordered_decisions, start=1):
+        risk_action, veto_entry, reason = _resolve_risk_verdict(decision)
+
+        outputs.append(
+            {
+                "risk_id": f"risk_output_{index:06d}",
+                "event_time": decision.get("event_time"),
+                "risk_channel": "replay:risk",
+                "source_decision_id": decision.get("decision_id"),
+                "symbol": decision.get("symbol"),
+                "input_action": decision.get("action"),
+                "risk_action": risk_action,
+                "veto_entry": veto_entry,
+                "reason": reason,
+                "spread": decision.get("spread"),
+                "mid_price": decision.get("mid_price"),
+                "ltp": decision.get("ltp"),
+                "metadata": dict(decision.get("metadata") or {}),
+            }
+        )
+
+    return outputs
+
+
+
+def _resolve_fill_model_name(fill_model_name: str | None) -> str:
+    if fill_model_name:
+        return fill_model_name
+    return ReplayFillModelFactory.IMMEDIATE_MARKET
+
+
+def _risk_action_to_fill_side(risk_action: str) -> str | None:
+    if risk_action in ("ENTER_CALL", "ENTER_PUT"):
+        return "BUY"
+    return None
+
+
+def build_execution_shadow_results_from_risk_outputs(
+    *,
+    run_id: str,
+    risk_outputs: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+    fill_model_name: str | None,
+    doctrine_mode: DoctrineMode,
+) -> list[dict[str, Any]]:
+    ordered_outputs = sorted(
+        risk_outputs,
+        key=lambda output: (
+            str(output.get("event_time") or ""),
+            str(output.get("risk_channel") or ""),
+            str(output.get("risk_id") or ""),
+        ),
+    )
+
+    model = ReplayFillModelFactory.create(
+        ReplayFillModelConfig(
+            model_name=_resolve_fill_model_name(fill_model_name),
+            doctrine_mode=doctrine_mode,
+        )
+    )
+
+    results: list[dict[str, Any]] = []
+    for index, risk_output in enumerate(ordered_outputs, start=1):
+        risk_action = str(risk_output.get("risk_action") or "HOLD")
+        veto_entry = bool(risk_output.get("veto_entry"))
+        side = _risk_action_to_fill_side(risk_action)
+
+        if veto_entry or side is None:
+            results.append(
+                {
+                    "execution_id": f"execution_shadow_{index:06d}",
+                    "event_time": risk_output.get("event_time"),
+                    "execution_channel": "replay:execution_shadow",
+                    "source_risk_id": risk_output.get("risk_id"),
+                    "risk_action": risk_action,
+                    "filled": False,
+                    "fill_qty": 0,
+                    "fill_price": None,
+                    "slippage": None,
+                    "reason": "risk_block_or_non_entry",
+                    "symbol": risk_output.get("symbol"),
+                    "metadata": dict(risk_output.get("metadata") or {}),
+                }
+            )
+            continue
+
+        fill_request = ReplayFillRequest(
+            run_id=run_id,
+            order_id=f"shadow_order_{index:06d}",
+            side=side,
+            qty=1,
+            order_price=None,
+            market_price=risk_output.get("ltp"),
+            best_bid=risk_output.get("mid_price"),
+            best_ask=risk_output.get("ltp"),
+            timestamp=risk_output.get("event_time"),
+            metadata=dict(risk_output.get("metadata") or {}),
+        )
+        fill_result = model.fill(fill_request)
+
+        results.append(
+            {
+                "execution_id": f"execution_shadow_{index:06d}",
+                "event_time": risk_output.get("event_time"),
+                "execution_channel": "replay:execution_shadow",
+                "source_risk_id": risk_output.get("risk_id"),
+                "risk_action": risk_action,
+                "filled": fill_result.filled,
+                "fill_qty": fill_result.fill_qty,
+                "fill_price": fill_result.fill_price,
+                "slippage": fill_result.slippage,
+                "reason": fill_result.reason,
+                "symbol": risk_output.get("symbol"),
+                "metadata": dict(risk_output.get("metadata") or {}),
+            }
+        )
+
+    return results
+
+
+
+
+def _artifact_mapping(value: Any) -> Mapping[str, Any]:
+    if isinstance(value, dict):
+        return value
+    return {}
+
+
+def _artifact_first_present(*values: Any) -> Any:
+    for value in values:
+        if value is None:
+            continue
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                continue
+            return text
+        if isinstance(value, (dict, list, tuple, set)):
+            continue
+        return value
+    return None
+
+
+def _artifact_extract_from_paths(
+    row: Mapping[str, Any],
+    *paths: tuple[str, ...],
+) -> Any:
+    for path in paths:
+        current: Any = row
+        ok = True
+        for key in path:
+            if not isinstance(current, dict) or key not in current:
+                ok = False
+                break
+            current = current[key]
+        if not ok:
+            continue
+
+        value = _artifact_first_present(current)
+        if value is not None:
+            return value
+    return None
+
+
+def build_persisted_feature_rows(
+    feature_frames: tuple[dict[str, Any], ...],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+
+    for frame in feature_frames:
+        row = dict(frame)
+        row["metadata"] = dict(_artifact_mapping(row.get("metadata")))
+
+        truth = {
+            "schema_version": "replay_feature_truth_v1",
+            "regime_ok": _artifact_extract_from_paths(
+                row,
+                ("regime_ok",),
+                ("regime", "ok"),
+                ("regime", "regime_ok"),
+            ),
+            "regime_pass": _artifact_extract_from_paths(
+                row,
+                ("regime_pass",),
+                ("regime", "pass"),
+                ("regime", "regime_pass"),
+            ),
+            "regime_reason": _artifact_extract_from_paths(
+                row,
+                ("regime_reason",),
+                ("regime", "reason"),
+            ),
+            "healthy": _artifact_extract_from_paths(
+                row,
+                ("healthy",),
+                ("health", "healthy"),
+                ("health", "ok"),
+                ("health_ok",),
+            ),
+            "economics_valid": _artifact_extract_from_paths(
+                row,
+                ("economics_valid",),
+                ("economics", "valid"),
+                ("economics", "economics_valid"),
+            ),
+            "reward_cost_valid": _artifact_extract_from_paths(
+                row,
+                ("reward_cost_valid",),
+                ("economics", "reward_cost_valid"),
+                ("economics", "reward_cost_ok"),
+            ),
+            "reward_cost_ratio": _artifact_extract_from_paths(
+                row,
+                ("reward_cost_ratio",),
+                ("economics", "reward_cost_ratio"),
+                ("economics", "reward_risk_ratio"),
+                ("economics", "rr"),
+            ),
+            "reward_ticks": _artifact_extract_from_paths(
+                row,
+                ("reward_ticks",),
+                ("expected_reward_ticks",),
+                ("economics", "reward_ticks"),
+                ("economics", "expected_reward_ticks"),
+            ),
+            "cost_ticks": _artifact_extract_from_paths(
+                row,
+                ("cost_ticks",),
+                ("estimated_cost_ticks",),
+                ("economics", "cost_ticks"),
+                ("economics", "estimated_cost_ticks"),
+            ),
+            "target_ticks": _artifact_extract_from_paths(
+                row,
+                ("target_ticks",),
+                ("economics", "target_ticks"),
+            ),
+            "stop_ticks": _artifact_extract_from_paths(
+                row,
+                ("stop_ticks",),
+                ("economics", "stop_ticks"),
+            ),
+            "economics_reason": _artifact_extract_from_paths(
+                row,
+                ("economics_reason",),
+                ("economics", "reason"),
+                ("economics", "reject_reason"),
+            ),
+            "candidate": _artifact_extract_from_paths(
+                row,
+                ("candidate",),
+                ("candidate_found",),
+                ("candidate_state", "candidate"),
+                ("candidate_state", "selected"),
+            ),
+            "side": _artifact_extract_from_paths(
+                row,
+                ("side",),
+                ("candidate_state", "side"),
+            ),
+            "leg": _artifact_extract_from_paths(
+                row,
+                ("leg",),
+                ("candidate_state", "leg"),
+            ),
+            "blocker": _artifact_extract_from_paths(
+                row,
+                ("blocker",),
+                ("blocker_reason",),
+                ("candidate_state", "blocker"),
+            ),
+            "ambiguity": _artifact_extract_from_paths(
+                row,
+                ("ambiguity",),
+                ("candidate_state", "ambiguity"),
+                ("ambiguous",),
+            ),
+        }
+
+        for key, value in truth.items():
+            if key == "schema_version":
+                continue
+            if value is not None:
+                row[key] = value
+
+        row["replay_feature_truth"] = truth
+        rows.append(row)
+
+    return rows
+
+
+
+def make_stage_executor(
+    *,
+    selection_plan,
+    repository: ReplayDatasetRepository,
+    clock: ReplayClock,
+    injector: ReplayInjector,
+    transport: LocalReplayTransport,
+    channel_prefix: str,
+    fill_model_name: str | None,
+    doctrine_mode: DoctrineMode,
+):
+    def stage_executor(context, stage):
+        if stage.stage_name == "feeds":
+            total_injected = 0
+            day_breakdown: list[dict[str, Any]] = []
+
+            for trading_day in selection_plan.selected_days:
+                events = build_feed_events_for_day(
+                    repository=repository,
+                    trading_day=trading_day,
+                    channel_prefix=channel_prefix,
+                )
+
+                if events:
+                    batch_result = injector.inject_batch(
+                        run_id=context.run_id,
+                        events=events,
+                        clock=clock,
+                        transport=transport,
+                        batch_id=f"{trading_day.date_str}:feeds",
+                        notes=("feeds_stage",),
+                    )
+                    total_injected += batch_result.injected_count
+                    day_breakdown.append(
+                        {
+                            "trading_day": trading_day.date_str,
+                            "injected_count": batch_result.injected_count,
+                            "last_sequence_id": batch_result.last_sequence_id,
+                        }
+                    )
+                else:
+                    day_breakdown.append(
+                        {
+                            "trading_day": trading_day.date_str,
+                            "injected_count": 0,
+                            "last_sequence_id": None,
+                        }
+                    )
+
+            return {
+                "stage_name": stage.stage_name,
+                "status": "ok",
+                "run_id": context.run_id,
+                "total_injected": total_injected,
+                "day_breakdown": day_breakdown,
+                "clock_after_stage": clock.current_time,
+            }
+
+        if stage.stage_name == "features":
+            feed_requests = transport.feed_requests(channel_prefix=channel_prefix)
+            feature_frames = build_feature_frames_from_feed_requests(
+                feed_requests=feed_requests,
+            )
+
+            published_count = 0
+            for frame in feature_frames:
+                transport.publish_feature_frame(frame)
+                published_count += 1
+
+            return {
+                "stage_name": stage.stage_name,
+                "status": "ok",
+                "run_id": context.run_id,
+                "mode": "replay_feature_bridge",
+                "source_feed_events": len(feed_requests),
+                "feature_frames_published": published_count,
+                "feature_channel": "replay:features",
+            }
+
+        if stage.stage_name == "strategy":
+            feature_frames = transport.feature_frames
+            decisions = build_strategy_decisions_from_feature_frames(
+                feature_frames=feature_frames,
+            )
+
+            published_count = 0
+            action_breakdown: dict[str, int] = {}
+            for decision in decisions:
+                transport.publish_strategy_decision(decision)
+                published_count += 1
+                action = str(decision.get("action"))
+                action_breakdown[action] = action_breakdown.get(action, 0) + 1
+
+            return {
+                "stage_name": stage.stage_name,
+                "status": "ok",
+                "run_id": context.run_id,
+                "mode": "replay_strategy_bridge",
+                "source_feature_frames": len(feature_frames),
+                "strategy_decisions_published": published_count,
+                "decision_channel": "replay:decisions",
+                "action_breakdown": action_breakdown,
+            }
+
+        if stage.stage_name == "risk":
+            strategy_decisions = transport.strategy_decisions
+            risk_outputs = build_risk_outputs_from_strategy_decisions(
+                strategy_decisions=strategy_decisions,
+            )
+
+            published_count = 0
+            risk_action_breakdown: dict[str, int] = {}
+            vetoed_entries = 0
+            for risk_output in risk_outputs:
+                transport.publish_risk_output(risk_output)
+                published_count += 1
+                risk_action = str(risk_output.get("risk_action"))
+                risk_action_breakdown[risk_action] = (
+                    risk_action_breakdown.get(risk_action, 0) + 1
+                )
+                if bool(risk_output.get("veto_entry")):
+                    vetoed_entries += 1
+
+            return {
+                "stage_name": stage.stage_name,
+                "status": "ok",
+                "run_id": context.run_id,
+                "mode": "replay_risk_bridge",
+                "source_strategy_decisions": len(strategy_decisions),
+                "risk_outputs_published": published_count,
+                "risk_channel": "replay:risk",
+                "risk_action_breakdown": risk_action_breakdown,
+                "vetoed_entries": vetoed_entries,
+            }
+
+        if stage.stage_name == "execution_shadow":
+            risk_outputs = transport.risk_outputs
+            execution_results = build_execution_shadow_results_from_risk_outputs(
+                run_id=context.run_id,
+                risk_outputs=risk_outputs,
+                fill_model_name=fill_model_name,
+                doctrine_mode=doctrine_mode,
+            )
+
+            published_count = 0
+            filled_count = 0
+            for execution_result in execution_results:
+                transport.publish_execution_shadow_result(execution_result)
+                published_count += 1
+                if bool(execution_result.get("filled")):
+                    filled_count += 1
+
+            return {
+                "stage_name": stage.stage_name,
+                "status": "ok",
+                "mode": "replay_execution_shadow_bridge",
+                "run_id": context.run_id,
+                "source_risk_outputs": len(risk_outputs),
+                "execution_results_published": published_count,
+                "filled_count": filled_count,
+                "execution_channel": "replay:execution_shadow",
+                "fill_model_name": _resolve_fill_model_name(fill_model_name),
+            }
+
+        return {
+            "stage_name": stage.stage_name,
+            "status": "ok",
+            "run_id": context.run_id,
+            "mode": "placeholder_stage_bridge",
+        }
+
+    return stage_executor
+
+
+def main(argv: list[str]) -> int:
+    args = parse_args(argv)
+
+    repository = build_dataset_repository(args)
+    selector = ReplaySelector(repository)
+    selection_plan = selector.build_plan(
+        build_selection_request(args),
+        dataset_id=args.dataset_id,
+    )
+
+    runner = ReplayRunner(run_root=args.run_root)
+    run_context = runner.build_run_context(
+        selection_plan=selection_plan,
+        run_config=build_run_config(args),
+    )
+
+    topology_plan = ReplayTopologyBuilder().build_plan(ReplayScope(args.scope))
+
+    clock = ReplayClock(
+        ReplayClockConfig(
+            speed_mode=ReplaySpeedMode(args.speed_mode),
+            start_time=args.clock_start_time,
+        )
+    )
+    injector = ReplayInjector()
+    transport = LocalReplayTransport()
+
+    engine = ReplayEngine()
+    engine_result = engine.execute(
+        run_context,
+        topology_plan,
+        stage_executor=make_stage_executor(
+            selection_plan=selection_plan,
+            repository=repository,
+            clock=clock,
+            injector=injector,
+            transport=transport,
+            channel_prefix=args.channel_prefix,
+            fill_model_name=args.fill_model,
+            doctrine_mode=DoctrineMode(args.doctrine_mode),
+        ),
+    )
+
+    integrity_bundle = ReplayIntegrityEvaluator().evaluate(
+        run_context,
+        checks=build_placeholder_checks(),
+    )
+
+    report_bundle = build_report_bundle(
+        run_context=run_context,
+        selection_plan=selection_plan,
+        topology_plan=topology_plan,
+        engine_result=engine_result,
+        integrity_bundle=integrity_bundle,
+    )
+
+    writer = ReplayArtifactsWriter()
+    writer.ensure_directories(run_context.artifact_plan)
+    artifact_bundle = writer.write_core_artifact_bundle(
+        run_context,
+        topology_plan,
+        integrity_verdict=integrity_bundle.verdict.value,
+        metrics={"stage_count": engine_result.stage_count},
+    )
+    writer.write_engine_result(engine_result, run_context.artifact_plan)
+
+    replay_artifacts_dir = Path(run_context.artifact_plan.artifacts_dir)
+    replay_artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+    persisted_feature_rows = build_persisted_feature_rows(transport.feature_frames)
+
+    (replay_artifacts_dir / "features_rows.json").write_text(
+        json.dumps(persisted_feature_rows, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
+        encoding="utf-8",
+    )
+    (replay_artifacts_dir / "strategy_decisions.json").write_text(
+        json.dumps(transport.strategy_decisions, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
+        encoding="utf-8",
+    )
+    (replay_artifacts_dir / "risk_outputs.json").write_text(
+        json.dumps(transport.risk_outputs, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
+        encoding="utf-8",
+    )
+
+    output = {
+        "status": "ok",
+        "run_id": run_context.run_id,
+        "doctrine_mode": run_context.doctrine_mode.value,
+        "selection_plan": selection_plan_to_dict(selection_plan),
+        "topology_plan": topology_plan_to_dict(topology_plan),
+        "engine_final_state": engine_result.final_state.value,
+        "engine_stage_records": [
+            {
+                "stage_name": item.stage_name,
+                "success": item.success,
+                "output_summary": dict(item.output_summary),
+            }
+            for item in engine_result.stage_records
+        ],
+        "integrity_verdict": integrity_bundle.verdict.value,
+        "integrity_bundle": integrity_bundle_to_dict(integrity_bundle),
+        "report_bundle": report_bundle_to_dict(report_bundle),
+        "artifact_root": run_context.artifact_plan.root_dir,
+        "artifact_count": artifact_bundle.artifact_count,
+        "clock_snapshot": {
+            "speed_mode": clock.speed_mode.value,
+            "current_time": clock.current_time,
+            "tick_count": clock.tick_count,
+            "step_count": clock.step_count,
+            "last_event_time": clock.last_event_time,
+        },
+    }
+
+    print(json.dumps(output, indent=2, sort_keys=True, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

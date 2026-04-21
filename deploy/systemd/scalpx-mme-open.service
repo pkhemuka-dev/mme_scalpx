@@ -1,25 +1,7 @@
 [Unit]
-Description=ScalpX MME open-session orchestrator
-Documentation=/home/Lenovo/scalpx/projects/mme_scalpx/README.md
-Requires=network-online.target scalpx-mme-preflight.service scalpx-mme.service
-After=network-online.target scalpx-mme-preflight.service
-Wants=network-online.target scalpx-mme-preflight.service scalpx-mme.service
+Description=Start ScalpX MME Canonical Runtime
 
 [Service]
 Type=oneshot
-User=Lenovo
-Group=Lenovo
-WorkingDirectory=/home/Lenovo/scalpx/projects/mme_scalpx
-RemainAfterExit=true
-ExecStart=/usr/bin/true
-ExecStop=/usr/bin/true
-TimeoutStartSec=120
-TimeoutStopSec=30
-NoNewPrivileges=true
-
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=scalpx-mme-open
-
-[Install]
-WantedBy=multi-user.target
+User=root
+ExecStart=/bin/systemctl start scalpx-mme.service

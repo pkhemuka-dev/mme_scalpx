@@ -991,11 +991,25 @@ class ExecutionService:
 
     def _reconcile_open_orders(self) -> None:
         try:
-            open_orders = self.broker.reconcile_open_orders() or []
+            raw_open_orders = self.broker.reconcile_open_orders() or []
         except Exception as exc:
             raise FatalExecutionError(
                 f"broker open-order reconcile failed: {exc}"
             ) from exc
+
+        if not isinstance(raw_open_orders, list):
+            raise FatalExecutionError(
+                f"broker open-order reconcile returned non-list payload: {type(raw_open_orders).__name__}"
+            )
+
+        open_orders: list[Mapping[str, Any]] = []
+        for item in raw_open_orders:
+            if not isinstance(item, Mapping):
+                raise FatalExecutionError(
+                    "broker open-order reconcile returned non-mapping item: "
+                    f"{type(item).__name__}"
+                )
+            open_orders.append(item)
 
         if not open_orders:
             self.pending_order = None

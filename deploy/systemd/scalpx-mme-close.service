@@ -1,29 +1,7 @@
 [Unit]
-Description=ScalpX MME close-session orchestrator
-Documentation=/home/Lenovo/scalpx/projects/mme_scalpx/README.md
-After=network-online.target
-Wants=network-online.target
+Description=Stop ScalpX MME Canonical Runtime
 
 [Service]
 Type=oneshot
-User=Lenovo
-Group=Lenovo
-WorkingDirectory=/home/Lenovo/scalpx/projects/mme_scalpx
-
-Environment=PYTHONUNBUFFERED=1
-Environment=PYTHONDONTWRITEBYTECODE=1
-Environment=PYTHONPATH=/home/Lenovo/scalpx/projects/mme_scalpx/app
-EnvironmentFile=/home/Lenovo/scalpx/projects/mme_scalpx/etc/project.env
-
-ExecStart=/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python -m mme_scalpx.ops.stop_session --systemd --pause-trading --set-exit-only --healthcheck-after-stop
-TimeoutStartSec=180
-TimeoutStopSec=30
-NoNewPrivileges=true
-RemainAfterExit=false
-
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=scalpx-mme-close
-
-[Install]
-WantedBy=multi-user.target
+User=root
+ExecStart=/bin/systemctl stop scalpx-mme.service

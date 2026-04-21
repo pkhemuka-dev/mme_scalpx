@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""
+bin/replay_compare.py
+
+Minimal replay comparison CLI for locked-vs-shadow studies.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import yaml
+
+from app.mme_scalpx.replay.comparison_artifacts import (
+    build_comparison_artifacts,
+    comparison_artifacts_to_dict,
+)
+from app.mme_scalpx.replay.metrics import (
+    comparison_metrics_to_dict,
+    compute_comparison_metrics,
+)
+
+
+class ReplayCompareCliError(RuntimeError):
+    """CLI-level replay comparison error."""
+
+
+def main() -> int:
+    args = _parse_args()
+
+    profile = _load_yaml_mapping(args.profile, label="profile")
+    shadow_override_root = _load_yaml_mapping(args.shadow_override, label="shadow_override")
+
+    shadow_pack = _extract_shadow_override_pack(shadow_override_root)
+    shadow_override_id = _extract_shadow_override_id(shadow_pack)
+
+    baseline_frames = _load_json_list(args.baseline_frames, label="baseline_frames")
+    shadow_frames = _load_json_list(args.shadow_frames, label="shadow_frames")
+
+    metrics_bundle = compute_comparison_metrics(
+        baseline_frames=baseline_frames,
+        shadow_frames=shadow_frames,
+    )
+    comparison = build_comparison_artifacts(
+        baseline_frames=baseline_frames,
+        shadow_frames=shadow_frames,
+        metrics_bundle=metrics_bundle,
+        baseline_label=str(
+            profile.get("experiment", {}).get("baseline_label", "baseline_locked")
+        ),
+        shadow_label=shadow_override_id,
+    )
+
+    output_root = Path(args.output_root).expanduser().resolve()
+    output_root.mkdir(parents=True, exist_ok=True)
+
+    metrics_dict = comparison_metrics_to_dict(metrics_bundle)
+    comparison_dict = comparison_artifacts_to_dict(comparison)
+
+    _write_json(output_root / "04_metrics_summary.json", metrics_dict)
+    _write_json(
+        output_root / "05_candidate_diff_report.json",
+        {"candidate_diff_rows": comparison_dict["candidate_diff_rows"]},
+    )
+    _write_json(output_root / "06_blocker_diff_report.json", comparison_dict["blocker_diff"])
+    _write_json(output_root / "07_economics_diff_report.json", comparison_dict["economics_diff"])
+    _write_json(output_root / "08_side_split_report.json", comparison_dict["side_split"])
+    _write_json(output_root / "09_put_leg_focus_report.json", comparison_dict["put_leg_focus"])
+    _write_json(output_root / "11_differential_report.json", comparison_dict["differential_report"])
+    _write_json(output_root / "shadow_override_flattened.json", shadow_pack)
+    _write_json(output_root / "profile_snapshot.json", profile)
+
+    verdict = _build_operator_verdict(metrics_dict, comparison_dict)
+    (output_root / "12_operator_verdict.txt").write_text(verdict, encoding="utf-8")
+
+    print("output_root", str(output_root))
+    print("shadow_override_id", shadow_override_id)
+    print("metrics", json.dumps(metrics_dict, sort_keys=True))
+    print("verdict")
+    print(verdict)
+
+    return 0
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Replay locked-vs-shadow comparison CLI")
+    parser.add_argument("--profile", required=True, help="Path to replay comparison profile YAML")
+    parser.add_argument("--shadow-override", required=True, help="Path to shadow override YAML")
+    parser.add_argument("--baseline-frames", required=True, help="Path to baseline frames JSON")
+    parser.add_argument("--shadow-frames", required=True, help="Path to shadow frames JSON")
+    parser.add_argument("--output-root", required=True, help="Directory for output artifacts")
+    return parser.parse_args()
+
+
+def _load_yaml_mapping(path: str, *, label: str) -> dict[str, Any]:
+    source = Path(path).expanduser().resolve()
+    if not source.exists():
+        raise ReplayCompareCliError(f"{label} file not found: {source}")
+    with source.open("r", encoding="utf-8") as fh:
+        data = yaml.safe_load(fh)
+    if not isinstance(data, dict):
+        raise ReplayCompareCliError(f"{label} root must be a mapping: {source}")
+    return data
+
+
+def _extract_shadow_override_pack(root: dict[str, Any]) -> dict[str, Any]:
+    pack = root.get("shadow_override_pack")
+    if not isinstance(pack, dict):
+        raise ReplayCompareCliError("shadow_override file must contain mapping key 'shadow_override_pack'")
+    return pack
+
+
+def _extract_shadow_override_id(pack: dict[str, Any]) -> str:
+    labels = pack.get("labels")
+    if not isinstance(labels, dict):
+        raise ReplayCompareCliError("shadow_override_pack.labels must be a mapping")
+    shadow_id = labels.get("shadow_id")
+    if not isinstance(shadow_id, str) or not shadow_id.strip():
+        raise ReplayCompareCliError("shadow_override_pack.labels.shadow_id must be a non-empty string")
+    return shadow_id.strip()
+
+
+def _load_json_list(path: str, *, label: str) -> list[dict[str, Any]]:
+    source = Path(path).expanduser().resolve()
+    if not source.exists():
+        raise ReplayCompareCliError(f"{label} file not found: {source}")
+    with source.open("r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    if not isinstance(data, list):
+        raise ReplayCompareCliError(f"{label} root must be a list: {source}")
+    normalized: list[dict[str, Any]] = []
+    for idx, item in enumerate(data):
+        if not isinstance(item, dict):
+            raise ReplayCompareCliError(f"{label}[{idx}] must be an object")
+        normalized.append(item)
+    return normalized
+
+
+def _write_json(path: Path, payload: Any) -> None:
+    path.write_text(
+        json.dumps(
+            payload,
+            indent=2,
+            sort_keys=True,
+            ensure_ascii=False,
+            default=str,
+        ) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _build_operator_verdict(
+    metrics_dict: dict[str, Any],
+    comparison_dict: dict[str, Any],
+) -> str:
+    checks = comparison_dict["differential_report"]["expected_signal_checks"]
+
+    promote_ready = (
+        metrics_dict["shadow_put_candidate_count"] > metrics_dict["baseline_put_candidate_count"]
+        and metrics_dict["ambiguity_rate_shadow"] <= 0.25
+        and checks["regime_improved"]
+        and checks["economics_improved"]
+        and checks["reward_cost_fail_reduced"]
+        and checks["put_focus_preserved"]
+        and metrics_dict["frame_alignment_mismatch_count"] == 0
+    )
+
+    lines = [
+        "REPLAY OPERATOR VERDICT",
+        "",
+        f"shadow_put_candidate_gain={metrics_dict['shadow_put_candidate_count'] - metrics_dict['baseline_put_candidate_count']}",
+        f"newly_admitted_shadow_frames={metrics_dict['newly_admitted_shadow_frames']}",
+        f"ambiguity_rate_shadow={metrics_dict['ambiguity_rate_shadow']}",
+        f"frame_alignment_mismatch_count={metrics_dict['frame_alignment_mismatch_count']}",
+        f"regime_improved={checks['regime_improved']}",
+        f"economics_improved={checks['economics_improved']}",
+        f"reward_cost_fail_reduced={checks['reward_cost_fail_reduced']}",
+        f"put_focus_preserved={checks['put_focus_preserved']}",
+        "",
+    ]
+
+    if promote_ready:
+        lines.append("decision=shadow_candidate_promotable_for_broader_replay")
+    else:
+        lines.append("decision=continue_shadow_evidence_only")
+
+    lines.append("note=test_not_contract_change")
+    lines.append("note=replay_result_not_production_truth")
+    return "\n".join(lines) + "\n"
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

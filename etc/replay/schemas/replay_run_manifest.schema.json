@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mme-scalpx.local/schemas/replay_run_manifest.schema.json",
+  "title": "MME-ScalpX Replay Run Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "chapter",
+    "created_at",
+    "code_revision",
+    "dataset",
+    "selection",
+    "replay",
+    "profiles",
+    "experiment",
+    "reset",
+    "integrity",
+    "artifacts",
+    "verdict_tags",
+    "notes"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "chapter": {
+      "type": "string",
+      "const": "replay"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "code_revision": {
+      "type": ["string", "null"]
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_id",
+        "dataset_fingerprint",
+        "source_path",
+        "coverage_summary"
+      ],
+      "properties": {
+        "dataset_id": { "type": "string", "minLength": 1 },
+        "dataset_fingerprint": { "type": "string", "minLength": 1 },
+        "source_path": { "type": "string", "minLength": 1 },
+        "coverage_summary": { "type": "object" }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selection_mode",
+        "trading_dates",
+        "window",
+        "session_segment",
+        "market_tags"
+      ],
+      "properties": {
+        "selection_mode": {
+          "type": "string",
+          "enum": [
+            "single_day",
+            "date_range",
+            "custom_date_list",
+            "intraday_window",
+            "session_segment",
+            "weekday_batch",
+            "monthly_batch"
+          ]
+        },
+        "trading_dates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "minItems": 1
+        },
+        "window": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "end"],
+          "properties": {
+            "start": { "type": ["string", "null"] },
+            "end": { "type": ["string", "null"] }
+          }
+        },
+        "session_segment": {
+          "type": ["string", "null"]
+        },
+        "market_tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "uptrend",
+              "downtrend",
+              "sideways",
+              "reversal",
+              "range_expansion",
+              "fake_breakout",
+              "volatile_chop",
+              "low_liquidity",
+              "event_day"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "speed_mode",
+        "doctrine_mode",
+        "side_mode",
+        "fill_model"
+      ],
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": [
+            "feeds_only",
+            "feeds_features",
+            "feeds_features_strategy",
+            "feeds_features_strategy_risk",
+            "feeds_features_strategy_risk_execution_shadow",
+            "full_system_replay"
+          ]
+        },
+        "speed_mode": {
+          "type": "string",
+          "enum": [
+            "accelerated",
+            "realtime_1x",
+            "paused",
+            "step",
+            "breakpoint"
+          ]
+        },
+        "doctrine_mode": {
+          "type": "string",
+          "enum": [
+            "locked",
+            "shadow",
+            "differential"
+          ]
+        },
+        "side_mode": {
+          "type": "string",
+          "enum": [
+            "call_only",
+            "put_only",
+            "mirrored_both",
+            "side_separated"
+          ]
+        },
+        "fill_model": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_profile",
+        "replay_profile",
+        "experiment_profile",
+        "batch_profile",
+        "forensic_profile",
+        "integrity_profile"
+      ],
+      "properties": {
+        "dataset_profile": { "type": ["string", "null"] },
+        "replay_profile": { "type": ["string", "null"] },
+        "experiment_profile": { "type": ["string", "null"] },
+        "batch_profile": { "type": ["string", "null"] },
+        "forensic_profile": { "type": ["string", "null"] },
+        "integrity_profile": { "type": ["string", "null"] }
+      }
+    },
+    "experiment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family",
+        "baseline_ref",
+        "override_pack_id",
+        "shadow_label",
+        "differential_pair_id"
+      ],
+      "properties": {
+        "family": {
+          "type": ["string", "null"],
+          "enum": [
+            "baseline_locked",
+            "economics_disabled",
+            "confirmation_variant",
+            "tp_sl_variant",
+            "context_gate_variant",
+            "side_filter_variant",
+            "exit_arch_variant",
+            "parameter_sweep",
+            "threshold_sweep",
+            "fault_injection",
+            null
+          ]
+        },
+        "baseline_ref": { "type": ["string", "null"] },
+        "override_pack_id": { "type": ["string", "null"] },
+        "shadow_label": { "type": ["string", "null"] },
+        "differential_pair_id": { "type": ["string", "null"] }
+      }
+    },
+    "reset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "reset_started_at",
+        "reset_completed_at",
+        "reset_verdict"
+      ],
+      "properties": {
+        "policy": { "type": "string", "minLength": 1 },
+        "reset_started_at": { "type": ["string", "null"], "format": "date-time" },
+        "reset_completed_at": { "type": ["string", "null"], "format": "date-time" },
+        "reset_verdict": {
+          "type": ["string", "null"],
+          "enum": ["pass", "warn", "fail", null]
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_checks",
+        "verdict",
+        "waivers"
+      ],
+      "properties": {
+        "required_checks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "heartbeat_integrity",
+              "hash_freshness",
+              "snapshot_sync_validity",
+              "stale_leg_detection",
+              "reset_cleanliness",
+              "reproducibility_proof"
+            ]
+          },
+          "minItems": 6,
+          "uniqueItems": true
+        },
+        "verdict": {
+          "type": ["string", "null"],
+          "enum": ["pass", "warn", "fail", null]
+        },
+        "waivers": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "root_dir",
+        "manifest_path",
+        "log_dir",
+        "report_paths"
+      ],
+      "properties": {
+        "root_dir": { "type": "string", "minLength": 1 },
+        "manifest_path": { "type": "string", "minLength": 1 },
+        "log_dir": { "type": "string", "minLength": 1 },
+        "report_paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "verdict_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "contractual_baseline",
+          "shadow_evidence_only",
+          "differential_comparison",
+          "invalidated_by_integrity"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
