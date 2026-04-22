@@ -1,77 +1,320 @@
+from __future__ import annotations
+
 """
 app/mme_scalpx/integrations/broker_api.py
 
-Canonical broker-adapter integration boundary for ScalpX MME.
+Freeze-grade broker adapter contract and provider-aware execution seam for ScalpX MME.
 
-Responsibilities
-----------------
-- define the stable broker adapter contract consumed by runtime services
-- provide a null adapter for safe bootstrap/testing paths
-- provide a thin real Zerodha-backed adapter wrapper over the authenticated
-  KiteConnect REST path
+Purpose
+-------
+This module OWNS:
+- broker adapter protocol surface consumed by execution/bootstrap
+- normalized order / cancel / position / open-order adapter behavior
+- broker-auth attachment for execution-capable adapters
+- provider-aware adapter metadata and capability truth
+- canonical open-orders normalization to list[Mapping[str, Any]] | None
+- compatibility builder surface for bootstrap_provider.py
 
-Non-responsibilities
---------------------
-- no websocket market data
-- no Redis publication
-- no runtime supervision
-- no composition-root ownership
-- no strategy/risk logic
-- no position truth ownership (execution remains sole position truth)
+This module DOES NOT own:
+- broker login/session lifecycle policy
+- provider-runtime role resolution
+- websocket lifecycle / live feed handling
+- strategy logic
+- Redis IO
+- main.py composition
+- Dhan market-data orchestration
 
-Freeze rules
-------------
-- services must depend on this contract boundary, not broker SDK classes
-- Zerodha REST/SDK details stay encapsulated in this file
-- this adapter translates broker payloads into stable Python dictionaries
-- no hidden order-shape invention beyond explicit validated parameters and
-  optional extra_params passthrough
+Important contract laws
+-----------------------
+- execution.py remains the sole broker-truth owner.
+- broker_api.py is an integration seam only.
+- reconcile_open_orders() must return only:
+  - None
+  - list[Mapping[str, Any]]
+  Never a wrapper dict.
+- auth/session truth is consumed from broker_auth.py.
+- this module stays model-light to avoid drift with the parallel core.models lane.
 """
 
-from __future__ import annotations
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from decimal import Decimal
+from types import MappingProxyType
+from typing import Any, Callable, Mapping, Protocol, Sequence, runtime_checkable
 
-from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation
-from typing import Any, Protocol, runtime_checkable
-
-from app.mme_scalpx.integrations.token_store import (
-    BrokerApiConfig,
-    BrokerTokenState,
-    SecretFileFormatError,
-    SecretFileMissingError,
-    TokenStoreError,
-    load_api_config,
-    load_token_state,
+from app.mme_scalpx.core import names
+from app.mme_scalpx.core.validators import (
+    ValidationError,
+    require_bool,
+    require_int,
+    require_literal,
+    require_mapping,
+    require_non_empty_str,
+)
+from app.mme_scalpx.integrations.broker_auth import (
+    BrokerAuthManager,
+    BrokerAuthSnapshot,
+    BrokerSessionUnavailableError,
 )
 
-try:
-    from kiteconnect import KiteConnect  # type: ignore
-except Exception as exc:  # pragma: no cover
-    raise RuntimeError(
-        "kiteconnect is required by app.mme_scalpx.integrations.broker_api"
-    ) from exc
+VERSION = "mme-broker-api-freeze-v2"
 
+# ============================================================================
+# Compatibility fallbacks against frozen names surfaces
+# ============================================================================
 
-VERSION = "mme-broker-api-v1-freeze"
+_ALLOWED_PROVIDER_IDS: tuple[str, ...] = tuple(
+    getattr(
+        names,
+        "ALLOWED_PROVIDER_IDS",
+        getattr(
+            names,
+            "PROVIDER_IDS",
+            (
+                names.PROVIDER_ZERODHA,
+                names.PROVIDER_DHAN,
+            ),
+        ),
+    )
+)
+
+PROVIDER_ZERODHA = getattr(names, "PROVIDER_ZERODHA", "ZERODHA")
+PROVIDER_DHAN = getattr(names, "PROVIDER_DHAN", "DHAN")
+
+# ============================================================================
+# Exceptions
+# ============================================================================
 
 
 class BrokerAdapterError(RuntimeError):
-    """Base broker adapter error."""
+    """Base error for broker-adapter failures."""
 
 
 class BrokerAdapterValidationError(BrokerAdapterError):
-    """Raised for config/session/argument validation errors."""
+    """Raised when broker-adapter config or inputs are invalid."""
+
+
+class BrokerAdapterAuthError(BrokerAdapterError):
+    """Raised when broker-auth/session is unavailable for an adapter call."""
 
 
 class BrokerAdapterRequestError(BrokerAdapterError):
-    """Raised for broker request failures."""
+    """Raised when a broker transport request fails or returns invalid data."""
+
+
+class BrokerAdapterUnavailableError(BrokerAdapterError):
+    """Raised when no usable transport client is configured."""
+
+
+# ============================================================================
+# Shared validator wrappers
+# ============================================================================
+
+
+def _wrap_validation(fn, *args, **kwargs):
+    try:
+        return fn(*args, **kwargs)
+    except Exception as exc:
+        if isinstance(exc, BrokerAdapterValidationError):
+            raise
+        if isinstance(exc, ValidationError):
+            raise BrokerAdapterValidationError(str(exc)) from exc
+        raise BrokerAdapterValidationError(str(exc)) from exc
+
+
+def _require_non_empty(value: str, *, field_name: str) -> str:
+    return _wrap_validation(require_non_empty_str, value, field_name=field_name)
+
+
+def _require_bool(value: bool, *, field_name: str) -> bool:
+    return _wrap_validation(require_bool, value, field_name=field_name)
+
+
+def _require_int(
+    value: int,
+    *,
+    field_name: str,
+    min_value: int | None = None,
+) -> int:
+    return _wrap_validation(
+        require_int,
+        value,
+        field_name=field_name,
+        min_value=min_value,
+    )
+
+
+def _require_literal(
+    value: str,
+    *,
+    field_name: str,
+    allowed: Sequence[str],
+) -> str:
+    return _wrap_validation(
+        require_literal,
+        value,
+        field_name=field_name,
+        allowed=allowed,
+    )
+
+
+def _require_mapping(
+    value: Mapping[str, object],
+    *,
+    field_name: str,
+) -> dict[str, object]:
+    return _wrap_validation(require_mapping, value, field_name=field_name)
+
+
+def _freeze_mapping(data: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    raw = {} if data is None else dict(data)
+    return MappingProxyType(raw)
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _iso_now() -> str:
+    return _utc_now().isoformat()
+
+
+def _provider_code(provider_id: str) -> str:
+    provider_id = _require_literal(
+        provider_id,
+        field_name="provider_id",
+        allowed=_ALLOWED_PROVIDER_IDS,
+    )
+    return provider_id.strip().lower()
+
+
+def _normalize_payload(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc).isoformat()
+        return value.astimezone(timezone.utc).isoformat()
+    if isinstance(value, Mapping):
+        return {str(k): _normalize_payload(v) for k, v in value.items()}
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return [_normalize_payload(item) for item in value]
+    return str(value)
+
+
+def _coerce_order_price(
+    value: Decimal | str | float | int | None,
+    *,
+    field_name: str,
+) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise BrokerAdapterValidationError(f"{field_name} must be numeric or None")
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = _require_non_empty(str(value), field_name=field_name)
+    try:
+        return float(text)
+    except ValueError as exc:
+        raise BrokerAdapterValidationError(
+            f"{field_name} must be numeric-like, got {value!r}"
+        ) from exc
+
+
+def _normalize_mapping_list(
+    payload: Sequence[Any],
+    *,
+    field_name: str,
+) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    bad_types: list[str] = []
+    for item in payload:
+        if not isinstance(item, Mapping):
+            bad_types.append(type(item).__name__)
+            continue
+        out.append({str(k): _normalize_payload(v) for k, v in item.items()})
+    if bad_types:
+        raise BrokerAdapterRequestError(
+            f"{field_name} contains non-mapping items: {bad_types!r}"
+        )
+    return out
+
+
+# ============================================================================
+# Public protocols
+# ============================================================================
+
+
+@runtime_checkable
+class BrokerTransportClient(Protocol):
+    """Protocol for provider-specific execution/order reconciliation transport."""
+
+    def healthcheck(
+        self,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        ...
+
+    def get_order(
+        self,
+        order_id: str,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        ...
+
+    def place_order(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        ...
+
+    def cancel_order(
+        self,
+        order_id: str,
+        payload: Mapping[str, Any] | None = None,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        ...
+
+    def reconcile_positions(
+        self,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        ...
+
+    def reconcile_open_orders(
+        self,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        ...
 
 
 @runtime_checkable
 class BrokerAdapter(Protocol):
-    """
-    Stable broker-adapter contract for runtime service consumption.
-    """
+    """Canonical adapter surface consumed by bootstrap and execution."""
+
+    def info(self) -> "BrokerAdapterInfo":
+        ...
 
     def healthcheck(self) -> dict[str, Any]:
         ...
@@ -131,365 +374,442 @@ class BrokerAdapter(Protocol):
         ...
 
 
-@dataclass(frozen=True)
+# ============================================================================
+# Public value objects
+# ============================================================================
+
+
+@dataclass(frozen=True, slots=True)
 class BrokerAdapterInfo:
     adapter_name: str
     version: str
+    provider_id: str
     broker: str
     mode: str
+    requires_auth: bool
+    execution_supported: bool
+    transport_configured: bool
+    metadata: Mapping[str, Any] = field(default_factory=dict)
 
-
-def _decimal_to_str(value: Decimal | str | float | int | None) -> str | None:
-    if value is None:
-        return None
-    try:
-        return str(Decimal(str(value)))
-    except (InvalidOperation, ValueError) as exc:
-        raise BrokerAdapterValidationError(f"invalid decimal-like value: {value!r}") from exc
-
-
-def _require_non_empty(value: str, *, field_name: str) -> str:
-    text = str(value).strip()
-    if not text:
-        raise BrokerAdapterValidationError(f"{field_name} must be non-empty")
-    return text
-
-
-def _require_positive_int(value: int, *, field_name: str) -> int:
-    if int(value) <= 0:
-        raise BrokerAdapterValidationError(f"{field_name} must be > 0")
-    return int(value)
-
-
-def _normalize_payload(payload: Any) -> Any:
-    if isinstance(payload, Decimal):
-        return str(payload)
-    if isinstance(payload, list):
-        return [_normalize_payload(x) for x in payload]
-    if isinstance(payload, tuple):
-        return [_normalize_payload(x) for x in payload]
-    if isinstance(payload, dict):
-        return {str(k): _normalize_payload(v) for k, v in payload.items()}
-    return payload
-
-
-def validate_api_config_for_zerodha(api: BrokerApiConfig) -> None:
-    if api.broker.strip().lower() != "zerodha":
-        raise BrokerAdapterValidationError(
-            f"api.json broker must be 'zerodha', got {api.broker!r}"
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "adapter_name",
+            _require_non_empty(self.adapter_name, field_name="adapter_name"),
         )
-    if not api.api_key.strip():
-        raise BrokerAdapterValidationError("api.json missing non-empty api_key")
-
-
-def validate_token_state_for_zerodha(state: BrokerTokenState) -> None:
-    if state.broker.strip().lower() != "zerodha":
-        raise BrokerAdapterValidationError(
-            f"tokens.json broker must be 'zerodha', got {state.broker!r}"
+        object.__setattr__(
+            self,
+            "version",
+            _require_non_empty(self.version, field_name="version"),
         )
-    if not state.access_token.strip():
-        raise BrokerAdapterValidationError("tokens.json missing non-empty access_token")
+        object.__setattr__(
+            self,
+            "provider_id",
+            _require_literal(
+                self.provider_id,
+                field_name="provider_id",
+                allowed=_ALLOWED_PROVIDER_IDS,
+            ),
+        )
+        object.__setattr__(
+            self,
+            "broker",
+            _require_non_empty(self.broker, field_name="broker"),
+        )
+        object.__setattr__(
+            self,
+            "mode",
+            _require_non_empty(self.mode, field_name="mode"),
+        )
+        object.__setattr__(
+            self,
+            "requires_auth",
+            _require_bool(self.requires_auth, field_name="requires_auth"),
+        )
+        object.__setattr__(
+            self,
+            "execution_supported",
+            _require_bool(self.execution_supported, field_name="execution_supported"),
+        )
+        object.__setattr__(
+            self,
+            "transport_configured",
+            _require_bool(self.transport_configured, field_name="transport_configured"),
+        )
+        object.__setattr__(self, "metadata", _freeze_mapping(self.metadata))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "adapter_name": self.adapter_name,
+            "version": self.version,
+            "provider_id": self.provider_id,
+            "broker": self.broker,
+            "mode": self.mode,
+            "requires_auth": self.requires_auth,
+            "execution_supported": self.execution_supported,
+            "transport_configured": self.transport_configured,
+            "metadata": dict(self.metadata),
+        }
 
 
+# ============================================================================
+# Generic callable transport
+# ============================================================================
+
+
+@dataclass(frozen=True, slots=True)
+class CallableBrokerTransportClient:
+    """
+    Thin callable-based transport for tests, bootstrap shims, or composition.
+
+    Each callable receives keyword arguments exactly as documented by the
+    BrokerTransportClient protocol.
+    """
+
+    healthcheck_fn: Callable[..., Any] | None = None
+    get_order_fn: Callable[..., Any] | None = None
+    place_order_fn: Callable[..., Any] | None = None
+    cancel_order_fn: Callable[..., Any] | None = None
+    reconcile_positions_fn: Callable[..., Any] | None = None
+    reconcile_open_orders_fn: Callable[..., Any] | None = None
+
+    def healthcheck(
+        self,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        if self.healthcheck_fn is None:
+            return {"ok": True, "provider_id": provider_id, "mode": "callable"}
+        return self.healthcheck_fn(access_token=access_token, provider_id=provider_id)
+
+    def get_order(
+        self,
+        order_id: str,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        if self.get_order_fn is None:
+            raise BrokerAdapterUnavailableError("get_order_fn not configured")
+        return self.get_order_fn(
+            order_id,
+            access_token=access_token,
+            provider_id=provider_id,
+        )
+
+    def place_order(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        if self.place_order_fn is None:
+            raise BrokerAdapterUnavailableError("place_order_fn not configured")
+        return self.place_order_fn(
+            payload,
+            access_token=access_token,
+            provider_id=provider_id,
+        )
+
+    def cancel_order(
+        self,
+        order_id: str,
+        payload: Mapping[str, Any] | None = None,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        if self.cancel_order_fn is None:
+            raise BrokerAdapterUnavailableError("cancel_order_fn not configured")
+        return self.cancel_order_fn(
+            order_id,
+            payload,
+            access_token=access_token,
+            provider_id=provider_id,
+        )
+
+    def reconcile_positions(
+        self,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        if self.reconcile_positions_fn is None:
+            raise BrokerAdapterUnavailableError("reconcile_positions_fn not configured")
+        return self.reconcile_positions_fn(
+            access_token=access_token,
+            provider_id=provider_id,
+        )
+
+    def reconcile_open_orders(
+        self,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        if self.reconcile_open_orders_fn is None:
+            raise BrokerAdapterUnavailableError(
+                "reconcile_open_orders_fn not configured"
+            )
+        return self.reconcile_open_orders_fn(
+            access_token=access_token,
+            provider_id=provider_id,
+        )
+
+
+# ============================================================================
+# Convenience zerodha transport wrapper
+# ============================================================================
+
+
+@dataclass(frozen=True, slots=True)
+class KiteTransportClient:
+    """
+    Thin wrapper around a kite-like client.
+
+    Required methods on the supplied object:
+    - orders()
+    - positions()
+    - place_order(**payload)
+    - cancel_order(order_id=..., variety=..., parent_order_id=...)
+    Optional:
+    - order_history(order_id)
+    - profile()
+
+    This wrapper deliberately does not instantiate KiteConnect itself.
+    Composition remains external.
+    """
+
+    kite: Any
+
+    def healthcheck(
+        self,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        if hasattr(self.kite, "profile"):
+            return self.kite.profile()
+        return {"ok": True, "provider_id": provider_id, "mode": "kite-wrapper"}
+
+    def get_order(
+        self,
+        order_id: str,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        order_id = _require_non_empty(order_id, field_name="order_id")
+        if hasattr(self.kite, "order_history"):
+            return self.kite.order_history(order_id)
+        if hasattr(self.kite, "orders"):
+            orders = self.kite.orders()
+            if isinstance(orders, list):
+                for row in orders:
+                    if isinstance(row, Mapping) and str(row.get("order_id", "")).strip() == order_id:
+                        return row
+            return None
+        raise BrokerAdapterUnavailableError(
+            "kite client exposes neither order_history() nor orders()"
+        )
+
+    def place_order(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        result = self.kite.place_order(**dict(payload))
+        if isinstance(result, Mapping):
+            return result
+        return {"order_id": result}
+
+    def cancel_order(
+        self,
+        order_id: str,
+        payload: Mapping[str, Any] | None = None,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        kwargs = dict(payload or {})
+        kwargs.setdefault("order_id", order_id)
+        result = self.kite.cancel_order(**kwargs)
+        if isinstance(result, Mapping):
+            return result
+        return {"order_id": order_id, "cancel_result": result}
+
+    def reconcile_positions(
+        self,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        return self.kite.positions()
+
+    def reconcile_open_orders(
+        self,
+        *,
+        access_token: str | None = None,
+        provider_id: str | None = None,
+    ) -> Any:
+        return self.kite.orders()
+
+
+# ============================================================================
+# Base broker adapter
+# ============================================================================
+
+
+@dataclass(slots=True)
 class BaseBrokerAdapter:
-    """
-    Base convenience implementation for broker adapters.
-    """
+    provider_id: str
+    broker: str
+    mode: str = "base"
+    transport_client: BrokerTransportClient | None = None
+    auth_manager: BrokerAuthManager | None = None
+    requires_auth: bool = False
+    default_exchange: str = "NFO"
+    default_product: str = "NRML"
+    default_variety: str = "regular"
+    default_validity: str = "DAY"
+    metadata: Mapping[str, Any] = field(default_factory=dict)
 
-    def info(self) -> BrokerAdapterInfo:
-        return BrokerAdapterInfo(
-            adapter_name=self.__class__.__name__,
-            version=VERSION,
-            broker="unknown",
-            mode="base",
+    def __post_init__(self) -> None:
+        self.provider_id = _require_literal(
+            self.provider_id,
+            field_name="provider_id",
+            allowed=_ALLOWED_PROVIDER_IDS,
         )
-
-    def healthcheck(self) -> dict[str, Any]:
-        raise NotImplementedError("healthcheck() not implemented")
-
-    def get_order(self, order_id: str) -> dict[str, Any]:
-        raise NotImplementedError("get_order() not implemented")
-
-    def cancel_order(
-        self,
-        order_id: str,
-        *,
-        variety: str = "regular",
-        parent_order_id: str | None = None,
-    ) -> dict[str, Any]:
-        raise NotImplementedError("cancel_order() not implemented")
-
-    def reconcile_position(self) -> dict[str, Any]:
-        raise NotImplementedError("reconcile_position() not implemented")
-
-    def reconcile_open_orders(self) -> list[Mapping[str, Any]] | None:
-        raise NotImplementedError("reconcile_open_orders() not implemented")
-
-    def place_entry_order(
-        self,
-        *,
-        tradingsymbol: str,
-        exchange: str,
-        transaction_type: str,
-        quantity: int,
-        product: str,
-        order_type: str,
-        variety: str = "regular",
-        price: Decimal | str | float | int | None = None,
-        trigger_price: Decimal | str | float | int | None = None,
-        validity: str = "DAY",
-        tag: str | None = None,
-        extra_params: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        raise NotImplementedError("place_entry_order() not implemented")
-
-    def place_exit_order(
-        self,
-        *,
-        tradingsymbol: str,
-        exchange: str,
-        transaction_type: str,
-        quantity: int,
-        product: str,
-        order_type: str,
-        variety: str = "regular",
-        price: Decimal | str | float | int | None = None,
-        trigger_price: Decimal | str | float | int | None = None,
-        validity: str = "DAY",
-        tag: str | None = None,
-        extra_params: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        raise NotImplementedError("place_exit_order() not implemented")
-
-
-class NullBrokerAdapter(BaseBrokerAdapter):
-    """
-    Safe no-op broker adapter for bootstrap/testing paths.
-    """
-
-    def info(self) -> BrokerAdapterInfo:
-        return BrokerAdapterInfo(
-            adapter_name=self.__class__.__name__,
-            version=VERSION,
-            broker="none",
-            mode="null",
+        self.broker = _require_non_empty(self.broker, field_name="broker")
+        self.mode = _require_non_empty(self.mode, field_name="mode")
+        self.requires_auth = _require_bool(
+            self.requires_auth,
+            field_name="requires_auth",
         )
-
-    def healthcheck(self) -> dict[str, Any]:
-        return {"ok": False, "broker": "none", "mode": "null"}
-
-    def get_order(self, order_id: str) -> dict[str, Any]:
-        return {
-            "ok": False,
-            "broker": "none",
-            "mode": "null",
-            "order_id": str(order_id),
-            "detail": "null broker adapter",
-        }
-
-    def cancel_order(
-        self,
-        order_id: str,
-        *,
-        variety: str = "regular",
-        parent_order_id: str | None = None,
-    ) -> dict[str, Any]:
-        return {
-            "ok": False,
-            "broker": "none",
-            "mode": "null",
-            "order_id": str(order_id),
-            "variety": variety,
-            "parent_order_id": parent_order_id,
-            "detail": "null broker adapter",
-        }
-
-    def reconcile_position(self) -> dict[str, Any]:
-        return {
-            "ok": False,
-            "broker": "none",
-            "mode": "null",
-            "net": [],
-            "day": [],
-            "detail": "null broker adapter",
-        }
-
-    def reconcile_open_orders(self) -> list[Mapping[str, Any]] | None:
-        return {
-            "ok": False,
-            "broker": "none",
-            "mode": "null",
-            "orders": [],
-            "detail": "null broker adapter",
-        }
-
-    def place_entry_order(self, **kwargs: Any) -> dict[str, Any]:
-        return {
-            "ok": False,
-            "broker": "none",
-            "mode": "null",
-            "intent": "entry",
-            "request": _normalize_payload(kwargs),
-            "detail": "null broker adapter",
-        }
-
-    def place_exit_order(self, **kwargs: Any) -> dict[str, Any]:
-        return {
-            "ok": False,
-            "broker": "none",
-            "mode": "null",
-            "intent": "exit",
-            "request": _normalize_payload(kwargs),
-            "detail": "null broker adapter",
-        }
-
-
-class ZerodhaBrokerAdapter(BaseBrokerAdapter):
-    """
-    Canonical real broker adapter wrapping authenticated KiteConnect REST methods.
-    """
-
-    def __init__(self) -> None:
-        try:
-            api = load_api_config()
-            state = load_token_state()
-        except (
-            SecretFileMissingError,
-            SecretFileFormatError,
-            TokenStoreError,
-        ) as exc:
-            raise BrokerAdapterValidationError(str(exc)) from exc
-
-        validate_api_config_for_zerodha(api)
-        validate_token_state_for_zerodha(state)
-
-        self._api = api
-        self._state = state
-        self._kite = KiteConnect(api_key=api.api_key)
-        self._kite.set_access_token(state.access_token)
-
-    def info(self) -> BrokerAdapterInfo:
-        return BrokerAdapterInfo(
-            adapter_name=self.__class__.__name__,
-            version=VERSION,
-            broker="zerodha",
-            mode="live",
-        )
-
-    def _place_order(
-        self,
-        *,
-        intent: str,
-        tradingsymbol: str,
-        exchange: str,
-        transaction_type: str,
-        quantity: int,
-        product: str,
-        order_type: str,
-        variety: str = "regular",
-        price: Decimal | str | float | int | None = None,
-        trigger_price: Decimal | str | float | int | None = None,
-        validity: str = "DAY",
-        tag: str | None = None,
-        extra_params: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        tradingsymbol = _require_non_empty(tradingsymbol, field_name="tradingsymbol")
-        exchange = _require_non_empty(exchange, field_name="exchange").upper()
-        transaction_type = _require_non_empty(
-            transaction_type, field_name="transaction_type"
+        self.default_exchange = _require_non_empty(
+            self.default_exchange,
+            field_name="default_exchange",
         ).upper()
-        product = _require_non_empty(product, field_name="product").upper()
-        order_type = _require_non_empty(order_type, field_name="order_type").upper()
-        variety = _require_non_empty(variety, field_name="variety")
-        validity = _require_non_empty(validity, field_name="validity").upper()
-        quantity = _require_positive_int(quantity, field_name="quantity")
+        self.default_product = _require_non_empty(
+            self.default_product,
+            field_name="default_product",
+        ).upper()
+        self.default_variety = _require_non_empty(
+            self.default_variety,
+            field_name="default_variety",
+        )
+        self.default_validity = _require_non_empty(
+            self.default_validity,
+            field_name="default_validity",
+        ).upper()
+        self.metadata = _freeze_mapping(self.metadata)
 
-        params: dict[str, Any] = {
-            "variety": variety,
-            "exchange": exchange,
-            "tradingsymbol": tradingsymbol,
-            "transaction_type": transaction_type,
-            "quantity": quantity,
-            "product": product,
-            "order_type": order_type,
-            "validity": validity,
-        }
+    # ------------------------------------------------------------------
+    # Public adapter API
+    # ------------------------------------------------------------------
 
-        price_text = _decimal_to_str(price)
-        if price_text is not None:
-            params["price"] = price_text
-
-        trigger_text = _decimal_to_str(trigger_price)
-        if trigger_text is not None:
-            params["trigger_price"] = trigger_text
-
-        if tag:
-            params["tag"] = str(tag).strip()
-
-        if extra_params:
-            if not isinstance(extra_params, dict):
-                raise BrokerAdapterValidationError("extra_params must be a dict if provided")
-            for key, value in extra_params.items():
-                params[str(key)] = value
-
-        try:
-            order_id = self._kite.place_order(**params)
-        except Exception as exc:
-            raise BrokerAdapterRequestError(
-                f"place_{intent}_order failed: {exc}"
-            ) from exc
-
-        return {
-            "ok": True,
-            "broker": "zerodha",
-            "intent": intent,
-            "order_id": str(order_id),
-            "request": _normalize_payload(params),
-        }
+    def info(self) -> BrokerAdapterInfo:
+        return BrokerAdapterInfo(
+            adapter_name=self.__class__.__name__,
+            version=VERSION,
+            provider_id=self.provider_id,
+            broker=self.broker,
+            mode=self.mode,
+            requires_auth=self.requires_auth,
+            execution_supported=True,
+            transport_configured=self.transport_client is not None,
+            metadata=self.metadata,
+        )
 
     def healthcheck(self) -> dict[str, Any]:
+        auth_snapshot = self._auth_snapshot()
+        if self.transport_client is None:
+            return {
+                "ok": False,
+                "broker": self.broker,
+                "provider_id": self.provider_id,
+                "mode": self.mode,
+                "auth": None if auth_snapshot is None else auth_snapshot.to_dict(),
+                "detail": "broker transport client not configured",
+                "ts": _iso_now(),
+            }
+
         try:
-            profile = self._kite.profile()
+            raw = self.transport_client.healthcheck(
+                access_token=self._transport_access_token(require_for_call=False),
+                provider_id=self.provider_id,
+            )
+            raw_mapping = (
+                dict(raw) if isinstance(raw, Mapping) else {"raw": _normalize_payload(raw)}
+            )
+            return {
+                "ok": True,
+                "broker": self.broker,
+                "provider_id": self.provider_id,
+                "mode": self.mode,
+                "auth": None if auth_snapshot is None else auth_snapshot.to_dict(),
+                "raw": _normalize_payload(raw_mapping),
+                "ts": _iso_now(),
+            }
         except Exception as exc:
-            raise BrokerAdapterRequestError(f"healthcheck profile() failed: {exc}") from exc
-
-        user_id = None
-        if isinstance(profile, dict):
-            user_id = str(profile.get("user_id", "")).strip() or None
-
-        return {
-            "ok": True,
-            "broker": "zerodha",
-            "user_id": user_id,
-            "profile": _normalize_payload(profile),
-        }
+            return {
+                "ok": False,
+                "broker": self.broker,
+                "provider_id": self.provider_id,
+                "mode": self.mode,
+                "auth": None if auth_snapshot is None else auth_snapshot.to_dict(),
+                "detail": str(exc),
+                "ts": _iso_now(),
+            }
 
     def get_order(self, order_id: str) -> dict[str, Any]:
         order_id = _require_non_empty(order_id, field_name="order_id")
+        transport = self._require_transport()
         try:
-            orders = self._kite.orders()
+            raw = transport.get_order(
+                order_id,
+                access_token=self._transport_access_token(),
+                provider_id=self.provider_id,
+            )
         except Exception as exc:
-            raise BrokerAdapterRequestError(f"orders() failed during get_order: {exc}") from exc
+            raise BrokerAdapterRequestError(f"get_order() failed: {exc}") from exc
 
-        if not isinstance(orders, list):
-            raise BrokerAdapterRequestError("orders() returned non-list payload")
-
-        matches = [row for row in orders if str(row.get("order_id", "")).strip() == order_id]
-        if not matches:
+        if raw is None:
             return {
                 "ok": False,
-                "broker": "zerodha",
+                "broker": self.broker,
+                "provider_id": self.provider_id,
                 "order_id": order_id,
-                "found": False,
-                "order": None,
+                "detail": "order not found",
+            }
+
+        if isinstance(raw, Mapping):
+            return self._augment_response(
+                raw,
+                intent="get_order",
+                request={"order_id": order_id},
+            )
+
+        if isinstance(raw, Sequence) and not isinstance(raw, (str, bytes, bytearray)):
+            return {
+                "ok": True,
+                "broker": self.broker,
+                "provider_id": self.provider_id,
+                "order_id": order_id,
+                "history": _normalize_payload(list(raw)),
+                "raw": _normalize_payload(list(raw)),
             }
 
         return {
             "ok": True,
-            "broker": "zerodha",
+            "broker": self.broker,
+            "provider_id": self.provider_id,
             "order_id": order_id,
-            "found": True,
-            "order": _normalize_payload(matches[-1]),
+            "raw": _normalize_payload(raw),
         }
 
     def cancel_order(
@@ -501,89 +821,66 @@ class ZerodhaBrokerAdapter(BaseBrokerAdapter):
     ) -> dict[str, Any]:
         order_id = _require_non_empty(order_id, field_name="order_id")
         variety = _require_non_empty(variety, field_name="variety")
+        payload: dict[str, Any] = {"variety": variety}
+        if parent_order_id is not None:
+            payload["parent_order_id"] = _require_non_empty(
+                parent_order_id,
+                field_name="parent_order_id",
+            )
 
-        params: dict[str, Any] = {
-            "variety": variety,
-            "order_id": order_id,
-        }
-        if parent_order_id:
-            params["parent_order_id"] = str(parent_order_id).strip()
-
+        transport = self._require_transport()
         try:
-            result = self._kite.cancel_order(**params)
+            raw = transport.cancel_order(
+                order_id,
+                payload,
+                access_token=self._transport_access_token(),
+                provider_id=self.provider_id,
+            )
         except Exception as exc:
-            raise BrokerAdapterRequestError(f"cancel_order failed: {exc}") from exc
+            raise BrokerAdapterRequestError(f"cancel_order() failed: {exc}") from exc
 
+        if isinstance(raw, Mapping):
+            return self._augment_response(
+                raw,
+                intent="cancel_order",
+                request={"order_id": order_id, **payload},
+            )
         return {
             "ok": True,
-            "broker": "zerodha",
-            "order_id": order_id,
-            "cancel_result": _normalize_payload(result),
-            "request": _normalize_payload(params),
+            "broker": self.broker,
+            "provider_id": self.provider_id,
+            "intent": "cancel_order",
+            "request": _normalize_payload({"order_id": order_id, **payload}),
+            "raw": _normalize_payload(raw),
         }
 
     def reconcile_position(self) -> dict[str, Any]:
+        transport = self._require_transport()
         try:
-            positions = self._kite.positions()
+            raw = transport.reconcile_positions(
+                access_token=self._transport_access_token(),
+                provider_id=self.provider_id,
+            )
         except Exception as exc:
-            raise BrokerAdapterRequestError(f"positions() failed: {exc}") from exc
+            raise BrokerAdapterRequestError(
+                f"reconcile_position() failed: {exc}"
+            ) from exc
 
-        if not isinstance(positions, dict):
-            raise BrokerAdapterRequestError("positions() returned non-dict payload")
-
-        return {
-            "ok": True,
-            "broker": "zerodha",
-            "net": _normalize_payload(positions.get("net", [])),
-            "day": _normalize_payload(positions.get("day", [])),
-            "raw": _normalize_payload(positions),
-        }
+        return self._normalize_position_payload(raw)
 
     def reconcile_open_orders(self) -> list[Mapping[str, Any]] | None:
+        transport = self._require_transport()
         try:
-            orders = self._kite.orders()
-        except Exception as exc:
-            raise BrokerAdapterRequestError(f"orders() failed: {exc}") from exc
-
-        if orders is None:
-            return None
-
-        if not isinstance(orders, list):
-            raise BrokerAdapterRequestError("orders() returned non-list payload")
-
-        terminal_statuses = {
-            "COMPLETE",
-            "CANCELLED",
-            "REJECTED",
-        }
-
-        open_orders: list[dict[str, Any]] = []
-        for row in orders:
-            if not isinstance(row, dict):
-                continue
-
-            status = str(row.get("status", "")).strip().upper()
-            if status in terminal_statuses:
-                continue
-
-            open_orders.append(
-                {
-                    "broker_order_id": str(row.get("order_id", "")).strip(),
-                    "client_order_id": str(row.get("tag", "")).strip(),
-                    "status": status,
-                    "option_symbol": str(row.get("tradingsymbol", "")).strip(),
-                    "option_token": str(row.get("instrument_token", "")).strip(),
-                    "qty_lots": int(row.get("quantity") or 0),
-                    "filled_quantity": int(row.get("filled_quantity") or 0),
-                    "avg_fill_price": str(row.get("average_price", "")).strip(),
-                    "limit_price": str(row.get("price", "")).strip(),
-                    "entry_mode": "",
-                    "strike": "",
-                    "created_ts_ns": 0,
-                }
+            raw = transport.reconcile_open_orders(
+                access_token=self._transport_access_token(),
+                provider_id=self.provider_id,
             )
+        except Exception as exc:
+            raise BrokerAdapterRequestError(
+                f"reconcile_open_orders() failed: {exc}"
+            ) from exc
 
-        return open_orders
+        return self._normalize_open_orders_payload(raw)
 
     def place_entry_order(
         self,
@@ -601,7 +898,7 @@ class ZerodhaBrokerAdapter(BaseBrokerAdapter):
         tag: str | None = None,
         extra_params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        return self._place_order(
+        return self._place_order_common(
             intent="entry",
             tradingsymbol=tradingsymbol,
             exchange=exchange,
@@ -633,7 +930,7 @@ class ZerodhaBrokerAdapter(BaseBrokerAdapter):
         tag: str | None = None,
         extra_params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        return self._place_order(
+        return self._place_order_common(
             intent="exit",
             tradingsymbol=tradingsymbol,
             exchange=exchange,
@@ -649,15 +946,478 @@ class ZerodhaBrokerAdapter(BaseBrokerAdapter):
             extra_params=extra_params,
         )
 
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
 
-def build_real_broker_adapter(*, broker: str = "zerodha") -> BrokerAdapter:
-    """
-    Thin factory for runtime/provider wiring.
+    def _auth_snapshot(self) -> BrokerAuthSnapshot | None:
+        if self.auth_manager is None:
+            return None
+        return self.auth_manager.snapshot()
 
-    Current proven live implementation:
-    - zerodha
+    def _transport_access_token(self, *, require_for_call: bool = True) -> str | None:
+        if self.auth_manager is None:
+            if self.requires_auth and require_for_call:
+                raise BrokerAdapterAuthError(
+                    f"{self.__class__.__name__} requires broker auth but auth_manager is not configured"
+                )
+            return None
+
+        try:
+            return self.auth_manager.get_access_token(ensure_authenticated=True)
+        except BrokerSessionUnavailableError as exc:
+            if self.requires_auth and require_for_call:
+                raise BrokerAdapterAuthError(str(exc)) from exc
+            return None
+
+    def _require_transport(self) -> BrokerTransportClient:
+        if self.transport_client is None:
+            raise BrokerAdapterUnavailableError(
+                f"{self.__class__.__name__} transport client not configured"
+            )
+        return self.transport_client
+
+    def _place_order_common(
+        self,
+        *,
+        intent: str,
+        tradingsymbol: str,
+        exchange: str,
+        transaction_type: str,
+        quantity: int,
+        product: str,
+        order_type: str,
+        variety: str = "regular",
+        price: Decimal | str | float | int | None = None,
+        trigger_price: Decimal | str | float | int | None = None,
+        validity: str = "DAY",
+        tag: str | None = None,
+        extra_params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        transport = self._require_transport()
+        payload = self._build_order_payload(
+            tradingsymbol=tradingsymbol,
+            exchange=exchange,
+            transaction_type=transaction_type,
+            quantity=quantity,
+            product=product,
+            order_type=order_type,
+            variety=variety,
+            price=price,
+            trigger_price=trigger_price,
+            validity=validity,
+            tag=tag,
+            extra_params=extra_params,
+        )
+
+        try:
+            raw = transport.place_order(
+                payload,
+                access_token=self._transport_access_token(),
+                provider_id=self.provider_id,
+            )
+        except Exception as exc:
+            raise BrokerAdapterRequestError(
+                f"place_{intent}_order() failed: {exc}"
+            ) from exc
+
+        if isinstance(raw, Mapping):
+            return self._augment_response(raw, intent=intent, request=payload)
+
+        return {
+            "ok": True,
+            "broker": self.broker,
+            "provider_id": self.provider_id,
+            "intent": intent,
+            "request": _normalize_payload(payload),
+            "raw": _normalize_payload(raw),
+        }
+
+    def _build_order_payload(
+        self,
+        *,
+        tradingsymbol: str,
+        exchange: str,
+        transaction_type: str,
+        quantity: int,
+        product: str,
+        order_type: str,
+        variety: str,
+        price: Decimal | str | float | int | None,
+        trigger_price: Decimal | str | float | int | None,
+        validity: str,
+        tag: str | None,
+        extra_params: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        tradingsymbol = _require_non_empty(tradingsymbol, field_name="tradingsymbol")
+        exchange = _require_non_empty(exchange, field_name="exchange").upper()
+        transaction_type = _require_non_empty(
+            transaction_type,
+            field_name="transaction_type",
+        ).upper()
+        quantity = _require_int(quantity, field_name="quantity", min_value=1)
+        product = _require_non_empty(product, field_name="product").upper()
+        order_type = _require_non_empty(order_type, field_name="order_type").upper()
+        variety = _require_non_empty(variety, field_name="variety")
+        validity = _require_non_empty(validity, field_name="validity").upper()
+
+        payload: dict[str, Any] = {
+            "tradingsymbol": tradingsymbol,
+            "exchange": exchange,
+            "transaction_type": transaction_type,
+            "quantity": quantity,
+            "product": product,
+            "order_type": order_type,
+            "variety": variety,
+            "validity": validity,
+        }
+
+        normalized_price = _coerce_order_price(price, field_name="price")
+        normalized_trigger = _coerce_order_price(
+            trigger_price,
+            field_name="trigger_price",
+        )
+        if normalized_price is not None:
+            payload["price"] = normalized_price
+        if normalized_trigger is not None:
+            payload["trigger_price"] = normalized_trigger
+        if tag is not None:
+            payload["tag"] = _require_non_empty(tag, field_name="tag")
+        if extra_params is not None:
+            payload.update({str(k): v for k, v in extra_params.items()})
+        return payload
+
+    def _augment_response(
+        self,
+        raw: Mapping[str, Any],
+        *,
+        intent: str,
+        request: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        payload = {str(k): _normalize_payload(v) for k, v in raw.items()}
+        payload.setdefault("ok", True)
+        payload.setdefault("broker", self.broker)
+        payload.setdefault("provider_id", self.provider_id)
+        payload.setdefault("intent", intent)
+        if request is not None:
+            payload.setdefault("request", _normalize_payload(dict(request)))
+        payload.setdefault("raw", _normalize_payload(dict(raw)))
+        return payload
+
+    def _normalize_position_payload(self, raw: Any) -> dict[str, Any]:
+        if raw is None:
+            return {
+                "ok": True,
+                "broker": self.broker,
+                "provider_id": self.provider_id,
+                "net": [],
+                "day": [],
+                "raw": None,
+            }
+
+        if isinstance(raw, Mapping):
+            net = raw.get("net", [])
+            day = raw.get("day", [])
+            if net is None:
+                net = []
+            if day is None:
+                day = []
+            if not isinstance(net, list):
+                raise BrokerAdapterRequestError(
+                    f"positions payload field 'net' must be list, got {type(net).__name__}"
+                )
+            if not isinstance(day, list):
+                raise BrokerAdapterRequestError(
+                    f"positions payload field 'day' must be list, got {type(day).__name__}"
+                )
+            return {
+                "ok": True,
+                "broker": self.broker,
+                "provider_id": self.provider_id,
+                "net": _normalize_mapping_list(net, field_name="positions.net"),
+                "day": _normalize_mapping_list(day, field_name="positions.day"),
+                "raw": _normalize_payload(dict(raw)),
+            }
+
+        if isinstance(raw, Sequence) and not isinstance(raw, (str, bytes, bytearray)):
+            normalized = _normalize_mapping_list(list(raw), field_name="positions")
+            return {
+                "ok": True,
+                "broker": self.broker,
+                "provider_id": self.provider_id,
+                "net": normalized,
+                "day": [],
+                "raw": _normalize_payload(list(raw)),
+            }
+
+        raise BrokerAdapterRequestError(
+            f"positions payload must be mapping or list, got {type(raw).__name__}"
+        )
+
+    def _normalize_open_orders_payload(self, raw: Any) -> list[Mapping[str, Any]] | None:
+        if raw is None:
+            return None
+
+        orders_payload: Any = raw
+        if isinstance(raw, Mapping):
+            orders_payload = raw.get("orders", [])
+
+        if orders_payload is None:
+            return []
+
+        if not isinstance(orders_payload, list):
+            raise BrokerAdapterRequestError(
+                "open orders payload must be None, list, or wrapper mapping containing list field 'orders'"
+            )
+
+        normalized = _normalize_mapping_list(
+            orders_payload,
+            field_name="open_orders",
+        )
+        return list(normalized)
+
+    def _filter_open_orders_by_terminal_status(
+        self,
+        rows: list[Mapping[str, Any]] | None,
+        *,
+        terminal_statuses: frozenset[str],
+    ) -> list[Mapping[str, Any]] | None:
+        if rows is None:
+            return None
+        out: list[Mapping[str, Any]] = []
+        for row in rows:
+            status = str(row.get("status", "")).strip().upper()
+            if status in terminal_statuses:
+                continue
+            out.append(row)
+        return out
+
+
+# ============================================================================
+# Null adapter
+# ============================================================================
+
+
+@dataclass(slots=True)
+class NullBrokerAdapter(BaseBrokerAdapter):
+    provider_id: str = PROVIDER_ZERODHA
+    broker: str = "none"
+    mode: str = "null"
+    transport_client: BrokerTransportClient | None = None
+    auth_manager: BrokerAuthManager | None = None
+    requires_auth: bool = False
+    default_exchange: str = "NFO"
+    default_product: str = "NRML"
+    default_variety: str = "regular"
+    default_validity: str = "DAY"
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def healthcheck(self) -> dict[str, Any]:
+        return {
+            "ok": False,
+            "broker": "none",
+            "provider_id": self.provider_id,
+            "mode": "null",
+            "detail": "null broker adapter",
+            "ts": _iso_now(),
+        }
+
+    def get_order(self, order_id: str) -> dict[str, Any]:
+        return {
+            "ok": False,
+            "broker": "none",
+            "provider_id": self.provider_id,
+            "order_id": order_id,
+            "detail": "null broker adapter",
+        }
+
+    def cancel_order(
+        self,
+        order_id: str,
+        *,
+        variety: str = "regular",
+        parent_order_id: str | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "ok": False,
+            "broker": "none",
+            "provider_id": self.provider_id,
+            "order_id": order_id,
+            "detail": "null broker adapter",
+        }
+
+    def reconcile_position(self) -> dict[str, Any]:
+        return {
+            "ok": False,
+            "broker": "none",
+            "provider_id": self.provider_id,
+            "net": [],
+            "day": [],
+            "detail": "null broker adapter",
+        }
+
+    def reconcile_open_orders(self) -> list[Mapping[str, Any]] | None:
+        return []
+
+    def place_entry_order(self, **kwargs: Any) -> dict[str, Any]:
+        return {
+            "ok": False,
+            "broker": "none",
+            "provider_id": self.provider_id,
+            "intent": "entry",
+            "request": _normalize_payload(kwargs),
+            "detail": "null broker adapter",
+        }
+
+    def place_exit_order(self, **kwargs: Any) -> dict[str, Any]:
+        return {
+            "ok": False,
+            "broker": "none",
+            "provider_id": self.provider_id,
+            "intent": "exit",
+            "request": _normalize_payload(kwargs),
+            "detail": "null broker adapter",
+        }
+
+
+# ============================================================================
+# Provider-specific execution adapters
+# ============================================================================
+
+
+@dataclass(slots=True)
+class ZerodhaBrokerAdapter(BaseBrokerAdapter):
+    provider_id: str = PROVIDER_ZERODHA
+    broker: str = "zerodha"
+    mode: str = "zerodha"
+    transport_client: BrokerTransportClient | None = None
+    auth_manager: BrokerAuthManager | None = None
+    requires_auth: bool = True
+    default_exchange: str = "NFO"
+    default_product: str = "NRML"
+    default_variety: str = "regular"
+    default_validity: str = "DAY"
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    _TERMINAL_ORDER_STATUSES: frozenset[str] = frozenset(
+        {
+            "COMPLETE",
+            "CANCELLED",
+            "REJECTED",
+        }
+    )
+
+    def reconcile_open_orders(self) -> list[Mapping[str, Any]] | None:
+        rows = BaseBrokerAdapter.reconcile_open_orders(self)
+        return self._filter_open_orders_by_terminal_status(
+            rows,
+            terminal_statuses=self._TERMINAL_ORDER_STATUSES,
+        )
+
+
+@dataclass(slots=True)
+class DhanBrokerAdapter(BaseBrokerAdapter):
+    provider_id: str = PROVIDER_DHAN
+    broker: str = "dhan"
+    mode: str = "dhan"
+    transport_client: BrokerTransportClient | None = None
+    auth_manager: BrokerAuthManager | None = None
+    requires_auth: bool = True
+    default_exchange: str = "NFO"
+    default_product: str = "NRML"
+    default_variety: str = "regular"
+    default_validity: str = "DAY"
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    _TERMINAL_ORDER_STATUSES: frozenset[str] = frozenset(
+        {
+            "TRADED",
+            "COMPLETE",
+            "CANCELLED",
+            "REJECTED",
+            "EXPIRED",
+        }
+    )
+
+    def reconcile_open_orders(self) -> list[Mapping[str, Any]] | None:
+        rows = BaseBrokerAdapter.reconcile_open_orders(self)
+        return self._filter_open_orders_by_terminal_status(
+            rows,
+            terminal_statuses=self._TERMINAL_ORDER_STATUSES,
+        )
+
+
+# ============================================================================
+# Builders
+# ============================================================================
+
+
+def build_null_broker_adapter(
+    *,
+    provider_id: str = PROVIDER_ZERODHA,
+    reason: str | None = None,
+) -> NullBrokerAdapter:
+    metadata: dict[str, Any] = {}
+    if reason:
+        metadata["reason"] = reason
+    return NullBrokerAdapter(provider_id=provider_id, metadata=metadata)
+
+
+def build_real_broker_adapter(
+    broker: str = "zerodha",
+    *,
+    transport_client: BrokerTransportClient | None = None,
+    auth_manager: BrokerAuthManager | None = None,
+    requires_auth: bool | None = None,
+    metadata: Mapping[str, Any] | None = None,
+) -> BrokerAdapter:
     """
-    broker_key = str(broker).strip().lower()
-    if broker_key == "zerodha":
-        return ZerodhaBrokerAdapter()
-    raise BrokerAdapterValidationError(f"unsupported real broker adapter broker: {broker!r}")
+    Compatibility builder used by bootstrap_provider.py and future composition.
+
+    Important:
+    - It preserves the historical builder shape: build_real_broker_adapter(broker="zerodha")
+    - It does not invent hidden vendor bootstrap assumptions.
+    - If no transport_client is supplied yet, it still returns the correct
+      provider-specific adapter class with explicit unavailable transport truth.
+    """
+
+    broker_norm = _require_non_empty(broker, field_name="broker").strip().lower()
+    metadata = dict(metadata or {})
+
+    if broker_norm == "zerodha":
+        return ZerodhaBrokerAdapter(
+            transport_client=transport_client,
+            auth_manager=auth_manager,
+            requires_auth=True if requires_auth is None else bool(requires_auth),
+            metadata=metadata,
+        )
+
+    if broker_norm == "dhan":
+        return DhanBrokerAdapter(
+            transport_client=transport_client,
+            auth_manager=auth_manager,
+            requires_auth=True if requires_auth is None else bool(requires_auth),
+            metadata=metadata,
+        )
+
+    raise BrokerAdapterValidationError(f"unsupported broker: {broker!r}")
+
+
+__all__ = [
+    "BaseBrokerAdapter",
+    "BrokerAdapter",
+    "BrokerAdapterAuthError",
+    "BrokerAdapterError",
+    "BrokerAdapterInfo",
+    "BrokerAdapterRequestError",
+    "BrokerAdapterUnavailableError",
+    "BrokerAdapterValidationError",
+    "BrokerTransportClient",
+    "CallableBrokerTransportClient",
+    "DhanBrokerAdapter",
+    "KiteTransportClient",
+    "NullBrokerAdapter",
+    "ZerodhaBrokerAdapter",
+    "build_null_broker_adapter",
+    "build_real_broker_adapter",
+]

@@ -1,0 +1,206 @@
+from __future__ import annotations
+
+"""
+app/mme_scalpx/strategy_family/doctrine_contracts.py
+
+Frozen static doctrine registry and provider-profile contracts for the
+strategy-family runtime.
+
+Purpose
+-------
+This module OWNS:
+- doctrine contract records for all 5 families
+- required provider-profile contracts
+- setup-kind identities
+- shared doctrine static lookup helpers
+
+This module DOES NOT own:
+- runtime provider health mutation
+- Redis reads or writes
+- doctrine signal evaluation
+- feature math
+- live arbitration
+"""
+
+from dataclasses import dataclass
+from typing import Final, Mapping
+
+from app.mme_scalpx.core import names as N
+
+from .common import DOCTRINE_PARAM_PATHS, FAMILY_ORDER
+
+SETUP_KIND_PULLBACK_RESUME: Final[str] = "pullback_resume"
+SETUP_KIND_BREAKOUT_CONTINUATION: Final[str] = "breakout_continuation"
+SETUP_KIND_COMPRESSION_BREAKOUT_RETEST: Final[str] = "compression_breakout_retest"
+SETUP_KIND_TRAP_REVERSAL: Final[str] = "trap_reversal"
+SETUP_KIND_OPTION_LED_MICROSTRUCTURE_BURST: Final[str] = "option_led_microstructure_burst"
+
+PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE: Final[str] = (
+    "CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE"
+)
+PROFILE_MISO_DHAN_MANDATORY_SIGNAL_PATH: Final[str] = (
+    "MISO_DHAN_MANDATORY_SIGNAL_PATH"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class RequiredProviderProfile:
+    profile_id: str
+    description: str
+    futures_provider_id: str | None = None
+    selected_option_provider_id: str | None = None
+    option_context_provider_id: str | None = None
+    execution_primary_provider_id: str | None = None
+    execution_fallback_provider_id: str | None = None
+    allow_dhan_degraded: bool = False
+    execution_bridge_required: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class DoctrineContractSpec:
+    family_id: str
+    doctrine_id: str
+    branches_enabled: tuple[str, ...]
+    setup_kind: str
+    live_eligible: bool
+    shadow_eligible: bool
+    required_provider_profile_id: str
+    param_paths_by_branch: Mapping[str, str]
+
+
+REQUIRED_PROVIDER_PROFILES: Final[dict[str, RequiredProviderProfile]] = {
+    PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE: RequiredProviderProfile(
+        profile_id=PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE,
+        description=(
+            "Classic MIS families are futures-led / option-confirmed, may use "
+            "Dhan enhancement when healthy, and remain degraded-safe when Dhan "
+            "context is stale or unavailable."
+        ),
+        futures_provider_id=None,
+        selected_option_provider_id=None,
+        option_context_provider_id=None,
+        execution_primary_provider_id=N.PROVIDER_ZERODHA,
+        execution_fallback_provider_id=N.PROVIDER_DHAN,
+        allow_dhan_degraded=True,
+        execution_bridge_required=False,
+    ),
+    PROFILE_MISO_DHAN_MANDATORY_SIGNAL_PATH: RequiredProviderProfile(
+        profile_id=PROFILE_MISO_DHAN_MANDATORY_SIGNAL_PATH,
+        description=(
+            "MISO requires Dhan chain context, Dhan selected-option live signal "
+            "path, Dhan futures live signal path, and an explicit execution bridge "
+            "before order send."
+        ),
+        futures_provider_id=N.PROVIDER_DHAN,
+        selected_option_provider_id=N.PROVIDER_DHAN,
+        option_context_provider_id=N.PROVIDER_DHAN,
+        execution_primary_provider_id=N.PROVIDER_ZERODHA,
+        execution_fallback_provider_id=N.PROVIDER_DHAN,
+        allow_dhan_degraded=False,
+        execution_bridge_required=True,
+    ),
+}
+
+DOCTRINE_CONTRACTS: Final[dict[str, DoctrineContractSpec]] = {
+    N.STRATEGY_FAMILY_MIST: DoctrineContractSpec(
+        family_id=N.STRATEGY_FAMILY_MIST,
+        doctrine_id=N.DOCTRINE_MIST,
+        branches_enabled=(N.BRANCH_CALL, N.BRANCH_PUT),
+        setup_kind=SETUP_KIND_PULLBACK_RESUME,
+        live_eligible=True,
+        shadow_eligible=True,
+        required_provider_profile_id=PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE,
+        param_paths_by_branch={
+            N.BRANCH_CALL: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MIST, N.BRANCH_CALL)],
+            N.BRANCH_PUT: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MIST, N.BRANCH_PUT)],
+        },
+    ),
+    N.STRATEGY_FAMILY_MISB: DoctrineContractSpec(
+        family_id=N.STRATEGY_FAMILY_MISB,
+        doctrine_id=N.DOCTRINE_MISB,
+        branches_enabled=(N.BRANCH_CALL, N.BRANCH_PUT),
+        setup_kind=SETUP_KIND_BREAKOUT_CONTINUATION,
+        live_eligible=True,
+        shadow_eligible=True,
+        required_provider_profile_id=PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE,
+        param_paths_by_branch={
+            N.BRANCH_CALL: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MISB, N.BRANCH_CALL)],
+            N.BRANCH_PUT: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MISB, N.BRANCH_PUT)],
+        },
+    ),
+    N.STRATEGY_FAMILY_MISC: DoctrineContractSpec(
+        family_id=N.STRATEGY_FAMILY_MISC,
+        doctrine_id=N.DOCTRINE_MISC,
+        branches_enabled=(N.BRANCH_CALL, N.BRANCH_PUT),
+        setup_kind=SETUP_KIND_COMPRESSION_BREAKOUT_RETEST,
+        live_eligible=True,
+        shadow_eligible=True,
+        required_provider_profile_id=PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE,
+        param_paths_by_branch={
+            N.BRANCH_CALL: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MISC, N.BRANCH_CALL)],
+            N.BRANCH_PUT: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MISC, N.BRANCH_PUT)],
+        },
+    ),
+    N.STRATEGY_FAMILY_MISR: DoctrineContractSpec(
+        family_id=N.STRATEGY_FAMILY_MISR,
+        doctrine_id=N.DOCTRINE_MISR,
+        branches_enabled=(N.BRANCH_CALL, N.BRANCH_PUT),
+        setup_kind=SETUP_KIND_TRAP_REVERSAL,
+        live_eligible=True,
+        shadow_eligible=True,
+        required_provider_profile_id=PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE,
+        param_paths_by_branch={
+            N.BRANCH_CALL: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MISR, N.BRANCH_CALL)],
+            N.BRANCH_PUT: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MISR, N.BRANCH_PUT)],
+        },
+    ),
+    N.STRATEGY_FAMILY_MISO: DoctrineContractSpec(
+        family_id=N.STRATEGY_FAMILY_MISO,
+        doctrine_id=N.DOCTRINE_MISO,
+        branches_enabled=(N.BRANCH_CALL, N.BRANCH_PUT),
+        setup_kind=SETUP_KIND_OPTION_LED_MICROSTRUCTURE_BURST,
+        live_eligible=True,
+        shadow_eligible=True,
+        required_provider_profile_id=PROFILE_MISO_DHAN_MANDATORY_SIGNAL_PATH,
+        param_paths_by_branch={
+            N.BRANCH_CALL: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MISO, N.BRANCH_CALL)],
+            N.BRANCH_PUT: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MISO, N.BRANCH_PUT)],
+        },
+    ),
+}
+
+
+def get_required_provider_profile(profile_id: str) -> RequiredProviderProfile:
+    profile = REQUIRED_PROVIDER_PROFILES.get(profile_id)
+    if profile is None:
+        raise ValueError(f"unknown provider profile: {profile_id!r}")
+    return profile
+
+
+def get_doctrine_contract(family_id: str) -> DoctrineContractSpec:
+    spec = DOCTRINE_CONTRACTS.get(family_id)
+    if spec is None:
+        raise ValueError(f"unknown doctrine family: {family_id!r}")
+    return spec
+
+
+def iter_doctrine_contracts() -> tuple[DoctrineContractSpec, ...]:
+    return tuple(get_doctrine_contract(family_id) for family_id in FAMILY_ORDER)
+
+
+__all__ = [
+    "DOCTRINE_CONTRACTS",
+    "DoctrineContractSpec",
+    "PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE",
+    "PROFILE_MISO_DHAN_MANDATORY_SIGNAL_PATH",
+    "REQUIRED_PROVIDER_PROFILES",
+    "RequiredProviderProfile",
+    "SETUP_KIND_BREAKOUT_CONTINUATION",
+    "SETUP_KIND_COMPRESSION_BREAKOUT_RETEST",
+    "SETUP_KIND_OPTION_LED_MICROSTRUCTURE_BURST",
+    "SETUP_KIND_PULLBACK_RESUME",
+    "SETUP_KIND_TRAP_REVERSAL",
+    "get_doctrine_contract",
+    "get_required_provider_profile",
+    "iter_doctrine_contracts",
+]

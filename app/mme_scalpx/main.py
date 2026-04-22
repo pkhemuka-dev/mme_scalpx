@@ -57,7 +57,13 @@ defined by settings.py:
 
 - feeds.py requires:
   - context.runtime_instruments / context.instrument_set
-  - context.feed_adapter / context.market_data_adapter
+  - provider-aware adapter surfaces via one or more of:
+      context.feed_adapters
+      context.zerodha_feed_adapter
+      context.dhan_feed_adapter
+      context.dhan_context_adapter
+  - legacy compatibility surfaces may still be present:
+      context.feed_adapter / context.market_data_adapter
 - execution.py requires:
   - context.broker
 
@@ -72,7 +78,8 @@ an explicit dependency registration layer:
 
 This registration does NOT create an alternate startup root. It only supplies
 external objects required by frozen runtime service contracts before main()
-starts supervision.
+starts supervision. main.py remains the sole composition root and bridges
+legacy singular adapters into provider-aware runtime context surfaces.
 """
 
 from __future__ import annotations
@@ -93,7 +100,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Final, Protocol, Sequence
+from typing import Any, Final, Mapping, Protocol, Sequence
 
 from app.mme_scalpx.core import names, redisx
 from app.mme_scalpx.core.clock import (
@@ -314,12 +321,23 @@ class BootstrapDependencies:
 
     runtime_instruments: Any | None = None
     feed_adapter: Any | None = None
+    market_data_adapter: Any | None = None
+    feed_adapters: Mapping[str, Any] | None = None
+    zerodha_feed_adapter: Any | None = None
+    dhan_feed_adapter: Any | None = None
+    dhan_context_adapter: Any | None = None
     broker: Any | None = None
 
     def to_safe_dict(self) -> dict[str, bool]:
+        explicit_map = self.feed_adapters if isinstance(self.feed_adapters, Mapping) else None
         return {
             "runtime_instruments_registered": self.runtime_instruments is not None,
             "feed_adapter_registered": self.feed_adapter is not None,
+            "market_data_adapter_registered": self.market_data_adapter is not None,
+            "feed_adapters_registered": bool(explicit_map),
+            "zerodha_feed_adapter_registered": self.zerodha_feed_adapter is not None,
+            "dhan_feed_adapter_registered": self.dhan_feed_adapter is not None,
+            "dhan_context_adapter_registered": self.dhan_context_adapter is not None,
             "broker_registered": self.broker is not None,
         }
 
@@ -328,10 +346,153 @@ _BOOTSTRAP_DEPENDENCY_LOCK: Final[threading.RLock] = threading.RLock()
 _BOOTSTRAP_DEPENDENCIES: BootstrapDependencies = BootstrapDependencies()
 
 
+@dataclass(frozen=True, slots=True)
+class FeedSurfaceBundle:
+    """Normalized feed-adapter surfaces for per-service runtime contexts."""
+
+    legacy_feed_adapter: Any | None = None
+    market_data_adapter: Any | None = None
+    feed_adapters: Mapping[str, Any] | None = None
+    zerodha_feed_adapter: Any | None = None
+    dhan_feed_adapter: Any | None = None
+    dhan_context_adapter: Any | None = None
+
+    def has_any_adapter(self) -> bool:
+        explicit_map = self.feed_adapters if isinstance(self.feed_adapters, Mapping) else None
+        return any(
+            (
+                self.legacy_feed_adapter is not None,
+                self.market_data_adapter is not None,
+                bool(explicit_map),
+                self.zerodha_feed_adapter is not None,
+                self.dhan_feed_adapter is not None,
+                self.dhan_context_adapter is not None,
+            )
+        )
+
+
+def _canonical_provider_id(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip().upper()
+    if not text:
+        return None
+    if text in {names.PROVIDER_ZERODHA, "ZERODHA", "KITE"}:
+        return names.PROVIDER_ZERODHA
+    if text in {names.PROVIDER_DHAN, "DHAN"}:
+        return names.PROVIDER_DHAN
+    return None
+
+
+def _infer_provider_id_from_object(obj: Any) -> str | None:
+    if obj is None:
+        return None
+
+    candidate_values: list[Any] = [
+        getattr(obj, "provider_id", None),
+        getattr(obj, "provider", None),
+        getattr(obj, "provider_name", None),
+        getattr(obj, "name", None),
+        obj.__class__.__name__,
+        obj.__class__.__module__,
+    ]
+
+    for value in candidate_values:
+        provider_id = _canonical_provider_id(value)
+        if provider_id is not None:
+            return provider_id
+
+        raw = "" if value is None else str(value).strip().lower()
+        if not raw:
+            continue
+        if "zerodha" in raw or "kite" in raw:
+            return names.PROVIDER_ZERODHA
+        if "dhan" in raw:
+            return names.PROVIDER_DHAN
+
+    return None
+
+
+def _infer_single_feed_provider_id(
+    *,
+    settings: AppSettings | None,
+    adapter: Any | None,
+    broker: Any | None,
+) -> str | None:
+    for candidate in (
+        _infer_provider_id_from_object(adapter),
+        _infer_provider_id_from_object(broker),
+        _canonical_provider_id(getattr(settings, "feed_provider", None) if settings is not None else None),
+        _canonical_provider_id(getattr(settings, "market_data_provider", None) if settings is not None else None),
+    ):
+        if candidate is not None:
+            return candidate
+    return None
+
+
+def _resolve_feed_surface_bundle(
+    *,
+    settings: AppSettings | None,
+    dependencies: BootstrapDependencies,
+) -> FeedSurfaceBundle:
+    explicit_map: dict[str, Any] = {}
+    if isinstance(dependencies.feed_adapters, Mapping):
+        for provider_id, adapter in dependencies.feed_adapters.items():
+            canonical = _canonical_provider_id(provider_id)
+            if canonical is not None and adapter is not None:
+                explicit_map[canonical] = adapter
+
+    zerodha_feed_adapter = dependencies.zerodha_feed_adapter
+    dhan_feed_adapter = dependencies.dhan_feed_adapter
+    dhan_context_adapter = dependencies.dhan_context_adapter
+
+    if zerodha_feed_adapter is None:
+        zerodha_feed_adapter = explicit_map.get(names.PROVIDER_ZERODHA)
+    if dhan_feed_adapter is None:
+        dhan_feed_adapter = explicit_map.get(names.PROVIDER_DHAN)
+
+    legacy_feed_adapter = dependencies.feed_adapter
+    market_data_adapter = dependencies.market_data_adapter
+    if legacy_feed_adapter is None:
+        legacy_feed_adapter = market_data_adapter
+    if market_data_adapter is None:
+        market_data_adapter = legacy_feed_adapter
+
+    inferred_provider_id = _infer_single_feed_provider_id(
+        settings=settings,
+        adapter=legacy_feed_adapter,
+        broker=dependencies.broker,
+    )
+    if inferred_provider_id == names.PROVIDER_ZERODHA and zerodha_feed_adapter is None:
+        zerodha_feed_adapter = legacy_feed_adapter
+    if inferred_provider_id == names.PROVIDER_DHAN and dhan_feed_adapter is None:
+        dhan_feed_adapter = legacy_feed_adapter
+
+    if zerodha_feed_adapter is not None:
+        explicit_map[names.PROVIDER_ZERODHA] = zerodha_feed_adapter
+    if dhan_feed_adapter is not None:
+        explicit_map[names.PROVIDER_DHAN] = dhan_feed_adapter
+
+    normalized_map: Mapping[str, Any] | None = dict(explicit_map) if explicit_map else None
+    return FeedSurfaceBundle(
+        legacy_feed_adapter=legacy_feed_adapter,
+        market_data_adapter=market_data_adapter,
+        feed_adapters=normalized_map,
+        zerodha_feed_adapter=zerodha_feed_adapter,
+        dhan_feed_adapter=dhan_feed_adapter,
+        dhan_context_adapter=dhan_context_adapter,
+    )
+
+
 def register_bootstrap_dependencies(
     *,
     runtime_instruments: Any | None = None,
     feed_adapter: Any | None = None,
+    market_data_adapter: Any | None = None,
+    feed_adapters: Mapping[str, Any] | None = None,
+    zerodha_feed_adapter: Any | None = None,
+    dhan_feed_adapter: Any | None = None,
+    dhan_context_adapter: Any | None = None,
     broker: Any | None = None,
 ) -> None:
     """
@@ -346,6 +507,11 @@ def register_bootstrap_dependencies(
         _BOOTSTRAP_DEPENDENCIES = BootstrapDependencies(
             runtime_instruments=runtime_instruments,
             feed_adapter=feed_adapter,
+            market_data_adapter=market_data_adapter,
+            feed_adapters=None if feed_adapters is None else dict(feed_adapters),
+            zerodha_feed_adapter=zerodha_feed_adapter,
+            dhan_feed_adapter=dhan_feed_adapter,
+            dhan_context_adapter=dhan_context_adapter,
             broker=broker,
         )
 
@@ -387,7 +553,9 @@ def _load_bootstrap_provider(raw: str) -> Any:
     The provider is expected to be callable and may either:
     - call register_bootstrap_dependencies(...) directly, or
     - return a dict containing any of:
-        runtime_instruments, feed_adapter, broker
+        runtime_instruments, feed_adapter, market_data_adapter,
+        feed_adapters, zerodha_feed_adapter, dhan_feed_adapter,
+        dhan_context_adapter, broker
     """
     module_path, func_name = _parse_bootstrap_provider_ref(raw)
 
@@ -438,7 +606,16 @@ def maybe_register_bootstrap_dependencies(
             "bootstrap provider must return None or dict with dependency keys"
         )
 
-    allowed = {"runtime_instruments", "feed_adapter", "broker"}
+    allowed = {
+        "runtime_instruments",
+        "feed_adapter",
+        "market_data_adapter",
+        "feed_adapters",
+        "zerodha_feed_adapter",
+        "dhan_feed_adapter",
+        "dhan_context_adapter",
+        "broker",
+    }
     unknown = set(result.keys()) - allowed
     if unknown:
         raise BootstrapError(
@@ -449,14 +626,24 @@ def maybe_register_bootstrap_dependencies(
     register_bootstrap_dependencies(
         runtime_instruments=result.get("runtime_instruments"),
         feed_adapter=result.get("feed_adapter"),
+        market_data_adapter=result.get("market_data_adapter"),
+        feed_adapters=result.get("feed_adapters"),
+        zerodha_feed_adapter=result.get("zerodha_feed_adapter"),
+        dhan_feed_adapter=result.get("dhan_feed_adapter"),
+        dhan_context_adapter=result.get("dhan_context_adapter"),
         broker=result.get("broker"),
     )
 
     LOGGER.info(
-        "bootstrap_provider_completed provider=%s mode=returned_dict runtime_instruments=%s feed_adapter=%s broker=%s",
+        "bootstrap_provider_completed provider=%s mode=returned_dict runtime_instruments=%s feed_adapter=%s market_data_adapter=%s feed_adapters=%s zerodha_feed_adapter=%s dhan_feed_adapter=%s dhan_context_adapter=%s broker=%s",
         ref,
         int(result.get("runtime_instruments") is not None),
         int(result.get("feed_adapter") is not None),
+        int(result.get("market_data_adapter") is not None),
+        int(bool(result.get("feed_adapters")) if isinstance(result.get("feed_adapters"), Mapping) else result.get("feed_adapters") is not None),
+        int(result.get("zerodha_feed_adapter") is not None),
+        int(result.get("dhan_feed_adapter") is not None),
+        int(result.get("dhan_context_adapter") is not None),
         int(result.get("broker") is not None),
     )
 
@@ -512,6 +699,10 @@ class RuntimeContext:
     instrument_set: Any | None = None
     feed_adapter: Any | None = None
     market_data_adapter: Any | None = None
+    feed_adapters: Mapping[str, Any] | None = None
+    zerodha_feed_adapter: Any | None = None
+    dhan_feed_adapter: Any | None = None
+    dhan_context_adapter: Any | None = None
     broker: Any | None = None
 
     @property
@@ -640,7 +831,7 @@ def _require_service_dependencies(app: AppContext, service_name: str) -> None:
 
     feeds.py requires:
       - runtime_instruments / instrument_set
-      - feed_adapter / market_data_adapter
+      - at least one feed adapter surface, ideally provider-aware
 
     execution.py requires:
       - broker
@@ -656,10 +847,15 @@ def _require_service_dependencies(app: AppContext, service_name: str) -> None:
                 "feeds service requires registered runtime_instruments / instrument_set. "
                 "Use register_bootstrap_dependencies(runtime_instruments=...)."
             )
-        if deps.feed_adapter is None:
+        feed_surfaces = _resolve_feed_surface_bundle(
+            settings=app.settings,
+            dependencies=deps,
+        )
+        if not feed_surfaces.has_any_adapter():
             raise DependencyError(
-                "feeds service requires registered feed_adapter / market_data_adapter. "
-                "Use register_bootstrap_dependencies(feed_adapter=...)."
+                "feeds service requires at least one registered feed adapter surface. "
+                "Use register_bootstrap_dependencies(feed_adapter=..., feed_adapters=..., "
+                "zerodha_feed_adapter=..., dhan_feed_adapter=..., or dhan_context_adapter=...)."
             )
 
     if service_name == "execution":
@@ -704,6 +900,10 @@ def build_runtime_context(
     normalized_runtime_instruments = _normalize_runtime_instruments_for_services(
         app.dependencies.runtime_instruments
     )
+    feed_surfaces = _resolve_feed_surface_bundle(
+        settings=app.settings,
+        dependencies=app.dependencies,
+    )
 
     return RuntimeContext(
         settings=app.settings,
@@ -717,8 +917,12 @@ def build_runtime_context(
         replay_start_wall_time_ns=replay_start_wall_time_ns,
         runtime_instruments=normalized_runtime_instruments,
         instrument_set=normalized_runtime_instruments,
-        feed_adapter=app.dependencies.feed_adapter,
-        market_data_adapter=app.dependencies.feed_adapter,
+        feed_adapter=feed_surfaces.legacy_feed_adapter,
+        market_data_adapter=feed_surfaces.market_data_adapter,
+        feed_adapters=feed_surfaces.feed_adapters,
+        zerodha_feed_adapter=feed_surfaces.zerodha_feed_adapter,
+        dhan_feed_adapter=feed_surfaces.dhan_feed_adapter,
+        dhan_context_adapter=feed_surfaces.dhan_context_adapter,
         broker=app.dependencies.broker,
     )
 
@@ -1396,6 +1600,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     app = build_app_context(settings=settings, clock=clock)
+    feed_surfaces = _resolve_feed_surface_bundle(
+        settings=app.settings,
+        dependencies=app.dependencies,
+    )
+    LOGGER.info(
+        "dependency_surfaces_resolved runtime_instruments=%s feed_adapter=%s market_data_adapter=%s feed_adapters=%s zerodha_feed_adapter=%s dhan_feed_adapter=%s dhan_context_adapter=%s broker=%s",
+        int(app.dependencies.runtime_instruments is not None),
+        int(feed_surfaces.legacy_feed_adapter is not None),
+        int(feed_surfaces.market_data_adapter is not None),
+        int(bool(feed_surfaces.feed_adapters)),
+        int(feed_surfaces.zerodha_feed_adapter is not None),
+        int(feed_surfaces.dhan_feed_adapter is not None),
+        int(feed_surfaces.dhan_context_adapter is not None),
+        int(app.dependencies.broker is not None),
+    )
 
     try:
         _validate_service_registry_surface()

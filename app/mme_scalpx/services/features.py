@@ -3,57 +3,74 @@ from __future__ import annotations
 """
 app/mme_scalpx/services/features.py
 
-ScalpX MME - deterministic feature service for the locked CALL / PUT doctrine.
+ScalpX MME - provider-aware deterministic feature engine for the frozen 5-family stack.
 
-Ownership
----------
-This module owns:
-- reconstruction of the latest synchronized snapshot from canonical snapshot hashes
-- rolling futures / option history buffers for the active five-leg universe
-- deterministic locked-spec feature computation
-- futures-only regime filter computation
-- economics computation for ATM / ATM+1 CALL and PUT legs
-- additive publication to the canonical frozen names surface
+Purpose
+-------
+This module OWNS:
+- consumption of frozen provider-runtime truth published by main/feeds
+- deterministic reconstruction of active and provider-specific snapshot views
+- synchronized snapshot validation for downstream strategy consumers
+- rolling feature baselines and derived metrics from canonical snapshot hashes
+- family-neutral feature publication plus doctrine-specific grouped support surfaces
+- typed generic FeatureFrame / FeatureState population using frozen models.py
+- compatibility publication to the existing feature/baseline/option-confirm hashes
 - feature-service heartbeat publication
-- runtime entrypoint `run(context)`
+- runtime entrypoint ``run(context)``
 
-This module does NOT own:
-- instrument discovery / strike selection outside the active universe
-- strategy decision generation
-- risk truth / execution truth / position truth
-- Redis helper implementation
-- runtime composition root
+This module DOES NOT own:
+- provider selection / failover policy
+- raw market-data acceptance or normalization
+- instrument discovery / strike resolution
+- strategy state machines, order decisions, cooldown logic, or proof windows
+- broker execution truth / reconciliation truth
+- composition root wiring
 
-Freeze rule
------------
-names.py proves SERVICE_FEATURES owns KEY_HEALTH_FEATURES only.
-It does NOT own any lock. Therefore this service must not acquire KEY_LOCK_FEEDS
-or any other singleton lock.
+Frozen runtime rules
+--------------------
+- features.py consumes provider-runtime truth; it does not invent provider routing
+- classic MIS families consume active futures + active selected-option truth
+- MISO consumes DHAN futures + DHAN selected-option + DHAN context truth explicitly
+- no silent fallback from missing active/DHAN truth to some other provider hash
+- only deterministic feature/support surfaces are computed here
+- strategy/execution ownership boundaries remain unchanged
 
-Spec-critical corrections
--------------------------
-This rewrite fixes the fatal deviations identified in the reviews:
-- velocity = (ltp_now - ltp_t-3) / dt_seconds
-- velocity_ratio = |velocity| / EMA(|velocity|)
-- futures spread_ratio = spread / EMA(spread)
-- option spread_ratio = spread / EMA(spread)
-- nof_slope_5 = nof_now - nof_t-5
-- option delta_3 = ltp_now - ltp_t-3
-- ladder acceleration uses t-1 / t-2 bid/ask ladder logic
-- regime filter uses the locked futures-only conditions
+Important implementation note
+-----------------------------
+The frozen models.py currently exposes generic typed surfaces such as FeatureFrame,
+FeatureState, EconomicViability, FourPillarSignal, and DeltaProxyNormalization,
+but not doctrine-specific dataclasses for MIST/MISB/MISC/MISR/MISO. This module
+therefore publishes:
+- typed generic FeatureFrame dictionaries per doctrine/branch
+- doctrine-specific nested support surfaces inside payload_json
+without mutating the frozen model contract.
+
+Another locked data-surface note
+--------------------------------
+The current feeds snapshot hashes publish aggregated top-5 quantities inside
+SnapshotMember JSON, not per-level ladders. Exact weighted per-level OFI and
+exact level-1 VAMP are therefore unavailable from the frozen hash surface.
+This module computes deterministic top-5 proxy variants and marks them as such
+inside the payload so nothing is silently misrepresented.
 """
 
 import contextlib
 import json
 import logging
 import math
+import statistics
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, fields
 from typing import Any, Deque, Final, Mapping
 
+from app.mme_scalpx.core import models as M
 from app.mme_scalpx.core import names as N
 from app.mme_scalpx.core import redisx as RX
-from app.mme_scalpx.core.settings import AppSettings, get_settings
+
+try:  # pragma: no cover - optional import for runtime convenience
+    from app.mme_scalpx.core.settings import get_settings  # type: ignore
+except Exception:  # pragma: no cover - safe fallback for isolated proofing
+    get_settings = None
 
 LOGGER = logging.getLogger("app.mme_scalpx.services.features")
 
@@ -69,62 +86,148 @@ _REQUIRED_NAME_EXPORTS: Final[tuple[str, ...]] = (
     "STREAM_SYSTEM_ERRORS",
     "HASH_STATE_SNAPSHOT_MME_FUT",
     "HASH_STATE_SNAPSHOT_MME_OPT_SELECTED",
+    "HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE",
+    "HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE",
+    "HASH_STATE_SNAPSHOT_MME_FUT_DHAN",
+    "HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN",
+    "HASH_STATE_DHAN_CONTEXT",
+    "HASH_STATE_PROVIDER_RUNTIME",
     "HASH_STATE_FEATURES_MME_FUT",
-    "HASH_STATE_OPTION_CONFIRM",
     "HASH_STATE_BASELINES_MME_FUT",
+    "HASH_STATE_OPTION_CONFIRM",
     "KEY_HEALTH_FEATURES",
     "HEALTH_STATUS_OK",
     "HEALTH_STATUS_WARN",
     "HEALTH_STATUS_ERROR",
+    "STRATEGY_FAMILY_MIST",
+    "STRATEGY_FAMILY_MISB",
+    "STRATEGY_FAMILY_MISC",
+    "STRATEGY_FAMILY_MISR",
+    "STRATEGY_FAMILY_MISO",
+    "BRANCH_CALL",
+    "BRANCH_PUT",
+    "STRATEGY_CALL",
+    "STRATEGY_PUT",
+    "STRATEGY_AUTO",
+    "ENTRY_MODE_UNKNOWN",
+    "ENTRY_MODE_ATM",
+    "ENTRY_MODE_ATM1",
+    "ENTRY_MODE_DIRECT",
+    "ENTRY_MODE_FALLBACK",
+    "STATE_SCANNING",
+    "STATE_DISABLED",
+    "PROVIDER_DHAN",
+    "PROVIDER_ZERODHA",
+    "PROVIDER_STATUS_HEALTHY",
+    "PROVIDER_STATUS_DEGRADED",
+    "PROVIDER_STATUS_STALE",
+    "STRATEGY_RUNTIME_MODE_NORMAL",
+    "STRATEGY_RUNTIME_MODE_DHAN_DEGRADED",
+    "STRATEGY_RUNTIME_MODE_BASE_5DEPTH",
+    "STRATEGY_RUNTIME_MODE_DEPTH20_ENHANCED",
+    "STRATEGY_RUNTIME_MODE_DISABLED",
+    "FAMILY_RUNTIME_MODE_OBSERVE_ONLY",
+    "IK_MME_FUT",
+    "IK_MME_CE",
+    "IK_MME_PE",
+    "SIDE_CALL",
+    "SIDE_PUT",
+)
+
+_REQUIRED_MODEL_EXPORTS: Final[tuple[str, ...]] = (
+    "DhanContextState",
+    "DeltaProxyNormalization",
+    "EconomicViability",
+    "FeatureFrame",
+    "FeatureState",
+    "FourPillarSignal",
+    "FuturesSnapshot",
+    "FuturesSnapshotState",
+    "ProviderRuntimeState",
+    "SnapshotFrame",
+    "SnapshotMember",
+    "TickValidity",
+    "SnapshotValidity",
 )
 
 
-def _validate_name_surface_or_die() -> None:
-    missing = [name for name in _REQUIRED_NAME_EXPORTS if not hasattr(N, name)]
-    if missing:
-        raise RuntimeError(
-            "features.py missing required names.py exports: "
-            + ", ".join(sorted(missing))
-        )
+def _validate_surface_or_die() -> None:
+    missing_names = [name for name in _REQUIRED_NAME_EXPORTS if not hasattr(N, name)]
+    missing_models = [name for name in _REQUIRED_MODEL_EXPORTS if not hasattr(M, name)]
+    if missing_names or missing_models:
+        problems: list[str] = []
+        if missing_names:
+            problems.append("names=" + ", ".join(sorted(missing_names)))
+        if missing_models:
+            problems.append("models=" + ", ".join(sorted(missing_models)))
+        raise RuntimeError("features.py missing frozen surfaces: " + " | ".join(problems))
 
 
 # =============================================================================
-# Locked constants
+# Locked defaults
 # =============================================================================
 
 EPSILON: Final[float] = 1e-8
-PREMIUM_FLOOR: Final[float] = 40.0
-TARGET_PCT: Final[float] = 0.12
-STOP_PCT: Final[float] = 0.07
-MIN_TARGET: Final[float] = 5.0
-MAX_TARGET: Final[float] = 10.0
-MIN_STOP: Final[float] = 3.0
-MAX_STOP: Final[float] = 7.0
+NAN: Final[float] = float("nan")
 
-OPT_SPREAD_MAX: Final[float] = 1.5
-FUT_SPREAD_MAX: Final[float] = 1.5
-FUT_DEPTH_MIN: Final[int] = 500
-OPT_DEPTH_MIN: Final[int] = 100
-FEED_STALE_MS: Final[int] = 1000
-SYNC_WINDOW_MS: Final[int] = 200
-DELTA_MIN: Final[float] = 0.35
-
-EMA_PERIOD: Final[int] = 20
-EMA_ALPHA: Final[float] = 2.0 / (EMA_PERIOD + 1.0)
-HISTORY_BUFFER_SIZE: Final[int] = 10
-WARMUP_MIN_VALID_SNAPSHOTS: Final[int] = 6
-REGIME_MIN_HISTORY: Final[int] = 10
-VELOCITY_REGIME_MIN: Final[float] = 1.5
-SPREAD_REGIME_MAX: Final[float] = 1.5
-NOF_FLIP_MAX_10: Final[int] = 3
-
+DEFAULT_POLL_INTERVAL_MS: Final[int] = 100
+DEFAULT_HEARTBEAT_TTL_MS: Final[int] = 15_000
+DEFAULT_HEARTBEAT_REFRESH_MS: Final[int] = 5_000
 DEFAULT_HEALTH_STREAM_MAXLEN: Final[int] = 10_000
 DEFAULT_ERROR_STREAM_MAXLEN: Final[int] = 10_000
 NO_FRAME_WARN_AFTER_LOOPS: Final[int] = 20
 
+WARMUP_MIN_VALID_SNAPSHOTS: Final[int] = 6
+MAX_HISTORY_POINTS: Final[int] = 128
+SHORT_RANGE_POINTS: Final[int] = 5
+LONG_RANGE_POINTS: Final[int] = 20
+DELTA_LOOKBACK_NS: Final[int] = 3_000_000_000
+HARD_PACKET_GAP_MS: Final[int] = 1_000
+DEFAULT_PREMIUM_FLOOR: Final[float] = 40.0
+DEFAULT_TARGET_PCT: Final[float] = 0.12
+DEFAULT_STOP_PCT: Final[float] = 0.07
+DEFAULT_MIN_TARGET: Final[float] = 5.0
+DEFAULT_MAX_TARGET: Final[float] = 10.0
+DEFAULT_MIN_STOP: Final[float] = 3.0
+DEFAULT_MAX_STOP: Final[float] = 7.0
+DEFAULT_FUT_SPREAD_RATIO_MAX: Final[float] = 1.60
+DEFAULT_OPT_SPREAD_RATIO_MAX: Final[float] = 1.80
+DEFAULT_FUT_DEPTH_MIN: Final[int] = 250
+DEFAULT_OPT_DEPTH_MIN: Final[int] = 50
+DEFAULT_FUTURES_CONTRADICTION_VEL_RATIO: Final[float] = 1.25
+DEFAULT_QUEUE_RELOAD_RATIO: Final[float] = 1.15
+DEFAULT_NORMALIZED_SIGNAL_CAP: Final[float] = 4.0
+
+# Shared frozen regime thresholds used across the classic MIS family contracts.
+# These are used only for deterministic regime labeling in features.py.
+REGIME_LOWVOL: Final[str] = "LOWVOL"
+REGIME_NORMAL: Final[str] = "NORMAL"
+REGIME_FAST: Final[str] = "FAST"
+LOWVOL_RATIO_MAX: Final[float] = 0.80
+FAST_RATIO_MIN: Final[float] = 1.50
+
+OFI_PERSIST_W0: Final[float] = 0.70
+OFI_PERSIST_W1: Final[float] = 0.30
+
+SERIES_ACTIVE_FUT: Final[str] = "active_fut"
+SERIES_ACTIVE_CE_ATM: Final[str] = "active_ce_atm"
+SERIES_ACTIVE_CE_ATM1: Final[str] = "active_ce_atm1"
+SERIES_ACTIVE_PE_ATM: Final[str] = "active_pe_atm"
+SERIES_ACTIVE_PE_ATM1: Final[str] = "active_pe_atm1"
+SERIES_DHAN_FUT: Final[str] = "dhan_fut"
+SERIES_DHAN_CALL: Final[str] = "dhan_selected_call"
+SERIES_DHAN_PUT: Final[str] = "dhan_selected_put"
+
+CLASSIC_FAMILIES: Final[tuple[str, ...]] = (
+    N.STRATEGY_FAMILY_MIST,
+    N.STRATEGY_FAMILY_MISB,
+    N.STRATEGY_FAMILY_MISC,
+    N.STRATEGY_FAMILY_MISR,
+)
+
 
 # =============================================================================
-# Utility helpers
+# Small helpers
 # =============================================================================
 
 
@@ -132,9 +235,45 @@ def _json_dumps(obj: Any) -> str:
     return json.dumps(obj, separators=(",", ":"), ensure_ascii=False, default=str)
 
 
-def _safe_float(value: Any, default: float = 0.0) -> float:
+def _safe_str(value: Any, default: str = "") -> str:
+    if value is None:
+        return default
+    return str(value).strip()
+
+
+def _safe_bool(value: Any, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    text = _safe_str(value).lower()
+    if text in {"1", "true", "yes", "y", "ok", "on"}:
+        return True
+    if text in {"0", "false", "no", "n", "off"}:
+        return False
+    return default
+
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    if value is None:
+        return default
     try:
-        out = float(value)
+        text = str(value).strip()
+        if text == "":
+            return default
+        return int(float(text))
+    except Exception:
+        return default
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    if value is None:
+        return default
+    try:
+        text = str(value).strip()
+        if text == "":
+            return default
+        out = float(text)
     except Exception:
         return default
     if math.isnan(out) or math.isinf(out):
@@ -142,61 +281,135 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
     return out
 
 
-def _safe_int(value: Any, default: int = 0) -> int:
-    try:
-        if value in (None, ""):
+def _clean_hash_mapping(raw: Mapping[str, Any]) -> dict[str, Any]:
+    cleaned: dict[str, Any] = {}
+    for key, value in raw.items():
+        if value == "":
+            cleaned[key] = None
+        else:
+            cleaned[key] = value
+    return cleaned
+
+
+def _nested_get(root: Any, *path: str, default: Any = None) -> Any:
+    cur = root
+    for key in path:
+        if cur is None:
             return default
-        return int(float(value))
-    except Exception:
-        return default
+        if isinstance(cur, Mapping):
+            cur = cur.get(key)
+        else:
+            cur = getattr(cur, key, None)
+    return default if cur is None else cur
 
 
-def _safe_bool(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        return value.strip().lower() in {"1", "true", "yes", "y", "ok", "on"}
-    return bool(value)
+def _clamp(value: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, value))
 
 
-def _safe_str(value: Any, default: str = "") -> str:
-    if value is None:
-        return default
-    if isinstance(value, bytes):
-        value = value.decode("utf-8", errors="replace")
-    out = str(value).strip()
-    return out if out else default
+def _coalesce(*values: Any) -> Any:
+    for value in values:
+        if value not in (None, ""):
+            return value
+    return None
 
 
-def _clamp(value: float, lower: float, upper: float) -> float:
-    return max(lower, min(upper, value))
-
-
-def _sign_eps(value: float) -> int:
-    if value > EPSILON:
+def _sign_eps(value: float, eps: float = EPSILON) -> int:
+    if value > eps:
         return 1
-    if value < -EPSILON:
+    if value < -eps:
         return -1
     return 0
 
 
-def _to_float_or_none(value: Any) -> float | None:
-    if value is None or value == "":
+def _ratio(numer: float, denom: float, default: float = 0.0) -> float:
+    if abs(denom) <= EPSILON:
+        return default
+    return numer / denom
+
+
+def _median_or_default(values: list[float], default: float) -> float:
+    usable = [v for v in values if not math.isnan(v) and not math.isinf(v)]
+    if not usable:
+        return default
+    return float(statistics.median(usable))
+
+
+def _ema_next(previous: float | None, observed: float, period: int) -> float:
+    alpha = 2.0 / (max(period, 1) + 1.0)
+    if previous is None:
+        return observed
+    return (observed * alpha) + (previous * (1.0 - alpha))
+
+
+def _as_float_str(value: float | None) -> str:
+    if value is None or math.isnan(value) or math.isinf(value):
+        return ""
+    return str(value)
+
+
+def _model_from_hash(model_cls: type[Any], raw: Mapping[str, Any] | None) -> Any | None:
+    if not raw:
         return None
-    out = _safe_float(value, math.nan)
-    if math.isnan(out) or math.isinf(out):
+    allowed = {dc_field.name for dc_field in fields(model_cls)}
+    cleaned = _clean_hash_mapping(raw)
+    filtered = {key: value for key, value in cleaned.items() if key in allowed}
+    if not filtered:
         return None
-    return out
+    try:
+        return model_cls.from_mapping(filtered)
+    except Exception:
+        return None
+
+
+def _decode_member_json(raw: Any, *, role: str, instrument_key: str | None = None) -> "SnapshotMemberView | None":
+    if not raw:
+        return None
+    with contextlib.suppress(Exception):
+        payload = json.loads(str(raw))
+        if not isinstance(payload, Mapping):
+            return None
+        inferred_side: str | None = None
+        if role.startswith("CE"):
+            inferred_side = N.SIDE_CALL
+        elif role.startswith("PE"):
+            inferred_side = N.SIDE_PUT
+        return SnapshotMemberView(
+            role=role,
+            instrument_key=_safe_str(instrument_key),
+            instrument_token=_safe_str(payload.get("instrument_token")),
+            trading_symbol=_safe_str(payload.get("trading_symbol")),
+            ts_event_ns=_safe_int(payload.get("ts_event_ns"), 0),
+            ltp=_safe_float(payload.get("ltp"), 0.0),
+            best_bid=_safe_float(payload.get("best_bid"), 0.0),
+            best_ask=_safe_float(payload.get("best_ask"), 0.0),
+            bid_qty_5=_safe_int(payload.get("bid_qty_5"), 0),
+            ask_qty_5=_safe_int(payload.get("ask_qty_5"), 0),
+            spread=_safe_float(payload.get("spread"), 0.0),
+            spread_ticks=_safe_float(payload.get("spread_ticks"), 0.0),
+            age_ms=_safe_int(payload.get("age_ms"), 0),
+            tick_size=_safe_float(payload.get("tick_size"), 0.0),
+            lot_size=_safe_int(payload.get("lot_size"), 0),
+            strike=(
+                None
+                if payload.get("strike") in (None, "")
+                else _safe_float(payload.get("strike"), 0.0)
+            ),
+            validity=_safe_str(payload.get("validity"), M.TickValidity.MALFORMED),
+            option_side=inferred_side,
+        )
+    return None
 
 
 # =============================================================================
-# Internal runtime contracts
+# Local snapshot / history views
 # =============================================================================
 
 
 @dataclass(slots=True, frozen=True)
 class SnapshotMemberView:
     role: str
+    instrument_key: str
     instrument_token: str
     trading_symbol: str
     ts_event_ns: int
@@ -209,22 +422,59 @@ class SnapshotMemberView:
     spread_ticks: float
     age_ms: int
     tick_size: float
-    lot_size: int | None
+    lot_size: int
     strike: float | None
     validity: str
-
-    @property
-    def depth_total(self) -> int:
-        return int(self.bid_qty_5 + self.ask_qty_5)
+    option_side: str | None = None
+    delta_proxy: float | None = None
+    context_score: float | None = None
+    context_iv: float | None = None
+    context_oi: int | None = None
+    context_volume: int | None = None
 
     @property
     def valid_tick(self) -> bool:
-        validity = str(self.validity).upper()
-        return validity.endswith("OK") or validity == "OK"
+        return self.validity == M.TickValidity.OK and self.ltp > 0.0
 
     @property
-    def fresh(self) -> bool:
-        return self.age_ms <= FEED_STALE_MS
+    def depth_total(self) -> int:
+        return max(self.bid_qty_5 + self.ask_qty_5, 0)
+
+    @property
+    def mid(self) -> float:
+        if self.best_bid > 0.0 and self.best_ask > 0.0:
+            return (self.best_bid + self.best_ask) / 2.0
+        return self.ltp
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "role": self.role,
+            "instrument_key": self.instrument_key,
+            "instrument_token": self.instrument_token,
+            "trading_symbol": self.trading_symbol,
+            "ts_event_ns": self.ts_event_ns,
+            "ltp": self.ltp,
+            "best_bid": self.best_bid,
+            "best_ask": self.best_ask,
+            "bid_qty_5": self.bid_qty_5,
+            "ask_qty_5": self.ask_qty_5,
+            "depth_total": self.depth_total,
+            "spread": self.spread,
+            "spread_ticks": self.spread_ticks,
+            "age_ms": self.age_ms,
+            "tick_size": self.tick_size,
+            "lot_size": self.lot_size,
+            "strike": self.strike,
+            "validity": self.validity,
+            "valid_tick": self.valid_tick,
+            "mid": self.mid,
+            "option_side": self.option_side,
+            "delta_proxy": self.delta_proxy,
+            "context_score": self.context_score,
+            "context_iv": self.context_iv,
+            "context_oi": self.context_oi,
+            "context_volume": self.context_volume,
+        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -236,62 +486,73 @@ class SnapshotFrameView:
     validity_reason: str
     sync_ok: bool
     ts_span_ms: int
+    provider_id: str
     stale_mask: tuple[str, ...]
     future: SnapshotMemberView | None
     ce_atm: SnapshotMemberView | None
     ce_atm1: SnapshotMemberView | None
     pe_atm: SnapshotMemberView | None
     pe_atm1: SnapshotMemberView | None
+    selected_call: SnapshotMemberView | None = None
+    selected_put: SnapshotMemberView | None = None
+    context_status: str | None = None
 
     @property
     def frame_valid(self) -> bool:
-        validity = str(self.validity).upper()
-        return validity.endswith("OK") or validity == "OK"
+        return self.validity == M.SnapshotValidity.OK and self.sync_ok
 
-    @property
-    def sync_valid(self) -> bool:
-        return bool(self.sync_ok) and self.ts_span_ms <= SYNC_WINDOW_MS
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "frame_id": self.frame_id,
+            "selection_version": self.selection_version,
+            "ts_frame_ns": self.ts_frame_ns,
+            "validity": self.validity,
+            "validity_reason": self.validity_reason,
+            "sync_ok": self.sync_ok,
+            "ts_span_ms": self.ts_span_ms,
+            "provider_id": self.provider_id,
+            "stale_mask": list(self.stale_mask),
+            "frame_valid": self.frame_valid,
+            "context_status": self.context_status,
+            "future": None if self.future is None else self.future.to_dict(),
+            "ce_atm": None if self.ce_atm is None else self.ce_atm.to_dict(),
+            "ce_atm1": None if self.ce_atm1 is None else self.ce_atm1.to_dict(),
+            "pe_atm": None if self.pe_atm is None else self.pe_atm.to_dict(),
+            "pe_atm1": None if self.pe_atm1 is None else self.pe_atm1.to_dict(),
+            "selected_call": None if self.selected_call is None else self.selected_call.to_dict(),
+            "selected_put": None if self.selected_put is None else self.selected_put.to_dict(),
+        }
 
 
 @dataclass(slots=True, frozen=True)
 class RollingPoint:
-    instrument_token: str
-    trading_symbol: str
     ts_ns: int
     ltp: float
     best_bid: float
     best_ask: float
     bid_qty_5: int
     ask_qty_5: int
-    spread: float
     depth_total: int
+    spread: float
     tick_size: float
     strike: float | None
+    cumulative_volume: int | None = None
+    delta_proxy: float | None = None
 
 
-@dataclass(slots=True)
-class EmaState:
-    value: float | None = None
-
-    def update(self, observed: float) -> float:
-        if self.value is None:
-            self.value = observed
-        else:
-            self.value = (observed * EMA_ALPHA) + (self.value * (1.0 - EMA_ALPHA))
-        return self.value
-
-
-@dataclass(slots=True)
-class LegHistory:
-    role: str
-    points: Deque[RollingPoint] = field(
-        default_factory=lambda: deque(maxlen=HISTORY_BUFFER_SIZE)
-    )
-    spread_ema: EmaState = field(default_factory=EmaState)
+class RollingSeries:
+    def __init__(self) -> None:
+        self.points: Deque[RollingPoint] = deque(maxlen=MAX_HISTORY_POINTS)
+        self.spread_ema: float | None = None
+        self.abs_velocity_ema: float | None = None
+        self.abs_volume_delta_ema: float | None = None
+        self.prev_ofi_ratio: float | None = None
 
     def append(self, point: RollingPoint) -> None:
-        self.points.append(point)
-        self.spread_ema.update(max(point.spread, EPSILON))
+        if self.points and self.points[-1].ts_ns == point.ts_ns:
+            self.points[-1] = point
+        else:
+            self.points.append(point)
 
     def count(self) -> int:
         return len(self.points)
@@ -299,18 +560,56 @@ class LegHistory:
     def latest(self) -> RollingPoint | None:
         return self.points[-1] if self.points else None
 
-    def back(self, k: int) -> RollingPoint | None:
-        if k <= 0 or len(self.points) < k:
+    def previous(self, steps: int = 1) -> RollingPoint | None:
+        if len(self.points) <= steps:
             return None
-        return self.points[-k]
+        return self.points[-1 - steps]
 
-    def nof_series(self) -> list[float]:
-        return [float(p.bid_qty_5 - p.ask_qty_5) for p in self.points]
+    def point_at_or_before(self, target_ns: int) -> RollingPoint | None:
+        for point in reversed(self.points):
+            if point.ts_ns <= target_ns:
+                return point
+        return None
 
+    def range_over(self, count: int) -> tuple[float, float, float]:
+        if not self.points:
+            return (0.0, 0.0, 0.0)
+        segment = list(self.points)[-max(count, 1):]
+        highs = [p.ltp for p in segment]
+        low = min(highs)
+        high = max(highs)
+        return (low, high, max(high - low, 0.0))
 
-@dataclass(slots=True)
-class FuturesBaselines:
-    abs_velocity_ema: EmaState = field(default_factory=EmaState)
+    def gap_series_ms(self) -> list[float]:
+        gaps: list[float] = []
+        previous: RollingPoint | None = None
+        for point in self.points:
+            if previous is not None:
+                gaps.append(max((point.ts_ns - previous.ts_ns) / 1_000_000.0, 0.0))
+            previous = point
+        return gaps
+
+    def vwap_estimate(self) -> float | None:
+        if len(self.points) < 2:
+            return None
+        numer = 0.0
+        denom = 0.0
+        previous: RollingPoint | None = None
+        for point in self.points:
+            if previous is None:
+                previous = point
+                continue
+            if point.cumulative_volume is None or previous.cumulative_volume is None:
+                previous = point
+                continue
+            delta_vol = max(point.cumulative_volume - previous.cumulative_volume, 0)
+            if delta_vol > 0:
+                numer += float(delta_vol) * point.ltp
+                denom += float(delta_vol)
+            previous = point
+        if denom <= EPSILON:
+            return None
+        return numer / denom
 
 
 # =============================================================================
@@ -322,92 +621,110 @@ class SnapshotReader:
     def __init__(self, redis_client: Any) -> None:
         self.redis = redis_client
 
-    def read(self) -> SnapshotFrameView | None:
-        fut_hash = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_FUT, client=self.redis)
-        opt_hash = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED, client=self.redis)
+    def read_provider_runtime(self) -> M.ProviderRuntimeState | None:
+        raw = RX.hgetall(N.HASH_STATE_PROVIDER_RUNTIME, client=self.redis)
+        return _model_from_hash(M.ProviderRuntimeState, raw)
+
+    def read_dhan_context(self) -> M.DhanContextState | None:
+        raw = RX.hgetall(N.HASH_STATE_DHAN_CONTEXT, client=self.redis)
+        return _model_from_hash(M.DhanContextState, raw)
+
+    def read_active_frame(self, dhan_context: M.DhanContextState | None) -> SnapshotFrameView | None:
+        fut_hash = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE, client=self.redis)
+        opt_hash = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE, client=self.redis)
+        if not fut_hash or not opt_hash:
+            fut_hash = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_FUT, client=self.redis)
+            opt_hash = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED, client=self.redis)
+        frame = self._frame_from_hashes(fut_hash=fut_hash, opt_hash=opt_hash, dhan_context=dhan_context)
+        if frame is None or not _safe_str(frame.provider_id):
+            return None
+        return frame
+
+    def read_dhan_frame(self, dhan_context: M.DhanContextState | None) -> SnapshotFrameView | None:
+        fut_hash = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_FUT_DHAN, client=self.redis)
+        opt_hash = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN, client=self.redis)
+        frame = self._frame_from_hashes(fut_hash=fut_hash, opt_hash=opt_hash, dhan_context=dhan_context)
+        if frame is None or not _safe_str(frame.provider_id):
+            return None
+        return frame
+
+    def read_active_future_state(self) -> M.FuturesSnapshotState | None:
+        raw = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE, client=self.redis)
+        if not raw:
+            raw = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_FUT, client=self.redis)
+        return _model_from_hash(M.FuturesSnapshotState, raw)
+
+    def read_dhan_future_state(self) -> M.FuturesSnapshotState | None:
+        raw = RX.hgetall(N.HASH_STATE_SNAPSHOT_MME_FUT_DHAN, client=self.redis)
+        return _model_from_hash(M.FuturesSnapshotState, raw)
+
+    def _frame_from_hashes(
+        self,
+        *,
+        fut_hash: Mapping[str, Any] | None,
+        opt_hash: Mapping[str, Any] | None,
+        dhan_context: M.DhanContextState | None,
+    ) -> SnapshotFrameView | None:
         if not fut_hash or not opt_hash:
             return None
 
-        future = self._decode_member_json(fut_hash.get("future_json"), role="FUTURES")
-        ce_atm = self._decode_member_json(opt_hash.get("ce_atm_json"), role="CE_ATM")
-        ce_atm1 = self._decode_member_json(opt_hash.get("ce_atm1_json"), role="CE_ATM1")
-        pe_atm = self._decode_member_json(opt_hash.get("pe_atm_json"), role="PE_ATM")
-        pe_atm1 = self._decode_member_json(opt_hash.get("pe_atm1_json"), role="PE_ATM1")
-
-        stale_mask_raw = _safe_str(opt_hash.get("stale_mask_json")) or _safe_str(
-            fut_hash.get("stale_mask_json")
-        )
+        stale_mask_raw = _safe_str(_coalesce(opt_hash.get("stale_mask_json"), fut_hash.get("stale_mask_json"), "[]"))
         stale_mask: tuple[str, ...] = tuple()
-        if stale_mask_raw:
-            with contextlib.suppress(Exception):
-                decoded = json.loads(stale_mask_raw)
-                if isinstance(decoded, list):
-                    stale_mask = tuple(
-                        _safe_str(item) for item in decoded if _safe_str(item)
-                    )
+        with contextlib.suppress(Exception):
+            parsed = json.loads(stale_mask_raw)
+            if isinstance(parsed, list):
+                stale_mask = tuple(_safe_str(item) for item in parsed if _safe_str(item))
+
+        context_status = None if dhan_context is None else dhan_context.context_status
+        selected_call_key = None if dhan_context is None else dhan_context.selected_call_instrument_key
+        selected_put_key = None if dhan_context is None else dhan_context.selected_put_instrument_key
+
+        future = _decode_member_json(fut_hash.get("future_json"), role=M.InstrumentRole.FUTURES, instrument_key=N.IK_MME_FUT)
+        ce_atm = _decode_member_json(opt_hash.get("ce_atm_json"), role=M.InstrumentRole.CE_ATM, instrument_key=N.IK_MME_CE)
+        ce_atm1 = _decode_member_json(opt_hash.get("ce_atm1_json"), role=M.InstrumentRole.CE_ATM1, instrument_key=N.IK_MME_CE)
+        pe_atm = _decode_member_json(opt_hash.get("pe_atm_json"), role=M.InstrumentRole.PE_ATM, instrument_key=N.IK_MME_PE)
+        pe_atm1 = _decode_member_json(opt_hash.get("pe_atm1_json"), role=M.InstrumentRole.PE_ATM1, instrument_key=N.IK_MME_PE)
+        selected_call = _decode_member_json(opt_hash.get("selected_call_json"), role=M.InstrumentRole.CE_ATM, instrument_key=selected_call_key)
+        selected_put = _decode_member_json(opt_hash.get("selected_put_json"), role=M.InstrumentRole.PE_ATM, instrument_key=selected_put_key)
+
+        if selected_call is not None and dhan_context is not None:
+            selected_call = SnapshotMemberView(
+                **selected_call.__dict__,
+                delta_proxy=dhan_context.selected_call_delta,
+                context_score=dhan_context.selected_call_score,
+                context_iv=dhan_context.selected_call_iv,
+                context_oi=dhan_context.selected_call_oi,
+                context_volume=dhan_context.selected_call_volume,
+            )
+        if selected_put is not None and dhan_context is not None:
+            selected_put = SnapshotMemberView(
+                **selected_put.__dict__,
+                delta_proxy=dhan_context.selected_put_delta,
+                context_score=dhan_context.selected_put_score,
+                context_iv=dhan_context.selected_put_iv,
+                context_oi=dhan_context.selected_put_oi,
+                context_volume=dhan_context.selected_put_volume,
+            )
 
         return SnapshotFrameView(
-            frame_id=_safe_str(
-                opt_hash.get("frame_id") or fut_hash.get("frame_id") or "snapshot-frame"
-            ),
-            selection_version=_safe_str(
-                opt_hash.get("selection_version") or fut_hash.get("selection_version")
-            ),
-            ts_frame_ns=_safe_int(
-                opt_hash.get("ts_frame_ns") or fut_hash.get("ts_frame_ns"),
-                0,
-            ),
-            validity=_safe_str(
-                opt_hash.get("validity") or fut_hash.get("validity") or "UNKNOWN"
-            ),
-            validity_reason=_safe_str(
-                opt_hash.get("validity_reason") or fut_hash.get("validity_reason")
-            ),
-            sync_ok=_safe_bool(opt_hash.get("sync_ok") or fut_hash.get("sync_ok")),
-            ts_span_ms=_safe_int(
-                opt_hash.get("ts_span_ms") or fut_hash.get("ts_span_ms"),
-                0,
-            ),
+            frame_id=_safe_str(_coalesce(opt_hash.get("frame_id"), fut_hash.get("frame_id"), "")),
+            selection_version=_safe_str(_coalesce(opt_hash.get("selection_version"), fut_hash.get("selection_version"), "")),
+            ts_frame_ns=_safe_int(_coalesce(opt_hash.get("ts_frame_ns"), fut_hash.get("ts_frame_ns")), 0),
+            validity=_safe_str(_coalesce(opt_hash.get("validity"), fut_hash.get("validity"), M.SnapshotValidity.INCOMPLETE)),
+            validity_reason=_safe_str(_coalesce(opt_hash.get("validity_reason"), fut_hash.get("validity_reason"), "missing")),
+            sync_ok=_safe_bool(_coalesce(opt_hash.get("sync_ok"), fut_hash.get("sync_ok"), False)),
+            ts_span_ms=_safe_int(_coalesce(opt_hash.get("ts_span_ms"), fut_hash.get("ts_span_ms")), 0),
+            provider_id=_safe_str(_coalesce(opt_hash.get("provider_id"), fut_hash.get("provider_id"))),
             stale_mask=stale_mask,
             future=future,
             ce_atm=ce_atm,
             ce_atm1=ce_atm1,
             pe_atm=pe_atm,
             pe_atm1=pe_atm1,
+            selected_call=selected_call,
+            selected_put=selected_put,
+            context_status=context_status,
         )
-
-    def _decode_member_json(self, raw: Any, *, role: str) -> SnapshotMemberView | None:
-        if not raw:
-            return None
-        with contextlib.suppress(Exception):
-            data = json.loads(raw)
-            if isinstance(data, Mapping):
-                return SnapshotMemberView(
-                    role=role,
-                    instrument_token=_safe_str(
-                        data.get("instrument_token") or data.get("token")
-                    ),
-                    trading_symbol=_safe_str(
-                        data.get("trading_symbol") or data.get("symbol")
-                    ),
-                    ts_event_ns=_safe_int(
-                        data.get("local_ts_ns") or data.get("ts_event_ns"),
-                        0,
-                    ),
-                    ltp=_safe_float(data.get("ltp"), 0.0),
-                    best_bid=_safe_float(data.get("best_bid"), 0.0),
-                    best_ask=_safe_float(data.get("best_ask"), 0.0),
-                    bid_qty_5=_safe_int(data.get("bid_qty_5"), 0),
-                    ask_qty_5=_safe_int(data.get("ask_qty_5"), 0),
-                    spread=_safe_float(data.get("spread"), 0.0),
-                    spread_ticks=_safe_float(data.get("spread_ticks"), 0.0),
-                    age_ms=_safe_int(data.get("age_ms"), 0),
-                    tick_size=_safe_float(data.get("tick_size"), 0.0),
-                    lot_size=_safe_int(data.get("lot_size"), 0) or None,
-                    strike=_to_float_or_none(data.get("strike")),
-                    validity=_safe_str(data.get("validity"), "UNKNOWN"),
-                )
-        return None
 
 
 # =============================================================================
@@ -418,351 +735,998 @@ class SnapshotReader:
 class FeatureEngine:
     def __init__(self, logger: logging.Logger | None = None) -> None:
         self.log = logger or LOGGER.getChild("FeatureEngine")
-        self.legs: dict[str, LegHistory] = {
-            "FUTURES": LegHistory("FUTURES"),
-            "CE_ATM": LegHistory("CE_ATM"),
-            "CE_ATM1": LegHistory("CE_ATM1"),
-            "PE_ATM": LegHistory("PE_ATM"),
-            "PE_ATM1": LegHistory("PE_ATM1"),
+        self.histories: dict[str, RollingSeries] = {
+            SERIES_ACTIVE_FUT: RollingSeries(),
+            SERIES_ACTIVE_CE_ATM: RollingSeries(),
+            SERIES_ACTIVE_CE_ATM1: RollingSeries(),
+            SERIES_ACTIVE_PE_ATM: RollingSeries(),
+            SERIES_ACTIVE_PE_ATM1: RollingSeries(),
+            SERIES_DHAN_FUT: RollingSeries(),
+            SERIES_DHAN_CALL: RollingSeries(),
+            SERIES_DHAN_PUT: RollingSeries(),
         }
-        self.fut_baselines = FuturesBaselines()
 
-    def build_payload(self, frame: SnapshotFrameView, *, now_ns: int) -> dict[str, Any]:
-        self._append_member("FUTURES", frame.future)
-        self._append_member("CE_ATM", frame.ce_atm)
-        self._append_member("CE_ATM1", frame.ce_atm1)
-        self._append_member("PE_ATM", frame.pe_atm)
-        self._append_member("PE_ATM1", frame.pe_atm1)
+    def build_payload(
+        self,
+        *,
+        active_frame: SnapshotFrameView | None,
+        dhan_frame: SnapshotFrameView | None,
+        active_future_state: M.FuturesSnapshotState | None,
+        dhan_future_state: M.FuturesSnapshotState | None,
+        provider_runtime: M.ProviderRuntimeState | None,
+        dhan_context: M.DhanContextState | None,
+        now_ns: int,
+    ) -> dict[str, Any]:
+        self._ingest_frames(
+            active_frame=active_frame,
+            active_future_state=active_future_state,
+            dhan_frame=dhan_frame,
+            dhan_future_state=dhan_future_state,
+        )
 
-        futures_payload = self._compute_futures_features(
-            frame=frame,
-            member=frame.future,
+        active_futures = self._compute_member_features(SERIES_ACTIVE_FUT, active_frame.future if active_frame else None, active_future_state)
+        active_ce_atm = self._compute_member_features(SERIES_ACTIVE_CE_ATM, active_frame.ce_atm if active_frame else None, None)
+        active_ce_atm1 = self._compute_member_features(SERIES_ACTIVE_CE_ATM1, active_frame.ce_atm1 if active_frame else None, None)
+        active_pe_atm = self._compute_member_features(SERIES_ACTIVE_PE_ATM, active_frame.pe_atm if active_frame else None, None)
+        active_pe_atm1 = self._compute_member_features(SERIES_ACTIVE_PE_ATM1, active_frame.pe_atm1 if active_frame else None, None)
+        dhan_futures = self._compute_member_features(SERIES_DHAN_FUT, dhan_frame.future if dhan_frame else None, dhan_future_state)
+        dhan_selected_call = self._compute_member_features(SERIES_DHAN_CALL, dhan_frame.selected_call if dhan_frame else None, None)
+        dhan_selected_put = self._compute_member_features(SERIES_DHAN_PUT, dhan_frame.selected_put if dhan_frame else None, None)
+
+        response_surfaces = self._compute_response_surfaces(
+            futures_features=active_futures,
+            ce_atm=active_ce_atm,
+            ce_atm1=active_ce_atm1,
+            pe_atm=active_pe_atm,
+            pe_atm1=active_pe_atm1,
+            dhan_call=dhan_selected_call,
+            dhan_put=dhan_selected_put,
+        )
+
+        provider_surface = self._compute_provider_surface(
+            provider_runtime=provider_runtime,
+            active_frame=active_frame,
+            dhan_frame=dhan_frame,
+            dhan_context=dhan_context,
+        )
+        classic_regime_surface = self._classify_regime_surface(active_futures)
+        miso_regime_surface = self._classify_regime_surface(dhan_futures)
+
+        branch_surfaces = self._build_branch_surfaces(
+            active_frame=active_frame,
+            dhan_frame=dhan_frame,
+            provider_runtime=provider_runtime,
+            dhan_context=dhan_context,
+            active_futures=active_futures,
+            active_ce_atm=active_ce_atm,
+            active_ce_atm1=active_ce_atm1,
+            active_pe_atm=active_pe_atm,
+            active_pe_atm1=active_pe_atm1,
+            dhan_futures=dhan_futures,
+            dhan_selected_call=dhan_selected_call,
+            dhan_selected_put=dhan_selected_put,
+            response_surfaces=response_surfaces,
+            classic_regime_surface=classic_regime_surface,
+            miso_regime_surface=miso_regime_surface,
+        )
+
+        family_frames = self._build_feature_frames(
             now_ns=now_ns,
-        )
-        ce_atm_payload = self._compute_option_features(
-            frame=frame,
-            role="CE_ATM",
-            member=frame.ce_atm,
-        )
-        ce_atm1_payload = self._compute_option_features(
-            frame=frame,
-            role="CE_ATM1",
-            member=frame.ce_atm1,
-        )
-        pe_atm_payload = self._compute_option_features(
-            frame=frame,
-            role="PE_ATM",
-            member=frame.pe_atm,
-        )
-        pe_atm1_payload = self._compute_option_features(
-            frame=frame,
-            role="PE_ATM1",
-            member=frame.pe_atm1,
+            provider_runtime=provider_runtime,
+            active_frame=active_frame,
+            dhan_frame=dhan_frame,
+            active_future_state=active_future_state,
+            dhan_future_state=dhan_future_state,
+            branch_surfaces=branch_surfaces,
         )
 
-        ce_atm_econ = self._compute_option_economics(ce_atm_payload)
-        ce_atm1_econ = self._compute_option_economics(ce_atm1_payload)
-        pe_atm_econ = self._compute_option_economics(pe_atm_payload)
-        pe_atm1_econ = self._compute_option_economics(pe_atm1_payload)
+        generic_feature_state = M.FeatureState(
+            ts_event_ns=now_ns,
+            instrument_key=N.IK_MME_FUT,
+            frame_valid=bool((active_frame and active_frame.frame_valid) or (dhan_frame and dhan_frame.frame_valid)),
+            warmup_complete=all(frame.warmup_complete for frame in family_frames.values()) if family_frames else False,
+            strategy_mode=N.STRATEGY_AUTO,
+            system_state=(N.STATE_SCANNING if provider_surface["provider_runtime_present"] else N.STATE_DISABLED),
+            family_runtime_mode=(provider_runtime.family_runtime_mode if provider_runtime is not None else N.FAMILY_RUNTIME_MODE_OBSERVE_ONLY),
+            explain=provider_surface.get("summary"),
+        )
 
-        warmup_complete = self._warmup_complete()
         readiness = {
-            "frame_valid": frame.frame_valid,
-            "frame_reason": frame.validity_reason,
-            "warmup_complete": warmup_complete,
-            "futures_ready": futures_payload.get("ready", False),
-            "options_ready": all(
-                self._leg_ready(x)
-                for x in (
-                    ce_atm_payload,
-                    ce_atm1_payload,
-                    pe_atm_payload,
-                    pe_atm1_payload,
-                )
-            ),
-            "economics_ready": any(
-                bool(x.get("economics_valid", False))
-                for x in (ce_atm_econ, ce_atm1_econ, pe_atm_econ, pe_atm1_econ)
-            ),
-            "sync_valid": frame.sync_valid,
+            "provider_runtime_present": provider_surface["provider_runtime_present"],
+            "active_frame_present": active_frame is not None,
+            "active_frame_valid": bool(active_frame and active_frame.frame_valid),
+            "dhan_frame_present": dhan_frame is not None,
+            "dhan_frame_valid": bool(dhan_frame and dhan_frame.frame_valid),
+            "classic_warmup_complete": all(
+                family_frames[key].warmup_complete
+                for key in family_frames
+                if key.startswith(("mist_", "misb_", "misc_", "misr_"))
+            ) if family_frames else False,
+            "miso_warmup_complete": all(
+                family_frames[key].warmup_complete
+                for key in family_frames
+                if key.startswith("miso_")
+            ) if family_frames else False,
         }
 
-        return {
-            "frame_id": frame.frame_id,
-            "selection_version": frame.selection_version,
-            "frame_ts_ns": frame.ts_frame_ns,
-            "futures": futures_payload,
-            "ce_atm": ce_atm_payload,
-            "ce_atm1": ce_atm1_payload,
-            "pe_atm": pe_atm_payload,
-            "pe_atm1": pe_atm1_payload,
-            "ce_atm_econ": ce_atm_econ,
-            "ce_atm1_econ": ce_atm1_econ,
-            "pe_atm_econ": pe_atm_econ,
-            "pe_atm1_econ": pe_atm1_econ,
+        payload = {
+            "frame_id": _safe_str(_coalesce(active_frame.frame_id if active_frame else None, dhan_frame.frame_id if dhan_frame else None, f"features-{now_ns}")),
+            "selection_version": _safe_str(_coalesce(active_frame.selection_version if active_frame else None, dhan_frame.selection_version if dhan_frame else None, "")),
+            "frame_ts_ns": _safe_int(_coalesce(active_frame.ts_frame_ns if active_frame else None, dhan_frame.ts_frame_ns if dhan_frame else None, now_ns), now_ns),
             "readiness": readiness,
-            "raw_futures": self._raw_latest_dict("FUTURES"),
-            "raw_ce_atm": self._raw_latest_dict("CE_ATM"),
-            "raw_ce_atm1": self._raw_latest_dict("CE_ATM1"),
-            "raw_pe_atm": self._raw_latest_dict("PE_ATM"),
-            "raw_pe_atm1": self._raw_latest_dict("PE_ATM1"),
+            "provider_surface": provider_surface,
+            "active_snapshot": None if active_frame is None else active_frame.to_dict(),
+            "dhan_snapshot": None if dhan_frame is None else dhan_frame.to_dict(),
+            "dhan_context": None if dhan_context is None else dhan_context.to_dict(),
+            "shared_features": {
+                "active_futures": active_futures,
+                "active_ce_atm": active_ce_atm,
+                "active_ce_atm1": active_ce_atm1,
+                "active_pe_atm": active_pe_atm,
+                "active_pe_atm1": active_pe_atm1,
+                "dhan_futures": dhan_futures,
+                "dhan_selected_call": dhan_selected_call,
+                "dhan_selected_put": dhan_selected_put,
+                "response": response_surfaces,
+                "classic_regime": classic_regime_surface,
+                "miso_regime": miso_regime_surface,
+            },
+            "family_surfaces": branch_surfaces,
+            "family_frames": {key: frame.to_dict() for key, frame in family_frames.items()},
+            "feature_state": generic_feature_state.to_dict(),
         }
+        return payload
 
-    @staticmethod
-    def _leg_ready(raw: Mapping[str, Any]) -> bool:
-        return (
-            bool(raw)
-            and _safe_bool(raw.get("ready"))
-            and _safe_bool(raw.get("valid_tick"))
-            and _safe_bool(raw.get("fresh"))
-            and _safe_bool(raw.get("sync_valid"))
-        )
+    def _ingest_frames(
+        self,
+        *,
+        active_frame: SnapshotFrameView | None,
+        active_future_state: M.FuturesSnapshotState | None,
+        dhan_frame: SnapshotFrameView | None,
+        dhan_future_state: M.FuturesSnapshotState | None,
+    ) -> None:
+        if active_frame is not None:
+            self._append_member(SERIES_ACTIVE_FUT, active_frame.future, volume=(None if active_future_state is None else active_future_state.volume))
+            self._append_member(SERIES_ACTIVE_CE_ATM, active_frame.ce_atm)
+            self._append_member(SERIES_ACTIVE_CE_ATM1, active_frame.ce_atm1)
+            self._append_member(SERIES_ACTIVE_PE_ATM, active_frame.pe_atm)
+            self._append_member(SERIES_ACTIVE_PE_ATM1, active_frame.pe_atm1)
+        if dhan_frame is not None:
+            self._append_member(SERIES_DHAN_FUT, dhan_frame.future, volume=(None if dhan_future_state is None else dhan_future_state.volume))
+            self._append_member(
+                SERIES_DHAN_CALL,
+                dhan_frame.selected_call,
+                volume=(None if dhan_frame.selected_call is None else dhan_frame.selected_call.context_volume),
+                delta_proxy=(None if dhan_frame.selected_call is None else dhan_frame.selected_call.delta_proxy),
+            )
+            self._append_member(
+                SERIES_DHAN_PUT,
+                dhan_frame.selected_put,
+                volume=(None if dhan_frame.selected_put is None else dhan_frame.selected_put.context_volume),
+                delta_proxy=(None if dhan_frame.selected_put is None else dhan_frame.selected_put.delta_proxy),
+            )
 
-    def _append_member(self, role: str, member: SnapshotMemberView | None) -> None:
-        if member is None:
+    def _append_member(
+        self,
+        series_id: str,
+        member: SnapshotMemberView | None,
+        volume: int | None = None,
+        delta_proxy: float | None = None,
+    ) -> None:
+        if member is None or member.ts_event_ns <= 0:
             return
         point = RollingPoint(
-            instrument_token=member.instrument_token,
-            trading_symbol=member.trading_symbol,
             ts_ns=member.ts_event_ns,
             ltp=member.ltp,
             best_bid=member.best_bid,
             best_ask=member.best_ask,
             bid_qty_5=member.bid_qty_5,
             ask_qty_5=member.ask_qty_5,
-            spread=max(member.spread, 0.0),
             depth_total=member.depth_total,
+            spread=member.spread,
             tick_size=member.tick_size,
             strike=member.strike,
+            cumulative_volume=volume,
+            delta_proxy=delta_proxy,
         )
-        self.legs[role].append(point)
+        self.histories[series_id].append(point)
 
-    def _warmup_complete(self) -> bool:
-        return all(
-            history.count() >= WARMUP_MIN_VALID_SNAPSHOTS
-            for history in self.legs.values()
-        )
-
-    def _raw_latest_dict(self, role: str) -> dict[str, Any]:
-        latest = self.legs[role].latest()
-        if latest is None:
-            return {}
-        return {
-            "instrument_token": latest.instrument_token,
-            "trading_symbol": latest.trading_symbol,
-            "ts_ns": latest.ts_ns,
-            "ltp": latest.ltp,
-            "best_bid": latest.best_bid,
-            "best_ask": latest.best_ask,
-            "bid_qty_5": latest.bid_qty_5,
-            "ask_qty_5": latest.ask_qty_5,
-            "spread": latest.spread,
-            "depth_total": latest.depth_total,
-            "tick_size": latest.tick_size,
-            "strike": latest.strike,
-        }
-
-    def _compute_futures_features(
+    def _compute_member_features(
         self,
-        *,
-        frame: SnapshotFrameView,
+        series_id: str,
         member: SnapshotMemberView | None,
-        now_ns: int,
+        future_state: M.FuturesSnapshotState | None,
     ) -> dict[str, Any]:
-        history = self.legs["FUTURES"]
+        history = self.histories[series_id]
         latest = history.latest()
-        if latest is None or member is None:
-            return {"ready": False, "history_count": 0}
+        if member is None or latest is None:
+            return {"present": False}
 
-        # back(1)=latest, back(2)=t-1, back(3)=t-2, back(4)=t-3, back(6)=t-5
-        t1 = history.back(2)
-        t2 = history.back(3)
-        t3 = history.back(4)
-        t5 = history.back(6)
+        t1 = history.previous(1)
+        t2 = history.previous(2)
+        t3 = history.point_at_or_before(latest.ts_ns - DELTA_LOOKBACK_NS)
 
-        nof_now = float(latest.bid_qty_5 - latest.ask_qty_5)
-        nof_5_ago = float(t5.bid_qty_5 - t5.ask_qty_5) if t5 is not None else nof_now
-        nof_slope_5 = nof_now - nof_5_ago
+        spread_ema = _ema_next(history.spread_ema, latest.spread, period=20)
+        history.spread_ema = spread_ema
+        spread_ratio = _ratio(latest.spread, spread_ema, default=0.0)
 
-        velocity = 0.0
-        if t3 is not None:
-            dt_sec = max((latest.ts_ns - t3.ts_ns) / 1_000_000_000.0, EPSILON)
-            velocity = (latest.ltp - t3.ltp) / dt_sec
-
-        abs_velocity_ema = self.fut_baselines.abs_velocity_ema.update(abs(velocity))
-        velocity_ratio = abs(velocity) / max(abs_velocity_ema, EPSILON)
-
-        spread_ema = (
-            history.spread_ema.value
-            if history.spread_ema.value is not None
-            else max(latest.spread, EPSILON)
+        weighted_ofi_ratio = _ratio(float(latest.bid_qty_5), float(latest.bid_qty_5 + latest.ask_qty_5), default=0.5)
+        weighted_ofi_is_proxy = True
+        nof_raw = float(latest.bid_qty_5 - latest.ask_qty_5)
+        nof_norm = _ratio(nof_raw, float(max(latest.depth_total, 1)), default=0.0)
+        ofi_persist = (
+            weighted_ofi_ratio
+            if history.prev_ofi_ratio is None
+            else (OFI_PERSIST_W0 * weighted_ofi_ratio) + (OFI_PERSIST_W1 * history.prev_ofi_ratio)
         )
-        spread_ratio = latest.spread / max(spread_ema, EPSILON)
+        history.prev_ofi_ratio = weighted_ofi_ratio
 
-        bid_dominance = latest.bid_qty_5 / max(latest.ask_qty_5, 1)
-        ask_dominance = latest.ask_qty_5 / max(latest.bid_qty_5, 1)
+        vamp_proxy = _ratio(
+            (latest.best_bid * latest.ask_qty_5) + (latest.best_ask * latest.bid_qty_5),
+            float(max(latest.bid_qty_5 + latest.ask_qty_5, 1)),
+            default=latest.ltp,
+        )
 
-        nof_series = history.nof_series()[-10:]
-        flips = 0
-        prev_sign = None
-        for val in nof_series:
-            sign = _sign_eps(val)
-            if sign == 0:
-                continue
-            if prev_sign is not None and sign != prev_sign:
-                flips += 1
-            prev_sign = sign
+        delta_3 = 0.0
+        dt_sec = 0.0
+        if t3 is not None and t3.ts_ns < latest.ts_ns:
+            delta_3 = latest.ltp - t3.ltp
+            dt_sec = max((latest.ts_ns - t3.ts_ns) / 1_000_000_000.0, 0.0)
+        velocity_3 = _ratio(delta_3, dt_sec, default=0.0)
+        abs_velocity_ema = _ema_next(history.abs_velocity_ema, abs(velocity_3), period=20)
+        history.abs_velocity_ema = abs_velocity_ema
+        velocity_ratio = _ratio(abs(velocity_3), abs_velocity_ema, default=0.0)
+
+        volume_delta = None
+        volume_norm = None
+        if latest.cumulative_volume is not None and t1 is not None and t1.cumulative_volume is not None:
+            raw_delta = max(int(latest.cumulative_volume) - int(t1.cumulative_volume), 0)
+            volume_delta = raw_delta
+            abs_volume_delta_ema = _ema_next(history.abs_volume_delta_ema, float(raw_delta), period=20)
+            history.abs_volume_delta_ema = abs_volume_delta_ema
+            volume_norm = _ratio(float(raw_delta), abs_volume_delta_ema, default=0.0)
+
+        vwap_estimate = history.vwap_estimate()
+        vwap_distance = None if vwap_estimate is None else latest.ltp - vwap_estimate
+
+        _, _, range_fast = history.range_over(SHORT_RANGE_POINTS)
+        slow_low, slow_high, range_slow = history.range_over(LONG_RANGE_POINTS)
+        range_ratio = _ratio(range_fast, range_slow, default=0.0)
+
+        gap_series = history.gap_series_ms()
+        packet_gap_ms = gap_series[-1] if gap_series else 0.0
+        median_gap_ms = _median_or_default(gap_series[:-1] if len(gap_series) > 1 else gap_series, default=max(packet_gap_ms, 1.0))
+        feed_jitter_ratio = _ratio(packet_gap_ms, median_gap_ms, default=1.0)
+        packet_gap_hard = packet_gap_ms >= HARD_PACKET_GAP_MS
 
         ask_reduced = bool(t1 is not None and latest.ask_qty_5 < t1.ask_qty_5)
-        ask_absorbed = bool(
-            t1 is not None and latest.best_ask == t1.best_ask and ask_reduced
-        )
-        ladder_accel_call = bool(
-            t2 is not None and latest.best_bid > t2.best_bid and (ask_reduced or ask_absorbed)
-        )
-
         bid_reduced = bool(t1 is not None and latest.bid_qty_5 < t1.bid_qty_5)
-        bid_absorbed = bool(
-            t1 is not None and latest.best_bid == t1.best_bid and bid_reduced
-        )
-        ladder_accel_put = bool(
-            t2 is not None and latest.best_ask < t2.best_ask and (bid_reduced or bid_absorbed)
-        )
+        ask_reloaded = bool(t1 is not None and latest.best_ask == t1.best_ask and latest.ask_qty_5 > int(t1.ask_qty_5 * DEFAULT_QUEUE_RELOAD_RATIO))
+        bid_reloaded = bool(t1 is not None and latest.best_bid == t1.best_bid and latest.bid_qty_5 > int(t1.bid_qty_5 * DEFAULT_QUEUE_RELOAD_RATIO))
+        ask_absorbed = bool(t1 is not None and latest.best_ask == t1.best_ask and ask_reduced)
+        bid_absorbed = bool(t1 is not None and latest.best_bid == t1.best_bid and bid_reduced)
+        ladder_accel_call = bool(t2 is not None and latest.best_bid >= t2.best_bid and (ask_reduced or ask_absorbed))
+        ladder_accel_put = bool(t2 is not None and latest.best_ask <= t2.best_ask and (bid_reduced or bid_absorbed))
 
-        regime_ok = (
-            history.count() >= REGIME_MIN_HISTORY
-            and velocity_ratio >= VELOCITY_REGIME_MIN
-            and spread_ratio <= SPREAD_REGIME_MAX
-            and flips <= NOF_FLIP_MAX_10
-            and member.valid_tick
-            and member.fresh
-            and frame.sync_valid
-        )
+        impact_depth_fraction_one_lot = _ratio(float(max(member.lot_size, 0)), float(max(latest.depth_total, 1)), default=1.0)
 
-        frame_age_ms = int(max(0, (now_ns - latest.ts_ns) / 1_000_000))
+        premium_health = {
+            "premium_floor_ok": latest.ltp >= DEFAULT_PREMIUM_FLOOR,
+            "premium": latest.ltp,
+            "tick_size_ok": latest.tick_size > 0.0,
+            "spread_ratio_ok": spread_ratio <= DEFAULT_OPT_SPREAD_RATIO_MAX if member.option_side else spread_ratio <= DEFAULT_FUT_SPREAD_RATIO_MAX,
+            "depth_ok": latest.depth_total >= (DEFAULT_OPT_DEPTH_MIN if member.option_side else DEFAULT_FUT_DEPTH_MIN),
+        }
+
         return {
-            "ready": history.count() >= 4,
-            "history_count": history.count(),
+            "present": True,
+            "series_id": series_id,
+            "role": member.role,
+            "instrument_key": member.instrument_key,
+            "instrument_token": member.instrument_token,
+            "trading_symbol": member.trading_symbol,
+            "option_side": member.option_side,
+            "ts_event_ns": latest.ts_ns,
             "ltp": latest.ltp,
             "best_bid": latest.best_bid,
             "best_ask": latest.best_ask,
+            "mid": member.mid,
             "bid_qty_5": latest.bid_qty_5,
             "ask_qty_5": latest.ask_qty_5,
             "depth_total": latest.depth_total,
-            "tick_size": latest.tick_size,
             "spread": latest.spread,
+            "spread_ticks": member.spread_ticks,
             "spread_ema": spread_ema,
             "spread_ratio": spread_ratio,
-            "velocity": velocity,
-            "velocity_ratio": velocity_ratio,
+            "weighted_ofi_ratio": weighted_ofi_ratio,
+            "weighted_ofi_is_proxy": weighted_ofi_is_proxy,
+            "weighted_ofi_persist": ofi_persist,
+            "nof_raw": nof_raw,
+            "nof_norm": nof_norm,
+            "vamp": vamp_proxy,
+            "vamp_is_proxy": True,
+            "delta_3": delta_3,
+            "delta_3_dt_sec": dt_sec,
+            "velocity_3": velocity_3,
             "abs_velocity_ema": abs_velocity_ema,
-            "nof": nof_now,
-            "nof_slope_5": nof_slope_5,
-            "nof_flip_count_10": flips,
-            "bid_dominance": bid_dominance,
-            "ask_dominance": ask_dominance,
-            "ask_reduced": ask_reduced,
-            "ask_absorbed": ask_absorbed,
-            "bid_reduced": bid_reduced,
-            "bid_absorbed": bid_absorbed,
+            "velocity_ratio": velocity_ratio,
+            "volume_delta": volume_delta,
+            "volume_norm": volume_norm,
+            "vwap_estimate": vwap_estimate,
+            "vwap_distance": vwap_distance,
+            "range_fast": range_fast,
+            "range_slow": range_slow,
+            "range_slow_low": slow_low,
+            "range_slow_high": slow_high,
+            "range_ratio": range_ratio,
+            "packet_gap_ms": packet_gap_ms,
+            "median_gap_ms": median_gap_ms,
+            "feed_jitter_ratio": feed_jitter_ratio,
+            "packet_gap_hard": packet_gap_hard,
+            "age_ms": member.age_ms,
+            "tick_size": member.tick_size,
+            "lot_size": member.lot_size,
+            "strike": member.strike,
+            "valid_tick": member.valid_tick,
             "ladder_accel_call": ladder_accel_call,
             "ladder_accel_put": ladder_accel_put,
-            "regime_ok": regime_ok,
-            "frame_age_ms": frame_age_ms,
-            "fresh": member.fresh,
-            "sync_valid": frame.sync_valid,
-            "valid_tick": member.valid_tick,
+            "ask_reloaded": ask_reloaded,
+            "bid_reloaded": bid_reloaded,
+            "ask_absorbed": ask_absorbed,
+            "bid_absorbed": bid_absorbed,
+            "impact_depth_fraction_one_lot": impact_depth_fraction_one_lot,
+            "premium_health": premium_health,
+            "delta_proxy": member.delta_proxy,
+            "context_score": member.context_score,
+            "context_iv": member.context_iv,
+            "context_oi": member.context_oi,
+            "context_volume": member.context_volume,
+            "source_volume": (None if future_state is None else future_state.volume),
+            "tick_validity": member.validity,
+            "history_points": history.count(),
         }
 
-    def _compute_option_features(
+    def _compute_response_surfaces(
         self,
         *,
-        frame: SnapshotFrameView,
-        role: str,
-        member: SnapshotMemberView | None,
+        futures_features: Mapping[str, Any],
+        ce_atm: Mapping[str, Any],
+        ce_atm1: Mapping[str, Any],
+        pe_atm: Mapping[str, Any],
+        pe_atm1: Mapping[str, Any],
+        dhan_call: Mapping[str, Any],
+        dhan_put: Mapping[str, Any],
     ) -> dict[str, Any]:
-        history = self.legs[role]
-        latest = history.latest()
-        if latest is None or member is None:
-            return {
-                "ready": False,
-                "role": role,
-                "valid_tick": False,
-                "fresh": False,
-                "sync_valid": False,
-            }
+        fut_delta = _safe_float(futures_features.get("delta_3"), 0.0)
+        fut_abs_delta = abs(fut_delta)
 
-        t3 = history.back(4)
-        delta_3 = latest.ltp - t3.ltp if t3 is not None else 0.0
+        def call_eff(option_features: Mapping[str, Any]) -> float | None:
+            if not option_features.get("present"):
+                return None
+            opt_delta = _safe_float(option_features.get("delta_3"), 0.0)
+            if fut_delta <= 0.0:
+                return 0.0
+            return _ratio(opt_delta, max(fut_delta, EPSILON), default=0.0)
 
-        best_bid = latest.best_bid
-        best_ask = latest.best_ask
-        mid = (best_bid + best_ask) / 2.0 if best_bid > 0 and best_ask > 0 else latest.ltp
-
-        spread_ema = (
-            history.spread_ema.value
-            if history.spread_ema.value is not None
-            else max(latest.spread, EPSILON)
-        )
-        spread_ratio = latest.spread / max(spread_ema, EPSILON)
-
-        fut_latest = self.legs["FUTURES"].latest()
-        fut_ltp = fut_latest.ltp if fut_latest is not None else 0.0
-        distance = abs((latest.strike or 0.0) - fut_ltp)
-        delta_proxy = max(0.25, 0.55 - 0.0005 * distance)
-
-        member_truth_ok = frame.frame_valid and frame.sync_valid and member.valid_tick and member.fresh
-        return {
-            "ready": history.count() >= 1,
-            "role": role,
-            "instrument_token": latest.instrument_token,
-            "trading_symbol": latest.trading_symbol,
-            "ltp": latest.ltp,
-            "best_bid": best_bid,
-            "best_ask": best_ask,
-            "mid": mid,
-            "bid_qty_5": latest.bid_qty_5,
-            "ask_qty_5": latest.ask_qty_5,
-            "depth_total": latest.depth_total,
-            "spread": latest.spread,
-            "spread_ema": spread_ema,
-            "spread_ratio": spread_ratio,
-            "tick_size": latest.tick_size,
-            "strike": latest.strike,
-            "delta_3": delta_3,
-            "delta_proxy": delta_proxy,
-            "valid_tick": member.valid_tick and frame.frame_valid,
-            "fresh": member_truth_ok,
-            "sync_valid": frame.sync_valid,
-            "lot_size": member.lot_size,
-            "age_ms": member.age_ms,
-        }
-
-    def _compute_option_economics(self, option_payload: Mapping[str, Any]) -> dict[str, Any]:
-        if not option_payload or not _safe_bool(option_payload.get("ready")):
-            return {"economics_valid": False}
-
-        premium = _safe_float(option_payload.get("ltp"), 0.0)
-        target_abs = _clamp(premium * TARGET_PCT, MIN_TARGET, MAX_TARGET)
-        stop_abs = _clamp(premium * STOP_PCT, MIN_STOP, MAX_STOP)
-        estimated_cost = max(0.05 * premium, 2.0) + 1.0
-        economics_valid = (
-            premium >= PREMIUM_FLOOR
-            and target_abs >= MIN_TARGET
-            and target_abs >= (2.5 * estimated_cost)
-        )
+        def put_eff(option_features: Mapping[str, Any]) -> float | None:
+            if not option_features.get("present"):
+                return None
+            opt_delta = abs(_safe_float(option_features.get("delta_3"), 0.0))
+            if fut_delta >= 0.0:
+                return 0.0
+            return _ratio(opt_delta, max(fut_abs_delta, EPSILON), default=0.0)
 
         return {
-            "economics_valid": economics_valid,
-            "premium_floor_ok": premium >= PREMIUM_FLOOR,
-            "premium": premium,
-            "target_abs": target_abs,
-            "target": target_abs,
-            "stop_abs": stop_abs,
-            "stop": stop_abs,
-            "estimated_cost": estimated_cost,
-            "reward_to_cost": (target_abs / estimated_cost) if estimated_cost > EPSILON else 0.0,
+            "call_response_efficiency": {
+                "ce_atm": call_eff(ce_atm),
+                "ce_atm1": call_eff(ce_atm1),
+                "selected_call": call_eff(dhan_call),
+            },
+            "put_response_efficiency": {
+                "pe_atm": put_eff(pe_atm),
+                "pe_atm1": put_eff(pe_atm1),
+                "selected_put": put_eff(dhan_put),
+            },
         }
+
+    def _compute_provider_surface(
+        self,
+        *,
+        provider_runtime: M.ProviderRuntimeState | None,
+        active_frame: SnapshotFrameView | None,
+        dhan_frame: SnapshotFrameView | None,
+        dhan_context: M.DhanContextState | None,
+    ) -> dict[str, Any]:
+        provider_runtime_present = provider_runtime is not None
+        active_alignment_ok = bool(
+            provider_runtime is not None
+            and active_frame is not None
+            and active_frame.provider_id == provider_runtime.selected_option_marketdata_provider_id
+        )
+        dhan_alignment_ok = bool(
+            provider_runtime is not None
+            and dhan_frame is not None
+            and dhan_frame.provider_id == N.PROVIDER_DHAN
+        )
+        context_ok = bool(
+            dhan_context is not None
+            and dhan_context.context_status in {N.PROVIDER_STATUS_HEALTHY, N.PROVIDER_STATUS_DEGRADED}
+        )
+        summary_parts = [
+            "runtime_present" if provider_runtime_present else "runtime_missing",
+            "active_aligned" if active_alignment_ok else "active_mismatch",
+            "dhan_aligned" if dhan_alignment_ok else "dhan_missing_or_mismatch",
+            "context_ok" if context_ok else "context_missing_or_stale",
+        ]
+        return {
+            "provider_runtime_present": provider_runtime_present,
+            "family_runtime_mode": (
+                provider_runtime.family_runtime_mode if provider_runtime is not None else N.FAMILY_RUNTIME_MODE_OBSERVE_ONLY
+            ),
+            "active_alignment_ok": active_alignment_ok,
+            "dhan_alignment_ok": dhan_alignment_ok,
+            "dhan_context_ok": context_ok,
+            "summary": ";".join(summary_parts),
+            "runtime": None if provider_runtime is None else provider_runtime.to_dict(),
+        }
+
+    @staticmethod
+    def _classify_regime_surface(futures_features: Mapping[str, Any]) -> dict[str, Any]:
+        range_ratio = _safe_float(futures_features.get("range_ratio"), 0.0)
+        packet_gap_hard = _safe_bool(futures_features.get("packet_gap_hard"), False)
+        feed_jitter_ratio = _safe_float(futures_features.get("feed_jitter_ratio"), 1.0)
+        if range_ratio < LOWVOL_RATIO_MAX:
+            regime = REGIME_LOWVOL
+            reason = "range_ratio_below_lowvol_threshold"
+        elif range_ratio > FAST_RATIO_MIN:
+            regime = REGIME_FAST
+            reason = "range_ratio_above_fast_threshold"
+        else:
+            regime = REGIME_NORMAL
+            reason = "range_ratio_between_thresholds"
+        return {
+            "regime": regime,
+            "regime_reason": reason,
+            "range_ratio": range_ratio,
+            "lowvol_ratio_max": LOWVOL_RATIO_MAX,
+            "fast_ratio_min": FAST_RATIO_MIN,
+            "packet_gap_hard": packet_gap_hard,
+            "feed_jitter_ratio": feed_jitter_ratio,
+        }
+
+    def _build_branch_surfaces(
+        self,
+        *,
+        active_frame: SnapshotFrameView | None,
+        dhan_frame: SnapshotFrameView | None,
+        provider_runtime: M.ProviderRuntimeState | None,
+        dhan_context: M.DhanContextState | None,
+        active_futures: Mapping[str, Any],
+        active_ce_atm: Mapping[str, Any],
+        active_ce_atm1: Mapping[str, Any],
+        active_pe_atm: Mapping[str, Any],
+        active_pe_atm1: Mapping[str, Any],
+        dhan_futures: Mapping[str, Any],
+        dhan_selected_call: Mapping[str, Any],
+        dhan_selected_put: Mapping[str, Any],
+        response_surfaces: Mapping[str, Any],
+        classic_regime_surface: Mapping[str, Any],
+        miso_regime_surface: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        classic_mode = self._resolve_classic_mode(provider_runtime=provider_runtime, dhan_context=dhan_context)
+        miso_mode = self._resolve_miso_mode(provider_runtime=provider_runtime, dhan_frame=dhan_frame, dhan_context=dhan_context)
+
+        call_primary = active_frame.selected_call if active_frame and active_frame.selected_call is not None else (active_frame.ce_atm if active_frame else None)
+        put_primary = active_frame.selected_put if active_frame and active_frame.selected_put is not None else (active_frame.pe_atm if active_frame else None)
+
+        call_primary_features = (
+            dhan_selected_call
+            if call_primary is not None and call_primary.instrument_key == _safe_str(dhan_context.selected_call_instrument_key if dhan_context else "")
+            else active_ce_atm
+        )
+        put_primary_features = (
+            dhan_selected_put
+            if put_primary is not None and put_primary.instrument_key == _safe_str(dhan_context.selected_put_instrument_key if dhan_context else "")
+            else active_pe_atm
+        )
+
+        classic_call_surface = self._classic_branch_surface(
+            branch_id=N.BRANCH_CALL,
+            futures_features=active_futures,
+            primary_features=call_primary_features,
+            fallback_features=active_ce_atm1,
+            runtime_mode=classic_mode,
+            response_eff=_coalesce(
+                _nested_get(response_surfaces, "call_response_efficiency", "selected_call"),
+                _nested_get(response_surfaces, "call_response_efficiency", "ce_atm"),
+            ),
+            regime_surface=classic_regime_surface,
+        )
+        classic_put_surface = self._classic_branch_surface(
+            branch_id=N.BRANCH_PUT,
+            futures_features=active_futures,
+            primary_features=put_primary_features,
+            fallback_features=active_pe_atm1,
+            runtime_mode=classic_mode,
+            response_eff=_coalesce(
+                _nested_get(response_surfaces, "put_response_efficiency", "selected_put"),
+                _nested_get(response_surfaces, "put_response_efficiency", "pe_atm"),
+            ),
+            regime_surface=classic_regime_surface,
+        )
+
+        return {
+            "mist_call": self._mist_surface(classic_call_surface),
+            "mist_put": self._mist_surface(classic_put_surface),
+            "misb_call": self._misb_surface(classic_call_surface),
+            "misb_put": self._misb_surface(classic_put_surface),
+            "misc_call": self._misc_surface(classic_call_surface),
+            "misc_put": self._misc_surface(classic_put_surface),
+            "misr_call": self._misr_surface(classic_call_surface),
+            "misr_put": self._misr_surface(classic_put_surface),
+            "miso_call": self._miso_surface(
+                branch_id=N.BRANCH_CALL,
+                futures_features=dhan_futures,
+                selected_features=dhan_selected_call,
+                shadow_features=active_ce_atm1,
+                runtime_mode=miso_mode,
+                regime_surface=miso_regime_surface,
+            ),
+            "miso_put": self._miso_surface(
+                branch_id=N.BRANCH_PUT,
+                futures_features=dhan_futures,
+                selected_features=dhan_selected_put,
+                shadow_features=active_pe_atm1,
+                runtime_mode=miso_mode,
+                regime_surface=miso_regime_surface,
+            ),
+        }
+
+    def _resolve_classic_mode(
+        self,
+        *,
+        provider_runtime: M.ProviderRuntimeState | None,
+        dhan_context: M.DhanContextState | None,
+    ) -> str:
+        if provider_runtime is None:
+            return N.STRATEGY_RUNTIME_MODE_DISABLED
+        if (
+            provider_runtime.option_context_provider_id == N.PROVIDER_DHAN
+            and provider_runtime.option_context_status in {N.PROVIDER_STATUS_HEALTHY, N.PROVIDER_STATUS_DEGRADED}
+            and dhan_context is not None
+            and dhan_context.context_status in {N.PROVIDER_STATUS_HEALTHY, N.PROVIDER_STATUS_DEGRADED}
+        ):
+            return N.STRATEGY_RUNTIME_MODE_NORMAL
+        return N.STRATEGY_RUNTIME_MODE_DHAN_DEGRADED
+
+    def _resolve_miso_mode(
+        self,
+        *,
+        provider_runtime: M.ProviderRuntimeState | None,
+        dhan_frame: SnapshotFrameView | None,
+        dhan_context: M.DhanContextState | None,
+    ) -> str:
+        if provider_runtime is None or dhan_frame is None or dhan_context is None:
+            return N.STRATEGY_RUNTIME_MODE_DISABLED
+        if (
+            provider_runtime.option_context_provider_id == N.PROVIDER_DHAN
+            and provider_runtime.selected_option_marketdata_provider_id == N.PROVIDER_DHAN
+            and provider_runtime.futures_marketdata_provider_id == N.PROVIDER_DHAN
+            and provider_runtime.option_context_status in {N.PROVIDER_STATUS_HEALTHY, N.PROVIDER_STATUS_DEGRADED}
+            and provider_runtime.selected_option_marketdata_status in {N.PROVIDER_STATUS_HEALTHY, N.PROVIDER_STATUS_DEGRADED}
+            and provider_runtime.futures_marketdata_status in {N.PROVIDER_STATUS_HEALTHY, N.PROVIDER_STATUS_DEGRADED}
+            and dhan_context.context_status in {N.PROVIDER_STATUS_HEALTHY, N.PROVIDER_STATUS_DEGRADED}
+            and dhan_frame.frame_valid
+        ):
+            return N.STRATEGY_RUNTIME_MODE_BASE_5DEPTH
+        return N.STRATEGY_RUNTIME_MODE_DISABLED
+
+    def _classic_branch_surface(
+        self,
+        *,
+        branch_id: str,
+        futures_features: Mapping[str, Any],
+        primary_features: Mapping[str, Any],
+        fallback_features: Mapping[str, Any],
+        runtime_mode: str,
+        response_eff: Any,
+        regime_surface: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        bullish = branch_id == N.BRANCH_CALL
+        fut_delta = _safe_float(futures_features.get("delta_3"), 0.0)
+        primary_delta = _safe_float(primary_features.get("delta_3"), 0.0)
+        response_eff_f = _safe_float(response_eff, 0.0)
+        alignment_ok = fut_delta >= 0.0 if bullish else fut_delta <= 0.0
+        option_confirmation = primary_delta >= 0.0 if bullish else primary_delta <= 0.0
+        entry_mode_hint = N.ENTRY_MODE_ATM
+        if primary_features.get("instrument_key") and primary_features.get("instrument_key") != (N.IK_MME_CE if bullish else N.IK_MME_PE):
+            entry_mode_hint = N.ENTRY_MODE_DIRECT
+        fallback_ready = bool(fallback_features.get("present")) and _safe_float(fallback_features.get("spread_ratio"), 999.0) <= DEFAULT_OPT_SPREAD_RATIO_MAX
+        return {
+            "branch_id": branch_id,
+            "runtime_mode": runtime_mode,
+            "alignment_ok": alignment_ok,
+            "option_confirmation": option_confirmation,
+            "futures_features": futures_features,
+            "primary_features": primary_features,
+            "fallback_features": fallback_features,
+            "response_efficiency": response_eff_f,
+            "entry_mode_hint": entry_mode_hint,
+            "fallback_ready": fallback_ready,
+            "regime": _safe_str(regime_surface.get("regime"), REGIME_NORMAL),
+            "regime_reason": _safe_str(regime_surface.get("regime_reason"), ""),
+            "regime_surface": dict(regime_surface),
+        }
+
+    @staticmethod
+    def _mist_surface(base: Mapping[str, Any]) -> dict[str, Any]:
+        fut = base["futures_features"]
+        primary = base["primary_features"]
+        bullish = base["branch_id"] == N.BRANCH_CALL
+        trend_score = (_safe_float(fut.get("velocity_ratio"), 0.0) * _sign_eps(_safe_float(fut.get("delta_3"), 0.0))) + ((_safe_float(fut.get("weighted_ofi_persist"), 0.5) - 0.5) * 2.0)
+        pullback_depth = abs(_safe_float(primary.get("vwap_distance"), 0.0)) if primary.get("vwap_distance") is not None else 0.0
+        resume_support = bool(primary.get("ladder_accel_call") if bullish else primary.get("ladder_accel_put"))
+        return {
+            **base,
+            "surface_kind": "mist",
+            "trend_score": trend_score,
+            "pullback_depth": pullback_depth,
+            "resume_support": resume_support,
+            "trend_direction_ok": base["alignment_ok"],
+        }
+
+    @staticmethod
+    def _misb_surface(base: Mapping[str, Any]) -> dict[str, Any]:
+        fut = base["futures_features"]
+        bullish = base["branch_id"] == N.BRANCH_CALL
+        breakout_reference = _safe_float(fut.get("range_slow_high"), 0.0) if bullish else _safe_float(fut.get("range_slow_low"), 0.0)
+        breakout_trigger = _safe_float(fut.get("delta_3"), 0.0) > 0.0 if bullish else _safe_float(fut.get("delta_3"), 0.0) < 0.0
+        breakout_acceptance = _safe_float(fut.get("weighted_ofi_persist"), 0.0) >= 0.55 if bullish else _safe_float(fut.get("weighted_ofi_persist"), 1.0) <= 0.45
+        return {
+            **base,
+            "surface_kind": "misb",
+            "shelf_width": _safe_float(fut.get("range_fast"), 0.0),
+            "breakout_reference": breakout_reference,
+            "breakout_trigger": breakout_trigger,
+            "breakout_acceptance": breakout_acceptance,
+        }
+
+    @staticmethod
+    def _misc_surface(base: Mapping[str, Any]) -> dict[str, Any]:
+        fut = base["futures_features"]
+        bullish = base["branch_id"] == N.BRANCH_CALL
+        compression_ratio = _safe_float(fut.get("range_ratio"), 0.0)
+        breakout_trigger = _safe_float(fut.get("delta_3"), 0.0) > 0.0 if bullish else _safe_float(fut.get("delta_3"), 0.0) < 0.0
+        retest_distance = abs(_safe_float(base["primary_features"].get("vwap_distance"), 0.0)) if base["primary_features"].get("vwap_distance") is not None else 0.0
+        hesitation = _safe_float(base["primary_features"].get("velocity_ratio"), 0.0) < 1.0
+        resume_support = bool(base["primary_features"].get("ladder_accel_call") if bullish else base["primary_features"].get("ladder_accel_put"))
+        return {
+            **base,
+            "surface_kind": "misc",
+            "compression_ratio": compression_ratio,
+            "breakout_trigger": breakout_trigger,
+            "retest_distance": retest_distance,
+            "hesitation": hesitation,
+            "resume_support": resume_support,
+        }
+
+    @staticmethod
+    def _misr_surface(base: Mapping[str, Any]) -> dict[str, Any]:
+        fut = base["futures_features"]
+        primary = base["primary_features"]
+        bullish = base["branch_id"] == N.BRANCH_CALL
+        fake_break = _safe_float(fut.get("delta_3"), 0.0) < 0.0 if bullish else _safe_float(fut.get("delta_3"), 0.0) > 0.0
+        absorption = bool(primary.get("ask_absorbed") if bullish else primary.get("bid_absorbed"))
+        range_reentry = _safe_float(primary.get("vwap_distance"), 0.0) >= 0.0 if bullish else _safe_float(primary.get("vwap_distance"), 0.0) <= 0.0
+        hold_proof = _safe_float(primary.get("weighted_ofi_persist"), 0.5) >= 0.50 if bullish else _safe_float(primary.get("weighted_ofi_persist"), 0.5) <= 0.50
+        reversal_impulse = bool(primary.get("ladder_accel_call") if bullish else primary.get("ladder_accel_put"))
+        return {
+            **base,
+            "surface_kind": "misr",
+            "fake_break": fake_break,
+            "absorption": absorption,
+            "range_reentry": range_reentry,
+            "hold_proof": hold_proof,
+            "reversal_impulse": reversal_impulse,
+        }
+
+    @staticmethod
+    def _miso_surface(
+        *,
+        branch_id: str,
+        futures_features: Mapping[str, Any],
+        selected_features: Mapping[str, Any],
+        shadow_features: Mapping[str, Any],
+        runtime_mode: str,
+        regime_surface: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        bullish = branch_id == N.BRANCH_CALL
+        fut_vwap_distance = _safe_float(futures_features.get("vwap_distance"), 0.0)
+        fut_velocity_ratio = _safe_float(futures_features.get("velocity_ratio"), 0.0)
+        queue_reload_veto = bool(selected_features.get("ask_reloaded") if bullish else selected_features.get("bid_reloaded"))
+        aggressive_flow = _safe_float(selected_features.get("delta_3"), 0.0) > 0.0 if bullish else _safe_float(selected_features.get("delta_3"), 0.0) < 0.0
+        futures_alignment_ok = fut_vwap_distance >= 0.0 if bullish else fut_vwap_distance <= 0.0
+        futures_contradiction_veto = (_safe_float(futures_features.get("delta_3"), 0.0) < 0.0 and fut_velocity_ratio >= DEFAULT_FUTURES_CONTRADICTION_VEL_RATIO) if bullish else (_safe_float(futures_features.get("delta_3"), 0.0) > 0.0 and fut_velocity_ratio >= DEFAULT_FUTURES_CONTRADICTION_VEL_RATIO)
+        shadow_support = _safe_float(shadow_features.get("delta_3"), 0.0) > 0.0 if bullish else _safe_float(shadow_features.get("delta_3"), 0.0) < 0.0
+        return {
+            "surface_kind": "miso",
+            "branch_id": branch_id,
+            "runtime_mode": runtime_mode,
+            "futures_features": futures_features,
+            "selected_features": selected_features,
+            "shadow_features": shadow_features,
+            "aggressive_flow": aggressive_flow,
+            "tape_speed": _safe_float(selected_features.get("velocity_ratio"), 0.0),
+            "imbalance_persistence": _safe_float(selected_features.get("weighted_ofi_persist"), 0.0),
+            "queue_reload_veto": queue_reload_veto,
+            "shadow_support": shadow_support,
+            "futures_vwap_alignment_ok": futures_alignment_ok,
+            "futures_contradiction_veto": futures_contradiction_veto,
+            "selected_context_score": selected_features.get("context_score"),
+            "selected_context_iv": selected_features.get("context_iv"),
+            "selected_context_oi": selected_features.get("context_oi"),
+            "regime": _safe_str(regime_surface.get("regime"), REGIME_NORMAL),
+            "regime_reason": _safe_str(regime_surface.get("regime_reason"), ""),
+            "regime_surface": dict(regime_surface),
+        }
+
+    def _build_feature_frames(
+        self,
+        *,
+        now_ns: int,
+        provider_runtime: M.ProviderRuntimeState | None,
+        active_frame: SnapshotFrameView | None,
+        dhan_frame: SnapshotFrameView | None,
+        active_future_state: M.FuturesSnapshotState | None,
+        dhan_future_state: M.FuturesSnapshotState | None,
+        branch_surfaces: Mapping[str, Any],
+    ) -> dict[str, M.FeatureFrame]:
+        frames: dict[str, M.FeatureFrame] = {}
+        for family in (*CLASSIC_FAMILIES, N.STRATEGY_FAMILY_MISO):
+            for branch in (N.BRANCH_CALL, N.BRANCH_PUT):
+                key = f"{family.lower()}_{branch.lower()}"
+                surface = branch_surfaces[key]
+                is_miso = family == N.STRATEGY_FAMILY_MISO
+                runtime_mode = _safe_str(surface.get("runtime_mode"), N.STRATEGY_RUNTIME_MODE_DISABLED)
+                frame_view = dhan_frame if is_miso else active_frame
+                future_state = dhan_future_state if is_miso else active_future_state
+                futures_snapshot = self._build_futures_snapshot(future_state, frame_view)
+                snapshot_frame = self._build_model_snapshot_frame(frame_view)
+                economic = self._build_economic_viability(surface)
+                four_pillar = self._build_four_pillar(surface)
+                delta_proxy = self._build_delta_proxy(surface, branch_id=branch)
+                frame_valid = bool(frame_view and frame_view.frame_valid and runtime_mode != N.STRATEGY_RUNTIME_MODE_DISABLED)
+                option_features = surface.get("selected_features") if is_miso else surface.get("primary_features")
+                warmup_complete = self._warmup_complete(surface)
+                system_state = N.STATE_SCANNING if frame_valid else N.STATE_DISABLED
+                strategy_mode = N.STRATEGY_CALL if branch == N.BRANCH_CALL else N.STRATEGY_PUT
+                instrument_key = _safe_str(option_features.get("instrument_key")) or (N.IK_MME_CE if branch == N.BRANCH_CALL else N.IK_MME_PE)
+                regime = _safe_str(surface.get("regime"), REGIME_NORMAL)
+                tags = tuple(
+                    tag for tag in (
+                        family.lower(),
+                        branch.lower(),
+                        runtime_mode.lower(),
+                        regime.lower(),
+                        "frame_valid" if frame_valid else "frame_invalid",
+                    ) if tag
+                )
+                frames[key] = M.FeatureFrame(
+                    ts_event_ns=now_ns,
+                    instrument_key=instrument_key,
+                    system_state=system_state,
+                    strategy_mode=strategy_mode,
+                    frame_valid=frame_valid,
+                    warmup_complete=warmup_complete,
+                    futures_snapshot=futures_snapshot,
+                    strategy_family_id=family,
+                    doctrine_id=family,
+                    branch_id=branch,
+                    strategy_runtime_mode=runtime_mode,
+                    family_runtime_mode=(provider_runtime.family_runtime_mode if provider_runtime is not None else N.FAMILY_RUNTIME_MODE_OBSERVE_ONLY),
+                    active_futures_provider_id=(provider_runtime.futures_marketdata_provider_id if provider_runtime is not None else None),
+                    active_selected_option_provider_id=(provider_runtime.selected_option_marketdata_provider_id if provider_runtime is not None else None),
+                    active_option_context_provider_id=(provider_runtime.option_context_provider_id if provider_runtime is not None else None),
+                    snapshot_frame=snapshot_frame,
+                    economic_viability=economic,
+                    four_pillar=four_pillar,
+                    delta_proxy_normalization=delta_proxy,
+                    entry_mode_hint=self._entry_mode_hint(surface, branch=branch),
+                    explain=self._frame_explain(surface, frame_valid=frame_valid),
+                    tags=tags,
+                )
+        return frames
+
+    @staticmethod
+    def _build_futures_snapshot(
+        future_state: M.FuturesSnapshotState | None,
+        frame_view: SnapshotFrameView | None,
+    ) -> M.FuturesSnapshot:
+        if future_state is not None:
+            return M.FuturesSnapshot(
+                instrument_key=future_state.instrument_key,
+                ts_event_ns=future_state.ts_event_ns,
+                ltp=future_state.ltp,
+                provider_id=future_state.provider_id,
+                provider_role=future_state.provider_role,
+                instrument_token=future_state.instrument_token,
+                trading_symbol=future_state.trading_symbol,
+                volume=future_state.volume,
+                oi=future_state.oi,
+                bid=future_state.bid,
+                ask=future_state.ask,
+                bid_qty=future_state.bid_qty,
+                ask_qty=future_state.ask_qty,
+                seq_no=future_state.seq_no,
+            )
+        future = None if frame_view is None else frame_view.future
+        return M.FuturesSnapshot(
+            instrument_key=N.IK_MME_FUT,
+            ts_event_ns=(0 if future is None else future.ts_event_ns),
+            ltp=(0.0 if future is None else future.ltp),
+            provider_id=(None if frame_view is None else frame_view.provider_id),
+            provider_role=N.PROVIDER_ROLE_FUTURES_MARKETDATA,
+            instrument_token=(None if future is None else future.instrument_token),
+            trading_symbol=(None if future is None else future.trading_symbol),
+            bid=(None if future is None else future.best_bid),
+            ask=(None if future is None else future.best_ask),
+            bid_qty=(None if future is None else future.bid_qty_5),
+            ask_qty=(None if future is None else future.ask_qty_5),
+        )
+
+    @staticmethod
+    def _build_model_snapshot_frame(frame_view: SnapshotFrameView | None) -> M.SnapshotFrame | None:
+        if frame_view is None:
+            return None
+        members = [m for m in (frame_view.future, frame_view.ce_atm, frame_view.ce_atm1, frame_view.pe_atm, frame_view.pe_atm1) if m is not None]
+        if not members:
+            return None
+        ts_values = [member.ts_event_ns for member in members]
+        return M.SnapshotFrame(
+            frame_id=frame_view.frame_id,
+            selection_version=frame_view.selection_version,
+            ts_frame_ns=frame_view.ts_frame_ns,
+            ts_min_member_ns=min(ts_values),
+            ts_max_member_ns=max(ts_values),
+            ts_span_ms=frame_view.ts_span_ms,
+            validity=frame_view.validity,
+            validity_reason=frame_view.validity_reason,
+            sync_ok=frame_view.sync_ok,
+            stale_mask=frame_view.stale_mask,
+            future=FeatureEngine._build_model_snapshot_member(frame_view.future),
+            ce_atm=FeatureEngine._build_model_snapshot_member(frame_view.ce_atm),
+            ce_atm1=FeatureEngine._build_model_snapshot_member(frame_view.ce_atm1),
+            pe_atm=FeatureEngine._build_model_snapshot_member(frame_view.pe_atm),
+            pe_atm1=FeatureEngine._build_model_snapshot_member(frame_view.pe_atm1),
+        )
+
+    @staticmethod
+    def _build_model_snapshot_member(member: SnapshotMemberView | None) -> M.SnapshotMember | None:
+        if member is None:
+            return None
+        return M.SnapshotMember(
+            role=member.role,
+            instrument_token=member.instrument_token or member.role,
+            trading_symbol=member.trading_symbol or member.role,
+            ts_event_ns=member.ts_event_ns,
+            ltp=member.ltp,
+            best_bid=member.best_bid,
+            best_ask=member.best_ask,
+            bid_qty_5=member.bid_qty_5,
+            ask_qty_5=member.ask_qty_5,
+            spread=member.spread,
+            spread_ticks=member.spread_ticks,
+            age_ms=member.age_ms,
+            tick_size=max(member.tick_size, 0.05),
+            lot_size=max(member.lot_size, 1),
+            strike=member.strike,
+            validity=member.validity,
+        )
+
+    @staticmethod
+    def _build_economic_viability(surface: Mapping[str, Any]) -> M.EconomicViability:
+        option_features = surface.get("selected_features") if surface.get("surface_kind") == "miso" else surface.get("primary_features")
+        ltp = _safe_float(option_features.get("ltp"), 0.0)
+        spread = _safe_float(option_features.get("spread"), 0.0)
+        spread_bps = _ratio(spread * 10_000.0, max(ltp, EPSILON), default=0.0)
+        expected_slippage = spread / 2.0
+        expected_cost = max(expected_slippage, 0.0) + 1.0
+        premium_floor_ok = bool(_nested_get(option_features, "premium_health", "premium_floor_ok", default=False))
+        depth_ok = bool(_nested_get(option_features, "premium_health", "depth_ok", default=False))
+        spread_ok = bool(_nested_get(option_features, "premium_health", "spread_ratio_ok", default=False))
+        is_viable = premium_floor_ok and depth_ok and spread_ok
+        blocker_code = None
+        blocker_message = None
+        if not premium_floor_ok:
+            blocker_code = "PREMIUM_FLOOR"
+            blocker_message = "premium below floor"
+        elif not depth_ok:
+            blocker_code = "DEPTH"
+            blocker_message = "depth insufficient"
+        elif not spread_ok:
+            blocker_code = "SPREAD"
+            blocker_message = "spread ratio too wide"
+        return M.EconomicViability(
+            is_viable=is_viable,
+            spread_bps=spread_bps,
+            spread_rupees=spread,
+            expected_slippage_rupees=expected_slippage,
+            expected_total_cost_rupees=expected_cost,
+            blocker_code=blocker_code,
+            blocker_message=blocker_message,
+        )
+
+    @staticmethod
+    def _build_four_pillar(surface: Mapping[str, Any]) -> M.FourPillarSignal:
+        fut = surface["futures_features"]
+        options = surface.get("selected_features") if surface.get("surface_kind") == "miso" else surface.get("primary_features")
+        branch = surface.get("branch_id")
+        futures_bias = _safe_float(fut.get("weighted_ofi_persist"), 0.5) - 0.5
+        futures_impulse = _safe_float(fut.get("velocity_ratio"), 0.0) * _sign_eps(_safe_float(fut.get("delta_3"), 0.0))
+        options_confirmation = bool(surface.get("option_confirmation", False) or surface.get("aggressive_flow", False))
+        liquidity_ok = bool(_nested_get(options, "premium_health", "depth_ok", default=False)) and bool(_nested_get(options, "premium_health", "spread_ratio_ok", default=False))
+        alignment_ok = bool(surface.get("alignment_ok", True) and not surface.get("futures_contradiction_veto", False))
+        return M.FourPillarSignal(
+            futures_bias=futures_bias,
+            futures_impulse=futures_impulse,
+            options_confirmation=options_confirmation,
+            options_side=(N.SIDE_CALL if branch == N.BRANCH_CALL else N.SIDE_PUT),
+            liquidity_ok=liquidity_ok,
+            alignment_ok=alignment_ok,
+        )
+
+    @staticmethod
+    def _build_delta_proxy(surface: Mapping[str, Any], *, branch_id: str) -> M.DeltaProxyNormalization | None:
+        option_features = surface.get("selected_features") if surface.get("surface_kind") == "miso" else surface.get("primary_features")
+        strike = option_features.get("strike")
+        delta_proxy = option_features.get("delta_proxy")
+        if strike in (None, "") or delta_proxy in (None, ""):
+            return None
+        normalized = _clamp(abs(_safe_float(option_features.get("velocity_ratio"), 0.0)), 0.0, DEFAULT_NORMALIZED_SIGNAL_CAP)
+        return M.DeltaProxyNormalization(
+            option_side=(N.SIDE_CALL if branch_id == N.BRANCH_CALL else N.SIDE_PUT),
+            strike=_safe_float(strike, 0.0),
+            delta_proxy=abs(_safe_float(delta_proxy, 0.0)),
+            normalized_signal_strength=normalized,
+        )
+
+    @staticmethod
+    def _entry_mode_hint(surface: Mapping[str, Any], *, branch: str) -> str:
+        if surface.get("surface_kind") == "miso":
+            return N.ENTRY_MODE_DIRECT
+        if bool(surface.get("fallback_ready")) and _safe_str(_nested_get(surface, "fallback_features", "instrument_key")):
+            return N.ENTRY_MODE_ATM1
+        option_key = _safe_str(_nested_get(surface, "primary_features", "instrument_key"))
+        canonical = N.IK_MME_CE if branch == N.BRANCH_CALL else N.IK_MME_PE
+        if option_key and option_key != canonical:
+            return N.ENTRY_MODE_DIRECT
+        return N.ENTRY_MODE_ATM if option_key else N.ENTRY_MODE_UNKNOWN
+
+    def _warmup_complete(self, surface: Mapping[str, Any]) -> bool:
+        fut_hist = _safe_int(_nested_get(surface, "futures_features", "history_points", default=0), 0)
+        if surface.get("surface_kind") == "miso":
+            opt_hist = _safe_int(_nested_get(surface, "selected_features", "history_points", default=0), 0)
+        else:
+            opt_hist = _safe_int(_nested_get(surface, "primary_features", "history_points", default=0), 0)
+        return fut_hist >= WARMUP_MIN_VALID_SNAPSHOTS and opt_hist >= WARMUP_MIN_VALID_SNAPSHOTS
+
+    @staticmethod
+    def _frame_explain(surface: Mapping[str, Any], *, frame_valid: bool) -> str:
+        bits = [surface.get("surface_kind", "unknown")]
+        bits.append("valid" if frame_valid else "invalid")
+        runtime_mode = _safe_str(surface.get("runtime_mode"))
+        if runtime_mode:
+            bits.append(runtime_mode)
+        regime = _safe_str(surface.get("regime"))
+        if regime:
+            bits.append(regime.lower())
+        if surface.get("futures_contradiction_veto"):
+            bits.append("futures_contradiction_veto")
+        if surface.get("queue_reload_veto"):
+            bits.append("queue_reload_veto")
+        if not surface.get("alignment_ok", True):
+            bits.append("alignment_fail")
+        return ";".join(bits)
 
 
 # =============================================================================
@@ -777,93 +1741,73 @@ class FeaturesPublisher:
 
     def publish(self, payload: Mapping[str, Any]) -> None:
         frame_ts_ns = _safe_int(payload.get("frame_ts_ns"), 0)
-        futures = payload.get("futures") or {}
+        family_frames = payload.get("family_frames") or {}
+        shared = payload.get("shared_features") or {}
+        active_futures = shared.get("active_futures") or {}
+        generic_state = payload.get("feature_state") or {}
 
-        feature_state = {
+        feature_state_hash = {
+            **{str(k): v for k, v in generic_state.items()},
             "frame_id": str(payload.get("frame_id", "")),
             "selection_version": str(payload.get("selection_version", "")),
             "frame_ts_ns": str(frame_ts_ns),
-            "warmup_complete": "1"
-            if _safe_bool((payload.get("readiness") or {}).get("warmup_complete"))
-            else "0",
+            "feature_state_json": _json_dumps(generic_state),
+            "family_frames_json": _json_dumps(family_frames),
             "payload_json": _json_dumps(payload),
         }
-        RX.write_hash_fields(
-            N.HASH_STATE_FEATURES_MME_FUT,
-            feature_state,
-            client=self.redis,
-        )
+        RX.write_hash_fields(N.HASH_STATE_FEATURES_MME_FUT, feature_state_hash, client=self.redis)
 
         option_confirm = {
             "frame_ts_ns": str(frame_ts_ns),
-            "ce_atm_ready": "1" if self._option_ready(payload.get("ce_atm")) else "0",
-            "ce_atm1_ready": "1" if self._option_ready(payload.get("ce_atm1")) else "0",
-            "pe_atm_ready": "1" if self._option_ready(payload.get("pe_atm")) else "0",
-            "pe_atm1_ready": "1" if self._option_ready(payload.get("pe_atm1")) else "0",
-            "ce_atm1_fallback_eligible": "1"
-            if self._fallback_ready(payload.get("ce_atm1"))
-            else "0",
-            "pe_atm1_fallback_eligible": "1"
-            if self._fallback_ready(payload.get("pe_atm1"))
-            else "0",
+            "ce_atm_ready": self._as_flag(_nested_get(shared, "active_ce_atm", "present", default=False)),
+            "ce_atm1_ready": self._as_flag(_nested_get(shared, "active_ce_atm1", "present", default=False)),
+            "pe_atm_ready": self._as_flag(_nested_get(shared, "active_pe_atm", "present", default=False)),
+            "pe_atm1_ready": self._as_flag(_nested_get(shared, "active_pe_atm1", "present", default=False)),
+            "selected_call_ready": self._as_flag(_nested_get(shared, "dhan_selected_call", "present", default=False)),
+            "selected_put_ready": self._as_flag(_nested_get(shared, "dhan_selected_put", "present", default=False)),
+            "ce_atm1_fallback_eligible": self._as_flag(_safe_bool(_nested_get(payload, "family_surfaces", "mist_call", "fallback_ready", default=False))),
+            "pe_atm1_fallback_eligible": self._as_flag(_safe_bool(_nested_get(payload, "family_surfaces", "mist_put", "fallback_ready", default=False))),
+            "miso_call_ready": self._as_flag(_safe_bool(_nested_get(payload, "family_surfaces", "miso_call", "selected_features", "present", default=False))),
+            "miso_put_ready": self._as_flag(_safe_bool(_nested_get(payload, "family_surfaces", "miso_put", "selected_features", "present", default=False))),
         }
-        RX.write_hash_fields(
-            N.HASH_STATE_OPTION_CONFIRM,
-            option_confirm,
-            client=self.redis,
-        )
+        RX.write_hash_fields(N.HASH_STATE_OPTION_CONFIRM, option_confirm, client=self.redis)
 
         baselines = {
             "frame_ts_ns": str(frame_ts_ns),
-            "fut_abs_velocity_ema": str(futures.get("abs_velocity_ema", "")),
-            "fut_spread_ema": str(futures.get("spread_ema", "")),
+            "fut_abs_velocity_ema": _as_float_str(_safe_float(active_futures.get("abs_velocity_ema"), NAN)),
+            "fut_spread_ema": _as_float_str(_safe_float(active_futures.get("spread_ema"), NAN)),
+            "fut_vwap_estimate": _as_float_str(_safe_float(active_futures.get("vwap_estimate"), NAN)),
+            "fut_weighted_ofi_persist": _as_float_str(_safe_float(active_futures.get("weighted_ofi_persist"), NAN)),
+            "classic_regime": str(_nested_get(shared, "classic_regime", "regime", default="")),
+            "miso_regime": str(_nested_get(shared, "miso_regime", "regime", default="")),
             "payload_json": _json_dumps(
                 {
-                    "regime_ok": futures.get("regime_ok", False),
-                    "nof_flip_count_10": futures.get("nof_flip_count_10", 0),
-                    "abs_velocity_ema": futures.get("abs_velocity_ema", 0.0),
-                    "spread_ema": futures.get("spread_ema", 0.0),
+                    "packet_gap_ms": active_futures.get("packet_gap_ms"),
+                    "feed_jitter_ratio": active_futures.get("feed_jitter_ratio"),
+                    "range_ratio": active_futures.get("range_ratio"),
+                    "family_runtime_mode": _nested_get(payload, "provider_surface", "family_runtime_mode"),
+                    "classic_regime": _nested_get(shared, "classic_regime", "regime"),
+                    "miso_regime": _nested_get(shared, "miso_regime", "regime"),
                 }
             ),
         }
-        RX.write_hash_fields(
-            N.HASH_STATE_BASELINES_MME_FUT,
-            baselines,
-            client=self.redis,
-        )
+        RX.write_hash_fields(N.HASH_STATE_BASELINES_MME_FUT, baselines, client=self.redis)
 
         RX.xadd_fields(
             N.STREAM_FEATURES_MME,
             {
                 "frame_ts_ns": str(frame_ts_ns),
+                "frame_id": str(payload.get("frame_id", "")),
                 "selection_version": str(payload.get("selection_version", "")),
+                "family_runtime_mode": str(_nested_get(payload, "provider_surface", "family_runtime_mode", default="")),
                 "payload_json": _json_dumps(payload),
             },
             client=self.redis,
         )
 
     @staticmethod
-    def _option_ready(raw: Any) -> bool:
-        if not isinstance(raw, Mapping):
-            return False
-        return (
-            _safe_bool(raw.get("valid_tick"))
-            and _safe_bool(raw.get("fresh"))
-            and _safe_bool(raw.get("sync_valid"))
-            and _safe_float(raw.get("delta_3"), -999999.0) >= 0.0
-            and _safe_float(raw.get("spread_ratio"), 999.0) <= OPT_SPREAD_MAX
-            and _safe_int(raw.get("depth_total"), 0) >= OPT_DEPTH_MIN
-            and _safe_float(raw.get("tick_size"), 0.0) > 0.0
-        )
-
-    @staticmethod
-    def _fallback_ready(raw: Any) -> bool:
-        if not isinstance(raw, Mapping):
-            return False
-        return (
-            FeaturesPublisher._option_ready(raw)
-            and _safe_float(raw.get("delta_proxy"), 0.0) >= DELTA_MIN
-        )
+    def _as_flag(value: bool) -> str:
+        return "1" if value else "0"
 
 
 # =============================================================================
@@ -879,7 +1823,7 @@ class FeaturesService:
         clock: Any,
         shutdown: Any,
         instance_id: str,
-        settings: AppSettings,
+        settings: Any = None,
         logger: logging.Logger | None = None,
     ) -> None:
         self.redis = redis_client
@@ -887,20 +1831,14 @@ class FeaturesService:
         self.shutdown = shutdown
         self.instance_id = instance_id
         self.settings = settings
-        self.poll_interval_s = max(int(self.settings.redis.xread_block_ms), 10) / 1000.0
         self.log = logger or LOGGER.getChild("FeaturesService")
         self.reader = SnapshotReader(redis_client)
         self.engine = FeatureEngine(self.log)
         self.publisher = FeaturesPublisher(redis_client, self.log)
 
-        self.publish_only_complete = bool(
-            self.settings.feeds.publish_snapshots_only_when_complete
-        )
-        self.max_frame_staleness_ms = int(self.settings.feeds.max_frame_staleness_ms)
-        self.heartbeat_ttl_ms = int(self.settings.runtime.heartbeat_ttl_ms)
-        self.heartbeat_refresh_ms = max(
-            1, int(self.settings.runtime.heartbeat_ttl_ms // 3)
-        )
+        self.poll_interval_s = max(int(_nested_get(settings, "redis", "xread_block_ms", default=DEFAULT_POLL_INTERVAL_MS)), 10) / 1000.0
+        self.heartbeat_ttl_ms = int(_nested_get(settings, "runtime", "heartbeat_ttl_ms", default=DEFAULT_HEARTBEAT_TTL_MS))
+        self.heartbeat_refresh_ms = max(1, int(self.heartbeat_ttl_ms // 3))
         self.health_stream_maxlen = DEFAULT_HEALTH_STREAM_MAXLEN
         self.error_stream_maxlen = DEFAULT_ERROR_STREAM_MAXLEN
 
@@ -915,9 +1853,7 @@ class FeaturesService:
             raise RuntimeError("features requires redis client")
         if self.clock is None or not hasattr(self.clock, "wall_time_ns"):
             raise RuntimeError("features requires context.clock.wall_time_ns()")
-        if self.shutdown is None or not hasattr(self.shutdown, "is_set") or not hasattr(
-            self.shutdown, "wait"
-        ):
+        if self.shutdown is None or not hasattr(self.shutdown, "is_set") or not hasattr(self.shutdown, "wait"):
             raise RuntimeError("features requires context.shutdown")
         if not self.instance_id:
             raise RuntimeError("features requires non-empty instance_id")
@@ -973,40 +1909,30 @@ class FeaturesService:
         )
 
     def run_once(self) -> dict[str, Any] | None:
-        frame = self.reader.read()
-        if frame is None:
+        provider_runtime = self.reader.read_provider_runtime()
+        dhan_context = self.reader.read_dhan_context()
+        active_frame = self.reader.read_active_frame(dhan_context)
+        dhan_frame = self.reader.read_dhan_frame(dhan_context)
+        active_future_state = self.reader.read_active_future_state()
+        dhan_future_state = self.reader.read_dhan_future_state()
+
+        if active_frame is not None and not _safe_str(active_frame.provider_id):
+            active_frame = None
+        if dhan_frame is not None and not _safe_str(dhan_frame.provider_id):
+            dhan_frame = None
+
+        if provider_runtime is None and active_frame is None and dhan_frame is None:
             return None
 
-        members = (
-            frame.future,
-            frame.ce_atm,
-            frame.ce_atm1,
-            frame.pe_atm,
-            frame.pe_atm1,
+        payload = self.engine.build_payload(
+            active_frame=active_frame,
+            dhan_frame=dhan_frame,
+            active_future_state=active_future_state,
+            dhan_future_state=dhan_future_state,
+            provider_runtime=provider_runtime,
+            dhan_context=dhan_context,
+            now_ns=self._now_ns(),
         )
-        present_members = [m for m in members if m is not None]
-        if not present_members:
-            return None
-
-        if self.max_frame_staleness_ms > 0:
-            stale_roles = [
-                m.role
-                for m in present_members
-                if m.age_ms > self.max_frame_staleness_ms
-            ]
-            if stale_roles:
-                raise RuntimeError(
-                    "snapshot_frame_stale roles=" + ",".join(stale_roles)
-                )
-
-        payload = self.engine.build_payload(frame, now_ns=self._now_ns())
-
-        readiness = dict(payload.get("readiness") or {})
-        if self.publish_only_complete and not _safe_bool(readiness.get("frame_valid")):
-            return payload
-        if self.publish_only_complete and not _safe_bool(readiness.get("sync_valid")):
-            return payload
-
         self.publisher.publish(payload)
         return payload
 
@@ -1014,7 +1940,7 @@ class FeaturesService:
         self._emit_health_event(
             status=N.HEALTH_STATUS_OK,
             event="features_bootstrap_complete",
-            detail="features_initialized",
+            detail="provider_aware_features_initialized",
         )
         self._publish_health(status=N.HEALTH_STATUS_OK, detail="features_started")
 
@@ -1022,32 +1948,17 @@ class FeaturesService:
             while not self.shutdown.is_set():
                 loop_status = N.HEALTH_STATUS_OK
                 loop_detail = "features_idle"
-
                 try:
                     payload = self.run_once()
-                    self._consecutive_errors = 0
-
                     if payload is None:
                         self._no_frame_loops += 1
                         if self._no_frame_loops >= NO_FRAME_WARN_AFTER_LOOPS:
                             loop_status = N.HEALTH_STATUS_WARN
-                            loop_detail = "no_snapshot_frame_available"
-                        else:
-                            loop_detail = "waiting_for_snapshot_frame"
+                            loop_detail = "waiting_for_provider_runtime_or_snapshots"
                     else:
                         self._no_frame_loops = 0
-                        readiness = dict(payload.get("readiness") or {})
-                        if not _safe_bool(readiness.get("frame_valid")) or not _safe_bool(
-                            readiness.get("sync_valid")
-                        ):
-                            loop_status = N.HEALTH_STATUS_WARN
-                            loop_detail = "frame_invalid_or_unsynced"
-                        elif not _safe_bool(readiness.get("warmup_complete")):
-                            loop_status = N.HEALTH_STATUS_WARN
-                            loop_detail = "warmup_incomplete"
-                        else:
-                            loop_detail = "features_ready"
-
+                        self._consecutive_errors = 0
+                        loop_detail = "features_published"
                 except Exception as exc:
                     self._consecutive_errors += 1
                     self.log.exception("features_service_loop_error")
@@ -1057,9 +1968,7 @@ class FeaturesService:
                     loop_detail = f"loop_error:{type(exc).__name__}"
 
                 now_ns = self._now_ns()
-                if (now_ns - self._last_heartbeat_ns) >= (
-                    self.heartbeat_refresh_ms * 1_000_000
-                ):
+                if now_ns - self._last_heartbeat_ns >= self.heartbeat_refresh_ms * 1_000_000:
                     with contextlib.suppress(Exception):
                         self._publish_health(status=loop_status, detail=loop_detail)
 
@@ -1073,18 +1982,44 @@ class FeaturesService:
 
 
 # =============================================================================
+# Compatibility aliases / proof helpers
+# =============================================================================
+
+
+FeatureService = FeaturesService
+
+
+def _load_provider_runtime_state(redis_client: Any) -> M.ProviderRuntimeState | None:
+    return SnapshotReader(redis_client).read_provider_runtime()
+
+
+def _load_dhan_context_state(redis_client: Any) -> M.DhanContextState | None:
+    return SnapshotReader(redis_client).read_dhan_context()
+
+
+def _load_snapshot_state(
+    redis_client: Any,
+    *,
+    kind: str = "active",
+    dhan_context: M.DhanContextState | None = None,
+) -> SnapshotFrameView | None:
+    reader = SnapshotReader(redis_client)
+    if kind.lower() == "dhan":
+        return reader.read_dhan_frame(dhan_context)
+    return reader.read_active_frame(dhan_context)
+
+
+# =============================================================================
 # Canonical entrypoint
 # =============================================================================
 
 
 def run(context: Any) -> int:
-    _validate_name_surface_or_die()
+    _validate_surface_or_die()
 
-    settings = getattr(context, "settings", None) or get_settings()
-    if not isinstance(settings, AppSettings):
-        raise RuntimeError(
-            "features requires context.settings or get_settings() returning AppSettings"
-        )
+    settings = getattr(context, "settings", None)
+    if settings is None and callable(get_settings):
+        settings = get_settings()
 
     redis_runtime = getattr(context, "redis", None)
     if redis_runtime is None:

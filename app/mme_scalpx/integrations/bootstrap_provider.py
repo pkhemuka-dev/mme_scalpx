@@ -26,14 +26,24 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from app.mme_scalpx.integrations.broker_api import build_real_broker_adapter
+from app.mme_scalpx.integrations.bootstrap_quote import build_kite
+from app.mme_scalpx.integrations.broker_api import (
+    KiteTransportClient,
+    build_real_broker_adapter,
+)
 from app.mme_scalpx.integrations.feed_adapter import build_real_feed_adapter
 from app.mme_scalpx.integrations.runtime_instruments_factory import (
     RuntimeInstrumentsBuildResult,
     build_runtime_instruments,
 )
+from app.mme_scalpx.integrations.zerodha_feed_adapter import (
+    load_api_config,
+    load_token_state,
+    validate_api_config_for_zerodha,
+    validate_token_state_for_zerodha,
+)
 
-VERSION = "mme-bootstrap-provider-v1-freeze"
+VERSION = "mme-bootstrap-provider-v3-zerodha-kite-transport"
 
 
 class BootstrapProviderError(RuntimeError):
@@ -45,6 +55,27 @@ class BootstrapProviderResult:
     version: str
     runtime_build: RuntimeInstrumentsBuildResult
     payload: dict[str, Any]
+
+
+def _build_real_zerodha_broker() -> Any:
+    api = load_api_config()
+    state = load_token_state()
+    validate_api_config_for_zerodha(api)
+    validate_token_state_for_zerodha(state)
+
+    kite = build_kite(api, state)
+    transport = KiteTransportClient(kite=kite)
+
+    return build_real_broker_adapter(
+        broker="zerodha",
+        transport_client=transport,
+        auth_manager=None,
+        requires_auth=False,
+        metadata={
+            "bootstrap_provider_version": VERSION,
+            "transport_mode": "kite_transport_from_bootstrap_quote",
+        },
+    )
 
 
 def build_bootstrap_payload() -> dict[str, Any]:
@@ -61,7 +92,7 @@ def build_bootstrap_payload() -> dict[str, Any]:
         runtime_instruments=built.runtime_instruments,
         broker="zerodha",
     )
-    broker = build_real_broker_adapter(broker="zerodha")
+    broker = _build_real_zerodha_broker()
     return {
         "runtime_instruments": built.runtime_instruments,
         "feed_adapter": feed_adapter,
@@ -75,7 +106,7 @@ def build_bootstrap_result() -> BootstrapProviderResult:
         runtime_instruments=runtime_build.runtime_instruments,
         broker="zerodha",
     )
-    broker = build_real_broker_adapter(broker="zerodha")
+    broker = _build_real_zerodha_broker()
     payload = {
         "runtime_instruments": runtime_build.runtime_instruments,
         "feed_adapter": feed_adapter,
