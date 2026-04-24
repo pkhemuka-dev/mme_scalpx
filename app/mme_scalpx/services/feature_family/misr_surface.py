@@ -37,7 +37,7 @@ Frozen design law
 
 from dataclasses import dataclass
 from math import isfinite
-from typing import Any, Final, Iterable, Mapping, Sequence
+from typing import Any, Final, Mapping, Sequence
 
 from app.mme_scalpx.core import names as N
 
@@ -59,6 +59,7 @@ DEFAULT_ABSORPTION_OFI_CALL_MIN: Final[float] = 0.53
 DEFAULT_ABSORPTION_OFI_PUT_MAX: Final[float] = 0.47
 DEFAULT_RANGE_REENTRY_BUFFER_POINTS: Final[float] = 0.05
 DEFAULT_HOLD_PROOF_SEC: Final[float] = 0.80
+DEFAULT_HOLD_PROOF_BAND_POINTS: Final[float] = 0.10
 DEFAULT_NO_MANS_LAND_POINTS: Final[float] = 0.15
 DEFAULT_REVERSAL_VEL_RATIO_MIN: Final[float] = 1.05
 DEFAULT_REVERSAL_RESPONSE_EFF_MIN: Final[float] = 0.15
@@ -66,6 +67,7 @@ DEFAULT_FLOW_FLIP_CALL_MIN: Final[float] = 0.54
 DEFAULT_FLOW_FLIP_PUT_MAX: Final[float] = 0.46
 DEFAULT_ZONE_QUALITY_MIN: Final[float] = 0.10
 DEFAULT_NEAR_WALL_PENALTY: Final[float] = 0.20
+DEFAULT_CONTEXT_SCORE_NEUTRAL: Final[float] = 0.50
 
 __all__ = [
     "TrapZone",
@@ -192,7 +194,6 @@ def _branch_side(branch_id: str) -> str:
 
 
 def _branch_zone_side(branch_id: str) -> str:
-    # CALL looks for downside trap candidate; PUT looks for upside trap candidate.
     return "DOWNSIDE_TRAP" if branch_id == N.BRANCH_CALL else "UPSIDE_TRAP"
 
 
@@ -205,11 +206,20 @@ def _ofi_ok(value: float, branch_id: str, call_min: float, put_max: float) -> bo
 
 
 def _context_pass(runtime_mode: str, provider_ready: bool) -> bool:
+    normalized = _safe_str(runtime_mode).upper()
+    disabled = {
+        _safe_str(getattr(N, "STRATEGY_RUNTIME_MODE_DISABLED", "DISABLED")).upper(),
+        "DISABLED",
+    }
     degraded = {
         _safe_str(getattr(N, "STRATEGY_RUNTIME_MODE_DHAN_DEGRADED", "DHAN_DEGRADED")).upper(),
         "DHAN_DEGRADED",
     }
-    return _safe_str(runtime_mode).upper() in degraded or provider_ready
+    if normalized in disabled:
+        return False
+    if normalized in degraded:
+        return True
+    return provider_ready
 
 
 def _zone_side_bias(zone_type: str) -> str:
@@ -288,7 +298,6 @@ def _normalize_zone_rows(zone_registry: Any) -> tuple[TrapZone, ...]:
         )
         rows.append(zone)
 
-    # pruning law: at most latest ORB_HIGH, latest ORB_LOW, nearest valid SWING_HIGH, nearest valid SWING_LOW
     grouped: dict[str, list[TrapZone]] = {
         ZONE_ORB_HIGH: [],
         ZONE_ORB_LOW: [],
@@ -396,6 +405,65 @@ def _build_trap_event_id(
     return f"{branch_side}|{active_zone_id}|{fake_break_start_ts_ms}|{fake_break_extreme_ts_ms}"
 
 
+def _context_features(option_surface: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    return _as_mapping(_pick(_as_mapping(option_surface), "context_features"))
+
+
+def _premium_health(option_surface: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    return _as_mapping(_pick(_as_mapping(option_surface), "premium_health"))
+
+
+def _oi_bias_alignment(branch_id: str, oi_bias: str) -> bool:
+    normalized = _safe_str(oi_bias, "UNKNOWN").upper()
+    if normalized in {"UNKNOWN", "NEUTRAL", ""}:
+        return True
+    if branch_id == N.BRANCH_CALL:
+        return normalized == "PUT_SUPPORTIVE"
+    return normalized == "CALL_SUPPORTIVE"
+
+
+def _derived_context_score(
+    *,
+    branch_id: str,
+    context_surface: Mapping[str, Any],
+) -> float:
+    score = DEFAULT_CONTEXT_SCORE_NEUTRAL
+
+    same_side_wall_near = _safe_bool(_pick(context_surface, "same_side_wall_near"), False)
+    same_side_wall_strength = _safe_float(_pick(context_surface, "same_side_wall_strength_score"), 0.0)
+    opposing_wall_near = _safe_bool(_pick(context_surface, "opposing_wall_near"), False)
+    opposing_wall_strength = _safe_float(_pick(context_surface, "opposing_wall_strength_score"), 0.0)
+    oi_bias = _safe_str(_pick(context_surface, "oi_bias"), "UNKNOWN")
+
+    if same_side_wall_near:
+        score -= 0.10 if same_side_wall_strength < 0.60 else 0.20
+    if opposing_wall_near and opposing_wall_strength >= 0.60:
+        score += 0.05
+    if _oi_bias_alignment(branch_id, oi_bias):
+        score += 0.10
+    else:
+        score -= 0.10
+
+    return max(0.0, min(score, 1.0))
+
+
+def _branch_ready(surface: Mapping[str, Any]) -> bool:
+    return bool(
+        _safe_bool(_pick(surface, "present"), False)
+        and _safe_bool(_pick(surface, "active_zone_valid"), False)
+        and _safe_bool(_pick(surface, "fake_break"), False)
+        and _safe_bool(_pick(surface, "absorption"), False)
+        and _safe_bool(_pick(surface, "range_reentry"), False)
+        and _safe_bool(_pick(surface, "flow_flip"), False)
+        and _safe_bool(_pick(surface, "hold_proof"), False)
+        and _safe_bool(_pick(surface, "no_mans_land_cleared"), False)
+        and _safe_bool(_pick(surface, "reversal_impulse"), False)
+        and _safe_bool(_pick(surface, "context_pass"), False)
+        and _safe_bool(_pick(surface, "option_tradability_pass"), False)
+        and not _safe_str(_pick(surface, "failed_stage"))
+    )
+
+
 def build_misr_branch_surface(
     *,
     branch_id: str,
@@ -412,6 +480,7 @@ def build_misr_branch_surface(
     now_ts_ms: int | None = None,
     fake_break_start_ts_ms: int | None = None,
     fake_break_extreme_ts_ms: int | None = None,
+    hold_proof_elapsed_sec: float | None = None,
 ) -> dict[str, Any]:
     """
     Build one MISR branch surface.
@@ -420,8 +489,14 @@ def build_misr_branch_surface(
     facts strategy.py will later consume.
     """
     fut = _as_mapping(_pick(_as_mapping(futures_surface), "selected_features") or futures_surface)
-    opt = _as_mapping(_pick(_as_mapping(option_surface), "selected_features") or option_surface)
-    fallback = _as_mapping(_pick(_as_mapping(fallback_option_surface), "selected_features") or fallback_option_surface)
+    option_map = _as_mapping(option_surface)
+    opt = _as_mapping(_pick(option_map, "selected_features") or option_map)
+    opt_context = _context_features(option_map)
+    opt_premium = _premium_health(option_map)
+
+    fallback_map = _as_mapping(fallback_option_surface)
+    fallback = _as_mapping(_pick(_as_mapping(fallback_map), "selected_features") or fallback_map)
+
     strike = _as_mapping(strike_surface)
     trad = _as_mapping(tradability_surface)
     regime = _as_mapping(regime_surface)
@@ -435,7 +510,7 @@ def build_misr_branch_surface(
     runtime_mode = _safe_str(_pick(mode, "runtime_mode"), "")
     entry_mode_hint = _safe_str(
         _coalesce(
-            _pick(opt, "entry_mode_hint"),
+            _pick(opt, "entry_mode"),
             _pick(strike, "selection_mode_hint"),
             getattr(N, "ENTRY_MODE_ATM", "ATM"),
         )
@@ -453,7 +528,7 @@ def build_misr_branch_surface(
     fut_vwap_distance = _safe_float(_pick(fut, "vwap_distance"), 0.0)
     fut_volume_norm = _safe_float(_pick(fut, "volume_norm"), 0.0)
     fut_event_rate_spike_ratio = _safe_float(_pick(fut, "event_rate_spike_ratio"), 0.0)
-    fut_direction_score = _safe_float(_pick(fut, "direction_score"), 0.0)
+    fut_direction_score = _safe_float(_pick(fut, "direction_score", "trend_score"), 0.0)
     fut_ema9_slope = _safe_float(_pick(fut, "ema9_slope"), 0.0)
     fut_cvd_delta = _safe_float(_pick(fut, "cvd_delta"), 0.0)
     fut_spread_ratio = _safe_float(_pick(fut, "spread_ratio"), 0.0)
@@ -463,10 +538,13 @@ def build_misr_branch_surface(
     opt_velocity_ratio = _safe_float(_pick(opt, "velocity_ratio"), 0.0)
     opt_weighted_ofi = _safe_float(_pick(opt, "weighted_ofi"), 0.0)
     opt_response_eff = _safe_float(_pick(opt, "response_efficiency"), 0.0)
-    opt_context_score = _safe_float(_pick(opt, "context_score"), 0.0)
-    opt_near_wall = _safe_bool(_pick(opt, "near_same_side_wall"), False)
-    opt_wall_strength = _safe_float(_pick(opt, "same_side_wall_strength_score"), 0.0)
-    opt_oi_bias = _safe_str(_pick(opt, "oi_bias"), "UNKNOWN")
+    opt_context_score = _derived_context_score(
+        branch_id=branch_id,
+        context_surface=opt_context,
+    )
+    opt_near_wall = _safe_bool(_pick(opt_context, "same_side_wall_near"), False)
+    opt_wall_strength = _safe_float(_pick(opt_context, "same_side_wall_strength_score"), 0.0)
+    opt_oi_bias = _safe_str(_pick(opt_context, "oi_bias"), "UNKNOWN")
     opt_spread_ratio = _safe_float(_pick(opt, "spread_ratio"), 0.0)
 
     fallback_spread_ratio = _safe_float(_pick(fallback, "spread_ratio"), 999.0)
@@ -498,6 +576,11 @@ def build_misr_branch_surface(
         DEFAULT_RANGE_REENTRY_BUFFER_POINTS,
     )
     hold_proof_sec = _threshold_float(thresholds, "HOLD_PROOF_SEC", DEFAULT_HOLD_PROOF_SEC)
+    hold_proof_band_points = _threshold_float(
+        thresholds,
+        "HOLD_PROOF_BAND_POINTS",
+        DEFAULT_HOLD_PROOF_BAND_POINTS,
+    )
     no_mans_land_points = _threshold_float(thresholds, "NO_MANS_LAND_POINTS", DEFAULT_NO_MANS_LAND_POINTS)
     reversal_vel_ratio_min = _threshold_float(thresholds, "REVERSAL_VEL_RATIO_MIN", DEFAULT_REVERSAL_VEL_RATIO_MIN)
     reversal_response_eff_min = _threshold_float(
@@ -524,11 +607,13 @@ def build_misr_branch_surface(
     fake_break = (
         active_zone_valid
         and fake_break_distance >= fake_break_min_points
-        and (_directional_ok(-fut_delta, branch_id))
+        and _directional_ok(-fut_delta, branch_id)
     )
 
+    absorption_elapsed_sec = max((fb_extreme_ms - fb_start_ms) / 1000.0, 0.0)
     absorption = (
         fake_break
+        and absorption_elapsed_sec <= absorption_window_sec
         and _ofi_ok(fut_weighted_ofi, branch_id, absorption_call_ofi_min, absorption_put_ofi_max)
         and _ofi_ok(fut_weighted_ofi_persist, branch_id, absorption_call_ofi_min, absorption_put_ofi_max)
         and fut_volume_norm > 0.0
@@ -536,7 +621,16 @@ def build_misr_branch_surface(
 
     range_reentry = absorption and inside_range
     flow_flip = _ofi_ok(opt_weighted_ofi, branch_id, flow_flip_call_min, flow_flip_put_max) and _directional_ok(opt_delta, branch_id)
-    hold_proof = range_reentry and abs(fut_vwap_distance) <= max(abs(zone_high - zone_low), hold_proof_sec) and _directional_ok(fut_ema9_slope, branch_id)
+
+    hold_elapsed_sec = _safe_float(hold_proof_elapsed_sec, 0.0)
+    hold_inside_band = abs(fut_ltp - trap_zone_level) <= max(abs(zone_high - zone_low), hold_proof_band_points)
+    hold_proof = (
+        range_reentry
+        and hold_elapsed_sec >= hold_proof_sec
+        and hold_inside_band
+        and _directional_ok(fut_ema9_slope, branch_id)
+    )
+
     reversal_impulse = (
         hold_proof
         and no_mans_land_cleared
@@ -554,13 +648,17 @@ def build_misr_branch_surface(
     )
 
     context_pass = _context_pass(runtime_mode, provider_ready)
-    option_tradability_pass = _safe_bool(_pick(trad, "entry_pass"), False)
+    option_tradability_pass = _safe_bool(
+        _coalesce(
+            _pick(trad, "entry_pass"),
+            _pick(option_map, "selected_option_tradability_ok"),
+            _pick(opt_premium, "tradability_ok"),
+        ),
+        False,
+    )
 
     near_wall_penalty = DEFAULT_NEAR_WALL_PENALTY if opt_near_wall and opt_wall_strength >= 0.60 else 0.0
-    oi_bias_alignment = (
-        opt_oi_bias == ("CALL_SUPPORTIVE" if bullish else "PUT_SUPPORTIVE")
-        or opt_oi_bias in {"NEUTRAL", "UNKNOWN"}
-    )
+    oi_bias_alignment = _oi_bias_alignment(branch_id, opt_oi_bias)
 
     setup_score = (
         (zone_quality * 0.20)
@@ -576,10 +674,24 @@ def build_misr_branch_surface(
     )
 
     surface_present = fut_present and opt_present and zone_present
+    branch_ready = bool(
+        surface_present
+        and active_zone_valid
+        and fake_break
+        and absorption
+        and range_reentry
+        and flow_flip
+        and hold_proof
+        and no_mans_land_cleared
+        and reversal_impulse
+        and context_pass
+        and option_tradability_pass
+    )
 
     return {
         "surface_kind": "misr",
         "present": surface_present,
+        "branch_ready": branch_ready,
         "family_id": _safe_str(getattr(N, "STRATEGY_FAMILY_MISR", "MISR")),
         "doctrine_id": _safe_str(getattr(N, "DOCTRINE_MISR", "MISR")),
         "branch_id": branch_id,
@@ -590,6 +702,8 @@ def build_misr_branch_surface(
         "provider_ready": provider_ready,
         "futures_features": fut,
         "primary_features": opt,
+        "context_features": opt_context,
+        "premium_health": opt_premium,
         "fallback_features": fallback,
         "strike_surface": strike,
         "tradability": trad,
@@ -601,9 +715,12 @@ def build_misr_branch_surface(
         "fake_break_distance": fake_break_distance,
         "fake_break": fake_break,
         "absorption": absorption,
+        "absorption_elapsed_sec": absorption_elapsed_sec,
         "range_reentry": range_reentry,
         "flow_flip": flow_flip,
         "hold_proof": hold_proof,
+        "hold_proof_elapsed_sec": hold_elapsed_sec,
+        "hold_inside_band": hold_inside_band,
         "no_mans_land_cleared": no_mans_land_cleared,
         "reversal_impulse": reversal_impulse,
         "trap_event_id": trap_event_id,
@@ -653,18 +770,7 @@ def build_misr_branch_surface(
         ),
         "failed_stage": (
             ""
-            if (
-                active_zone_valid
-                and fake_break
-                and absorption
-                and range_reentry
-                and flow_flip
-                and hold_proof
-                and no_mans_land_cleared
-                and reversal_impulse
-                and context_pass
-                and option_tradability_pass
-            )
+            if branch_ready
             else "active_trap_zone_selection"
             if not active_zone_valid
             else "fake_break_trigger"
@@ -720,6 +826,9 @@ def build_misr_family_surface(
     else:
         dominant_branch = ""
 
+    call_ready = _branch_ready(call)
+    put_ready = _branch_ready(put)
+
     return {
         "surface_kind": "misr_family",
         "present": call_present or put_present,
@@ -732,11 +841,10 @@ def build_misr_family_surface(
         "put": put,
         "call_present": call_present,
         "put_present": put_present,
+        "call_ready": call_ready,
+        "put_ready": put_ready,
         "call_setup_score": call_setup_score,
         "put_setup_score": put_setup_score,
         "dominant_branch": dominant_branch,
-        "eligible": bool(
-            (_safe_bool(_pick(call, "context_pass"), False) and _safe_bool(_pick(call, "option_tradability_pass"), False))
-            or (_safe_bool(_pick(put, "context_pass"), False) and _safe_bool(_pick(put, "option_tradability_pass"), False))
-        ),
+        "eligible": bool(call_ready or put_ready),
     }
