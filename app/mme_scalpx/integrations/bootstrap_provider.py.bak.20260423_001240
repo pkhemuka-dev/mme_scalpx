@@ -28,7 +28,6 @@ from app.mme_scalpx.integrations.dhan_runtime_clients import (
     DhanFullFeedPollingAdapter,
     DhanNiftyRuntimeResolver,
     DhanOptionChainContextClient,
-    DhanContextPollingAdapter,
     ResolvedDhanRuntimeIds,
 )
 from app.mme_scalpx.integrations.feed_adapter import build_real_feed_adapter
@@ -101,7 +100,6 @@ def _build_dhan_live_feed(
 
 def _build_dhan_context_best_effort(
     *,
-    runtime_instruments: Any,
     resolved_ids: ResolvedDhanRuntimeIds,
 ) -> Any | None:
     raw_cfg = DhanMarketdataConfig.from_yaml_file(DHAN_CONFIG_PATH)
@@ -112,9 +110,11 @@ def _build_dhan_context_best_effort(
             expiry=resolved_ids.selected_expiry,
             underlying_scrip=resolved_ids.underlying_scrip,
         )
-        return DhanContextPollingAdapter(
-            client=context_client,
-            runtime_instruments=runtime_instruments,
+        return DhanMarketdataManager(
+            config=context_cfg,
+            auth_manager=None,
+            context_client=context_client,
+            live_feed_client=None,
         )
     except Exception as exc:
         LOGGER.warning(
@@ -149,7 +149,6 @@ def _build_bootstrap_payload_for_runtime_instruments(
         )
         feed_adapters[PROVIDER_DHAN] = dhan_feed_adapter
         dhan_context_adapter = _build_dhan_context_best_effort(
-            runtime_instruments=runtime_instruments,
             resolved_ids=resolved_ids,
         )
     except Exception as exc:

@@ -11,7 +11,8 @@ This module OWNS:
 - canonical registry of doctrine evaluator module paths by family id
 - lazy evaluator import and cache
 - stable public lookup surface for family evaluators
-- explicit, opt-in noop fallback for staged doctrine migration only
+- deterministic fallback evaluator when a doctrine module exists but has not yet
+  published a final callable surface
 
 This module DOES NOT own:
 - Redis reads or writes
@@ -27,12 +28,12 @@ Frozen design law
 -----------------
 - The registry must remain family-id keyed and deterministic.
 - It must not eagerly import doctrine modules at import time.
+- It must tolerate staged migration by supporting known callable names and a
+  no-signal fallback.
 - It must align exactly with canonical family identities from core.names.
-- Silent noop fallback is forbidden unless a doctrine module explicitly opts in.
 """
 
 import importlib
-import inspect
 from typing import Callable, Final
 
 from app.mme_scalpx.core import names as N
@@ -78,8 +79,6 @@ _CALLABLE_NAMES_IN_PRIORITY_ORDER: Final[tuple[str, ...]] = (
     "evaluate",
 )
 
-_NOOP_FALLBACK_OPT_IN_ATTR: Final[str] = "ALLOW_REGISTRY_NOOP_FALLBACK"
-
 _EVALUATOR_CACHE: dict[str, FamilyEvaluator] = {}
 
 
@@ -122,59 +121,19 @@ def _build_noop_evaluator(family_id: str) -> FamilyEvaluator:
     return _noop
 
 
-def _callable_accepts_runtime(fn: object) -> bool:
-    if not callable(fn):
-        return False
-    try:
-        sig = inspect.signature(fn)
-    except (TypeError, ValueError):
-        return True
-
-    positional_capacity = 0
-    has_varargs = False
-    for param in sig.parameters.values():
-        if param.kind in (
-            inspect.Parameter.POSITIONAL_ONLY,
-            inspect.Parameter.POSITIONAL_OR_KEYWORD,
-        ):
-            positional_capacity += 1
-        elif param.kind == inspect.Parameter.VAR_POSITIONAL:
-            has_varargs = True
-
-    return has_varargs or positional_capacity >= 1
-
-
-def _module_allows_noop_fallback(module: object) -> bool:
-    return bool(getattr(module, _NOOP_FALLBACK_OPT_IN_ATTR, False))
-
-
 def _extract_callable(module: object, family_id: str) -> FamilyEvaluator:
     for attr_name in _CALLABLE_NAMES_IN_PRIORITY_ORDER:
         fn = getattr(module, attr_name, None)
         if callable(fn):
-            _require(
-                _callable_accepts_runtime(fn),
-                f"{module.__name__}.{attr_name} must accept DoctrineRuntimeInput",
-            )
             return fn
 
     factory = getattr(module, "get_evaluator", None)
     if callable(factory):
         built = factory()
         if callable(built):
-            _require(
-                _callable_accepts_runtime(built),
-                f"{module.__name__}.get_evaluator() returned callable with invalid signature",
-            )
             return built
 
-    if _module_allows_noop_fallback(module):
-        return _build_noop_evaluator(family_id)
-
-    raise StrategyFamilyRegistryError(
-        f"module {module.__name__!r} imported for family_id={family_id!r} "
-        f"but exposed no supported evaluator callable"
-    )
+    return _build_noop_evaluator(family_id)
 
 
 def _load_evaluator(family_id: str) -> FamilyEvaluator:
@@ -187,7 +146,7 @@ def _load_evaluator(family_id: str) -> FamilyEvaluator:
 
     try:
         module = importlib.import_module(module_path)
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # pragma: no cover - explicit registry error surfacing
         raise StrategyFamilyRegistryError(
             f"failed to import doctrine module for family_id={validated_family_id!r} "
             f"from {module_path!r}: {exc}"
@@ -199,22 +158,6 @@ def _load_evaluator(family_id: str) -> FamilyEvaluator:
         f"resolved evaluator for family_id={validated_family_id!r} is not callable",
     )
     return evaluator
-
-
-def _validate_registry_surface() -> None:
-    _require(
-        tuple(FAMILY_ORDER) == tuple(N.ALLOWED_STRATEGY_FAMILY_IDS),
-        "FAMILY_ORDER must match names.ALLOWED_STRATEGY_FAMILY_IDS exactly",
-    )
-    _require(
-        set(FAMILY_MODULE_PATHS.keys()) == set(FAMILY_ORDER),
-        "FAMILY_MODULE_PATHS must cover FAMILY_ORDER exactly",
-    )
-    for family_id, module_path in FAMILY_MODULE_PATHS.items():
-        _require(
-            isinstance(module_path, str) and bool(module_path.strip()),
-            f"module path missing for family_id={family_id!r}",
-        )
 
 
 # ============================================================================
@@ -238,10 +181,6 @@ def register_family_evaluator(
     """
     validated_family_id = _validate_family_id(family_id)
     _require(callable(evaluator), "evaluator must be callable")
-    _require(
-        _callable_accepts_runtime(evaluator),
-        "evaluator must accept DoctrineRuntimeInput",
-    )
     _EVALUATOR_CACHE[validated_family_id] = evaluator
 
 
@@ -273,8 +212,6 @@ def clear_registry_cache() -> None:
     """
     _EVALUATOR_CACHE.clear()
 
-
-_validate_registry_surface()
 
 __all__ = [
     "FamilyEvaluator",

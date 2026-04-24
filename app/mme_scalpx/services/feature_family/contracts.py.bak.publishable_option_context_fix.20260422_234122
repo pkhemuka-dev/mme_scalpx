@@ -883,26 +883,21 @@ def validate_provider_runtime_block(
         field_name="provider_runtime",
     )
 
-    strict_provider_fields = (
+    required_provider_fields = (
         "active_futures_provider_id",
         "active_selected_option_provider_id",
-    )
-    optional_provider_fields = (
         "active_option_context_provider_id",
         "active_execution_provider_id",
         "fallback_execution_provider_id",
     )
-
-    strict_status_fields = (
+    required_status_fields = (
         "futures_provider_status",
         "selected_option_provider_status",
-    )
-    optional_status_fields = (
         "option_context_provider_status",
         "execution_provider_status",
     )
 
-    for field_name in strict_provider_fields:
+    for field_name in required_provider_fields:
         value = provider_runtime[field_name]
         if publishable:
             _require_literal(
@@ -917,15 +912,7 @@ def validate_provider_runtime_block(
                 allowed=ALLOWED_PROVIDER_IDS,
             )
 
-    for field_name in optional_provider_fields:
-        value = provider_runtime[field_name]
-        _require_optional_literal(
-            value,
-            field_name=f"provider_runtime.{field_name}",
-            allowed=ALLOWED_PROVIDER_IDS,
-        )
-
-    for field_name in strict_status_fields:
+    for field_name in required_status_fields:
         value = provider_runtime[field_name]
         if publishable:
             _require_literal(
@@ -939,14 +926,6 @@ def validate_provider_runtime_block(
                 field_name=f"provider_runtime.{field_name}",
                 allowed=ALLOWED_PROVIDER_STATUSES,
             )
-
-    for field_name in optional_status_fields:
-        value = provider_runtime[field_name]
-        _require_optional_literal(
-            value,
-            field_name=f"provider_runtime.{field_name}",
-            allowed=ALLOWED_PROVIDER_STATUSES,
-        )
 
     if publishable:
         _require_str(
@@ -1466,6 +1445,7 @@ __all__ = [
     "BRANCH_CALL",
     "BRANCH_PUT",
     "BRANCH_IDS",
+    "OPTION_SIDE_IDS",
     "ALLOWED_PROVIDER_IDS",
     "ALLOWED_PROVIDER_STATUSES",
     "ALLOWED_FAMILY_RUNTIME_MODES",

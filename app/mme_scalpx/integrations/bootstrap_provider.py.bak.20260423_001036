@@ -2,16 +2,11 @@
 app/mme_scalpx/integrations/bootstrap_provider.py
 
 Freeze-grade bootstrap provider for ScalpX MME.
-
-This version keeps Dhan live feed active but makes Dhan context best-effort.
-If Dhan /optionchain is throttled or unavailable, bootstrap still succeeds and
-returns Dhan live feed surfaces while omitting the Dhan context adapter.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-import logging
 from pathlib import Path
 from typing import Any
 
@@ -28,8 +23,6 @@ from app.mme_scalpx.integrations.dhan_runtime_clients import (
     DhanFullFeedPollingAdapter,
     DhanNiftyRuntimeResolver,
     DhanOptionChainContextClient,
-    DhanContextPollingAdapter,
-    ResolvedDhanRuntimeIds,
 )
 from app.mme_scalpx.integrations.feed_adapter import build_real_feed_adapter
 from app.mme_scalpx.integrations.runtime_instruments_factory import (
@@ -43,14 +36,7 @@ from app.mme_scalpx.integrations.zerodha_feed_adapter import (
     validate_token_state_for_zerodha,
 )
 
-LOGGER = logging.getLogger(__name__)
-
-VERSION = "mme-bootstrap-provider-v5-dual-feed-dhan-context-best-effort"
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DHAN_CONFIG_PATH = PROJECT_ROOT / "etc" / "brokers" / "dhan.yaml"
-
-PROVIDER_ZERODHA = "ZERODHA"
-PROVIDER_DHAN = "DHAN"
+VERSION = "mme-bootstrap-provider-v4-dual-feed-surfaces"
 
 
 class BootstrapProviderError(RuntimeError):
@@ -85,102 +71,60 @@ def _build_real_zerodha_broker() -> Any:
     )
 
 
-def _build_dhan_live_feed(
-    *,
-    runtime_instruments: Any,
-) -> tuple[Any, ResolvedDhanRuntimeIds]:
+def _build_dhan_surfaces(runtime_instruments: Any) -> tuple[Any, Any]:
     resolver = DhanNiftyRuntimeResolver()
     resolved_ids = resolver.resolve_from_runtime_instruments(runtime_instruments)
 
-    adapter = DhanFullFeedPollingAdapter(
+    dhan_feed_adapter = DhanFullFeedPollingAdapter(
         runtime_instruments=runtime_instruments,
         resolved_ids=resolved_ids,
     )
-    return adapter, resolved_ids
 
-
-def _build_dhan_context_best_effort(
-    *,
-    runtime_instruments: Any,
-    resolved_ids: ResolvedDhanRuntimeIds,
-) -> Any | None:
-    raw_cfg = DhanMarketdataConfig.from_yaml_file(DHAN_CONFIG_PATH)
+    raw_cfg = DhanMarketdataConfig.from_yaml_file(Path("etc/brokers/dhan.yaml"))
     context_cfg = replace(raw_cfg, auth_required=False)
 
-    try:
-        context_client = DhanOptionChainContextClient(
-            expiry=resolved_ids.selected_expiry,
-            underlying_scrip=resolved_ids.underlying_scrip,
-        )
-        return DhanContextPollingAdapter(
-            client=context_client,
-            runtime_instruments=runtime_instruments,
-        )
-    except Exception as exc:
-        LOGGER.warning(
-            "bootstrap_provider_dhan_context_unavailable "
-            "expiry=%s underlying_scrip=%s error=%s",
-            resolved_ids.selected_expiry,
-            resolved_ids.underlying_scrip,
-            exc,
-        )
-        return None
-
-
-def _build_bootstrap_payload_for_runtime_instruments(
-    runtime_instruments: Any,
-) -> dict[str, Any]:
-    zerodha_feed_adapter = build_real_feed_adapter(
-        runtime_instruments=runtime_instruments,
-        broker="zerodha",
+    context_client = DhanOptionChainContextClient(
+        expiry=resolved_ids.selected_expiry,
+        underlying_scrip=resolved_ids.underlying_scrip,
     )
-    broker = _build_real_zerodha_broker()
-
-    feed_adapters: dict[str, Any] = {
-        PROVIDER_ZERODHA: zerodha_feed_adapter,
-    }
-
-    dhan_feed_adapter = None
-    dhan_context_adapter = None
-
-    try:
-        dhan_feed_adapter, resolved_ids = _build_dhan_live_feed(
-            runtime_instruments=runtime_instruments,
-        )
-        feed_adapters[PROVIDER_DHAN] = dhan_feed_adapter
-        dhan_context_adapter = _build_dhan_context_best_effort(
-            runtime_instruments=runtime_instruments,
-            resolved_ids=resolved_ids,
-        )
-    except Exception as exc:
-        LOGGER.warning(
-            "bootstrap_provider_dhan_live_unavailable error=%s",
-            exc,
-        )
-
-    return {
-        "runtime_instruments": runtime_instruments,
-        "feed_adapter": zerodha_feed_adapter,
-        "zerodha_feed_adapter": zerodha_feed_adapter,
-        "dhan_feed_adapter": dhan_feed_adapter,
-        "dhan_context_adapter": dhan_context_adapter,
-        "feed_adapters": feed_adapters,
-        "broker": broker,
-    }
+    dhan_context_adapter = DhanMarketdataManager(
+        config=context_cfg,
+        auth_manager=None,
+        context_client=context_client,
+        live_feed_client=None,
+    )
+    return dhan_feed_adapter, dhan_context_adapter
 
 
 def build_bootstrap_payload() -> dict[str, Any]:
     built = build_runtime_instruments()
-    return _build_bootstrap_payload_for_runtime_instruments(
+
+    zerodha_feed_adapter = build_real_feed_adapter(
+        runtime_instruments=built.runtime_instruments,
+        broker="zerodha",
+    )
+    dhan_feed_adapter, dhan_context_adapter = _build_dhan_surfaces(
         built.runtime_instruments
     )
+    broker = _build_real_zerodha_broker()
+
+    return {
+        "runtime_instruments": built.runtime_instruments,
+        "feed_adapter": zerodha_feed_adapter,
+        "zerodha_feed_adapter": zerodha_feed_adapter,
+        "dhan_feed_adapter": dhan_feed_adapter,
+        "dhan_context_adapter": dhan_context_adapter,
+        "feed_adapters": {
+            "ZERODHA": zerodha_feed_adapter,
+            "DHAN": dhan_feed_adapter,
+        },
+        "broker": broker,
+    }
 
 
 def build_bootstrap_result() -> BootstrapProviderResult:
     runtime_build = build_runtime_instruments()
-    payload = _build_bootstrap_payload_for_runtime_instruments(
-        runtime_build.runtime_instruments
-    )
+    payload = build_bootstrap_payload()
     return BootstrapProviderResult(
         version=VERSION,
         runtime_build=runtime_build,

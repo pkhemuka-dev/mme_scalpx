@@ -1,346 +1,821 @@
 from __future__ import annotations
 
 """
-app/mme_scalpx/strategy_family/eligibility.py
+app/mme_scalpx/services/strategy_family/eligibility.py
 
-Shared pre-entry and re-entry eligibility helpers for doctrine evaluators.
+Frozen strategy-family eligibility consumer for ScalpX MME.
 
 Purpose
 -------
 This module OWNS:
-- shared pre-entry gating helpers
-- rollout / provider-profile / lock / position gate aggregation
-- re-entry reason and cap checks shared by doctrines
+- consumption of the frozen family_features payload published by services/features.py
+- global pre-entry gate resolution from:
+  - payload["stage_flags"]
+  - payload["provider_runtime"]
+  - payload["common"]
+- doctrine/family eligibility reduction from:
+  - payload["families"][...]
+- deterministic blocked-reason generation
+- typed eligibility outputs for downstream decision/arbitration layers
 
 This module DOES NOT own:
-- doctrine-specific entry math
-- live publishing
-- Redis access
+- Redis reads or writes
+- feature computation
+- provider routing policy
+- cooldown state mutation
+- candidate ranking or cross-family arbitration
+- entry/exit order decisions
+- proof-window logic
+- broker truth
+
+Frozen design law
+-----------------
+- This module consumes only the frozen family_features seam.
+- It must not reach back into old ad hoc feature internals.
+- Classic families remain branch-shaped:
+  MIST / MISB / MISC / MISR -> branches -> CALL / PUT
+- MISO remains side-support-shaped:
+  call_support / put_support
+- Eligibility here is necessary-but-not-sufficient for a trade.
+  Later decision logic may add stricter doctrine checks, but may not bypass
+  these frozen gate surfaces.
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Mapping
+from dataclasses import dataclass
+from typing import Any, Callable, Final, Mapping
 
 from app.mme_scalpx.core import names as N
+from app.mme_scalpx.services.feature_family import contracts as FF_C
 
-from .common import (
-    ALLOWED_REENTRY_EXIT_REASONS,
-    DEFAULT_REENTRY_CAPS,
-    FORBIDDEN_REENTRY_EXIT_REASONS,
-    LIVE_FAMILY_MODES,
-    family_is_classic,
-    normalize_reason,
-    normalize_regime,
+
+# ============================================================================
+# Exceptions
+# ============================================================================
+
+
+class EligibilityError(ValueError):
+    """Base error for eligibility evaluation failures."""
+
+
+class EligibilityValidationError(EligibilityError):
+    """Raised when family_features payload or request inputs are invalid."""
+
+
+# ============================================================================
+# Canonical vocabularies
+# ============================================================================
+
+FAMILY_IDS: Final[tuple[str, ...]] = tuple(FF_C.FAMILY_IDS)
+CLASSIC_FAMILY_IDS: Final[tuple[str, ...]] = tuple(FF_C.CLASSIC_FAMILY_IDS)
+BRANCH_IDS: Final[tuple[str, ...]] = tuple(FF_C.BRANCH_IDS)
+OPTION_SIDE_IDS: Final[tuple[str, ...]] = (N.SIDE_CALL, N.SIDE_PUT)
+
+CLASSIC_RUNTIME_MODES: Final[tuple[str, ...]] = (
+    N.STRATEGY_RUNTIME_MODE_NORMAL,
+    N.STRATEGY_RUNTIME_MODE_DHAN_DEGRADED,
+    N.STRATEGY_RUNTIME_MODE_DISABLED,
 )
-from .doctrine_contracts import get_doctrine_contract, get_required_provider_profile
-from .doctrine_runtime import DoctrineBlocker, DoctrineRuntimeInput
+
+MISO_RUNTIME_MODES: Final[tuple[str, ...]] = (
+    N.STRATEGY_RUNTIME_MODE_BASE_5DEPTH,
+    N.STRATEGY_RUNTIME_MODE_DEPTH20_ENHANCED,
+    N.STRATEGY_RUNTIME_MODE_DISABLED,
+)
+
+ALLOWED_PROVIDER_STATUSES: Final[tuple[str, ...]] = tuple(N.ALLOWED_PROVIDER_STATUSES)
+ALLOWED_FAMILY_RUNTIME_MODES: Final[tuple[str, ...]] = tuple(N.ALLOWED_FAMILY_RUNTIME_MODES)
+ALLOWED_REGIMES: Final[tuple[str, ...]] = tuple(FF_C.ALLOWED_REGIMES)
+
+
+# ============================================================================
+# Reason codes
+# ============================================================================
+
+REASON_PAYLOAD_INVALID: Final[str] = "PAYLOAD_INVALID"
+REASON_FAMILY_UNSUPPORTED: Final[str] = "FAMILY_UNSUPPORTED"
+REASON_BRANCH_UNSUPPORTED: Final[str] = "BRANCH_UNSUPPORTED"
+REASON_DATA_INVALID: Final[str] = "DATA_INVALID"
+REASON_DATA_QUALITY_FAIL: Final[str] = "DATA_QUALITY_FAIL"
+REASON_SESSION_INELIGIBLE: Final[str] = "SESSION_INELIGIBLE"
+REASON_WARMUP_INCOMPLETE: Final[str] = "WARMUP_INCOMPLETE"
+REASON_RISK_VETO_ACTIVE: Final[str] = "RISK_VETO_ACTIVE"
+REASON_RECONCILIATION_LOCK_ACTIVE: Final[str] = "RECONCILIATION_LOCK_ACTIVE"
+REASON_ACTIVE_POSITION_PRESENT: Final[str] = "ACTIVE_POSITION_PRESENT"
+REASON_PROVIDER_NOT_READY_CLASSIC: Final[str] = "PROVIDER_NOT_READY_CLASSIC"
+REASON_PROVIDER_NOT_READY_MISO: Final[str] = "PROVIDER_NOT_READY_MISO"
+REASON_DHAN_CONTEXT_NOT_FRESH: Final[str] = "DHAN_CONTEXT_NOT_FRESH"
+REASON_FUTURES_NOT_PRESENT: Final[str] = "FUTURES_NOT_PRESENT"
+REASON_CALL_NOT_PRESENT: Final[str] = "CALL_NOT_PRESENT"
+REASON_PUT_NOT_PRESENT: Final[str] = "PUT_NOT_PRESENT"
+REASON_SELECTED_OPTION_NOT_PRESENT: Final[str] = "SELECTED_OPTION_NOT_PRESENT"
+REASON_CONTEXT_PASS_FAIL: Final[str] = "CONTEXT_PASS_FAIL"
+REASON_OPTION_TRADABILITY_FAIL: Final[str] = "OPTION_TRADABILITY_FAIL"
+REASON_RUNTIME_MODE_DISABLED: Final[str] = "RUNTIME_MODE_DISABLED"
+REASON_REGIME_UNKNOWN: Final[str] = "REGIME_UNKNOWN"
+REASON_BRANCH_SURFACE_MISSING: Final[str] = "BRANCH_SURFACE_MISSING"
+REASON_FAMILY_NOT_ELIGIBLE: Final[str] = "FAMILY_NOT_ELIGIBLE"
+REASON_STRUCTURAL_FAIL: Final[str] = "STRUCTURAL_FAIL"
+REASON_SELECTED_SIDE_MISMATCH: Final[str] = "SELECTED_SIDE_MISMATCH"
+REASON_CHAIN_CONTEXT_NOT_READY: Final[str] = "CHAIN_CONTEXT_NOT_READY"
+REASON_QUEUE_RELOAD_BLOCKED: Final[str] = "QUEUE_RELOAD_BLOCKED"
+REASON_FUTURES_CONTRADICTION_BLOCKED: Final[str] = "FUTURES_CONTRADICTION_BLOCKED"
+
+# Classic family structural reason labels
+REASON_MIST_FUTURES_BIAS_FAIL: Final[str] = "MIST_FUTURES_BIAS_FAIL"
+REASON_MIST_FUTURES_IMPULSE_FAIL: Final[str] = "MIST_FUTURES_IMPULSE_FAIL"
+REASON_MIST_PULLBACK_FAIL: Final[str] = "MIST_PULLBACK_FAIL"
+REASON_MIST_RESUME_FAIL: Final[str] = "MIST_RESUME_FAIL"
+REASON_MIST_MICRO_TRAP_BLOCKED: Final[str] = "MIST_MICRO_TRAP_BLOCKED"
+
+REASON_MISB_FUTURES_BIAS_FAIL: Final[str] = "MISB_FUTURES_BIAS_FAIL"
+REASON_MISB_SHELF_INVALID: Final[str] = "MISB_SHELF_INVALID"
+REASON_MISB_BREAKOUT_NOT_TRIGGERED: Final[str] = "MISB_BREAKOUT_NOT_TRIGGERED"
+REASON_MISB_BREAKOUT_NOT_ACCEPTED: Final[str] = "MISB_BREAKOUT_NOT_ACCEPTED"
+
+REASON_MISC_COMPRESSION_FAIL: Final[str] = "MISC_COMPRESSION_FAIL"
+REASON_MISC_BREAKOUT_NOT_TRIGGERED: Final[str] = "MISC_BREAKOUT_NOT_TRIGGERED"
+REASON_MISC_EXPANSION_NOT_ACCEPTED: Final[str] = "MISC_EXPANSION_NOT_ACCEPTED"
+REASON_MISC_RESUME_NOT_CONFIRMED: Final[str] = "MISC_RESUME_NOT_CONFIRMED"
+
+REASON_MISR_FAKE_BREAK_NOT_TRIGGERED: Final[str] = "MISR_FAKE_BREAK_NOT_TRIGGERED"
+REASON_MISR_ABSORPTION_FAIL: Final[str] = "MISR_ABSORPTION_FAIL"
+REASON_MISR_RANGE_REENTRY_FAIL: Final[str] = "MISR_RANGE_REENTRY_FAIL"
+REASON_MISR_FLOW_FLIP_FAIL: Final[str] = "MISR_FLOW_FLIP_FAIL"
+REASON_MISR_HOLD_PROOF_FAIL: Final[str] = "MISR_HOLD_PROOF_FAIL"
+REASON_MISR_NO_MANS_LAND_FAIL: Final[str] = "MISR_NO_MANS_LAND_FAIL"
+REASON_MISR_REVERSAL_IMPULSE_FAIL: Final[str] = "MISR_REVERSAL_IMPULSE_FAIL"
+
+# MISO structural reason labels
+REASON_MISO_BURST_NOT_DETECTED: Final[str] = "MISO_BURST_NOT_DETECTED"
+REASON_MISO_AGGRESSION_FAIL: Final[str] = "MISO_AGGRESSION_FAIL"
+REASON_MISO_TAPE_SPEED_FAIL: Final[str] = "MISO_TAPE_SPEED_FAIL"
+REASON_MISO_IMBALANCE_PERSIST_FAIL: Final[str] = "MISO_IMBALANCE_PERSIST_FAIL"
+REASON_MISO_TRADABILITY_FAIL: Final[str] = "MISO_TRADABILITY_FAIL"
+REASON_MISO_FUTURES_VWAP_ALIGN_FAIL: Final[str] = "MISO_FUTURES_VWAP_ALIGN_FAIL"
+
+
+# ============================================================================
+# Typed outputs
+# ============================================================================
 
 
 @dataclass(frozen=True, slots=True)
-class EligibilityResult:
-    passed: bool
-    blocker: DoctrineBlocker | None = None
-    checks: Mapping[str, bool] = field(default_factory=dict)
+class GlobalGateResult:
+    """Global frozen pre-entry gates derived from stage_flags/common/provider_runtime."""
 
+    eligible: bool
+    blocked_reasons: tuple[str, ...]
+    regime: str | None
+    family_runtime_mode: str | None
+    classic_runtime_mode: str | None
+    miso_runtime_mode: str | None
 
-def _pass(checks: Mapping[str, bool] | None = None) -> EligibilityResult:
-    return EligibilityResult(passed=True, blocker=None, checks=dict(checks or {}))
-
-
-def _block(
-    *,
-    code: str,
-    message: str,
-    checks: Mapping[str, bool] | None = None,
-    metadata: Mapping[str, Any] | None = None,
-) -> EligibilityResult:
-    return EligibilityResult(
-        passed=False,
-        blocker=DoctrineBlocker(
-            code=code,
-            message=message,
-            metadata=dict(metadata or {}),
-        ),
-        checks=dict(checks or {}),
-    )
-
-
-def evaluate_rollout_gate(runtime: DoctrineRuntimeInput) -> EligibilityResult:
-    mode = runtime.family_runtime_mode or N.FAMILY_RUNTIME_MODE_OBSERVE_ONLY
-    if mode not in LIVE_FAMILY_MODES:
-        return _block(
-            code="family_mode_not_live",
-            message=f"family_runtime_mode={mode!r} is not live-eligible",
-            checks={"family_runtime_mode_live": False},
-        )
-    return _pass({"family_runtime_mode_live": True})
-
-
-def evaluate_position_gate(runtime: DoctrineRuntimeInput) -> EligibilityResult:
-    if runtime.position.has_position:
-        return _block(
-            code="position_already_open",
-            message="fresh entry blocked because execution truth already shows a live position",
-            checks={"flat_position_required": False},
-        )
-    return _pass({"flat_position_required": True})
-
-
-def evaluate_risk_gate(runtime: DoctrineRuntimeInput) -> EligibilityResult:
-    risk = runtime.risk
-    if risk.veto_entries:
-        return _block(
-            code="risk_veto_entries",
-            message="fresh entry blocked by risk veto_entries",
-            checks={"risk_veto_entries_clear": False},
-        )
-    if risk.daily_loss_lock:
-        return _block(
-            code="daily_loss_lock",
-            message="fresh entry blocked by daily_loss_lock",
-            checks={"daily_loss_lock_clear": False},
-        )
-    if risk.consecutive_loss_pause:
-        return _block(
-            code="consecutive_loss_pause",
-            message="fresh entry blocked by consecutive_loss_pause",
-            checks={"consecutive_loss_pause_clear": False},
-        )
-    if risk.session_close_lock:
-        return _block(
-            code="session_close_lock",
-            message="fresh entry blocked by session_close_lock",
-            checks={"session_close_lock_clear": False},
-        )
-    if risk.reconciliation_lock:
-        return _block(
-            code="reconciliation_lock",
-            message="fresh entry blocked by reconciliation_lock",
-            checks={"reconciliation_lock_clear": False},
-        )
-    if risk.unresolved_disaster_lock:
-        return _block(
-            code="unresolved_disaster_lock",
-            message="fresh entry blocked by unresolved_disaster_lock",
-            checks={"unresolved_disaster_lock_clear": False},
-        )
-    if risk.daily_trade_cap_reached:
-        return _block(
-            code="daily_trade_cap_reached",
-            message="fresh entry blocked by daily_trade_cap_reached",
-            checks={"daily_trade_cap_clear": False},
-        )
-    if risk.preview_quantity_lots <= 0:
-        return _block(
-            code="preview_quantity_unavailable",
-            message="fresh entry blocked because preview_quantity_lots <= 0",
-            checks={"preview_quantity_positive": False},
-        )
-    return _pass(
-        {
-            "risk_veto_entries_clear": True,
-            "daily_loss_lock_clear": True,
-            "consecutive_loss_pause_clear": True,
-            "session_close_lock_clear": True,
-            "reconciliation_lock_clear": True,
-            "unresolved_disaster_lock_clear": True,
-            "daily_trade_cap_clear": True,
-            "preview_quantity_positive": True,
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "eligible": self.eligible,
+            "blocked_reasons": list(self.blocked_reasons),
+            "regime": self.regime,
+            "family_runtime_mode": self.family_runtime_mode,
+            "classic_runtime_mode": self.classic_runtime_mode,
+            "miso_runtime_mode": self.miso_runtime_mode,
         }
+
+
+@dataclass(frozen=True, slots=True)
+class BranchEligibilityResult:
+    """Eligibility result for one family/branch consumer."""
+
+    family_id: str
+    branch_id: str
+    eligible: bool
+    global_gate_pass: bool
+    family_gate_pass: bool
+    context_pass: bool
+    option_tradability_pass: bool
+    structural_pass: bool
+    blocked_reasons: tuple[str, ...]
+    regime: str | None
+    strategy_runtime_mode: str | None
+    family_runtime_mode: str | None
+    support: Mapping[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "family_id": self.family_id,
+            "branch_id": self.branch_id,
+            "eligible": self.eligible,
+            "global_gate_pass": self.global_gate_pass,
+            "family_gate_pass": self.family_gate_pass,
+            "context_pass": self.context_pass,
+            "option_tradability_pass": self.option_tradability_pass,
+            "structural_pass": self.structural_pass,
+            "blocked_reasons": list(self.blocked_reasons),
+            "regime": self.regime,
+            "strategy_runtime_mode": self.strategy_runtime_mode,
+            "family_runtime_mode": self.family_runtime_mode,
+            "support": dict(self.support),
+        }
+
+
+# ============================================================================
+# Internal helpers
+# ============================================================================
+
+
+def _fail(message: str) -> None:
+    raise EligibilityValidationError(message)
+
+
+def _require(condition: bool, message: str) -> None:
+    if not condition:
+        _fail(message)
+
+
+def _require_mapping(value: Any, *, field_name: str) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping):
+        _fail(f"{field_name} must be a mapping")
+    return value
+
+
+def _require_literal(value: str, *, field_name: str, allowed: tuple[str, ...]) -> str:
+    if not isinstance(value, str):
+        _fail(f"{field_name} must be str")
+    normalized = value.strip()
+    if not normalized:
+        _fail(f"{field_name} must be non-empty str")
+    if normalized not in allowed:
+        _fail(f"{field_name} must be one of {allowed!r}, got {normalized!r}")
+    return normalized
+
+
+def _optional_literal(
+    value: Any,
+    *,
+    field_name: str,
+    allowed: tuple[str, ...],
+) -> str | None:
+    if value is None:
+        return None
+    return _require_literal(value, field_name=field_name, allowed=allowed)
+
+
+def _bool(value: Any) -> bool:
+    return bool(value)
+
+
+def _tuple_unique(values: list[str]) -> tuple[str, ...]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for value in values:
+        if value not in seen:
+            seen.add(value)
+            out.append(value)
+    return tuple(out)
+
+
+def _normalize_family_features_payload(raw: Mapping[str, Any]) -> Mapping[str, Any]:
+    """
+    Accept either:
+    - a direct family_features payload
+    - a wrapper mapping containing key 'family_features'
+    """
+    candidate: Any = raw
+    if "family_features" in raw and isinstance(raw.get("family_features"), Mapping):
+        candidate = raw["family_features"]
+    payload = _require_mapping(candidate, field_name="family_features_payload")
+    FF_C.validate_family_features_payload(payload)
+    return payload
+
+
+def _read_global_blocks(
+    payload: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], Mapping[str, Any], Mapping[str, Any], Mapping[str, Any]]:
+    provider_runtime = _require_mapping(
+        payload.get("provider_runtime"),
+        field_name="payload.provider_runtime",
+    )
+    common = _require_mapping(payload.get("common"), field_name="payload.common")
+    stage_flags = _require_mapping(
+        payload.get("stage_flags"),
+        field_name="payload.stage_flags",
+    )
+    families = _require_mapping(payload.get("families"), field_name="payload.families")
+    return provider_runtime, common, stage_flags, families
+
+
+# ============================================================================
+# Frozen global gate evaluation
+# ============================================================================
+
+
+def evaluate_global_gates(payload: Mapping[str, Any]) -> GlobalGateResult:
+    """Evaluate global frozen pre-entry gates from the family_features payload."""
+    family_features = _normalize_family_features_payload(payload)
+    provider_runtime, common, stage_flags, _ = _read_global_blocks(family_features)
+
+    reasons: list[str] = []
+
+    if not _bool(stage_flags.get("data_valid")):
+        reasons.append(REASON_DATA_INVALID)
+    if not _bool(stage_flags.get("data_quality_ok")):
+        reasons.append(REASON_DATA_QUALITY_FAIL)
+    if not _bool(stage_flags.get("session_eligible")):
+        reasons.append(REASON_SESSION_INELIGIBLE)
+    if not _bool(stage_flags.get("warmup_complete")):
+        reasons.append(REASON_WARMUP_INCOMPLETE)
+    if _bool(stage_flags.get("risk_veto_active")):
+        reasons.append(REASON_RISK_VETO_ACTIVE)
+    if _bool(stage_flags.get("reconciliation_lock_active")):
+        reasons.append(REASON_RECONCILIATION_LOCK_ACTIVE)
+    if _bool(stage_flags.get("active_position_present")):
+        reasons.append(REASON_ACTIVE_POSITION_PRESENT)
+
+    regime = _optional_literal(
+        common.get("regime"),
+        field_name="common.regime",
+        allowed=ALLOWED_REGIMES,
+    )
+
+    family_runtime_mode = _optional_literal(
+        provider_runtime.get("family_runtime_mode"),
+        field_name="provider_runtime.family_runtime_mode",
+        allowed=ALLOWED_FAMILY_RUNTIME_MODES,
+    )
+    classic_runtime_mode = _optional_literal(
+        common.get("strategy_runtime_mode_classic"),
+        field_name="common.strategy_runtime_mode_classic",
+        allowed=CLASSIC_RUNTIME_MODES,
+    )
+    miso_runtime_mode = _optional_literal(
+        common.get("strategy_runtime_mode_miso"),
+        field_name="common.strategy_runtime_mode_miso",
+        allowed=MISO_RUNTIME_MODES,
+    )
+
+    if regime is None:
+        reasons.append(REASON_REGIME_UNKNOWN)
+
+    return GlobalGateResult(
+        eligible=len(reasons) == 0,
+        blocked_reasons=_tuple_unique(reasons),
+        regime=regime,
+        family_runtime_mode=family_runtime_mode,
+        classic_runtime_mode=classic_runtime_mode,
+        miso_runtime_mode=miso_runtime_mode,
     )
 
 
-def evaluate_provider_profile_gate(
-    runtime: DoctrineRuntimeInput,
+# ============================================================================
+# Classic family branch evaluation
+# ============================================================================
+
+
+def _classic_global_reasons(
     *,
-    require_execution_bridge: bool = True,
-) -> EligibilityResult:
-    contract = get_doctrine_contract(runtime.family_id)
-    profile = get_required_provider_profile(contract.required_provider_profile_id)
-    provider = runtime.provider
-    checks: dict[str, bool] = {}
+    stage_flags: Mapping[str, Any],
+    branch_id: str,
+) -> list[str]:
+    reasons: list[str] = []
+    if not _bool(stage_flags.get("data_valid")):
+        reasons.append(REASON_DATA_INVALID)
+    if not _bool(stage_flags.get("data_quality_ok")):
+        reasons.append(REASON_DATA_QUALITY_FAIL)
+    if not _bool(stage_flags.get("session_eligible")):
+        reasons.append(REASON_SESSION_INELIGIBLE)
+    if not _bool(stage_flags.get("warmup_complete")):
+        reasons.append(REASON_WARMUP_INCOMPLETE)
+    if _bool(stage_flags.get("risk_veto_active")):
+        reasons.append(REASON_RISK_VETO_ACTIVE)
+    if _bool(stage_flags.get("reconciliation_lock_active")):
+        reasons.append(REASON_RECONCILIATION_LOCK_ACTIVE)
+    if _bool(stage_flags.get("active_position_present")):
+        reasons.append(REASON_ACTIVE_POSITION_PRESENT)
+    if not _bool(stage_flags.get("provider_ready_classic")):
+        reasons.append(REASON_PROVIDER_NOT_READY_CLASSIC)
+    if not _bool(stage_flags.get("futures_present")):
+        reasons.append(REASON_FUTURES_NOT_PRESENT)
+    if branch_id == N.BRANCH_CALL and not _bool(stage_flags.get("call_present")):
+        reasons.append(REASON_CALL_NOT_PRESENT)
+    if branch_id == N.BRANCH_PUT and not _bool(stage_flags.get("put_present")):
+        reasons.append(REASON_PUT_NOT_PRESENT)
+    return reasons
 
-    if runtime.strategy_runtime_mode is None:
-        return _block(
-            code="strategy_runtime_mode_missing",
-            message="strategy_runtime_mode is missing",
-            checks={"strategy_runtime_mode_present": False},
+
+def _classic_branch_support(
+    payload: Mapping[str, Any],
+    *,
+    family_id: str,
+    branch_id: str,
+) -> tuple[Mapping[str, Any], Mapping[str, Any], Mapping[str, Any], Mapping[str, Any]]:
+    family_features = _normalize_family_features_payload(payload)
+    provider_runtime, common, stage_flags, families = _read_global_blocks(family_features)
+
+    family_surface = _require_mapping(
+        families.get(family_id),
+        field_name=f'payload.families["{family_id}"]',
+    )
+    branches = _require_mapping(
+        family_surface.get("branches"),
+        field_name=f'payload.families["{family_id}"].branches',
+    )
+    support = _require_mapping(
+        branches.get(branch_id),
+        field_name=f'payload.families["{family_id}"].branches["{branch_id}"]',
+    )
+    return provider_runtime, common, stage_flags, support
+
+
+def _mist_structural_reasons(support: Mapping[str, Any]) -> list[str]:
+    reasons: list[str] = []
+    if not _bool(support.get("futures_bias_ok")):
+        reasons.append(REASON_MIST_FUTURES_BIAS_FAIL)
+    if not _bool(support.get("futures_impulse_ok")):
+        reasons.append(REASON_MIST_FUTURES_IMPULSE_FAIL)
+    if not _bool(support.get("pullback_detected")):
+        reasons.append(REASON_MIST_PULLBACK_FAIL)
+    if not _bool(support.get("resume_confirmed")):
+        reasons.append(REASON_MIST_RESUME_FAIL)
+    if not _bool(support.get("micro_trap_blocked")):
+        reasons.append(REASON_MIST_MICRO_TRAP_BLOCKED)
+    return reasons
+
+
+def _misb_structural_reasons(support: Mapping[str, Any]) -> list[str]:
+    reasons: list[str] = []
+    if not _bool(support.get("futures_bias_ok")):
+        reasons.append(REASON_MISB_FUTURES_BIAS_FAIL)
+    if not _bool(support.get("shelf_valid")):
+        reasons.append(REASON_MISB_SHELF_INVALID)
+    if not _bool(support.get("breakout_triggered")):
+        reasons.append(REASON_MISB_BREAKOUT_NOT_TRIGGERED)
+    if not _bool(support.get("breakout_accepted")):
+        reasons.append(REASON_MISB_BREAKOUT_NOT_ACCEPTED)
+    return reasons
+
+
+def _misc_structural_reasons(support: Mapping[str, Any]) -> list[str]:
+    reasons: list[str] = []
+    if not _bool(support.get("compression_detected")):
+        reasons.append(REASON_MISC_COMPRESSION_FAIL)
+    if not _bool(support.get("directional_breakout_triggered")):
+        reasons.append(REASON_MISC_BREAKOUT_NOT_TRIGGERED)
+    if not _bool(support.get("expansion_accepted")):
+        reasons.append(REASON_MISC_EXPANSION_NOT_ACCEPTED)
+    if not _bool(support.get("resume_confirmed")):
+        reasons.append(REASON_MISC_RESUME_NOT_CONFIRMED)
+    return reasons
+
+
+def _misr_structural_reasons(support: Mapping[str, Any]) -> list[str]:
+    reasons: list[str] = []
+    if not _bool(support.get("fake_break_triggered")):
+        reasons.append(REASON_MISR_FAKE_BREAK_NOT_TRIGGERED)
+    if not _bool(support.get("absorption_pass")):
+        reasons.append(REASON_MISR_ABSORPTION_FAIL)
+    if not _bool(support.get("range_reentry_confirmed")):
+        reasons.append(REASON_MISR_RANGE_REENTRY_FAIL)
+    if not _bool(support.get("flow_flip_confirmed")):
+        reasons.append(REASON_MISR_FLOW_FLIP_FAIL)
+    if not _bool(support.get("hold_inside_range_proved")):
+        reasons.append(REASON_MISR_HOLD_PROOF_FAIL)
+    if not _bool(support.get("no_mans_land_cleared")):
+        reasons.append(REASON_MISR_NO_MANS_LAND_FAIL)
+    if not _bool(support.get("reversal_impulse_confirmed")):
+        reasons.append(REASON_MISR_REVERSAL_IMPULSE_FAIL)
+    return reasons
+
+
+CLASSIC_STRUCTURAL_REASON_BUILDERS: Final[Mapping[str, Callable[[Mapping[str, Any]], list[str]]]] = {
+    N.STRATEGY_FAMILY_MIST: _mist_structural_reasons,
+    N.STRATEGY_FAMILY_MISB: _misb_structural_reasons,
+    N.STRATEGY_FAMILY_MISC: _misc_structural_reasons,
+    N.STRATEGY_FAMILY_MISR: _misr_structural_reasons,
+}
+
+
+def evaluate_classic_branch_eligibility(
+    payload: Mapping[str, Any],
+    *,
+    family_id: str,
+    branch_id: str,
+) -> BranchEligibilityResult:
+    """Evaluate one classic family branch (CALL or PUT)."""
+    _require_literal(family_id, field_name="family_id", allowed=CLASSIC_FAMILY_IDS)
+    _require_literal(branch_id, field_name="branch_id", allowed=BRANCH_IDS)
+
+    provider_runtime, common, stage_flags, support = _classic_branch_support(
+        payload,
+        family_id=family_id,
+        branch_id=branch_id,
+    )
+
+    reasons: list[str] = []
+    reasons.extend(_classic_global_reasons(stage_flags=stage_flags, branch_id=branch_id))
+
+    family_features = _normalize_family_features_payload(payload)
+    families = _require_mapping(family_features.get("families"), field_name="payload.families")
+    family_surface = _require_mapping(
+        families.get(family_id),
+        field_name=f'payload.families["{family_id}"]',
+    )
+
+    if not _bool(family_surface.get("eligible")):
+        reasons.append(REASON_FAMILY_NOT_ELIGIBLE)
+
+    runtime_mode = _optional_literal(
+        common.get("strategy_runtime_mode_classic"),
+        field_name="common.strategy_runtime_mode_classic",
+        allowed=CLASSIC_RUNTIME_MODES,
+    )
+    if runtime_mode == N.STRATEGY_RUNTIME_MODE_DISABLED:
+        reasons.append(REASON_RUNTIME_MODE_DISABLED)
+
+    context_pass = _bool(support.get("context_pass"))
+    option_tradability_pass = _bool(support.get("option_tradability_pass"))
+
+    if not context_pass:
+        reasons.append(REASON_CONTEXT_PASS_FAIL)
+    if not option_tradability_pass:
+        reasons.append(REASON_OPTION_TRADABILITY_FAIL)
+
+    structural_reasons = CLASSIC_STRUCTURAL_REASON_BUILDERS[family_id](support)
+    reasons.extend(structural_reasons)
+
+    structural_pass = len(structural_reasons) == 0
+    global_gate_pass = len(_classic_global_reasons(stage_flags=stage_flags, branch_id=branch_id)) == 0
+    family_gate_pass = _bool(family_surface.get("eligible"))
+
+    return BranchEligibilityResult(
+        family_id=family_id,
+        branch_id=branch_id,
+        eligible=len(reasons) == 0,
+        global_gate_pass=global_gate_pass,
+        family_gate_pass=family_gate_pass,
+        context_pass=context_pass,
+        option_tradability_pass=option_tradability_pass,
+        structural_pass=structural_pass,
+        blocked_reasons=_tuple_unique(reasons),
+        regime=_optional_literal(
+            common.get("regime"),
+            field_name="common.regime",
+            allowed=ALLOWED_REGIMES,
+        ),
+        strategy_runtime_mode=runtime_mode,
+        family_runtime_mode=_optional_literal(
+            provider_runtime.get("family_runtime_mode"),
+            field_name="provider_runtime.family_runtime_mode",
+            allowed=ALLOWED_FAMILY_RUNTIME_MODES,
+        ),
+        support=support,
+    )
+
+
+# ============================================================================
+# MISO evaluation
+# ============================================================================
+
+
+def _miso_global_reasons(
+    *,
+    stage_flags: Mapping[str, Any],
+    side: str,
+) -> list[str]:
+    reasons: list[str] = []
+    if not _bool(stage_flags.get("data_valid")):
+        reasons.append(REASON_DATA_INVALID)
+    if not _bool(stage_flags.get("data_quality_ok")):
+        reasons.append(REASON_DATA_QUALITY_FAIL)
+    if not _bool(stage_flags.get("session_eligible")):
+        reasons.append(REASON_SESSION_INELIGIBLE)
+    if not _bool(stage_flags.get("warmup_complete")):
+        reasons.append(REASON_WARMUP_INCOMPLETE)
+    if _bool(stage_flags.get("risk_veto_active")):
+        reasons.append(REASON_RISK_VETO_ACTIVE)
+    if _bool(stage_flags.get("reconciliation_lock_active")):
+        reasons.append(REASON_RECONCILIATION_LOCK_ACTIVE)
+    if _bool(stage_flags.get("active_position_present")):
+        reasons.append(REASON_ACTIVE_POSITION_PRESENT)
+    if not _bool(stage_flags.get("provider_ready_miso")):
+        reasons.append(REASON_PROVIDER_NOT_READY_MISO)
+    if not _bool(stage_flags.get("dhan_context_fresh")):
+        reasons.append(REASON_DHAN_CONTEXT_NOT_FRESH)
+    if not _bool(stage_flags.get("futures_present")):
+        reasons.append(REASON_FUTURES_NOT_PRESENT)
+    if not _bool(stage_flags.get("selected_option_present")):
+        reasons.append(REASON_SELECTED_OPTION_NOT_PRESENT)
+    if side == N.SIDE_CALL and not _bool(stage_flags.get("call_present")):
+        reasons.append(REASON_CALL_NOT_PRESENT)
+    if side == N.SIDE_PUT and not _bool(stage_flags.get("put_present")):
+        reasons.append(REASON_PUT_NOT_PRESENT)
+    return reasons
+
+
+def _miso_support(
+    payload: Mapping[str, Any],
+    *,
+    side: str,
+) -> tuple[Mapping[str, Any], Mapping[str, Any], Mapping[str, Any], Mapping[str, Any], Mapping[str, Any]]:
+    family_features = _normalize_family_features_payload(payload)
+    provider_runtime, common, stage_flags, families = _read_global_blocks(family_features)
+    miso = _require_mapping(
+        families.get(N.STRATEGY_FAMILY_MISO),
+        field_name='payload.families["MISO"]',
+    )
+    support_key = "call_support" if side == N.SIDE_CALL else "put_support"
+    support = _require_mapping(
+        miso.get(support_key),
+        field_name=f'payload.families["MISO"].{support_key}',
+    )
+    return provider_runtime, common, stage_flags, miso, support
+
+
+def _miso_structural_reasons(support: Mapping[str, Any]) -> list[str]:
+    reasons: list[str] = []
+    if not _bool(support.get("burst_detected")):
+        reasons.append(REASON_MISO_BURST_NOT_DETECTED)
+    if not _bool(support.get("aggression_ok")):
+        reasons.append(REASON_MISO_AGGRESSION_FAIL)
+    if not _bool(support.get("tape_speed_ok")):
+        reasons.append(REASON_MISO_TAPE_SPEED_FAIL)
+    if not _bool(support.get("imbalance_persist_ok")):
+        reasons.append(REASON_MISO_IMBALANCE_PERSIST_FAIL)
+    if _bool(support.get("queue_reload_blocked")):
+        reasons.append(REASON_QUEUE_RELOAD_BLOCKED)
+    if not _bool(support.get("futures_vwap_align_ok")):
+        reasons.append(REASON_MISO_FUTURES_VWAP_ALIGN_FAIL)
+    if _bool(support.get("futures_contradiction_blocked")):
+        reasons.append(REASON_FUTURES_CONTRADICTION_BLOCKED)
+    if not _bool(support.get("tradability_pass")):
+        reasons.append(REASON_MISO_TRADABILITY_FAIL)
+    return reasons
+
+
+def evaluate_miso_side_eligibility(
+    payload: Mapping[str, Any],
+    *,
+    side: str,
+) -> BranchEligibilityResult:
+    """Evaluate MISO eligibility for CALL or PUT side."""
+    _require_literal(side, field_name="side", allowed=OPTION_SIDE_IDS)
+
+    provider_runtime, common, stage_flags, miso, support = _miso_support(payload, side=side)
+
+    reasons: list[str] = []
+    reasons.extend(_miso_global_reasons(stage_flags=stage_flags, side=side))
+
+    if not _bool(miso.get("eligible")):
+        reasons.append(REASON_FAMILY_NOT_ELIGIBLE)
+    if not _bool(miso.get("chain_context_ready")):
+        reasons.append(REASON_CHAIN_CONTEXT_NOT_READY)
+
+    runtime_mode = _optional_literal(
+        miso.get("mode"),
+        field_name='payload.families["MISO"].mode',
+        allowed=MISO_RUNTIME_MODES,
+    )
+    if runtime_mode == N.STRATEGY_RUNTIME_MODE_DISABLED:
+        reasons.append(REASON_RUNTIME_MODE_DISABLED)
+
+    selected_side = _optional_literal(
+        miso.get("selected_side"),
+        field_name='payload.families["MISO"].selected_side',
+        allowed=OPTION_SIDE_IDS,
+    )
+    if selected_side is not None and selected_side != side:
+        reasons.append(REASON_SELECTED_SIDE_MISMATCH)
+
+    structural_reasons = _miso_structural_reasons(support)
+    reasons.extend(structural_reasons)
+
+    structural_pass = len(structural_reasons) == 0
+    global_gate_pass = len(_miso_global_reasons(stage_flags=stage_flags, side=side)) == 0
+    family_gate_pass = _bool(miso.get("eligible")) and _bool(miso.get("chain_context_ready"))
+
+    return BranchEligibilityResult(
+        family_id=N.STRATEGY_FAMILY_MISO,
+        branch_id=N.BRANCH_CALL if side == N.SIDE_CALL else N.BRANCH_PUT,
+        eligible=len(reasons) == 0,
+        global_gate_pass=global_gate_pass,
+        family_gate_pass=family_gate_pass,
+        context_pass=_bool(miso.get("chain_context_ready")),
+        option_tradability_pass=_bool(support.get("tradability_pass")),
+        structural_pass=structural_pass,
+        blocked_reasons=_tuple_unique(reasons),
+        regime=_optional_literal(
+            common.get("regime"),
+            field_name="common.regime",
+            allowed=ALLOWED_REGIMES,
+        ),
+        strategy_runtime_mode=runtime_mode,
+        family_runtime_mode=_optional_literal(
+            provider_runtime.get("family_runtime_mode"),
+            field_name="provider_runtime.family_runtime_mode",
+            allowed=ALLOWED_FAMILY_RUNTIME_MODES,
+        ),
+        support=support,
+    )
+
+
+# ============================================================================
+# Public façade helpers
+# ============================================================================
+
+
+def evaluate_branch_eligibility(
+    payload: Mapping[str, Any],
+    *,
+    family_id: str,
+    branch_id: str,
+) -> BranchEligibilityResult:
+    """
+    Public unified branch evaluation helper.
+
+    For classic families:
+    - family_id must be one of MIST/MISB/MISC/MISR
+    - branch_id must be CALL/PUT
+
+    For MISO:
+    - family_id must be MISO
+    - branch_id still uses CALL/PUT
+    """
+    family = _require_literal(family_id, field_name="family_id", allowed=FAMILY_IDS)
+    branch = _require_literal(branch_id, field_name="branch_id", allowed=BRANCH_IDS)
+
+    if family in CLASSIC_FAMILY_IDS:
+        return evaluate_classic_branch_eligibility(
+            payload,
+            family_id=family,
+            branch_id=branch,
         )
 
-    if runtime.strategy_runtime_mode == N.STRATEGY_RUNTIME_MODE_DISABLED:
-        return _block(
-            code="strategy_runtime_disabled",
-            message="strategy_runtime_mode is DISABLED",
-            checks={"strategy_runtime_mode_active": False},
+    if family == N.STRATEGY_FAMILY_MISO:
+        return evaluate_miso_side_eligibility(
+            payload,
+            side=N.SIDE_CALL if branch == N.BRANCH_CALL else N.SIDE_PUT,
         )
 
-    checks["strategy_runtime_mode_active"] = True
-
-    if family_is_classic(runtime.family_id):
-        if provider.active_futures_provider_id is None:
-            return _block(
-                code="futures_provider_missing",
-                message="classic doctrine requires an active futures provider",
-                checks={**checks, "active_futures_provider_present": False},
-            )
-        checks["active_futures_provider_present"] = True
-
-        if provider.active_selected_option_provider_id is None:
-            return _block(
-                code="selected_option_provider_missing",
-                message="classic doctrine requires an active selected-option provider",
-                checks={**checks, "active_selected_option_provider_present": False},
-            )
-        checks["active_selected_option_provider_present"] = True
-
-        if runtime.strategy_runtime_mode == N.STRATEGY_RUNTIME_MODE_NORMAL:
-            if provider.active_option_context_provider_id is None:
-                return _block(
-                    code="option_context_provider_missing",
-                    message="NORMAL classic mode requires active option-context provider truth",
-                    checks={**checks, "active_option_context_provider_present": False},
-                )
-            checks["active_option_context_provider_present"] = True
-        elif runtime.strategy_runtime_mode == N.STRATEGY_RUNTIME_MODE_DHAN_DEGRADED:
-            checks["active_option_context_provider_present"] = (
-                provider.active_option_context_provider_id is not None
-            )
-        else:
-            return _block(
-                code="invalid_classic_runtime_mode",
-                message=(
-                    "classic doctrine runtime mode must be NORMAL or DHAN_DEGRADED "
-                    f"for live entry, got {runtime.strategy_runtime_mode!r}"
-                ),
-                checks={**checks, "classic_runtime_mode_valid": False},
-            )
-        checks["classic_runtime_mode_valid"] = True
-        return _pass(checks)
-
-    expected_fut = profile.futures_provider_id
-    expected_opt = profile.selected_option_provider_id
-    expected_ctx = profile.option_context_provider_id
-
-    if provider.active_futures_provider_id != expected_fut:
-        return _block(
-            code="miso_futures_provider_mismatch",
-            message=(
-                "MISO requires Dhan futures signal path, got "
-                f"{provider.active_futures_provider_id!r}"
-            ),
-            checks={**checks, "miso_futures_provider_ok": False},
-        )
-    checks["miso_futures_provider_ok"] = True
-
-    if provider.active_selected_option_provider_id != expected_opt:
-        return _block(
-            code="miso_selected_option_provider_mismatch",
-            message=(
-                "MISO requires Dhan selected-option signal path, got "
-                f"{provider.active_selected_option_provider_id!r}"
-            ),
-            checks={**checks, "miso_selected_option_provider_ok": False},
-        )
-    checks["miso_selected_option_provider_ok"] = True
-
-    if provider.active_option_context_provider_id != expected_ctx:
-        return _block(
-            code="miso_option_context_provider_mismatch",
-            message=(
-                "MISO requires Dhan option-context path, got "
-                f"{provider.active_option_context_provider_id!r}"
-            ),
-            checks={**checks, "miso_option_context_provider_ok": False},
-        )
-    checks["miso_option_context_provider_ok"] = True
-
-    if runtime.strategy_runtime_mode not in (
-        N.STRATEGY_RUNTIME_MODE_BASE_5DEPTH,
-        N.STRATEGY_RUNTIME_MODE_DEPTH20_ENHANCED,
-    ):
-        return _block(
-            code="miso_runtime_mode_invalid",
-            message=(
-                "MISO live entry requires BASE_5DEPTH or DEPTH20_ENHANCED mode, got "
-                f"{runtime.strategy_runtime_mode!r}"
-            ),
-            checks={**checks, "miso_runtime_mode_valid": False},
-        )
-    checks["miso_runtime_mode_valid"] = True
-
-    if require_execution_bridge and profile.execution_bridge_required and not provider.execution_bridge_ok:
-        return _block(
-            code="miso_execution_bridge_missing",
-            message="MISO live entry requires explicit execution_bridge_ok",
-            checks={**checks, "execution_bridge_ok": False},
-        )
-    checks["execution_bridge_ok"] = True
-
-    return _pass(checks)
+    _fail(f"unsupported family_id: {family!r}")
 
 
 def pre_entry_gate(
-    runtime: DoctrineRuntimeInput,
+    payload: Mapping[str, Any],
     *,
-    require_execution_bridge: bool = True,
-) -> EligibilityResult:
-    for gate in (
-        evaluate_rollout_gate(runtime),
-        evaluate_position_gate(runtime),
-        evaluate_risk_gate(runtime),
-        evaluate_provider_profile_gate(
-            runtime,
-            require_execution_bridge=require_execution_bridge,
-        ),
-    ):
-        if not gate.passed:
-            return gate
-    return _pass(
-        {
-            "family_runtime_mode_live": True,
-            "flat_position_required": True,
-            "risk_gate_pass": True,
-            "provider_profile_pass": True,
-        }
+    family_id: str,
+    branch_id: str,
+) -> BranchEligibilityResult:
+    """
+    Frozen top-level entry gate façade for downstream decisions/arbitration.
+
+    This function is intentionally thin so later files can call a stable
+    high-level gate without bypassing the frozen family_features seam.
+    """
+    return evaluate_branch_eligibility(
+        payload,
+        family_id=family_id,
+        branch_id=branch_id,
     )
 
 
-def is_reentry_exit_reason_allowed(
-    family_id: str,
-    exit_reason: str | None,
-    pnl_points: float | None = None,
-) -> bool:
-    reason = normalize_reason(exit_reason)
-    if reason in FORBIDDEN_REENTRY_EXIT_REASONS.get(family_id, ()):
-        return False
-
-    allowed = ALLOWED_REENTRY_EXIT_REASONS.get(family_id, ())
-    if reason not in allowed:
-        return False
-
-    if reason == "time_stall" and (pnl_points is None or pnl_points <= 0):
-        return False
-    return True
-
-
-def reentry_cap_allows(
-    family_id: str,
-    regime: str | None,
-    current_reentry_count: int,
-) -> bool:
-    normalized_regime = normalize_regime(regime)
-    caps = DEFAULT_REENTRY_CAPS.get(family_id, {"LOWVOL": 0, "NORMAL": 0, "FAST": 0})
-    allowed = caps.get(normalized_regime, 0)
-    return current_reentry_count < allowed
-
-
 __all__ = [
-    "EligibilityResult",
-    "evaluate_position_gate",
-    "evaluate_provider_profile_gate",
-    "evaluate_risk_gate",
-    "evaluate_rollout_gate",
-    "is_reentry_exit_reason_allowed",
+    "EligibilityError",
+    "EligibilityValidationError",
+    "GlobalGateResult",
+    "BranchEligibilityResult",
+    "evaluate_global_gates",
+    "evaluate_classic_branch_eligibility",
+    "evaluate_miso_side_eligibility",
+    "evaluate_branch_eligibility",
     "pre_entry_gate",
-    "reentry_cap_allows",
+    "FAMILY_IDS",
+    "CLASSIC_FAMILY_IDS",
+    "BRANCH_IDS",
+    "OPTION_SIDE_IDS",
+    "REASON_PAYLOAD_INVALID",
+    "REASON_FAMILY_UNSUPPORTED",
+    "REASON_BRANCH_UNSUPPORTED",
+    "REASON_DATA_INVALID",
+    "REASON_DATA_QUALITY_FAIL",
+    "REASON_SESSION_INELIGIBLE",
+    "REASON_WARMUP_INCOMPLETE",
+    "REASON_RISK_VETO_ACTIVE",
+    "REASON_RECONCILIATION_LOCK_ACTIVE",
+    "REASON_ACTIVE_POSITION_PRESENT",
+    "REASON_PROVIDER_NOT_READY_CLASSIC",
+    "REASON_PROVIDER_NOT_READY_MISO",
+    "REASON_DHAN_CONTEXT_NOT_FRESH",
+    "REASON_FUTURES_NOT_PRESENT",
+    "REASON_CALL_NOT_PRESENT",
+    "REASON_PUT_NOT_PRESENT",
+    "REASON_SELECTED_OPTION_NOT_PRESENT",
+    "REASON_CONTEXT_PASS_FAIL",
+    "REASON_OPTION_TRADABILITY_FAIL",
+    "REASON_RUNTIME_MODE_DISABLED",
+    "REASON_REGIME_UNKNOWN",
+    "REASON_BRANCH_SURFACE_MISSING",
+    "REASON_FAMILY_NOT_ELIGIBLE",
+    "REASON_STRUCTURAL_FAIL",
+    "REASON_SELECTED_SIDE_MISMATCH",
+    "REASON_CHAIN_CONTEXT_NOT_READY",
+    "REASON_QUEUE_RELOAD_BLOCKED",
+    "REASON_FUTURES_CONTRADICTION_BLOCKED",
 ]

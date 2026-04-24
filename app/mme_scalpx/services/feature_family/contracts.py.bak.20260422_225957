@@ -90,11 +90,6 @@ BRANCH_IDS: Final[tuple[str, ...]] = (
     BRANCH_PUT,
 )
 
-OPTION_SIDE_IDS: Final[tuple[str, ...]] = (
-    N.SIDE_CALL,
-    N.SIDE_PUT,
-)
-
 ALLOWED_PROVIDER_IDS: Final[tuple[str, ...]] = tuple(N.ALLOWED_PROVIDER_IDS)
 ALLOWED_PROVIDER_STATUSES: Final[tuple[str, ...]] = tuple(N.ALLOWED_PROVIDER_STATUSES)
 ALLOWED_FAMILY_RUNTIME_MODES: Final[tuple[str, ...]] = tuple(N.ALLOWED_FAMILY_RUNTIME_MODES)
@@ -494,16 +489,6 @@ def _validate_family_identities() -> None:
     )
 
 
-def _validate_bool_mapping_fields(
-    mapping: Mapping[str, Any],
-    *,
-    field_name: str,
-    bool_keys: tuple[str, ...],
-) -> None:
-    for key in bool_keys:
-        _require_bool(mapping[key], field_name=f"{field_name}.{key}")
-
-
 # ============================================================================
 # Deterministic scaffold builders
 # ============================================================================
@@ -883,26 +868,21 @@ def validate_provider_runtime_block(
         field_name="provider_runtime",
     )
 
-    strict_provider_fields = (
+    required_provider_fields = (
         "active_futures_provider_id",
         "active_selected_option_provider_id",
-    )
-    optional_provider_fields = (
         "active_option_context_provider_id",
         "active_execution_provider_id",
         "fallback_execution_provider_id",
     )
-
-    strict_status_fields = (
+    required_status_fields = (
         "futures_provider_status",
         "selected_option_provider_status",
-    )
-    optional_status_fields = (
         "option_context_provider_status",
         "execution_provider_status",
     )
 
-    for field_name in strict_provider_fields:
+    for field_name in required_provider_fields:
         value = provider_runtime[field_name]
         if publishable:
             _require_literal(
@@ -917,15 +897,7 @@ def validate_provider_runtime_block(
                 allowed=ALLOWED_PROVIDER_IDS,
             )
 
-    for field_name in optional_provider_fields:
-        value = provider_runtime[field_name]
-        _require_optional_literal(
-            value,
-            field_name=f"provider_runtime.{field_name}",
-            allowed=ALLOWED_PROVIDER_IDS,
-        )
-
-    for field_name in strict_status_fields:
+    for field_name in required_status_fields:
         value = provider_runtime[field_name]
         if publishable:
             _require_literal(
@@ -939,14 +911,6 @@ def validate_provider_runtime_block(
                 field_name=f"provider_runtime.{field_name}",
                 allowed=ALLOWED_PROVIDER_STATUSES,
             )
-
-    for field_name in optional_status_fields:
-        value = provider_runtime[field_name]
-        _require_optional_literal(
-            value,
-            field_name=f"provider_runtime.{field_name}",
-            allowed=ALLOWED_PROVIDER_STATUSES,
-        )
 
     if publishable:
         _require_str(
@@ -1052,7 +1016,7 @@ def validate_common_block(common: Mapping[str, Any]) -> None:
     _require_optional_literal(
         selected_option["side"],
         field_name="common.selected_option.side",
-        allowed=OPTION_SIDE_IDS,
+        allowed=BRANCH_IDS,
     )
 
     _require_bool(call["tradability_ok"], field_name="common.call.tradability_ok")
@@ -1112,11 +1076,6 @@ def validate_mist_family_support(value: Mapping[str, Any]) -> None:
             required_keys=MIST_BRANCH_KEYS,
             field_name=f"families.MIST.branches.{branch_id}",
         )
-        _validate_bool_mapping_fields(
-            branch,
-            field_name=f"families.MIST.branches.{branch_id}",
-            bool_keys=MIST_BRANCH_KEYS,
-        )
 
 
 def validate_misb_family_support(value: Mapping[str, Any]) -> None:
@@ -1142,11 +1101,6 @@ def validate_misb_family_support(value: Mapping[str, Any]) -> None:
             required_keys=MISB_BRANCH_KEYS,
             field_name=f"families.MISB.branches.{branch_id}",
         )
-        _validate_bool_mapping_fields(
-            branch,
-            field_name=f"families.MISB.branches.{branch_id}",
-            bool_keys=MISB_BRANCH_KEYS,
-        )
 
 
 def validate_misc_family_support(value: Mapping[str, Any]) -> None:
@@ -1171,23 +1125,6 @@ def validate_misc_family_support(value: Mapping[str, Any]) -> None:
             branch,
             required_keys=MISC_BRANCH_KEYS,
             field_name=f"families.MISC.branches.{branch_id}",
-        )
-        _validate_bool_mapping_fields(
-            branch,
-            field_name=f"families.MISC.branches.{branch_id}",
-            bool_keys=(
-                "compression_detected",
-                "directional_breakout_triggered",
-                "expansion_accepted",
-                "retest_monitor_active",
-                "resume_confirmed",
-                "context_pass",
-                "option_tradability_pass",
-            ),
-        )
-        _require_optional_non_empty_str(
-            branch["retest_type"],
-            field_name=f"families.MISC.branches.{branch_id}.retest_type",
         )
 
 
@@ -1222,11 +1159,6 @@ def validate_misr_family_support(value: Mapping[str, Any]) -> None:
             branch,
             required_keys=MISR_BRANCH_KEYS,
             field_name=f"families.MISR.branches.{branch_id}",
-        )
-        _validate_bool_mapping_fields(
-            branch,
-            field_name=f"families.MISR.branches.{branch_id}",
-            bool_keys=MISR_BRANCH_KEYS,
         )
 
 
@@ -1273,16 +1205,6 @@ def validate_miso_family_support(value: Mapping[str, Any]) -> None:
         put_support,
         required_keys=MISO_SIDE_SUPPORT_KEYS,
         field_name="families.MISO.put_support",
-    )
-    _validate_bool_mapping_fields(
-        call_support,
-        field_name="families.MISO.call_support",
-        bool_keys=MISO_SIDE_SUPPORT_KEYS,
-    )
-    _validate_bool_mapping_fields(
-        put_support,
-        field_name="families.MISO.put_support",
-        bool_keys=MISO_SIDE_SUPPORT_KEYS,
     )
 
 

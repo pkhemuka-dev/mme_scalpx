@@ -1,5 +1,4 @@
-from .common import FAMILY_ORDER
-from .registry import get_family_evaluator
+from .registry import FAMILY_ORDER, get_family_evaluator
 from .eligibility import pre_entry_gate
 from .arbitration import select_best_candidate
 

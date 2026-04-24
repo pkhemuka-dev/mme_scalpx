@@ -40,9 +40,13 @@ Core design rules
 
 from __future__ import annotations
 
+import collections.abc as cabc
+import math
+import sys
 from dataclasses import MISSING, dataclass, field, fields
+from functools import lru_cache
 from types import MappingProxyType
-from typing import Any, ClassVar, Final, Mapping, Sequence, TypeVar, get_args, get_origin
+from typing import Any, ClassVar, Final, Mapping, Sequence, TypeVar, get_args, get_origin, get_type_hints
 
 from app.mme_scalpx.core import names
 from app.mme_scalpx.core.clock import ClockSnapshot
@@ -160,7 +164,6 @@ def _require_literal(
 
 T = TypeVar("T", bound="SchemaBase")
 
-
 ALLOWED_ENTRY_MODES: Final[tuple[str, ...]] = tuple(names.ALLOWED_ENTRY_MODES)
 ALLOWED_OPTION_SIDES: Final[tuple[str, ...]] = (
     names.SIDE_CALL,
@@ -181,31 +184,21 @@ ALLOWED_EXECUTION_MODES: Final[tuple[str, ...]] = tuple(names.ALLOWED_EXECUTION_
 ALLOWED_STRATEGY_MODES: Final[tuple[str, ...]] = tuple(names.ALLOWED_STRATEGY_MODES)
 ALLOWED_SYSTEM_STATES: Final[tuple[str, ...]] = tuple(names.ALLOWED_SYSTEM_STATES)
 ALLOWED_ACK_TYPES: Final[tuple[str, ...]] = tuple(names.ALLOWED_ACK_TYPES)
-
 ALLOWED_STRATEGY_FAMILY_IDS: Final[tuple[str, ...]] = tuple(names.ALLOWED_STRATEGY_FAMILY_IDS)
 ALLOWED_DOCTRINE_IDS: Final[tuple[str, ...]] = tuple(names.ALLOWED_DOCTRINE_IDS)
 ALLOWED_BRANCH_IDS: Final[tuple[str, ...]] = tuple(names.ALLOWED_BRANCH_IDS)
-ALLOWED_STRATEGY_RUNTIME_MODES: Final[tuple[str, ...]] = tuple(
-    names.ALLOWED_STRATEGY_RUNTIME_MODES
-)
-ALLOWED_FAMILY_RUNTIME_MODES: Final[tuple[str, ...]] = tuple(
-    names.ALLOWED_FAMILY_RUNTIME_MODES
-)
+ALLOWED_STRATEGY_RUNTIME_MODES: Final[tuple[str, ...]] = tuple(names.ALLOWED_STRATEGY_RUNTIME_MODES)
+ALLOWED_FAMILY_RUNTIME_MODES: Final[tuple[str, ...]] = tuple(names.ALLOWED_FAMILY_RUNTIME_MODES)
 ALLOWED_PROVIDER_IDS: Final[tuple[str, ...]] = tuple(names.ALLOWED_PROVIDER_IDS)
 ALLOWED_PROVIDER_ROLES: Final[tuple[str, ...]] = tuple(names.ALLOWED_PROVIDER_ROLES)
-ALLOWED_PROVIDER_STATUSES: Final[tuple[str, ...]] = tuple(
-    names.ALLOWED_PROVIDER_STATUSES
-)
-ALLOWED_PROVIDER_FAILOVER_MODES: Final[tuple[str, ...]] = tuple(
-    names.ALLOWED_PROVIDER_FAILOVER_MODES
-)
-ALLOWED_PROVIDER_OVERRIDE_MODES: Final[tuple[str, ...]] = tuple(
-    names.ALLOWED_PROVIDER_OVERRIDE_MODES
-)
+ALLOWED_PROVIDER_STATUSES: Final[tuple[str, ...]] = tuple(names.ALLOWED_PROVIDER_STATUSES)
+ALLOWED_PROVIDER_FAILOVER_MODES: Final[tuple[str, ...]] = tuple(names.ALLOWED_PROVIDER_FAILOVER_MODES)
+ALLOWED_PROVIDER_OVERRIDE_MODES: Final[tuple[str, ...]] = tuple(names.ALLOWED_PROVIDER_OVERRIDE_MODES)
 ALLOWED_PROVIDER_TRANSITION_REASONS: Final[tuple[str, ...]] = tuple(
     names.ALLOWED_PROVIDER_TRANSITION_REASONS
 )
 ALLOWED_CONTROL_MODES: Final[tuple[str, ...]] = tuple(names.ALLOWED_CONTROL_MODES)
+ALLOWED_COMMAND_TYPES: Final[tuple[str, ...]] = tuple(names.ALLOWED_COMMAND_TYPES)
 
 MISO_ALLOWED_STRATEGY_RUNTIME_MODES: Final[tuple[str, ...]] = (
     names.STRATEGY_RUNTIME_MODE_BASE_5DEPTH,
@@ -230,15 +223,9 @@ ALLOWED_OPERATOR_MODE_VALUES: Final[tuple[str, ...]] = tuple(
     )
 )
 
-ALLOWED_COMMAND_TYPES: Final[tuple[str, ...]] = tuple(names.ALLOWED_COMMAND_TYPES)
-
 
 # ============================================================================
 # Shared schema-level vocabularies
-#
-# These are model-owned because they describe payload/status semantics rather
-# than Redis naming contracts. Services may import these, but must not redefine
-# parallel versions locally.
 # ============================================================================
 
 
@@ -303,32 +290,9 @@ ALLOWED_SNAPSHOT_VALIDITY: Final[tuple[str, ...]] = (
 )
 
 
-class StrategyRegime:
-    LOWVOL: Final[str] = "LOWVOL"
-    NORMAL: Final[str] = "NORMAL"
-    FAST: Final[str] = "FAST"
-
-
-ALLOWED_STRATEGY_REGIMES: Final[tuple[str, ...]] = (
-    StrategyRegime.LOWVOL,
-    StrategyRegime.NORMAL,
-    StrategyRegime.FAST,
-)
-
-
-class RetestType:
-    NONE: Final[str] = "NONE"
-    FULL_RETEST: Final[str] = "FULL_RETEST"
-    HESITATION: Final[str] = "HESITATION"
-
-
-ALLOWED_RETEST_TYPES: Final[tuple[str, ...]] = (
-    RetestType.NONE,
-    RetestType.FULL_RETEST,
-    RetestType.HESITATION,
-)
-
-
+# ============================================================================
+# Small validation helpers
+# ============================================================================
 
 
 def _validate_strategy_runtime_mode_for_family(
@@ -400,31 +364,99 @@ def _validate_branch_side_pair(branch_id: str | None, side: str | None) -> None:
 
 
 # ============================================================================
-# Annotation coercion helpers
+# Annotation / coercion helpers
 # ============================================================================
 
 
 def _is_optional_annotation(annotation: Any) -> bool:
-    origin = get_origin(annotation)
-    if origin is None:
-        return False
     args = get_args(annotation)
-    return len(args) == 2 and type(None) in args
+    return bool(args) and type(None) in args
 
 
 def _unwrap_optional_annotation(annotation: Any) -> Any:
-    return next(arg for arg in get_args(annotation) if arg is not type(None))
+    args = tuple(arg for arg in get_args(annotation) if arg is not type(None))
+    if len(args) == 1:
+        return args[0]
+    return annotation
 
 
 def _is_schema_subclass(value: Any) -> bool:
     return isinstance(value, type) and issubclass(value, SchemaBase)
 
 
+def _coerce_bool(value: Any, *, field_name: str) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and not isinstance(value, bool) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "t", "yes", "y", "on"}:
+            return True
+        if normalized in {"0", "false", "f", "no", "n", "off"}:
+            return False
+    raise ModelValidationError(f"{field_name} must be bool-compatible")
+
+
+def _coerce_int(value: Any, *, field_name: str) -> int:
+    if isinstance(value, bool):
+        raise ModelValidationError(f"{field_name} must be int-compatible, not bool")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value) or not value.is_integer():
+            raise ModelValidationError(f"{field_name} must be int-compatible")
+        return int(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            raise ModelValidationError(f"{field_name} must be int-compatible")
+        try:
+            parsed = int(text, 10)
+        except ValueError as exc:
+            raise ModelValidationError(f"{field_name} must be int-compatible") from exc
+        return parsed
+    raise ModelValidationError(f"{field_name} must be int-compatible")
+
+
+def _coerce_float(value: Any, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ModelValidationError(f"{field_name} must be float-compatible, not bool")
+    if isinstance(value, (int, float)):
+        parsed = float(value)
+    elif isinstance(value, str):
+        text = value.strip()
+        if not text:
+            raise ModelValidationError(f"{field_name} must be float-compatible")
+        try:
+            parsed = float(text)
+        except ValueError as exc:
+            raise ModelValidationError(f"{field_name} must be float-compatible") from exc
+    else:
+        raise ModelValidationError(f"{field_name} must be float-compatible")
+
+    if not math.isfinite(parsed):
+        raise ModelValidationError(f"{field_name} must be finite")
+    return parsed
+
+
+def _coerce_str(value: Any, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ModelValidationError(f"{field_name} must be str")
+    return value
+
+
+@lru_cache(maxsize=None)
+def _resolved_field_hints(cls: type[Any]) -> dict[str, Any]:
+    module_ns = vars(sys.modules[cls.__module__])
+    return get_type_hints(cls, globalns=module_ns, localns=module_ns)
+
+
 def _coerce_value(annotation: Any, value: Any, *, field_name: str) -> Any:
     if value is None:
         if _is_optional_annotation(annotation):
             return None
-        return None
+        raise ModelValidationError(f"{field_name} does not allow null/None")
 
     if _is_optional_annotation(annotation):
         annotation = _unwrap_optional_annotation(annotation)
@@ -433,6 +465,18 @@ def _coerce_value(annotation: Any, value: Any, *, field_name: str) -> Any:
 
     if annotation is Any:
         return value
+
+    if annotation is bool:
+        return _coerce_bool(value, field_name=field_name)
+
+    if annotation is int:
+        return _coerce_int(value, field_name=field_name)
+
+    if annotation is float:
+        return _coerce_float(value, field_name=field_name)
+
+    if annotation is str:
+        return _coerce_str(value, field_name=field_name)
 
     if origin is None:
         if _is_schema_subclass(annotation):
@@ -450,10 +494,7 @@ def _coerce_value(annotation: Any, value: Any, *, field_name: str) -> Any:
         args = get_args(annotation)
         if len(args) == 2 and args[1] is Ellipsis:
             item_type = args[0]
-            if not isinstance(value, Sequence) or isinstance(
-                value,
-                (str, bytes, bytearray),
-            ):
+            if not isinstance(value, Sequence) or isinstance(value, (str, bytes, bytearray)):
                 raise ModelValidationError(
                     f"{field_name} must be sequence, got {type(value).__name__}"
                 )
@@ -464,10 +505,7 @@ def _coerce_value(annotation: Any, value: Any, *, field_name: str) -> Any:
 
     if origin is list:
         (item_type,) = get_args(annotation)
-        if not isinstance(value, Sequence) or isinstance(
-            value,
-            (str, bytes, bytearray),
-        ):
+        if not isinstance(value, Sequence) or isinstance(value, (str, bytes, bytearray)):
             raise ModelValidationError(
                 f"{field_name} must be sequence, got {type(value).__name__}"
             )
@@ -476,7 +514,7 @@ def _coerce_value(annotation: Any, value: Any, *, field_name: str) -> Any:
             for item in value
         ]
 
-    if origin in (dict, Mapping):
+    if origin in (dict, Mapping, cabc.Mapping):
         key_type, value_type = get_args(annotation)
         if not isinstance(value, Mapping):
             raise ModelValidationError(
@@ -557,9 +595,10 @@ class SchemaBase:
             )
 
         known = {dc_field.name: dc_field for dc_field in fields(cls)}
+        hints = _resolved_field_hints(cls)
+
         raw_keys = set(raw.keys())
         known_keys = set(known.keys())
-
         extra = raw_keys - known_keys
         if extra:
             raise ModelValidationError(
@@ -570,8 +609,9 @@ class SchemaBase:
         kwargs: dict[str, Any] = {}
         for field_name, dc_field in known.items():
             if field_name in raw:
+                annotation = hints.get(field_name, dc_field.type)
                 kwargs[field_name] = _coerce_value(
-                    dc_field.type,
+                    annotation,
                     raw[field_name],
                     field_name=f"{cls.__name__}.{field_name}",
                 )
@@ -579,7 +619,7 @@ class SchemaBase:
 
             if dc_field.default is not MISSING:
                 continue
-            if hasattr(dc_field, "default_factory") and dc_field.default_factory is not MISSING:
+            if dc_field.default_factory is not MISSING:
                 continue
 
             raise ModelValidationError(
@@ -623,15 +663,16 @@ class EventEnvelope(SchemaBase):
         if self.stream is not None:
             _optional_non_empty_str(self.stream, "stream")
         _require_bool(self.replay, "replay")
-
         payload = _require_mapping(self.payload, "payload")
-        plain_payload = {str(k): _plain_value(v) for k, v in payload.items()}
-        object.__setattr__(self, "payload", plain_payload)
+        object.__setattr__(
+            self,
+            "payload",
+            {str(k): _plain_value(v) for k, v in payload.items()},
+        )
 
 
 # ============================================================================
 # Feed / market data models
-# Shared wire truth between feeds and downstream consumers.
 # ============================================================================
 
 
@@ -648,7 +689,6 @@ class BookLevel(SchemaBase):
         _require_int(self.quantity, "quantity", min_value=0)
         if self.orders is not None:
             _require_int(self.orders, "orders", min_value=0)
-
 
 
 @dataclass(frozen=True, slots=True)
@@ -693,17 +733,9 @@ class FeedTick(SchemaBase):
         )
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         if self.provider_id is not None:
-            _require_literal(
-                self.provider_id,
-                "provider_id",
-                allowed=ALLOWED_PROVIDER_IDS,
-            )
+            _require_literal(self.provider_id, "provider_id", allowed=ALLOWED_PROVIDER_IDS)
         if self.provider_role is not None:
-            _require_literal(
-                self.provider_role,
-                "provider_role",
-                allowed=ALLOWED_PROVIDER_ROLES,
-            )
+            _require_literal(self.provider_role, "provider_role", allowed=ALLOWED_PROVIDER_ROLES)
         if self.exchange is not None:
             _optional_non_empty_str(self.exchange, "exchange")
         if self.instrument_token is not None:
@@ -733,20 +765,12 @@ class FeedTick(SchemaBase):
         if self.ask_qty is not None:
             _require_int(self.ask_qty, "ask_qty", min_value=0)
         if self.option_side is not None:
-            _require_literal(
-                self.option_side,
-                "option_side",
-                allowed=ALLOWED_OPTION_SIDES,
-            )
+            _require_literal(self.option_side, "option_side", allowed=ALLOWED_OPTION_SIDES)
         if self.strike is not None:
             _require_float(self.strike, "strike", min_value=0.0)
         if self.expiry is not None:
             _optional_non_empty_str(self.expiry, "expiry")
-        _require_literal(
-            self.tick_validity,
-            "tick_validity",
-            allowed=ALLOWED_TICK_VALIDITY,
-        )
+        _require_literal(self.tick_validity, "tick_validity", allowed=ALLOWED_TICK_VALIDITY)
         if self.reject_reason is not None:
             _optional_non_empty_str(self.reject_reason, "reject_reason")
         _require_bool(self.is_selected_option, "is_selected_option")
@@ -754,10 +778,7 @@ class FeedTick(SchemaBase):
         if self.bid is not None and self.ask is not None:
             _require(self.ask >= self.bid, "ask must be >= bid")
         if self.is_shadow_option:
-            _require(
-                self.option_side is not None,
-                "shadow option ticks require option_side",
-            )
+            _require(self.option_side is not None, "shadow option ticks require option_side")
 
 
 @dataclass(frozen=True, slots=True)
@@ -789,17 +810,9 @@ class FuturesSnapshot(SchemaBase):
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         _require_float(self.ltp, "ltp", min_value=0.0)
         if self.provider_id is not None:
-            _require_literal(
-                self.provider_id,
-                "provider_id",
-                allowed=ALLOWED_PROVIDER_IDS,
-            )
+            _require_literal(self.provider_id, "provider_id", allowed=ALLOWED_PROVIDER_IDS)
         if self.provider_role is not None:
-            _require_literal(
-                self.provider_role,
-                "provider_role",
-                allowed=ALLOWED_PROVIDER_ROLES,
-            )
+            _require_literal(self.provider_role, "provider_role", allowed=ALLOWED_PROVIDER_ROLES)
         if self.instrument_token is not None:
             _optional_non_empty_str(self.instrument_token, "instrument_token")
         if self.trading_symbol is not None:
@@ -861,27 +874,15 @@ class OptionSnapshot(SchemaBase):
     def validate(self) -> None:
         _require_non_empty_str(self.instrument_key, "instrument_key")
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
-        _require_literal(
-            self.option_side,
-            "option_side",
-            allowed=ALLOWED_OPTION_SIDES,
-        )
+        _require_literal(self.option_side, "option_side", allowed=ALLOWED_OPTION_SIDES)
         _require_float(self.strike, "strike", min_value=0.0)
         if self.expiry is not None:
             _optional_non_empty_str(self.expiry, "expiry")
         _require_float(self.ltp, "ltp", min_value=0.0)
         if self.provider_id is not None:
-            _require_literal(
-                self.provider_id,
-                "provider_id",
-                allowed=ALLOWED_PROVIDER_IDS,
-            )
+            _require_literal(self.provider_id, "provider_id", allowed=ALLOWED_PROVIDER_IDS)
         if self.provider_role is not None:
-            _require_literal(
-                self.provider_role,
-                "provider_role",
-                allowed=ALLOWED_PROVIDER_ROLES,
-            )
+            _require_literal(self.provider_role, "provider_role", allowed=ALLOWED_PROVIDER_ROLES)
         if self.instrument_token is not None:
             _optional_non_empty_str(self.instrument_token, "instrument_token")
         if self.trading_symbol is not None:
@@ -912,6 +913,7 @@ class OptionSnapshot(SchemaBase):
         _require_bool(self.is_shadow_option, "is_shadow_option")
         if self.bid is not None and self.ask is not None:
             _require(self.ask >= self.bid, "ask must be >= bid")
+
 
 @dataclass(frozen=True, slots=True)
 class SnapshotMember(SchemaBase):
@@ -991,11 +993,7 @@ class SnapshotFrame(SchemaBase):
         _require_int(self.ts_min_member_ns, "ts_min_member_ns", min_value=0)
         _require_int(self.ts_max_member_ns, "ts_max_member_ns", min_value=0)
         _require_int(self.ts_span_ms, "ts_span_ms", min_value=0)
-        _require_literal(
-            self.validity,
-            "validity",
-            allowed=ALLOWED_SNAPSHOT_VALIDITY,
-        )
+        _require_literal(self.validity, "validity", allowed=ALLOWED_SNAPSHOT_VALIDITY)
         if self.validity_reason is not None:
             _optional_non_empty_str(self.validity_reason, "validity_reason")
         _require_bool(self.sync_ok, "sync_ok")
@@ -1030,17 +1028,9 @@ class EconomicViability(SchemaBase):
         if self.spread_rupees is not None:
             _require_float(self.spread_rupees, "spread_rupees", min_value=0.0)
         if self.expected_slippage_rupees is not None:
-            _require_float(
-                self.expected_slippage_rupees,
-                "expected_slippage_rupees",
-                min_value=0.0,
-            )
+            _require_float(self.expected_slippage_rupees, "expected_slippage_rupees", min_value=0.0)
         if self.expected_total_cost_rupees is not None:
-            _require_float(
-                self.expected_total_cost_rupees,
-                "expected_total_cost_rupees",
-                min_value=0.0,
-            )
+            _require_float(self.expected_total_cost_rupees, "expected_total_cost_rupees", min_value=0.0)
         if self.blocker_code is not None:
             _optional_non_empty_str(self.blocker_code, "blocker_code")
         if self.blocker_message is not None:
@@ -1065,11 +1055,7 @@ class FourPillarSignal(SchemaBase):
         _require_bool(self.liquidity_ok, "liquidity_ok")
         _require_bool(self.alignment_ok, "alignment_ok")
         if self.options_side is not None:
-            _require_literal(
-                self.options_side,
-                "options_side",
-                allowed=ALLOWED_OPTION_SIDES,
-            )
+            _require_literal(self.options_side, "options_side", allowed=ALLOWED_OPTION_SIDES)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1082,267 +1068,40 @@ class DeltaProxyNormalization(SchemaBase):
     _TYPE: ClassVar[str] = "delta_proxy_normalization"
 
     def validate(self) -> None:
-        _require_literal(
-            self.option_side,
-            "option_side",
-            allowed=ALLOWED_OPTION_SIDES,
-        )
+        _require_literal(self.option_side, "option_side", allowed=ALLOWED_OPTION_SIDES)
         _require_float(self.strike, "strike", min_value=0.0)
         _require_float(self.delta_proxy, "delta_proxy")
         if self.normalized_signal_strength is not None:
-            _require_float(
-                self.normalized_signal_strength,
-                "normalized_signal_strength",
-            )
+            _require_float(self.normalized_signal_strength, "normalized_signal_strength")
 
 
 @dataclass(frozen=True, slots=True)
-class MistTrendSurface(SchemaBase):
-    pullback_depth_pct: float | None = None
-    micro_trap_flag: bool = False
-    resume_override_pass: bool = False
-    fut_ladder_accel_call: bool = False
-    fut_ladder_accel_put: bool = False
-    fut_ofi_ratio_5s: float | None = None
-    fut_ofi_ratio_60s: float | None = None
+class DhanStrikeScoreComponents(SchemaBase):
+    spread_score: float | None = None
+    depth_score: float | None = None
+    volume_score: float | None = None
+    oi_score: float | None = None
+    iv_score: float | None = None
+    delta_score: float | None = None
+    gamma_score: float | None = None
+    iv_sanity_score: float | None = None
 
-    _TYPE: ClassVar[str] = "mist_trend_surface"
-
-    def validate(self) -> None:
-        if self.pullback_depth_pct is not None:
-            _require_float(self.pullback_depth_pct, "pullback_depth_pct", min_value=0.0)
-        _require_bool(self.micro_trap_flag, "micro_trap_flag")
-        _require_bool(self.resume_override_pass, "resume_override_pass")
-        _require_bool(self.fut_ladder_accel_call, "fut_ladder_accel_call")
-        _require_bool(self.fut_ladder_accel_put, "fut_ladder_accel_put")
-        if self.fut_ofi_ratio_5s is not None:
-            _require_float(self.fut_ofi_ratio_5s, "fut_ofi_ratio_5s", min_value=0.0)
-        if self.fut_ofi_ratio_60s is not None:
-            _require_float(self.fut_ofi_ratio_60s, "fut_ofi_ratio_60s", min_value=0.0)
-
-
-@dataclass(frozen=True, slots=True)
-class MisbBreakoutSurface(SchemaBase):
-    breakout_shelf_high: float | None = None
-    breakout_shelf_low: float | None = None
-    breakout_shelf_mid: float | None = None
-    breakout_shelf_width_pct: float | None = None
-    breakout_shelf_valid: bool = False
-    breakout_ref_high: float | None = None
-    breakout_ref_low: float | None = None
-    breakout_pretrigger_ok_call: bool = False
-    breakout_pretrigger_ok_put: bool = False
-    breakout_trigger_call: bool = False
-    breakout_trigger_put: bool = False
-    breakout_acceptance_call: bool = False
-    breakout_acceptance_put: bool = False
-    fut_ladder_accel_call: bool = False
-    fut_ladder_accel_put: bool = False
-    ce_delta_3: float | None = None
-    pe_delta_3: float | None = None
-    ce_response_eff: float | None = None
-    pe_response_eff: float | None = None
-    ce_spread_ratio: float | None = None
-    pe_spread_ratio: float | None = None
-    ce_depth_total: int | None = None
-    pe_depth_total: int | None = None
-    impact_depth_fraction_call: float | None = None
-    impact_depth_fraction_put: float | None = None
-    context_pass_call: bool = False
-    context_pass_put: bool = False
-    tradability_pass_call: bool = False
-    tradability_pass_put: bool = False
-
-    _TYPE: ClassVar[str] = "misb_breakout_surface"
+    _TYPE: ClassVar[str] = "dhan_strike_score_components"
 
     def validate(self) -> None:
         for field_name in (
-            "breakout_shelf_high",
-            "breakout_shelf_low",
-            "breakout_shelf_mid",
-            "breakout_shelf_width_pct",
-            "breakout_ref_high",
-            "breakout_ref_low",
-            "ce_delta_3",
-            "pe_delta_3",
-            "ce_response_eff",
-            "pe_response_eff",
-            "ce_spread_ratio",
-            "pe_spread_ratio",
-            "impact_depth_fraction_call",
-            "impact_depth_fraction_put",
+            "spread_score",
+            "depth_score",
+            "volume_score",
+            "oi_score",
+            "iv_score",
+            "delta_score",
+            "gamma_score",
+            "iv_sanity_score",
         ):
             value = getattr(self, field_name)
             if value is not None:
                 _require_float(value, field_name)
-        for field_name in ("ce_depth_total", "pe_depth_total"):
-            value = getattr(self, field_name)
-            if value is not None:
-                _require_int(value, field_name, min_value=0)
-        for field_name in (
-            "breakout_shelf_valid",
-            "breakout_pretrigger_ok_call",
-            "breakout_pretrigger_ok_put",
-            "breakout_trigger_call",
-            "breakout_trigger_put",
-            "breakout_acceptance_call",
-            "breakout_acceptance_put",
-            "fut_ladder_accel_call",
-            "fut_ladder_accel_put",
-            "context_pass_call",
-            "context_pass_put",
-            "tradability_pass_call",
-            "tradability_pass_put",
-        ):
-            _require_bool(getattr(self, field_name), field_name)
-        if self.breakout_shelf_high is not None and self.breakout_shelf_low is not None:
-            _require(
-                self.breakout_shelf_high >= self.breakout_shelf_low,
-                "breakout_shelf_high must be >= breakout_shelf_low",
-            )
-
-
-@dataclass(frozen=True, slots=True)
-class MiscCompressionRetestSurface(SchemaBase):
-    compression_high: float | None = None
-    compression_low: float | None = None
-    compression_width_pct: float | None = None
-    compression_valid: bool = False
-    breakout_extension_pct: float | None = None
-    retest_low: float | None = None
-    retest_high: float | None = None
-    retest_volume_ratio: float | None = None
-    hesitation_duration_sec: float | None = None
-    retest_type: str = RetestType.NONE
-    resume_confirmation_pass: bool = False
-
-    _TYPE: ClassVar[str] = "misc_compression_retest_surface"
-
-    def validate(self) -> None:
-        for field_name in (
-            "compression_high",
-            "compression_low",
-            "compression_width_pct",
-            "breakout_extension_pct",
-            "retest_low",
-            "retest_high",
-            "retest_volume_ratio",
-            "hesitation_duration_sec",
-        ):
-            value = getattr(self, field_name)
-            if value is not None:
-                _require_float(value, field_name, min_value=0.0)
-        _require_bool(self.compression_valid, "compression_valid")
-        _require_literal(
-            self.retest_type,
-            "retest_type",
-            allowed=ALLOWED_RETEST_TYPES,
-        )
-        _require_bool(self.resume_confirmation_pass, "resume_confirmation_pass")
-        if self.compression_high is not None and self.compression_low is not None:
-            _require(
-                self.compression_high >= self.compression_low,
-                "compression_high must be >= compression_low",
-            )
-        if self.retest_high is not None and self.retest_low is not None:
-            _require(
-                self.retest_high >= self.retest_low,
-                "retest_high must be >= retest_low",
-            )
-
-
-@dataclass(frozen=True, slots=True)
-class MisrTrapSurface(SchemaBase):
-    active_zone_id: str | None = None
-    zone_type: str | None = None
-    trap_zone_level: float | None = None
-    trap_event_id: str | None = None
-    fake_break_extreme: float | None = None
-    break_efficiency_ratio: float | None = None
-    ladder_absorption_score: float | None = None
-    range_reentry_ts_ns: int | None = None
-    reclaim_volume_ratio: float | None = None
-    hold_inside_range_proof_pass: bool = False
-    no_mans_land_displacement_pass: bool = False
-    flow_flip_confirmation_pass: bool = False
-    reversal_impulse_confirmation_pass: bool = False
-
-    _TYPE: ClassVar[str] = "misr_trap_surface"
-
-    def validate(self) -> None:
-        for field_name in ("active_zone_id", "zone_type", "trap_event_id"):
-            value = getattr(self, field_name)
-            if value is not None:
-                _optional_non_empty_str(value, field_name)
-        for field_name in (
-            "trap_zone_level",
-            "fake_break_extreme",
-            "break_efficiency_ratio",
-            "ladder_absorption_score",
-            "reclaim_volume_ratio",
-        ):
-            value = getattr(self, field_name)
-            if value is not None:
-                _require_float(value, field_name)
-        if self.range_reentry_ts_ns is not None:
-            _require_int(self.range_reentry_ts_ns, "range_reentry_ts_ns", min_value=0)
-        for field_name in (
-            "hold_inside_range_proof_pass",
-            "no_mans_land_displacement_pass",
-            "flow_flip_confirmation_pass",
-            "reversal_impulse_confirmation_pass",
-        ):
-            _require_bool(getattr(self, field_name), field_name)
-
-
-@dataclass(frozen=True, slots=True)
-class MisoMicrostructureSurface(SchemaBase):
-    burst_event_id: str | None = None
-    opt_aggr_buy_qty_window: int = 0
-    opt_aggr_sell_qty_window: int = 0
-    call_flow_ratio: float | None = None
-    put_flow_ratio: float | None = None
-    call_tape_speed: float | None = None
-    put_tape_speed: float | None = None
-    opt_book_imbalance: float | None = None
-    ask_reload_veto: bool = False
-    bid_reload_veto: bool = False
-    shadow_call_support_pass: bool = False
-    shadow_put_support_pass: bool = False
-    imbalance_persistence_pass: bool = False
-    futures_veto_pass: bool = False
-    vwap_gate_pass: bool = False
-    opt_touch_depth: int | None = None
-    fut_touch_depth: int | None = None
-
-    _TYPE: ClassVar[str] = "miso_microstructure_surface"
-
-    def validate(self) -> None:
-        if self.burst_event_id is not None:
-            _optional_non_empty_str(self.burst_event_id, "burst_event_id")
-        _require_int(self.opt_aggr_buy_qty_window, "opt_aggr_buy_qty_window", min_value=0)
-        _require_int(self.opt_aggr_sell_qty_window, "opt_aggr_sell_qty_window", min_value=0)
-        for field_name in ("call_flow_ratio", "put_flow_ratio", "call_tape_speed", "put_tape_speed"):
-            value = getattr(self, field_name)
-            if value is not None:
-                _require_float(value, field_name, min_value=0.0)
-        if self.opt_book_imbalance is not None:
-            _require_float(self.opt_book_imbalance, "opt_book_imbalance", min_value=0.0)
-            _require(self.opt_book_imbalance <= 1.0, "opt_book_imbalance must be <= 1.0")
-        for field_name in (
-            "ask_reload_veto",
-            "bid_reload_veto",
-            "shadow_call_support_pass",
-            "shadow_put_support_pass",
-            "imbalance_persistence_pass",
-            "futures_veto_pass",
-            "vwap_gate_pass",
-        ):
-            _require_bool(getattr(self, field_name), field_name)
-        if self.opt_touch_depth is not None:
-            _require_int(self.opt_touch_depth, "opt_touch_depth", min_value=0)
-        if self.fut_touch_depth is not None:
-            _require_int(self.fut_touch_depth, "fut_touch_depth", min_value=0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1362,16 +1121,10 @@ class FeatureFrame(SchemaBase):
     active_futures_provider_id: str | None = None
     active_selected_option_provider_id: str | None = None
     active_option_context_provider_id: str | None = None
-    current_regime: str | None = None
     snapshot_frame: SnapshotFrame | None = None
     economic_viability: EconomicViability | None = None
     four_pillar: FourPillarSignal | None = None
     delta_proxy_normalization: DeltaProxyNormalization | None = None
-    mist_trend: MistTrendSurface | None = None
-    misb_breakout: MisbBreakoutSurface | None = None
-    misc_compression_retest: MiscCompressionRetestSurface | None = None
-    misr_trap: MisrTrapSurface | None = None
-    miso_microstructure: MisoMicrostructureSurface | None = None
     entry_mode_hint: str | None = None
     explain: str | None = None
     tags: tuple[str, ...] = ()
@@ -1381,25 +1134,13 @@ class FeatureFrame(SchemaBase):
     def validate(self) -> None:
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         _require_non_empty_str(self.instrument_key, "instrument_key")
-        _require_literal(
-            self.system_state,
-            "system_state",
-            allowed=ALLOWED_SYSTEM_STATES,
-        )
-        _require_literal(
-            self.strategy_mode,
-            "strategy_mode",
-            allowed=ALLOWED_STRATEGY_MODES,
-        )
+        _require_literal(self.system_state, "system_state", allowed=ALLOWED_SYSTEM_STATES)
+        _require_literal(self.strategy_mode, "strategy_mode", allowed=ALLOWED_STRATEGY_MODES)
         _require_bool(self.frame_valid, "frame_valid")
         _require_bool(self.warmup_complete, "warmup_complete")
         _validate_family_doctrine_pair(self.strategy_family_id, self.doctrine_id)
         if self.branch_id is not None:
-            _require_literal(
-                self.branch_id,
-                "branch_id",
-                allowed=ALLOWED_BRANCH_IDS,
-            )
+            _require_literal(self.branch_id, "branch_id", allowed=ALLOWED_BRANCH_IDS)
         if self.strategy_runtime_mode is not None:
             _validate_strategy_runtime_mode_for_family(
                 self.strategy_family_id,
@@ -1407,17 +1148,9 @@ class FeatureFrame(SchemaBase):
                 field_name="strategy_runtime_mode",
             )
         if self.family_runtime_mode is not None:
-            _require_literal(
-                self.family_runtime_mode,
-                "family_runtime_mode",
-                allowed=ALLOWED_FAMILY_RUNTIME_MODES,
-            )
+            _require_literal(self.family_runtime_mode, "family_runtime_mode", allowed=ALLOWED_FAMILY_RUNTIME_MODES)
         if self.active_futures_provider_id is not None:
-            _require_literal(
-                self.active_futures_provider_id,
-                "active_futures_provider_id",
-                allowed=ALLOWED_PROVIDER_IDS,
-            )
+            _require_literal(self.active_futures_provider_id, "active_futures_provider_id", allowed=ALLOWED_PROVIDER_IDS)
         if self.active_selected_option_provider_id is not None:
             _require_literal(
                 self.active_selected_option_provider_id,
@@ -1430,47 +1163,16 @@ class FeatureFrame(SchemaBase):
                 "active_option_context_provider_id",
                 allowed=ALLOWED_PROVIDER_IDS,
             )
-        if self.current_regime is not None:
-            _require_literal(
-                self.current_regime,
-                "current_regime",
-                allowed=ALLOWED_STRATEGY_REGIMES,
-            )
         if self.entry_mode_hint is not None:
-            _require_literal(
-                self.entry_mode_hint,
-                "entry_mode_hint",
-                allowed=ALLOWED_ENTRY_MODES,
-            )
+            _require_literal(self.entry_mode_hint, "entry_mode_hint", allowed=ALLOWED_ENTRY_MODES)
         if self.explain is not None:
             _optional_non_empty_str(self.explain, "explain")
         object.__setattr__(self, "tags", _require_str_sequence(self.tags, "tags"))
 
-        if self.mist_trend is not None:
-            _require(
-                self.strategy_family_id in (None, names.STRATEGY_FAMILY_MIST),
-                "mist_trend surface is valid only for MIST or unspecified family",
-            )
-        if self.misb_breakout is not None:
-            _require(
-                self.strategy_family_id in (None, names.STRATEGY_FAMILY_MISB),
-                "misb_breakout surface is valid only for MISB or unspecified family",
-            )
-        if self.misc_compression_retest is not None:
-            _require(
-                self.strategy_family_id in (None, names.STRATEGY_FAMILY_MISC),
-                "misc_compression_retest surface is valid only for MISC or unspecified family",
-            )
-        if self.misr_trap is not None:
-            _require(
-                self.strategy_family_id in (None, names.STRATEGY_FAMILY_MISR),
-                "misr_trap surface is valid only for MISR or unspecified family",
-            )
-        if self.miso_microstructure is not None:
-            _require(
-                self.strategy_family_id in (None, names.STRATEGY_FAMILY_MISO),
-                "miso_microstructure surface is valid only for MISO or unspecified family",
-            )
+
+# ============================================================================
+# Decision / execution intent models
+# ============================================================================
 
 
 @dataclass(frozen=True, slots=True)
@@ -1490,11 +1192,7 @@ class StopPlan(SchemaBase):
         if self.time_stop_seconds is not None:
             _require_int(self.time_stop_seconds, "time_stop_seconds", min_value=0)
         if self.adverse_exit_seconds is not None:
-            _require_int(
-                self.adverse_exit_seconds,
-                "adverse_exit_seconds",
-                min_value=0,
-            )
+            _require_int(self.adverse_exit_seconds, "adverse_exit_seconds", min_value=0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1512,18 +1210,9 @@ class TargetPlan(SchemaBase):
         if self.target_points is not None:
             _require_float(self.target_points, "target_points", min_value=0.0)
         if self.trail_after_points is not None:
-            _require_float(
-                self.trail_after_points,
-                "trail_after_points",
-                min_value=0.0,
-            )
+            _require_float(self.trail_after_points, "trail_after_points", min_value=0.0)
         if self.trail_step_points is not None:
-            _require_float(
-                self.trail_step_points,
-                "trail_step_points",
-                min_value=0.0,
-            )
-
+            _require_float(self.trail_step_points, "trail_step_points", min_value=0.0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1564,28 +1253,16 @@ class StrategyDecision(SchemaBase):
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         if self.ts_expiry_ns is not None:
             _require_int(self.ts_expiry_ns, "ts_expiry_ns", min_value=0)
-            _require(
-                self.ts_expiry_ns >= self.ts_event_ns,
-                "ts_expiry_ns must be >= ts_event_ns",
-            )
-
+            _require(self.ts_expiry_ns >= self.ts_event_ns, "ts_expiry_ns must be >= ts_event_ns")
         _require_literal(self.action, "action", allowed=ALLOWED_ACTIONS)
         _require_literal(self.side, "side", allowed=ALLOWED_OPTION_SIDES)
-        _require_literal(
-            self.position_effect,
-            "position_effect",
-            allowed=ALLOWED_POSITION_EFFECTS,
-        )
+        _require_literal(self.position_effect, "position_effect", allowed=ALLOWED_POSITION_EFFECTS)
         _require_int(self.quantity_lots, "quantity_lots", min_value=0)
         _validate_family_doctrine_pair(self.strategy_family_id, self.doctrine_id)
         _validate_branch_side_pair(self.branch_id, self.side)
 
         if self.family_runtime_mode is not None:
-            _require_literal(
-                self.family_runtime_mode,
-                "family_runtime_mode",
-                allowed=ALLOWED_FAMILY_RUNTIME_MODES,
-            )
+            _require_literal(self.family_runtime_mode, "family_runtime_mode", allowed=ALLOWED_FAMILY_RUNTIME_MODES)
         if self.strategy_runtime_mode is not None:
             _validate_strategy_runtime_mode_for_family(
                 self.strategy_family_id,
@@ -1611,54 +1288,23 @@ class StrategyDecision(SchemaBase):
         ):
             value = getattr(self, field_name)
             if value is not None:
-                _require_literal(
-                    value,
-                    field_name,
-                    allowed=ALLOWED_PROVIDER_IDS,
-                )
-        _require_literal(
-            self.entry_mode,
-            "entry_mode",
-            allowed=ALLOWED_ENTRY_MODES,
-        )
-        _require_literal(
-            self.strategy_mode,
-            "strategy_mode",
-            allowed=ALLOWED_STRATEGY_MODES,
-        )
-        _require_literal(
-            self.system_state,
-            "system_state",
-            allowed=ALLOWED_SYSTEM_STATES,
-        )
+                _require_literal(value, field_name, allowed=ALLOWED_PROVIDER_IDS)
+
+        _require_literal(self.entry_mode, "entry_mode", allowed=ALLOWED_ENTRY_MODES)
+        _require_literal(self.strategy_mode, "strategy_mode", allowed=ALLOWED_STRATEGY_MODES)
+        _require_literal(self.system_state, "system_state", allowed=ALLOWED_SYSTEM_STATES)
 
         metadata = _require_mapping(self.metadata, "metadata")
-        metadata = {str(k): _plain_value(v) for k, v in metadata.items()}
-        object.__setattr__(self, "metadata", metadata)
+        object.__setattr__(self, "metadata", {str(k): _plain_value(v) for k, v in metadata.items()})
 
         if self.action in (names.ACTION_ENTER_CALL, names.ACTION_ENTER_PUT):
-            _require(
-                self.position_effect == names.POSITION_EFFECT_OPEN,
-                "entry actions require position_effect OPEN",
-            )
-            _require(
-                self.quantity_lots > 0,
-                "entry actions require quantity_lots > 0",
-            )
-            _require(
-                bool(self.instrument_key),
-                "entry actions require non-empty instrument_key",
-            )
-            expected_branch = names.BRANCH_CALL if self.action == names.ACTION_ENTER_CALL else names.BRANCH_PUT
-            _require(
-                self.side == expected_branch,
-                "entry action side must match CALL/PUT action",
-            )
+            _require(self.position_effect == names.POSITION_EFFECT_OPEN, "entry actions require position_effect OPEN")
+            _require(self.quantity_lots > 0, "entry actions require quantity_lots > 0")
+            _require(bool(self.instrument_key), "entry actions require non-empty instrument_key")
+            expected = names.BRANCH_CALL if self.action == names.ACTION_ENTER_CALL else names.BRANCH_PUT
+            _require(self.side == expected, "entry action side must match CALL/PUT action")
             if self.branch_id is not None:
-                _require(
-                    self.branch_id == expected_branch,
-                    "branch_id must match CALL/PUT entry action",
-                )
+                _require(self.branch_id == expected, "branch_id must match CALL/PUT entry action")
 
         if self.action == names.ACTION_EXIT:
             _require(
@@ -1679,10 +1325,6 @@ class StrategyDecision(SchemaBase):
 
 @dataclass(frozen=True, slots=True)
 class OperatorCommand(SchemaBase):
-    """
-    Canonical operator/runtime command payload for STREAM_CMD_MME.
-    """
-
     command_type: str
     ts_event_ns: int
     producer: str
@@ -1694,34 +1336,20 @@ class OperatorCommand(SchemaBase):
     _TYPE: ClassVar[str] = "operator_command"
 
     def validate(self) -> None:
-        _require_literal(
-            self.command_type,
-            "command_type",
-            allowed=ALLOWED_COMMAND_TYPES,
-        )
+        _require_literal(self.command_type, "command_type", allowed=ALLOWED_COMMAND_TYPES)
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         _require_non_empty_str(self.producer, "producer")
-
         if self.correlation_id is not None:
             _optional_non_empty_str(self.correlation_id, "correlation_id")
         if self.mode is not None:
-            _require_literal(
-                self.mode,
-                "mode",
-                allowed=ALLOWED_OPERATOR_MODE_VALUES,
-            )
+            _require_literal(self.mode, "mode", allowed=ALLOWED_OPERATOR_MODE_VALUES)
         if self.reason is not None:
             _optional_non_empty_str(self.reason, "reason")
-
         params = _require_mapping(self.params, "params")
-        params = {str(k): _plain_value(v) for k, v in params.items()}
-        object.__setattr__(self, "params", params)
-
+        object.__setattr__(self, "params", {str(k): _plain_value(v) for k, v in params.items()})
         if self.command_type == names.CMD_SET_MODE:
-            _require(
-                self.mode is not None and self.mode.strip() != "",
-                "CMD_SET_MODE requires non-empty mode",
-            )
+            _require(self.mode is not None and self.mode.strip() != "", "CMD_SET_MODE requires non-empty mode")
+
 
 @dataclass(frozen=True, slots=True)
 class DecisionAck(SchemaBase):
@@ -1738,11 +1366,7 @@ class DecisionAck(SchemaBase):
 
     def validate(self) -> None:
         _require_non_empty_str(self.decision_id, "decision_id")
-        _require_literal(
-            self.ack_type,
-            "ack_type",
-            allowed=ALLOWED_ACK_TYPES,
-        )
+        _require_literal(self.ack_type, "ack_type", allowed=ALLOWED_ACK_TYPES)
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         _require_non_empty_str(self.service, "service")
         if self.message is not None:
@@ -1752,11 +1376,7 @@ class DecisionAck(SchemaBase):
         if self.trade_id is not None:
             _optional_non_empty_str(self.trade_id, "trade_id")
         if self.entry_mode is not None:
-            _require_literal(
-                self.entry_mode,
-                "entry_mode",
-                allowed=ALLOWED_ENTRY_MODES,
-            )
+            _require_literal(self.entry_mode, "entry_mode", allowed=ALLOWED_ENTRY_MODES)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1784,11 +1404,7 @@ class OrderIntent(SchemaBase):
         _require_literal(self.side, "side", allowed=ALLOWED_OPTION_SIDES)
         _require_int(self.quantity_lots, "quantity_lots", min_value=1)
         _require_non_empty_str(self.order_type, "order_type")
-        _require_literal(
-            self.entry_mode,
-            "entry_mode",
-            allowed=ALLOWED_ENTRY_MODES,
-        )
+        _require_literal(self.entry_mode, "entry_mode", allowed=ALLOWED_ENTRY_MODES)
         if self.price is not None:
             _require_float(self.price, "price", min_value=0.0)
         if self.stop_price is not None:
@@ -1823,11 +1439,7 @@ class PendingOrderState(SchemaBase):
         _require_non_empty_str(self.instrument_key, "instrument_key")
         _require_literal(self.side, "side", allowed=ALLOWED_OPTION_SIDES)
         _require_int(self.quantity_lots, "quantity_lots", min_value=1)
-        _require_literal(
-            self.entry_mode,
-            "entry_mode",
-            allowed=ALLOWED_ENTRY_MODES,
-        )
+        _require_literal(self.entry_mode, "entry_mode", allowed=ALLOWED_ENTRY_MODES)
         _require_non_empty_str(self.order_type, "order_type")
         if self.broker_order_id is not None:
             _optional_non_empty_str(self.broker_order_id, "broker_order_id")
@@ -1866,16 +1478,8 @@ class TradeFill(SchemaBase):
         _require_literal(self.side, "side", allowed=ALLOWED_OPTION_SIDES)
         _require_int(self.quantity_lots, "quantity_lots", min_value=1)
         _require_float(self.fill_price, "fill_price", min_value=0.0)
-        _require_literal(
-            self.entry_mode,
-            "entry_mode",
-            allowed=ALLOWED_ENTRY_MODES,
-        )
-        _require_literal(
-            self.position_effect,
-            "position_effect",
-            allowed=ALLOWED_POSITION_EFFECTS,
-        )
+        _require_literal(self.entry_mode, "entry_mode", allowed=ALLOWED_ENTRY_MODES)
+        _require_literal(self.position_effect, "position_effect", allowed=ALLOWED_POSITION_EFFECTS)
         if self.exit_reason is not None:
             _optional_non_empty_str(self.exit_reason, "exit_reason")
         if self.realized_pnl_rupees is not None:
@@ -1909,25 +1513,21 @@ class TradeLedgerRow(SchemaBase):
         _require_non_empty_str(self.instrument_key, "instrument_key")
         _require_literal(self.side, "side", allowed=ALLOWED_OPTION_SIDES)
         _require_int(self.quantity_lots, "quantity_lots", min_value=1)
-        _require_literal(
-            self.entry_mode,
-            "entry_mode",
-            allowed=ALLOWED_ENTRY_MODES,
-        )
-        _require_literal(
-            self.position_effect,
-            "position_effect",
-            allowed=ALLOWED_POSITION_EFFECTS,
-        )
+        _require_literal(self.entry_mode, "entry_mode", allowed=ALLOWED_ENTRY_MODES)
+        _require_literal(self.position_effect, "position_effect", allowed=ALLOWED_POSITION_EFFECTS)
         _require_float(self.fill_price, "fill_price", min_value=0.0)
         if self.realized_pnl_rupees is not None:
             _require_float(self.realized_pnl_rupees, "realized_pnl_rupees")
         if self.exit_reason is not None:
             _optional_non_empty_str(self.exit_reason, "exit_reason")
         metadata = _require_mapping(self.metadata, "metadata")
-        metadata = {str(k): _plain_value(v) for k, v in metadata.items()}
-        object.__setattr__(self, "metadata", metadata)
+        object.__setattr__(self, "metadata", {str(k): _plain_value(v) for k, v in metadata.items()})
 
+
+# ============================================================================
+# Latest-state hash models
+# These MUST remain flat for stable hash transport and restart safety.
+# ============================================================================
 
 
 @dataclass(frozen=True, slots=True)
@@ -1938,15 +1538,9 @@ class FuturesSnapshotState(SchemaBase):
     provider_role: str | None = None
     instrument_token: str | None = None
     trading_symbol: str | None = None
-    seq_no: int | None = None
     ltp: float = 0.0
-    last_qty: int | None = None
-    volume: int | None = None
-    oi: int | None = None
     bid: float | None = None
     ask: float | None = None
-    bid_qty: int | None = None
-    ask_qty: int | None = None
     bid_qty_5: int | None = None
     ask_qty_5: int | None = None
     tick_validity: str = TickValidity.OK
@@ -1961,32 +1555,16 @@ class FuturesSnapshotState(SchemaBase):
         if self.provider_id is not None:
             _require_literal(self.provider_id, "provider_id", allowed=ALLOWED_PROVIDER_IDS)
         if self.provider_role is not None:
-            _require_literal(
-                self.provider_role,
-                "provider_role",
-                allowed=ALLOWED_PROVIDER_ROLES,
-            )
+            _require_literal(self.provider_role, "provider_role", allowed=ALLOWED_PROVIDER_ROLES)
         if self.instrument_token is not None:
             _optional_non_empty_str(self.instrument_token, "instrument_token")
         if self.trading_symbol is not None:
             _optional_non_empty_str(self.trading_symbol, "trading_symbol")
-        if self.seq_no is not None:
-            _require_int(self.seq_no, "seq_no", min_value=0)
         _require_float(self.ltp, "ltp", min_value=0.0)
-        if self.last_qty is not None:
-            _require_int(self.last_qty, "last_qty", min_value=0)
-        if self.volume is not None:
-            _require_int(self.volume, "volume", min_value=0)
-        if self.oi is not None:
-            _require_int(self.oi, "oi", min_value=0)
         if self.bid is not None:
             _require_float(self.bid, "bid", min_value=0.0)
         if self.ask is not None:
             _require_float(self.ask, "ask", min_value=0.0)
-        if self.bid_qty is not None:
-            _require_int(self.bid_qty, "bid_qty", min_value=0)
-        if self.ask_qty is not None:
-            _require_int(self.ask_qty, "ask_qty", min_value=0)
         if self.bid_qty_5 is not None:
             _require_int(self.bid_qty_5, "bid_qty_5", min_value=0)
         if self.ask_qty_5 is not None:
@@ -2001,15 +1579,13 @@ class FuturesSnapshotState(SchemaBase):
 @dataclass(frozen=True, slots=True)
 class OptionSnapshotState(SchemaBase):
     instrument_key: str
-    ts_event_ns: int
     option_side: str
     strike: float
-    expiry: str | None = None
+    ts_event_ns: int
     provider_id: str | None = None
     provider_role: str | None = None
     instrument_token: str | None = None
     trading_symbol: str | None = None
-    seq_no: int | None = None
     ltp: float = 0.0
     last_qty: int | None = None
     volume: int | None = None
@@ -2021,6 +1597,7 @@ class OptionSnapshotState(SchemaBase):
     bid_qty_5: int | None = None
     ask_qty_5: int | None = None
     delta_proxy: float | None = None
+    seq_no: int | None = None
     tick_validity: str = TickValidity.OK
     last_update_ns: int = 0
     is_active_provider_snapshot: bool = False
@@ -2030,25 +1607,17 @@ class OptionSnapshotState(SchemaBase):
 
     def validate(self) -> None:
         _require_non_empty_str(self.instrument_key, "instrument_key")
-        _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         _require_literal(self.option_side, "option_side", allowed=ALLOWED_OPTION_SIDES)
         _require_float(self.strike, "strike", min_value=0.0)
-        if self.expiry is not None:
-            _optional_non_empty_str(self.expiry, "expiry")
+        _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         if self.provider_id is not None:
             _require_literal(self.provider_id, "provider_id", allowed=ALLOWED_PROVIDER_IDS)
         if self.provider_role is not None:
-            _require_literal(
-                self.provider_role,
-                "provider_role",
-                allowed=ALLOWED_PROVIDER_ROLES,
-            )
+            _require_literal(self.provider_role, "provider_role", allowed=ALLOWED_PROVIDER_ROLES)
         if self.instrument_token is not None:
             _optional_non_empty_str(self.instrument_token, "instrument_token")
         if self.trading_symbol is not None:
             _optional_non_empty_str(self.trading_symbol, "trading_symbol")
-        if self.seq_no is not None:
-            _require_int(self.seq_no, "seq_no", min_value=0)
         _require_float(self.ltp, "ltp", min_value=0.0)
         if self.last_qty is not None:
             _require_int(self.last_qty, "last_qty", min_value=0)
@@ -2070,6 +1639,8 @@ class OptionSnapshotState(SchemaBase):
             _require_int(self.ask_qty_5, "ask_qty_5", min_value=0)
         if self.delta_proxy is not None:
             _require_float(self.delta_proxy, "delta_proxy")
+        if self.seq_no is not None:
+            _require_int(self.seq_no, "seq_no", min_value=0)
         _require_literal(self.tick_validity, "tick_validity", allowed=ALLOWED_TICK_VALIDITY)
         _require_int(self.last_update_ns, "last_update_ns", min_value=0)
         _require_bool(self.is_active_provider_snapshot, "is_active_provider_snapshot")
@@ -2079,40 +1650,10 @@ class OptionSnapshotState(SchemaBase):
 
 
 @dataclass(frozen=True, slots=True)
-class DhanStrikeScoreComponents(SchemaBase):
-    spread_score: float | None = None
-    depth_score: float | None = None
-    volume_score: float | None = None
-    oi_score: float | None = None
-    iv_score: float | None = None
-    delta_score: float | None = None
-    gamma_score: float | None = None
-    iv_sanity_score: float | None = None
-
-    _TYPE: ClassVar[str] = "dhan_strike_score_components"
-
-    def validate(self) -> None:
-        for field_name in (
-            "spread_score",
-            "depth_score",
-            "volume_score",
-            "oi_score",
-            "iv_score",
-            "delta_score",
-            "gamma_score",
-            "iv_sanity_score",
-        ):
-            value = getattr(self, field_name)
-            if value is not None:
-                _require_float(value, field_name, min_value=0.0)
-                _require(value <= 1.0, f"{field_name} must be <= 1.0")
-
-
-@dataclass(frozen=True, slots=True)
 class DhanContextEvent(SchemaBase):
     ts_event_ns: int
-    provider_id: str = names.PROVIDER_DHAN
-    context_status: str = names.PROVIDER_STATUS_HEALTHY
+    provider_id: str
+    context_status: str
     atm_strike: float | None = None
     selected_call_instrument_key: str | None = None
     selected_put_instrument_key: str | None = None
@@ -2142,6 +1683,13 @@ class DhanContextEvent(SchemaBase):
     selected_put_cross_strike_spread_rank: float | None = None
     selected_call_cross_strike_volume_rank: float | None = None
     selected_put_cross_strike_volume_rank: float | None = None
+    nearest_call_oi_resistance_strike: float | None = None
+    nearest_put_oi_support_strike: float | None = None
+    call_wall_distance_pts: float | None = None
+    put_wall_distance_pts: float | None = None
+    call_wall_strength_score: float | None = None
+    put_wall_strength_score: float | None = None
+    oi_bias: float | None = None
     selected_call_score_components: DhanStrikeScoreComponents | None = None
     selected_put_score_components: DhanStrikeScoreComponents | None = None
     message: str | None = None
@@ -2151,15 +1699,7 @@ class DhanContextEvent(SchemaBase):
     def validate(self) -> None:
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         _require_literal(self.provider_id, "provider_id", allowed=ALLOWED_PROVIDER_IDS)
-        _require(
-            self.provider_id == names.PROVIDER_DHAN,
-            "DhanContextEvent.provider_id must be DHAN",
-        )
-        _require_literal(
-            self.context_status,
-            "context_status",
-            allowed=ALLOWED_PROVIDER_STATUSES,
-        )
+        _require_literal(self.context_status, "context_status", allowed=ALLOWED_PROVIDER_STATUSES)
         if self.atm_strike is not None:
             _require_float(self.atm_strike, "atm_strike", min_value=0.0)
         for field_name in ("selected_call_instrument_key", "selected_put_instrument_key", "message"):
@@ -2187,6 +1727,13 @@ class DhanContextEvent(SchemaBase):
             "selected_put_cross_strike_spread_rank",
             "selected_call_cross_strike_volume_rank",
             "selected_put_cross_strike_volume_rank",
+            "nearest_call_oi_resistance_strike",
+            "nearest_put_oi_support_strike",
+            "call_wall_distance_pts",
+            "put_wall_distance_pts",
+            "call_wall_strength_score",
+            "put_wall_strength_score",
+            "oi_bias",
         ):
             value = getattr(self, field_name)
             if value is not None:
@@ -2202,13 +1749,21 @@ class DhanContextEvent(SchemaBase):
             value = getattr(self, field_name)
             if value is not None:
                 _require_int(value, field_name, min_value=0)
+        if self.call_wall_distance_pts is not None:
+            _require_float(self.call_wall_distance_pts, "call_wall_distance_pts", min_value=0.0)
+        if self.put_wall_distance_pts is not None:
+            _require_float(self.put_wall_distance_pts, "put_wall_distance_pts", min_value=0.0)
+        if self.call_wall_strength_score is not None:
+            _require_float(self.call_wall_strength_score, "call_wall_strength_score", min_value=0.0)
+        if self.put_wall_strength_score is not None:
+            _require_float(self.put_wall_strength_score, "put_wall_strength_score", min_value=0.0)
 
 
 @dataclass(frozen=True, slots=True)
 class DhanContextState(SchemaBase):
     ts_event_ns: int
     provider_id: str = names.PROVIDER_DHAN
-    context_status: str = names.PROVIDER_STATUS_HEALTHY
+    context_status: str = names.PROVIDER_STATUS_STALE
     atm_strike: float | None = None
     selected_call_instrument_key: str | None = None
     selected_put_instrument_key: str | None = None
@@ -2254,6 +1809,13 @@ class DhanContextState(SchemaBase):
     selected_put_gamma_score: float | None = None
     selected_call_iv_sanity_score: float | None = None
     selected_put_iv_sanity_score: float | None = None
+    nearest_call_oi_resistance_strike: float | None = None
+    nearest_put_oi_support_strike: float | None = None
+    call_wall_distance_pts: float | None = None
+    put_wall_distance_pts: float | None = None
+    call_wall_strength_score: float | None = None
+    put_wall_strength_score: float | None = None
+    oi_bias: float | None = None
     last_update_ns: int = 0
     message: str | None = None
 
@@ -2262,15 +1824,7 @@ class DhanContextState(SchemaBase):
     def validate(self) -> None:
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         _require_literal(self.provider_id, "provider_id", allowed=ALLOWED_PROVIDER_IDS)
-        _require(
-            self.provider_id == names.PROVIDER_DHAN,
-            "DhanContextState.provider_id must be DHAN",
-        )
-        _require_literal(
-            self.context_status,
-            "context_status",
-            allowed=ALLOWED_PROVIDER_STATUSES,
-        )
+        _require_literal(self.context_status, "context_status", allowed=ALLOWED_PROVIDER_STATUSES)
         if self.atm_strike is not None:
             _require_float(self.atm_strike, "atm_strike", min_value=0.0)
         for field_name in ("selected_call_instrument_key", "selected_put_instrument_key", "message"):
@@ -2314,6 +1868,13 @@ class DhanContextState(SchemaBase):
             "selected_put_gamma_score",
             "selected_call_iv_sanity_score",
             "selected_put_iv_sanity_score",
+            "nearest_call_oi_resistance_strike",
+            "nearest_put_oi_support_strike",
+            "call_wall_distance_pts",
+            "put_wall_distance_pts",
+            "call_wall_strength_score",
+            "put_wall_strength_score",
+            "oi_bias",
         ):
             value = getattr(self, field_name)
             if value is not None:
@@ -2329,7 +1890,17 @@ class DhanContextState(SchemaBase):
             value = getattr(self, field_name)
             if value is not None:
                 _require_int(value, field_name, min_value=0)
+        if self.call_wall_distance_pts is not None:
+            _require_float(self.call_wall_distance_pts, "call_wall_distance_pts", min_value=0.0)
+        if self.put_wall_distance_pts is not None:
+            _require_float(self.put_wall_distance_pts, "put_wall_distance_pts", min_value=0.0)
+        if self.call_wall_strength_score is not None:
+            _require_float(self.call_wall_strength_score, "call_wall_strength_score", min_value=0.0)
+        if self.put_wall_strength_score is not None:
+            _require_float(self.put_wall_strength_score, "put_wall_strength_score", min_value=0.0)
         _require_int(self.last_update_ns, "last_update_ns", min_value=0)
+
+
 @dataclass(frozen=True, slots=True)
 class ProviderHealthState(SchemaBase):
     provider_id: str
@@ -2398,11 +1969,7 @@ class ProviderRuntimeState(SchemaBase):
             "execution_primary_provider_id",
             "execution_fallback_provider_id",
         ):
-            _require_literal(
-                getattr(self, field_name),
-                field_name,
-                allowed=ALLOWED_PROVIDER_IDS,
-            )
+            _require_literal(getattr(self, field_name), field_name, allowed=ALLOWED_PROVIDER_IDS)
         for field_name in (
             "futures_marketdata_status",
             "selected_option_marketdata_status",
@@ -2410,36 +1977,12 @@ class ProviderRuntimeState(SchemaBase):
             "execution_primary_status",
             "execution_fallback_status",
         ):
-            _require_literal(
-                getattr(self, field_name),
-                field_name,
-                allowed=ALLOWED_PROVIDER_STATUSES,
-            )
-        _require_literal(
-            self.family_runtime_mode,
-            "family_runtime_mode",
-            allowed=ALLOWED_FAMILY_RUNTIME_MODES,
-        )
-        _require_literal(
-            self.failover_mode,
-            "failover_mode",
-            allowed=ALLOWED_PROVIDER_FAILOVER_MODES,
-        )
-        _require_literal(
-            self.override_mode,
-            "override_mode",
-            allowed=ALLOWED_PROVIDER_OVERRIDE_MODES,
-        )
-        _require_literal(
-            self.transition_reason,
-            "transition_reason",
-            allowed=ALLOWED_PROVIDER_TRANSITION_REASONS,
-        )
-        _require_int(
-            self.provider_transition_seq,
-            "provider_transition_seq",
-            min_value=0,
-        )
+            _require_literal(getattr(self, field_name), field_name, allowed=ALLOWED_PROVIDER_STATUSES)
+        _require_literal(self.family_runtime_mode, "family_runtime_mode", allowed=ALLOWED_FAMILY_RUNTIME_MODES)
+        _require_literal(self.failover_mode, "failover_mode", allowed=ALLOWED_PROVIDER_FAILOVER_MODES)
+        _require_literal(self.override_mode, "override_mode", allowed=ALLOWED_PROVIDER_OVERRIDE_MODES)
+        _require_literal(self.transition_reason, "transition_reason", allowed=ALLOWED_PROVIDER_TRANSITION_REASONS)
+        _require_int(self.provider_transition_seq, "provider_transition_seq", min_value=0)
         _require_bool(self.failover_active, "failover_active")
         _require_bool(self.pending_failover, "pending_failover")
         _require_int(self.last_update_ns, "last_update_ns", min_value=0)
@@ -2466,52 +2009,20 @@ class ProviderTransitionEvent(SchemaBase):
     def validate(self) -> None:
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         _require_literal(self.role, "role", allowed=ALLOWED_PROVIDER_ROLES)
-        _require_literal(
-            self.to_provider_id,
-            "to_provider_id",
-            allowed=ALLOWED_PROVIDER_IDS,
-        )
-        _require_literal(
-            self.reason,
-            "reason",
-            allowed=ALLOWED_PROVIDER_TRANSITION_REASONS,
-        )
+        _require_literal(self.to_provider_id, "to_provider_id", allowed=ALLOWED_PROVIDER_IDS)
+        _require_literal(self.reason, "reason", allowed=ALLOWED_PROVIDER_TRANSITION_REASONS)
         if self.from_provider_id is not None:
-            _require_literal(
-                self.from_provider_id,
-                "from_provider_id",
-                allowed=ALLOWED_PROVIDER_IDS,
-            )
+            _require_literal(self.from_provider_id, "from_provider_id", allowed=ALLOWED_PROVIDER_IDS)
         if self.previous_status is not None:
-            _require_literal(
-                self.previous_status,
-                "previous_status",
-                allowed=ALLOWED_PROVIDER_STATUSES,
-            )
+            _require_literal(self.previous_status, "previous_status", allowed=ALLOWED_PROVIDER_STATUSES)
         if self.new_status is not None:
-            _require_literal(
-                self.new_status,
-                "new_status",
-                allowed=ALLOWED_PROVIDER_STATUSES,
-            )
+            _require_literal(self.new_status, "new_status", allowed=ALLOWED_PROVIDER_STATUSES)
         if self.family_runtime_mode is not None:
-            _require_literal(
-                self.family_runtime_mode,
-                "family_runtime_mode",
-                allowed=ALLOWED_FAMILY_RUNTIME_MODES,
-            )
+            _require_literal(self.family_runtime_mode, "family_runtime_mode", allowed=ALLOWED_FAMILY_RUNTIME_MODES)
         if self.failover_mode is not None:
-            _require_literal(
-                self.failover_mode,
-                "failover_mode",
-                allowed=ALLOWED_PROVIDER_FAILOVER_MODES,
-            )
+            _require_literal(self.failover_mode, "failover_mode", allowed=ALLOWED_PROVIDER_FAILOVER_MODES)
         if self.override_mode is not None:
-            _require_literal(
-                self.override_mode,
-                "override_mode",
-                allowed=ALLOWED_PROVIDER_OVERRIDE_MODES,
-            )
+            _require_literal(self.override_mode, "override_mode", allowed=ALLOWED_PROVIDER_OVERRIDE_MODES)
         if self.message is not None:
             _optional_non_empty_str(self.message, "message")
 
@@ -2546,13 +2057,6 @@ class RuntimeModeState(SchemaBase):
         _require_int(self.last_update_ns, "last_update_ns", min_value=0)
         if self.message is not None:
             _optional_non_empty_str(self.message, "message")
-
-
-# ============================================================================
-# Latest-state hash models
-# These MUST remain flat for stable hash transport and restart safety.
-# ============================================================================
-
 
 
 @dataclass(frozen=True, slots=True)
@@ -2593,11 +2097,7 @@ class PositionState(SchemaBase):
 
     def validate(self) -> None:
         _require_bool(self.has_position, "has_position")
-        _require_literal(
-            self.position_side,
-            "position_side",
-            allowed=ALLOWED_POSITION_SIDES,
-        )
+        _require_literal(self.position_side, "position_side", allowed=ALLOWED_POSITION_SIDES)
         if self.instrument_key is not None:
             _optional_non_empty_str(self.instrument_key, "instrument_key")
         if self.entry_option_symbol is not None:
@@ -2621,11 +2121,7 @@ class PositionState(SchemaBase):
         if self.trade_id is not None:
             _optional_non_empty_str(self.trade_id, "trade_id")
         if self.entry_mode is not None:
-            _require_literal(
-                self.entry_mode,
-                "entry_mode",
-                allowed=ALLOWED_ENTRY_MODES,
-            )
+            _require_literal(self.entry_mode, "entry_mode", allowed=ALLOWED_ENTRY_MODES)
         _validate_family_doctrine_pair(self.strategy_family_id, self.doctrine_id)
         if self.branch_id is not None:
             _require_literal(self.branch_id, "branch_id", allowed=ALLOWED_BRANCH_IDS)
@@ -2644,17 +2140,11 @@ class PositionState(SchemaBase):
                 "open position must use LONG_CALL or LONG_PUT",
             )
             _require(self.qty_lots > 0, "open position must have qty_lots > 0")
-            _require(
-                self.instrument_key is not None,
-                "open position requires instrument_key",
-            )
+            _require(self.instrument_key is not None, "open position requires instrument_key")
             _require(self.avg_price is not None, "open position requires avg_price")
             _require(self.entry_ts_ns is not None, "open position requires entry_ts_ns")
         else:
-            _require(
-                self.position_side == names.POSITION_SIDE_FLAT,
-                "flat position must use position_side FLAT",
-            )
+            _require(self.position_side == names.POSITION_SIDE_FLAT, "flat position must use position_side FLAT")
             _require(self.qty_lots == 0, "flat position must have qty_lots == 0")
 
 
@@ -2680,25 +2170,13 @@ class ExecutionState(SchemaBase):
     _TYPE: ClassVar[str] = "execution_state"
 
     def validate(self) -> None:
-        _require_literal(
-            self.execution_mode,
-            "execution_mode",
-            allowed=ALLOWED_EXECUTION_MODES,
-        )
+        _require_literal(self.execution_mode, "execution_mode", allowed=ALLOWED_EXECUTION_MODES)
         _require_bool(self.entry_pending, "entry_pending")
         _require_bool(self.exit_pending, "exit_pending")
         if self.family_runtime_mode is not None:
-            _require_literal(
-                self.family_runtime_mode,
-                "family_runtime_mode",
-                allowed=ALLOWED_FAMILY_RUNTIME_MODES,
-            )
+            _require_literal(self.family_runtime_mode, "family_runtime_mode", allowed=ALLOWED_FAMILY_RUNTIME_MODES)
         if self.strategy_runtime_mode is not None:
-            _require_literal(
-                self.strategy_runtime_mode,
-                "strategy_runtime_mode",
-                allowed=ALLOWED_STRATEGY_RUNTIME_MODES,
-            )
+            _require_literal(self.strategy_runtime_mode, "strategy_runtime_mode", allowed=ALLOWED_STRATEGY_RUNTIME_MODES)
         if self.execution_primary_provider_id is not None:
             _require_literal(
                 self.execution_primary_provider_id,
@@ -2718,11 +2196,7 @@ class ExecutionState(SchemaBase):
         if self.pending_decision_id is not None:
             _optional_non_empty_str(self.pending_decision_id, "pending_decision_id")
         if self.pending_entry_mode is not None:
-            _require_literal(
-                self.pending_entry_mode,
-                "pending_entry_mode",
-                allowed=ALLOWED_ENTRY_MODES,
-            )
+            _require_literal(self.pending_entry_mode, "pending_entry_mode", allowed=ALLOWED_ENTRY_MODES)
         if self.last_decision_id is not None:
             _optional_non_empty_str(self.last_decision_id, "last_decision_id")
         if self.last_order_id is not None:
@@ -2730,12 +2204,9 @@ class ExecutionState(SchemaBase):
         if self.last_trade_id is not None:
             _optional_non_empty_str(self.last_trade_id, "last_trade_id")
         if self.last_ack_type is not None:
-            _require_literal(
-                self.last_ack_type,
-                "last_ack_type",
-                allowed=ALLOWED_ACK_TYPES,
-            )
+            _require_literal(self.last_ack_type, "last_ack_type", allowed=ALLOWED_ACK_TYPES)
         _require_int(self.last_update_ns, "last_update_ns", min_value=0)
+
 
 @dataclass(frozen=True, slots=True)
 class RiskState(SchemaBase):
@@ -2772,13 +2243,8 @@ class RiskState(SchemaBase):
         if self.reason_message is not None:
             _optional_non_empty_str(self.reason_message, "reason_message")
         _require_int(self.last_update_ns, "last_update_ns", min_value=0)
-
         if self.cooldown_active:
-            _require(
-                self.cooldown_until_ns is not None,
-                "cooldown_active=True requires cooldown_until_ns",
-            )
-
+            _require(self.cooldown_until_ns is not None, "cooldown_active=True requires cooldown_until_ns")
 
 
 @dataclass(frozen=True, slots=True)
@@ -2803,16 +2269,8 @@ class FeatureState(SchemaBase):
         _require_non_empty_str(self.instrument_key, "instrument_key")
         _require_bool(self.frame_valid, "frame_valid")
         _require_bool(self.warmup_complete, "warmup_complete")
-        _require_literal(
-            self.strategy_mode,
-            "strategy_mode",
-            allowed=ALLOWED_STRATEGY_MODES,
-        )
-        _require_literal(
-            self.system_state,
-            "system_state",
-            allowed=ALLOWED_SYSTEM_STATES,
-        )
+        _require_literal(self.strategy_mode, "strategy_mode", allowed=ALLOWED_STRATEGY_MODES)
+        _require_literal(self.system_state, "system_state", allowed=ALLOWED_SYSTEM_STATES)
         _validate_family_doctrine_pair(self.strategy_family_id, self.doctrine_id)
         if self.branch_id is not None:
             _require_literal(self.branch_id, "branch_id", allowed=ALLOWED_BRANCH_IDS)
@@ -2823,11 +2281,7 @@ class FeatureState(SchemaBase):
                 field_name="strategy_runtime_mode",
             )
         if self.family_runtime_mode is not None:
-            _require_literal(
-                self.family_runtime_mode,
-                "family_runtime_mode",
-                allowed=ALLOWED_FAMILY_RUNTIME_MODES,
-            )
+            _require_literal(self.family_runtime_mode, "family_runtime_mode", allowed=ALLOWED_FAMILY_RUNTIME_MODES)
         if self.explain is not None:
             _optional_non_empty_str(self.explain, "explain")
 
@@ -2842,7 +2296,6 @@ class StrategyState(SchemaBase):
     branch_id: str | None = None
     family_runtime_mode: str | None = None
     strategy_runtime_mode: str | None = None
-    current_regime: str | None = None
     active_futures_provider_id: str | None = None
     active_selected_option_provider_id: str | None = None
     active_option_context_provider_id: str | None = None
@@ -2850,40 +2303,10 @@ class StrategyState(SchemaBase):
     active_execution_fallback_provider_id: str | None = None
     current_setup_id: str | None = None
     current_event_id: str | None = None
-    current_leg_id: str | None = None
     trap_event_id: str | None = None
     burst_event_id: str | None = None
-    selected_instrument_key: str | None = None
-    selected_strike: float | None = None
     armed_since_ns: int | None = None
     retest_monitor_since_ns: int | None = None
-    entry_pending_since_ns: int | None = None
-    entry_ts_ns: int | None = None
-    entry_price: float | None = None
-    hard_target_price: float | None = None
-    hard_stop_price: float | None = None
-    proof_deadline_ns: int | None = None
-    stage1_deadline_ns: int | None = None
-    cooldown_until_ns: int | None = None
-    highest_profit_points: float | None = None
-    highest_profit_ts_ns: int | None = None
-    highest_profit_price: float | None = None
-    highest_fut_price: float | None = None
-    lowest_fut_price: float | None = None
-    breakout_ref_high_at_entry: float | None = None
-    breakout_ref_low_at_entry: float | None = None
-    retest_low_at_entry: float | None = None
-    retest_high_at_entry: float | None = None
-    entry_ce_depth_total: int | None = None
-    entry_pe_depth_total: int | None = None
-    entry_ce_spread_ratio: float | None = None
-    entry_pe_spread_ratio: float | None = None
-    primary_entry_done_in_current_leg: bool = False
-    reentry_count_in_current_leg: int = 0
-    last_exit_reason: str | None = None
-    last_exit_pnl_points: float | None = None
-    post_exit_high_fut: float | None = None
-    post_exit_low_fut: float | None = None
     last_decision_id: str | None = None
     last_signal_side: str | None = None
     last_entry_mode: str | None = None
@@ -2894,37 +2317,19 @@ class StrategyState(SchemaBase):
     _TYPE: ClassVar[str] = "strategy_state"
 
     def validate(self) -> None:
-        _require_literal(
-            self.system_state,
-            "system_state",
-            allowed=ALLOWED_SYSTEM_STATES,
-        )
-        _require_literal(
-            self.strategy_mode,
-            "strategy_mode",
-            allowed=ALLOWED_STRATEGY_MODES,
-        )
+        _require_literal(self.system_state, "system_state", allowed=ALLOWED_SYSTEM_STATES)
+        _require_literal(self.strategy_mode, "strategy_mode", allowed=ALLOWED_STRATEGY_MODES)
         _require_bool(self.waiting_on_execution, "waiting_on_execution")
         _validate_family_doctrine_pair(self.strategy_family_id, self.doctrine_id)
         if self.branch_id is not None:
             _require_literal(self.branch_id, "branch_id", allowed=ALLOWED_BRANCH_IDS)
         if self.family_runtime_mode is not None:
-            _require_literal(
-                self.family_runtime_mode,
-                "family_runtime_mode",
-                allowed=ALLOWED_FAMILY_RUNTIME_MODES,
-            )
+            _require_literal(self.family_runtime_mode, "family_runtime_mode", allowed=ALLOWED_FAMILY_RUNTIME_MODES)
         if self.strategy_runtime_mode is not None:
             _validate_strategy_runtime_mode_for_family(
                 self.strategy_family_id,
                 self.strategy_runtime_mode,
                 field_name="strategy_runtime_mode",
-            )
-        if self.current_regime is not None:
-            _require_literal(
-                self.current_regime,
-                "current_regime",
-                allowed=ALLOWED_STRATEGY_REGIMES,
             )
         for field_name in (
             "active_futures_provider_id",
@@ -2939,100 +2344,26 @@ class StrategyState(SchemaBase):
         for field_name in (
             "current_setup_id",
             "current_event_id",
-            "current_leg_id",
             "trap_event_id",
             "burst_event_id",
-            "selected_instrument_key",
             "last_decision_id",
-            "last_exit_reason",
             "blocker_code",
             "blocker_message",
         ):
             value = getattr(self, field_name)
             if value is not None:
                 _optional_non_empty_str(value, field_name)
-        for field_name in (
-            "armed_since_ns",
-            "retest_monitor_since_ns",
-            "entry_pending_since_ns",
-            "entry_ts_ns",
-            "proof_deadline_ns",
-            "stage1_deadline_ns",
-            "cooldown_until_ns",
-            "highest_profit_ts_ns",
-        ):
-            value = getattr(self, field_name)
-            if value is not None:
-                _require_int(value, field_name, min_value=0)
-        for field_name in (
-            "selected_strike",
-            "entry_price",
-            "hard_target_price",
-            "hard_stop_price",
-            "highest_profit_points",
-            "highest_profit_price",
-            "highest_fut_price",
-            "lowest_fut_price",
-            "breakout_ref_high_at_entry",
-            "breakout_ref_low_at_entry",
-            "retest_low_at_entry",
-            "retest_high_at_entry",
-            "entry_ce_spread_ratio",
-            "entry_pe_spread_ratio",
-            "last_exit_pnl_points",
-            "post_exit_high_fut",
-            "post_exit_low_fut",
-        ):
-            value = getattr(self, field_name)
-            if value is not None:
-                _require_float(value, field_name)
-        for field_name in ("entry_ce_depth_total", "entry_pe_depth_total"):
-            value = getattr(self, field_name)
-            if value is not None:
-                _require_int(value, field_name, min_value=0)
-        _require_bool(
-            self.primary_entry_done_in_current_leg,
-            "primary_entry_done_in_current_leg",
-        )
-        _require_int(
-            self.reentry_count_in_current_leg,
-            "reentry_count_in_current_leg",
-            min_value=0,
-        )
+        if self.armed_since_ns is not None:
+            _require_int(self.armed_since_ns, "armed_since_ns", min_value=0)
+        if self.retest_monitor_since_ns is not None:
+            _require_int(self.retest_monitor_since_ns, "retest_monitor_since_ns", min_value=0)
         if self.last_signal_side is not None:
-            _require_literal(
-                self.last_signal_side,
-                "last_signal_side",
-                allowed=ALLOWED_OPTION_SIDES,
-            )
+            _require_literal(self.last_signal_side, "last_signal_side", allowed=ALLOWED_OPTION_SIDES)
         if self.last_entry_mode is not None:
-            _require_literal(
-                self.last_entry_mode,
-                "last_entry_mode",
-                allowed=ALLOWED_ENTRY_MODES,
-            )
+            _require_literal(self.last_entry_mode, "last_entry_mode", allowed=ALLOWED_ENTRY_MODES)
         _require_int(self.last_update_ns, "last_update_ns", min_value=0)
 
-        if self.system_state == names.STATE_RETEST_MONITOR:
-            _require(
-                self.retest_monitor_since_ns is not None,
-                "RETEST_MONITOR state requires retest_monitor_since_ns",
-            )
-        if self.system_state == names.STATE_ARMED:
-            _require(
-                self.armed_since_ns is not None,
-                "ARMED state requires armed_since_ns",
-            )
-        if self.burst_event_id is not None:
-            _require(
-                self.strategy_family_id in (None, names.STRATEGY_FAMILY_MISO),
-                "burst_event_id is valid only for MISO or unspecified family",
-            )
-        if self.trap_event_id is not None:
-            _require(
-                self.strategy_family_id in (None, names.STRATEGY_FAMILY_MISR),
-                "trap_event_id is valid only for MISR or unspecified family",
-            )
+
 @dataclass(frozen=True, slots=True)
 class LoginState(SchemaBase):
     broker_name: str
@@ -3049,11 +2380,7 @@ class LoginState(SchemaBase):
         _require_non_empty_str(self.broker_name, "broker_name")
         _require_bool(self.authenticated, "authenticated")
         if self.provider_id is not None:
-            _require_literal(
-                self.provider_id,
-                "provider_id",
-                allowed=ALLOWED_PROVIDER_IDS,
-            )
+            _require_literal(self.provider_id, "provider_id", allowed=ALLOWED_PROVIDER_IDS)
         if self.account_id is not None:
             _optional_non_empty_str(self.account_id, "account_id")
         if self.session_expires_ns is not None:
@@ -3062,6 +2389,7 @@ class LoginState(SchemaBase):
             _require_int(self.last_refresh_ns, "last_refresh_ns", min_value=0)
         if self.message is not None:
             _optional_non_empty_str(self.message, "message")
+
 
 @dataclass(frozen=True, slots=True)
 class ReportState(SchemaBase):
@@ -3116,23 +2444,11 @@ class ReportTradeRow(SchemaBase):
         if self.instrument_key is not None:
             _optional_non_empty_str(self.instrument_key, "instrument_key")
         if self.option_side is not None:
-            _require_literal(
-                self.option_side,
-                "option_side",
-                allowed=ALLOWED_OPTION_SIDES,
-            )
+            _require_literal(self.option_side, "option_side", allowed=ALLOWED_OPTION_SIDES)
         if self.entry_mode is not None:
-            _require_literal(
-                self.entry_mode,
-                "entry_mode",
-                allowed=ALLOWED_ENTRY_MODES,
-            )
+            _require_literal(self.entry_mode, "entry_mode", allowed=ALLOWED_ENTRY_MODES)
         if self.position_side is not None:
-            _require_literal(
-                self.position_side,
-                "position_side",
-                allowed=ALLOWED_POSITION_SIDES,
-            )
+            _require_literal(self.position_side, "position_side", allowed=ALLOWED_POSITION_SIDES)
         if self.entry_price is not None:
             _require_float(self.entry_price, "entry_price", min_value=0.0)
         if self.exit_price is not None:
@@ -3176,7 +2492,6 @@ class Heartbeat(SchemaBase):
             _optional_non_empty_str(self.message, "message")
 
 
-
 @dataclass(frozen=True, slots=True)
 class ErrorEvent(SchemaBase):
     error_id: str
@@ -3204,8 +2519,8 @@ class ErrorEvent(SchemaBase):
         if self.correlation_id is not None:
             _optional_non_empty_str(self.correlation_id, "correlation_id")
         details = _require_mapping(self.details, "details")
-        details = {str(k): _plain_value(v) for k, v in details.items()}
-        object.__setattr__(self, "details", details)
+        object.__setattr__(self, "details", {str(k): _plain_value(v) for k, v in details.items()})
+
 
 # ============================================================================
 # Registry / helpers
@@ -3226,11 +2541,7 @@ MODEL_REGISTRY: Final[Mapping[str, type[SchemaBase]]] = MappingProxyType(
             EconomicViability,
             FourPillarSignal,
             DeltaProxyNormalization,
-            MistTrendSurface,
-            MisbBreakoutSurface,
-            MiscCompressionRetestSurface,
-            MisrTrapSurface,
-            MisoMicrostructureSurface,
+            DhanStrikeScoreComponents,
             FeatureFrame,
             StopPlan,
             TargetPlan,
@@ -3243,7 +2554,6 @@ MODEL_REGISTRY: Final[Mapping[str, type[SchemaBase]]] = MappingProxyType(
             TradeLedgerRow,
             FuturesSnapshotState,
             OptionSnapshotState,
-            DhanStrikeScoreComponents,
             DhanContextEvent,
             DhanContextState,
             ProviderHealthState,
@@ -3277,7 +2587,6 @@ def validate_payload(model_cls: type[T], raw: Mapping[str, Any]) -> T:
     return model_cls.from_mapping(raw)
 
 
-
 __all__ = [
     "ALLOWED_ACK_TYPES",
     "ALLOWED_ACTIONS",
@@ -3300,11 +2609,9 @@ __all__ = [
     "ALLOWED_PROVIDER_ROLES",
     "ALLOWED_PROVIDER_STATUSES",
     "ALLOWED_PROVIDER_TRANSITION_REASONS",
-    "ALLOWED_RETEST_TYPES",
     "ALLOWED_SNAPSHOT_VALIDITY",
     "ALLOWED_STRATEGY_FAMILY_IDS",
     "ALLOWED_STRATEGY_MODES",
-    "ALLOWED_STRATEGY_REGIMES",
     "ALLOWED_STRATEGY_RUNTIME_MODES",
     "ALLOWED_SYSTEM_STATES",
     "ALLOWED_TICK_VALIDITY",
@@ -3327,15 +2634,10 @@ __all__ = [
     "Heartbeat",
     "InstrumentRole",
     "LoginState",
-    "MisbBreakoutSurface",
-    "MiscCompressionRetestSurface",
-    "MISO_ALLOWED_STRATEGY_RUNTIME_MODES",
-    "MisoMicrostructureSurface",
-    "MistTrendSurface",
     "MODEL_REGISTRY",
+    "MISO_ALLOWED_STRATEGY_RUNTIME_MODES",
     "ModelError",
     "ModelValidationError",
-    "MisrTrapSurface",
     "NON_MISO_ALLOWED_STRATEGY_RUNTIME_MODES",
     "OptionSnapshot",
     "OptionSnapshotState",
@@ -3348,7 +2650,6 @@ __all__ = [
     "ProviderTransitionEvent",
     "ReportState",
     "ReportTradeRow",
-    "RetestType",
     "RiskState",
     "RuntimeModeState",
     "SchemaBase",
@@ -3357,7 +2658,6 @@ __all__ = [
     "SnapshotValidity",
     "StopPlan",
     "StrategyDecision",
-    "StrategyRegime",
     "StrategyState",
     "TargetPlan",
     "TickValidity",

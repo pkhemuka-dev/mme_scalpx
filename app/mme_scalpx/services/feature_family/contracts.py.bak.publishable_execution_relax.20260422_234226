@@ -886,20 +886,20 @@ def validate_provider_runtime_block(
     strict_provider_fields = (
         "active_futures_provider_id",
         "active_selected_option_provider_id",
+        "active_execution_provider_id",
+        "fallback_execution_provider_id",
     )
     optional_provider_fields = (
         "active_option_context_provider_id",
-        "active_execution_provider_id",
-        "fallback_execution_provider_id",
     )
 
     strict_status_fields = (
         "futures_provider_status",
         "selected_option_provider_status",
+        "execution_provider_status",
     )
     optional_status_fields = (
         "option_context_provider_status",
-        "execution_provider_status",
     )
 
     for field_name in strict_provider_fields:
@@ -1466,6 +1466,7 @@ __all__ = [
     "BRANCH_CALL",
     "BRANCH_PUT",
     "BRANCH_IDS",
+    "OPTION_SIDE_IDS",
     "ALLOWED_PROVIDER_IDS",
     "ALLOWED_PROVIDER_STATUSES",
     "ALLOWED_FAMILY_RUNTIME_MODES",

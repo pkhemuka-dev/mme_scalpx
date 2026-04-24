@@ -30,7 +30,6 @@ Frozen design law
 - It must not invent new family/branch vocabularies.
 - It must remain deterministic and replay-safe.
 - Candidate ordering must be stable across runs for identical inputs.
-- Malformed arbitration metadata must fail fast, not silently degrade.
 """
 
 from dataclasses import dataclass
@@ -38,7 +37,7 @@ from typing import Any, Final, Mapping, Sequence
 
 from app.mme_scalpx.core import names as N
 
-from .common import FAMILY_ORDER
+from .common import FAMILY_ORDER, safe_float, safe_str
 from .doctrine_runtime import DoctrineSignalCandidate
 
 
@@ -65,9 +64,6 @@ class RankedCandidate:
     effective_score: float
     family_rank: int
     branch_rank: int
-    doctrine_id: str
-    entry_mode: str
-    setup_kind: str
     instrument_key: str
     source_event_id: str
     trap_event_id: str
@@ -100,9 +96,6 @@ class RankedCandidate:
             "effective_score": self.effective_score,
             "family_rank": self.family_rank,
             "branch_rank": self.branch_rank,
-            "doctrine_id": self.doctrine_id,
-            "entry_mode": self.entry_mode,
-            "setup_kind": self.setup_kind,
             "instrument_key": self.instrument_key,
             "source_event_id": self.source_event_id,
             "trap_event_id": self.trap_event_id,
@@ -189,35 +182,6 @@ def _require(condition: bool, message: str) -> None:
         _fail(message)
 
 
-def _non_empty_str(value: Any, field_name: str) -> str:
-    if not isinstance(value, str):
-        _fail(f"{field_name} must be str")
-    text = value.strip()
-    if not text:
-        _fail(f"{field_name} must be non-empty")
-    return text
-
-
-def _optional_clean_str(value: Any) -> str:
-    if value is None:
-        return ""
-    if not isinstance(value, str):
-        return str(value)
-    return value.strip()
-
-
-def _strict_float(value: Any, field_name: str) -> float:
-    if isinstance(value, bool) or value is None:
-        _fail(f"{field_name} must be a finite float-compatible value")
-    try:
-        out = float(value)
-    except (TypeError, ValueError) as exc:
-        raise ArbitrationError(f"{field_name} must be float-compatible") from exc
-    if out != out or out in (float("inf"), float("-inf")):
-        _fail(f"{field_name} must be finite")
-    return out
-
-
 def _metadata(candidate: DoctrineSignalCandidate) -> Mapping[str, Any]:
     return dict(candidate.metadata)
 
@@ -236,58 +200,47 @@ def _branch_rank(branch_id: str) -> int:
         return len(_BRANCH_ORDER) + 1
 
 
-def _expected_side_for_branch(branch_id: str) -> str:
-    if branch_id == N.BRANCH_CALL:
-        return N.SIDE_CALL
-    if branch_id == N.BRANCH_PUT:
-        return N.SIDE_PUT
-    _fail(f"unsupported branch_id: {branch_id!r}")
-
-
 def _effective_priority(candidate: DoctrineSignalCandidate) -> float:
     meta = _metadata(candidate)
     for key in _METADATA_PRIORITY_KEYS:
         if key in meta and meta[key] is not None:
-            return _strict_float(meta[key], f"candidate.metadata[{key!r}]")
-    return _strict_float(candidate.priority, "candidate.priority")
+            return safe_float(meta[key], 0.0)
+    return float(candidate.priority)
 
 
 def _effective_score(candidate: DoctrineSignalCandidate) -> float:
     meta = _metadata(candidate)
     for key in _METADATA_SCORE_KEYS:
         if key in meta and meta[key] is not None:
-            return _strict_float(meta[key], f"candidate.metadata[{key!r}]")
-    return _strict_float(candidate.score, "candidate.score")
+            return safe_float(meta[key], 0.0)
+    return float(candidate.score)
 
 
 def _ranked_candidate(candidate: DoctrineSignalCandidate) -> RankedCandidate:
+    instrument_key = safe_str(candidate.instrument_key)
+    source_event_id = safe_str(candidate.source_event_id)
+    trap_event_id = safe_str(candidate.trap_event_id)
+    burst_event_id = safe_str(candidate.burst_event_id)
+
     return RankedCandidate(
         candidate=candidate,
         effective_priority=_effective_priority(candidate),
         effective_score=_effective_score(candidate),
         family_rank=_family_rank(candidate.family_id),
         branch_rank=_branch_rank(candidate.branch_id),
-        doctrine_id=_non_empty_str(candidate.doctrine_id, "candidate.doctrine_id"),
-        entry_mode=_non_empty_str(candidate.entry_mode, "candidate.entry_mode"),
-        setup_kind=_optional_clean_str(candidate.setup_kind),
-        instrument_key=_non_empty_str(candidate.instrument_key, "candidate.instrument_key"),
-        source_event_id=_optional_clean_str(candidate.source_event_id),
-        trap_event_id=_optional_clean_str(candidate.trap_event_id),
-        burst_event_id=_optional_clean_str(candidate.burst_event_id),
+        instrument_key=instrument_key,
+        source_event_id=source_event_id,
+        trap_event_id=trap_event_id,
+        burst_event_id=burst_event_id,
     )
 
 
-def _sort_key(
-    item: RankedCandidate,
-) -> tuple[float, float, int, int, str, str, str, str, str, str, str]:
+def _sort_key(item: RankedCandidate) -> tuple[float, float, int, int, str, str, str, str]:
     return (
         item.effective_priority,
         -item.effective_score,
         item.family_rank,
         item.branch_rank,
-        item.doctrine_id,
-        item.entry_mode,
-        item.setup_kind,
         item.instrument_key,
         item.source_event_id,
         item.trap_event_id,
@@ -296,31 +249,26 @@ def _sort_key(
 
 
 def _validate_candidate(candidate: DoctrineSignalCandidate) -> None:
-    family_id = _non_empty_str(candidate.family_id, "candidate.family_id")
-    branch_id = _non_empty_str(candidate.branch_id, "candidate.branch_id")
-    side = _non_empty_str(candidate.side, "candidate.side")
-
     _require(
-        family_id in FAMILY_ORDER,
-        f"candidate.family_id must be in FAMILY_ORDER, got {family_id!r}",
+        candidate.family_id in FAMILY_ORDER,
+        f"candidate.family_id must be in FAMILY_ORDER, got {candidate.family_id!r}",
     )
     _require(
-        branch_id in _BRANCH_ORDER,
-        f"candidate.branch_id must be one of {_BRANCH_ORDER!r}, got {branch_id!r}",
+        candidate.branch_id in _BRANCH_ORDER,
+        f"candidate.branch_id must be one of {_BRANCH_ORDER!r}, got {candidate.branch_id!r}",
     )
     _require(
-        side in (N.SIDE_CALL, N.SIDE_PUT),
-        f"candidate.side must be one of {(N.SIDE_CALL, N.SIDE_PUT)!r}, got {side!r}",
+        candidate.side in (N.SIDE_CALL, N.SIDE_PUT),
+        f"candidate.side must be one of {(N.SIDE_CALL, N.SIDE_PUT)!r}, got {candidate.side!r}",
     )
     _require(
-        side == _expected_side_for_branch(branch_id),
-        f"candidate.side {side!r} must match candidate.branch_id {branch_id!r}",
+        bool(safe_str(candidate.doctrine_id)),
+        "candidate.doctrine_id must be non-empty",
     )
-    _non_empty_str(candidate.doctrine_id, "candidate.doctrine_id")
-    _non_empty_str(candidate.entry_mode, "candidate.entry_mode")
-    _non_empty_str(candidate.instrument_key, "candidate.instrument_key")
-    _strict_float(candidate.priority, "candidate.priority")
-    _strict_float(candidate.score, "candidate.score")
+    _require(
+        bool(safe_str(candidate.entry_mode)),
+        "candidate.entry_mode must be non-empty",
+    )
 
 
 # ============================================================================
@@ -339,13 +287,10 @@ def rank_candidates(
     2. effective score (higher is better)
     3. family order (FAMILY_ORDER)
     4. branch order (CALL before PUT)
-    5. doctrine_id
-    6. entry_mode
-    7. setup_kind
-    8. instrument_key
-    9. source_event_id
-    10. trap_event_id
-    11. burst_event_id
+    5. instrument_key
+    6. source_event_id
+    7. trap_event_id
+    8. burst_event_id
     """
     ranked: list[RankedCandidate] = []
     for candidate in candidates:

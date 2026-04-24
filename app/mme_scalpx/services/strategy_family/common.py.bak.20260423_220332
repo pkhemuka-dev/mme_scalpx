@@ -35,11 +35,9 @@ Design rules
   symbols and with the frozen migration plan.
 """
 
-import hashlib
-import json
-import math
 from types import MappingProxyType
 from typing import Any, Final, Mapping
+from uuid import uuid4
 
 from app.mme_scalpx.core import names as N
 
@@ -306,53 +304,9 @@ def normalize_reason(value: str | None) -> str:
     return normalized
 
 
-def _plain_value_for_id(value: Any) -> Any:
-    if value is None or isinstance(value, (str, bool, int)):
-        return value
-    if isinstance(value, float):
-        if not math.isfinite(value):
-            raise StrategyFamilyCommonError("stable_id payload contains non-finite float")
-        return value
-    if isinstance(value, Mapping):
-        return {
-            str(k): _plain_value_for_id(v)
-            for k, v in sorted(value.items(), key=lambda item: str(item[0]))
-        }
-    if isinstance(value, (list, tuple)):
-        return [_plain_value_for_id(v) for v in value]
-    if isinstance(value, set):
-        return sorted(_plain_value_for_id(v) for v in value)
-    return str(value)
-
-
-def stable_id(prefix: str, *parts: Any, payload: Mapping[str, Any] | None = None) -> str:
+def new_id(prefix: str) -> str:
     stem = safe_str(prefix, "id").replace(" ", "_")
-    if payload is not None and parts:
-        raise StrategyFamilyCommonError("stable_id accepts either parts or payload, not both")
-    if payload is None:
-        _require(len(parts) > 0, "stable_id requires deterministic parts or payload")
-        material_obj: Any = [_plain_value_for_id(part) for part in parts]
-    else:
-        material_obj = _plain_value_for_id(dict(payload))
-    material = json.dumps(
-        material_obj,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-    )
-    digest = hashlib.sha256(material.encode("utf-8")).hexdigest()[:20]
-    return f"{stem}-{digest}"
-
-
-def new_id(prefix: str, *parts: Any, payload: Mapping[str, Any] | None = None) -> str:
-    """
-    Backward-compatible deterministic alias.
-
-    Freeze-grade rule:
-    - caller must provide deterministic parts or payload
-    - zero-argument UUID-style generation is forbidden
-    """
-    return stable_id(prefix, *parts, payload=payload)
+    return f"{stem}-{uuid4().hex[:20]}"
 
 
 # ============================================================================
@@ -561,7 +515,6 @@ __all__ = [
     "family_requires_dhan_signal_path",
     "mapping_get",
     "new_id",
-    "stable_id",
     "normalize_reason",
     "normalize_regime",
     "param_path_for",

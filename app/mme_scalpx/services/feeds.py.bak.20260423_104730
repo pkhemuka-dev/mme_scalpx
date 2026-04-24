@@ -2109,7 +2109,6 @@ def run(context: Any) -> int:
         raise FeedStartupError("context must provide runtime_instruments / instrument_set")
 
     adapters, settings = _extract_adapter_surfaces(context)
-    dhan_context_adapter = getattr(context, "dhan_context_adapter", None)
 
     broker_config_dir = _safe_str(getattr(settings, "brokers_config_dir", None)) or "etc/brokers"
     broker_surfaces = load_broker_provider_surfaces(broker_config_dir)
@@ -2172,22 +2171,6 @@ def run(context: Any) -> int:
                         adapter_items=polled,
                         adapter_health=_adapter_health_hint(adapter),
                     )
-
-                if (
-                    dhan_context_adapter is not None
-                    and hasattr(dhan_context_adapter, "poll")
-                    and callable(dhan_context_adapter.poll)
-                    and dhan_context_adapter is not adapters.get(N.PROVIDER_DHAN).adapter
-                ):
-                    context_polled = dhan_context_adapter.poll()
-                    if context_polled is None:
-                        context_polled = []
-                    service.ingest_adapter_poll(
-                        provider_id=N.PROVIDER_DHAN,
-                        adapter_items=context_polled,
-                        adapter_health=_adapter_health_hint(dhan_context_adapter),
-                    )
-
                 position_state = getattr(context, "position_state", None)
                 strategy_state = getattr(context, "strategy_state", None)
                 service.refresh_lock_if_due()
