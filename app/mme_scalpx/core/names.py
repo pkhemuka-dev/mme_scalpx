@@ -228,6 +228,30 @@ class ServiceDef:
     description: str = ""
 
 
+
+@dataclass(frozen=True, slots=True)
+class CompatibilityAliasDef:
+    """Governance metadata for one compatibility alias.
+
+    Compatibility aliases exist only to protect migration/runtime continuity.
+    New code must prefer the canonical target symbol unless explicitly allowed.
+    """
+
+    alias: str
+    target: str
+    status: str
+    new_code_allowed: bool = False
+    reason: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class ForbiddenRuntimeModuleDef:
+    """Runtime quarantine metadata for files that must not be selected live."""
+
+    module_path: str
+    reason: str
+    replacement_module_path: str | None = None
+
 # ============================================================================
 # Canonical instrument routing identities
 # ============================================================================
@@ -1120,6 +1144,82 @@ HB_DHAN_MARKETDATA: Final[str] = KEY_HEALTH_DHAN_MARKETDATA
 HB_DHAN_EXECUTION: Final[str] = KEY_HEALTH_DHAN_EXECUTION
 HB_PROVIDER_RUNTIME: Final[str] = KEY_HEALTH_PROVIDER_RUNTIME
 
+
+ALIAS_STATUS_PERMANENT_COMPATIBILITY: Final[str] = "permanent_compatibility_alias"
+ALIAS_STATUS_TEMPORARY_MIGRATION: Final[str] = "temporary_migration_alias"
+ALIAS_STATUS_DEPRECATED_FOR_NEW_CODE: Final[str] = "deprecated_for_new_code"
+
+ALIAS_STATUSES: Final[tuple[str, ...]] = (
+    ALIAS_STATUS_PERMANENT_COMPATIBILITY,
+    ALIAS_STATUS_TEMPORARY_MIGRATION,
+    ALIAS_STATUS_DEPRECATED_FOR_NEW_CODE,
+)
+
+COMPATIBILITY_ALIAS_REGISTRY: Final[Mapping[str, CompatibilityAliasDef]] = MappingProxyType(
+    {
+        "STREAM_CMD": CompatibilityAliasDef("STREAM_CMD", "STREAM_CMD_MME", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STREAM_DECISIONS": CompatibilityAliasDef("STREAM_DECISIONS", "STREAM_DECISIONS_MME", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STREAM_ORDERS": CompatibilityAliasDef("STREAM_ORDERS", "STREAM_ORDERS_MME", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STREAM_FEATURES": CompatibilityAliasDef("STREAM_FEATURES", "STREAM_FEATURES_MME", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+
+        "STATE_INSTRUMENTS": CompatibilityAliasDef("STATE_INSTRUMENTS", "HASH_STATE_INSTRUMENTS_MME", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_SNAPSHOT_FUT": CompatibilityAliasDef("STATE_SNAPSHOT_FUT", "HASH_STATE_SNAPSHOT_MME_FUT", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_SNAPSHOT_OPT_SELECTED": CompatibilityAliasDef("STATE_SNAPSHOT_OPT_SELECTED", "HASH_STATE_SNAPSHOT_MME_OPT_SELECTED", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_FEATURES": CompatibilityAliasDef("STATE_FEATURES", "HASH_STATE_FEATURES_MME_FUT", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_BASELINES": CompatibilityAliasDef("STATE_BASELINES", "HASH_STATE_BASELINES_MME_FUT", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_OPTION_CONFIRM": CompatibilityAliasDef("STATE_OPTION_CONFIRM", "HASH_STATE_OPTION_CONFIRM", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_RISK": CompatibilityAliasDef("STATE_RISK", "HASH_STATE_RISK", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_POSITION": CompatibilityAliasDef("STATE_POSITION", "HASH_STATE_POSITION_MME", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_EXECUTION": CompatibilityAliasDef("STATE_EXECUTION", "HASH_STATE_EXECUTION", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_RUNTIME": CompatibilityAliasDef("STATE_RUNTIME", "HASH_STATE_RUNTIME", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_MODE": CompatibilityAliasDef("STATE_MODE", "HASH_STATE_MODE", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_LOGIN": CompatibilityAliasDef("STATE_LOGIN", "HASH_STATE_LOGIN", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_REPORT": CompatibilityAliasDef("STATE_REPORT", "HASH_STATE_REPORT", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_PARAMS": CompatibilityAliasDef("STATE_PARAMS", "HASH_PARAMS_MME", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_PARAMS_META": CompatibilityAliasDef("STATE_PARAMS_META", "HASH_PARAMS_MME_META", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+
+        "STATE_SNAPSHOT_FUT_ZERODHA": CompatibilityAliasDef("STATE_SNAPSHOT_FUT_ZERODHA", "HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_SNAPSHOT_FUT_DHAN": CompatibilityAliasDef("STATE_SNAPSHOT_FUT_DHAN", "HASH_STATE_SNAPSHOT_MME_FUT_DHAN", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_SNAPSHOT_FUT_ACTIVE": CompatibilityAliasDef("STATE_SNAPSHOT_FUT_ACTIVE", "HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_SNAPSHOT_OPT_SELECTED_ZERODHA": CompatibilityAliasDef("STATE_SNAPSHOT_OPT_SELECTED_ZERODHA", "HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_SNAPSHOT_OPT_SELECTED_DHAN": CompatibilityAliasDef("STATE_SNAPSHOT_OPT_SELECTED_DHAN", "HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_SNAPSHOT_OPT_SELECTED_ACTIVE": CompatibilityAliasDef("STATE_SNAPSHOT_OPT_SELECTED_ACTIVE", "HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_DHAN_CONTEXT": CompatibilityAliasDef("STATE_DHAN_CONTEXT", "HASH_STATE_DHAN_CONTEXT", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "STATE_PROVIDER_RUNTIME": CompatibilityAliasDef("STATE_PROVIDER_RUNTIME", "HASH_STATE_PROVIDER_RUNTIME", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+
+        "HB_LOGIN": CompatibilityAliasDef("HB_LOGIN", "KEY_HEALTH_LOGIN", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "HB_INSTRUMENTS": CompatibilityAliasDef("HB_INSTRUMENTS", "KEY_HEALTH_INSTRUMENTS", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "HB_FEEDS": CompatibilityAliasDef("HB_FEEDS", "KEY_HEALTH_FEEDS", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "HB_FEATURES": CompatibilityAliasDef("HB_FEATURES", "KEY_HEALTH_FEATURES", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "HB_STRATEGY": CompatibilityAliasDef("HB_STRATEGY", "KEY_HEALTH_STRATEGY", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "HB_RISK": CompatibilityAliasDef("HB_RISK", "KEY_HEALTH_RISK", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "HB_EXECUTION": CompatibilityAliasDef("HB_EXECUTION", "KEY_HEALTH_EXECUTION", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "HB_MONITOR": CompatibilityAliasDef("HB_MONITOR", "KEY_HEALTH_MONITOR", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "HB_REPORT": CompatibilityAliasDef("HB_REPORT", "KEY_HEALTH_REPORT", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+
+        "GROUP_EXEC": CompatibilityAliasDef("GROUP_EXEC", "GROUP_EXECUTION_MME_V1", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "GROUP_RISK": CompatibilityAliasDef("GROUP_RISK", "GROUP_RISK_MME_V1", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "GROUP_MONITOR": CompatibilityAliasDef("GROUP_MONITOR", "GROUP_MONITOR_MME_V1", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "GROUP_STRATEGY": CompatibilityAliasDef("GROUP_STRATEGY", "GROUP_STRATEGY_MME_V1", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "GROUP_FEATURES_FUT": CompatibilityAliasDef("GROUP_FEATURES_FUT", "GROUP_FEATURES_MME_FUT_V1", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "GROUP_FEATURES_OPT": CompatibilityAliasDef("GROUP_FEATURES_OPT", "GROUP_FEATURES_MME_OPT_V1", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+
+        "LOCK_FEEDS": CompatibilityAliasDef("LOCK_FEEDS", "KEY_LOCK_FEEDS", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "LOCK_STRATEGY": CompatibilityAliasDef("LOCK_STRATEGY", "KEY_LOCK_STRATEGY", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "LOCK_EXECUTION": CompatibilityAliasDef("LOCK_EXECUTION", "KEY_LOCK_EXECUTION", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "LOCK_MONITOR": CompatibilityAliasDef("LOCK_MONITOR", "KEY_LOCK_MONITOR", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+
+        "EXEC_MODE_NORMAL": CompatibilityAliasDef("EXEC_MODE_NORMAL", "EXECUTION_MODE_NORMAL", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "EXEC_MODE_EXIT_ONLY": CompatibilityAliasDef("EXEC_MODE_EXIT_ONLY", "EXECUTION_MODE_EXIT_ONLY", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "EXEC_MODE_DEGRADED": CompatibilityAliasDef("EXEC_MODE_DEGRADED", "EXECUTION_MODE_DEGRADED", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "EXEC_MODE_FATAL": CompatibilityAliasDef("EXEC_MODE_FATAL", "EXECUTION_MODE_FATAL", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+
+        "HEALTH_OK": CompatibilityAliasDef("HEALTH_OK", "HEALTH_STATUS_OK", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "HEALTH_WARN": CompatibilityAliasDef("HEALTH_WARN", "HEALTH_STATUS_WARN", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+        "HEALTH_ERROR": CompatibilityAliasDef("HEALTH_ERROR", "HEALTH_STATUS_ERROR", ALIAS_STATUS_TEMPORARY_MIGRATION, False),
+    }
+)
+
 # ============================================================================
 # Public aliases for model validation
 # ============================================================================
@@ -1337,6 +1437,39 @@ SERVICE_REGISTRY: Final[Mapping[str, ServiceDef]] = MappingProxyType(
             description="Read-only reconstruction and reporting.",
         ),
     }
+)
+
+
+# ============================================================================
+# Runtime quarantine registry
+# ============================================================================
+
+FORBIDDEN_RUNTIME_MODULES: Final[Mapping[str, ForbiddenRuntimeModuleDef]] = MappingProxyType(
+    {
+        "app.mme_scalpx.services.features_legacy_single": ForbiddenRuntimeModuleDef(
+            module_path="app.mme_scalpx.services.features_legacy_single",
+            reason=(
+                "Legacy single-strategy feature service retained only for audit, "
+                "rollback reference, or offline comparison. It must not be selected "
+                "by live provider-aware family runtime."
+            ),
+            replacement_module_path="app.mme_scalpx.services.features",
+        ),
+        "app.mme_scalpx.services.strategy_legacy_single": ForbiddenRuntimeModuleDef(
+            module_path="app.mme_scalpx.services.strategy_legacy_single",
+            reason=(
+                "Legacy single-strategy decision service retained only for audit, "
+                "rollback reference, or offline comparison. It must not be selected "
+                "by live provider-aware family runtime."
+            ),
+            replacement_module_path="app.mme_scalpx.services.strategy",
+        ),
+    }
+)
+
+FORBIDDEN_RUNTIME_PATHS: Final[tuple[str, ...]] = tuple(
+    f"{module_path.replace('.', '/')}.py"
+    for module_path in FORBIDDEN_RUNTIME_MODULES
 )
 
 # ============================================================================
@@ -1744,6 +1877,79 @@ def all_replay_names() -> tuple[str, ...]:
     return REPLAY_ALL_NAMES
 
 
+
+def get_forbidden_runtime_modules() -> dict[str, ForbiddenRuntimeModuleDef]:
+    return dict(FORBIDDEN_RUNTIME_MODULES)
+
+
+def get_forbidden_runtime_paths() -> tuple[str, ...]:
+    return tuple(FORBIDDEN_RUNTIME_PATHS)
+
+
+def assert_runtime_module_allowed(module_path: str) -> None:
+    value = _require_non_empty_str(module_path, field_name="module_path")
+    if value in FORBIDDEN_RUNTIME_MODULES:
+        meta = FORBIDDEN_RUNTIME_MODULES[value]
+        raise NamesContractError(
+            f"Forbidden runtime module selected: {value}. "
+            f"Reason: {meta.reason}. "
+            f"Replacement: {meta.replacement_module_path or 'none'}"
+        )
+
+
+def get_compatibility_alias_registry() -> dict[str, CompatibilityAliasDef]:
+    return dict(COMPATIBILITY_ALIAS_REGISTRY)
+
+
+def validate_names_hardening_contract() -> None:
+    for alias_name, meta in COMPATIBILITY_ALIAS_REGISTRY.items():
+        _require_non_empty_str(alias_name, field_name="alias_name")
+        if alias_name != meta.alias:
+            raise NamesContractError(
+                f"Alias registry key {alias_name!r} does not match metadata alias {meta.alias!r}"
+            )
+        if meta.status not in ALIAS_STATUSES:
+            raise NamesContractError(
+                f"Alias {alias_name!r} has unknown status {meta.status!r}"
+            )
+        if alias_name not in globals():
+            raise NamesContractError(f"Alias {alias_name!r} is registered but not defined")
+        if meta.target not in globals():
+            raise NamesContractError(
+                f"Alias {alias_name!r} targets missing canonical symbol {meta.target!r}"
+            )
+        if globals()[alias_name] != globals()[meta.target]:
+            raise NamesContractError(
+                f"Alias {alias_name!r} value does not equal canonical target {meta.target!r}"
+            )
+
+    registered_service_modules = {
+        service_def.module_path for service_def in SERVICE_REGISTRY.values()
+    }
+    for module_path, meta in FORBIDDEN_RUNTIME_MODULES.items():
+        _require_non_empty_str(module_path, field_name="forbidden_module_path")
+        if module_path != meta.module_path:
+            raise NamesContractError(
+                f"Forbidden runtime module registry key {module_path!r} does not match "
+                f"metadata module_path {meta.module_path!r}"
+            )
+        if module_path in registered_service_modules:
+            raise NamesContractError(
+                f"Forbidden runtime module {module_path!r} is present in SERVICE_REGISTRY"
+            )
+        if meta.replacement_module_path is not None and meta.replacement_module_path not in registered_service_modules:
+            raise NamesContractError(
+                f"Forbidden runtime module {module_path!r} points to non-registered "
+                f"replacement {meta.replacement_module_path!r}"
+            )
+
+    for path_name in FORBIDDEN_RUNTIME_PATHS:
+        _require_non_empty_str(path_name, field_name="forbidden_runtime_path")
+        if not path_name.endswith(".py"):
+            raise NamesContractError(
+                f"Forbidden runtime path must end with .py: {path_name!r}"
+            )
+
 # ============================================================================
 # Validation
 # ============================================================================
@@ -2052,6 +2258,14 @@ def validate_names_contract() -> None:
         _require_non_empty_str(alias_name, field_name="alias_name")
         _require_non_empty_str(resolved, field_name=f"{alias_name}.value")
 
+
+# Freeze hardening wrapper: keep the original validation body, then add governance checks.
+_BASE_VALIDATE_NAMES_CONTRACT = validate_names_contract
+
+
+def validate_names_contract() -> None:
+    _BASE_VALIDATE_NAMES_CONTRACT()
+    validate_names_hardening_contract()
 
 validate_names_contract()
 

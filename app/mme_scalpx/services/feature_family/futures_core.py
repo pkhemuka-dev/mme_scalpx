@@ -535,3 +535,76 @@ def build_cross_futures_surface(
         "direction_agreement": agreement,
         "provider_divergence_score": abs(direction_delta) + abs(velocity_delta),
     }
+
+# ===== BATCH8_SHARED_CORE_GUARDS START =====
+# Batch 8 freeze-final guard:
+# preserve original futures normalization but override presence/freshness so
+# metadata-only or zero-quote surfaces cannot become live-present.
+#
+# Compatibility law:
+# the original build_futures_surface() signature does not accept provider_id.
+# This wrapper may accept extra kwargs for future call-sites, but it must call
+# the original with only its frozen arguments.
+
+_BATCH8_ORIGINAL_BUILD_FUTURES_SURFACE = build_futures_surface
+
+
+def _batch8_identity_present(surface: Mapping[str, Any]) -> bool:
+    return bool(
+        _safe_str(_pick(surface, "instrument_key", "tradingsymbol", "symbol", "security_id"))
+        or _safe_int_or_none(_pick(surface, "instrument_token", "token", "security_id"))
+    )
+
+
+def _batch8_timestamp_present(surface: Mapping[str, Any]) -> bool:
+    if _safe_int_or_none(_pick(surface, "ts_event_ns", "exchange_ts_ns", "timestamp_ns")):
+        return True
+    if _safe_int_or_none(_pick(surface, "ts_local_ns", "received_ts_ns", "local_ts_ns")):
+        return True
+    return _safe_bool(_pick(surface, "timestamp_present", "timestamp_ok"), False)
+
+
+def build_futures_surface(
+    *,
+    futures_surface: Mapping[str, Any] | None,
+    runtime_mode: str = "",
+    source_label: str = "",
+    role_label: str = "",
+    provider_id: str | None = None,
+    **_: Any,
+) -> dict[str, Any]:
+    out = _BATCH8_ORIGINAL_BUILD_FUTURES_SURFACE(
+        futures_surface=futures_surface,
+        runtime_mode=runtime_mode,
+        source_label=source_label,
+        role_label=role_label,
+    )
+
+    raw = _as_mapping(futures_surface)
+    if provider_id and not out.get("provider_id"):
+        out["provider_id"] = provider_id
+
+    identity_present = _batch8_identity_present(raw) or _batch8_identity_present(out)
+    ltp = _safe_float_or_none(_pick(out, "ltp"))
+    quote_present = bool(ltp is not None and ltp > EPSILON)
+    book_present = bool(
+        (_safe_float_or_none(_pick(out, "best_bid")) or 0.0) > EPSILON
+        and (_safe_float_or_none(_pick(out, "best_ask")) or 0.0) > EPSILON
+    )
+    timestamp_present = _batch8_timestamp_present(raw) or _batch8_timestamp_present(out)
+    stale = bool(_safe_bool(_pick(out, "stale"), False) or not timestamp_present)
+    live_present = bool(identity_present and quote_present)
+
+    out["metadata_present"] = bool(identity_present)
+    out["quote_present"] = bool(quote_present)
+    out["book_present"] = bool(book_present)
+    out["timestamp_present"] = bool(timestamp_present)
+    out["live_present"] = bool(live_present)
+    out["fresh"] = bool(live_present and timestamp_present and not stale)
+    out["stale"] = bool(stale)
+    out["present"] = bool(live_present)
+    if not out["present"]:
+        out["liquidity_ok"] = False
+        out["context_score"] = 0.0
+    return out
+# ===== BATCH8_SHARED_CORE_GUARDS END =====

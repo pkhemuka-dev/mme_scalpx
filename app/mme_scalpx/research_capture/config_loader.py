@@ -546,3 +546,16 @@ __all__ = [
     "load_registered_json_contract",
     "build_effective_registry_snapshot",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: registry path containment
+# =============================================================================
+_BATCH17_CONFIG_PATH_GUARD_VERSION = "1"
+
+from app.mme_scalpx.research_capture.utils import ensure_path_within_root as _batch17_ensure_path_within_root
+
+_BATCH17_ORIGINAL_RESOLVE_PATH = _resolve_path
+
+def _resolve_path(root: Path, raw_path: str) -> Path:
+    resolved = _BATCH17_ORIGINAL_RESOLVE_PATH(root, raw_path)
+    return _batch17_ensure_path_within_root(resolved, root, label=f"config_registry_path[{raw_path}]")

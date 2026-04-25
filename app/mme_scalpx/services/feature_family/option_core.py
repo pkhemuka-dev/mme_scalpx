@@ -1019,3 +1019,69 @@ __all__ = [
     "context_prefix_for_side",
     "opposing_side",
 ]
+
+# ===== BATCH8_SHARED_CORE_GUARDS START =====
+# Batch 8 freeze-final guard:
+# selected live option presence must come from live quote/book truth, not from
+# Dhan slow-context strike metadata alone.
+#
+# Compatibility law:
+# option_core._pick() takes a tuple of keys, not variadic keys.
+
+_BATCH8_ORIGINAL_BUILD_LIVE_OPTION_SURFACE = build_live_option_surface
+
+
+def _batch8_pick(mapping: Mapping[str, Any] | None, *keys: str) -> Any:
+    return _pick(mapping, tuple(keys))
+
+
+def _batch8_option_identity_present(surface: Mapping[str, Any]) -> bool:
+    return bool(
+        _safe_str(_pick(surface, _INSTRUMENT_KEY_KEYS))
+        or _safe_str(_pick(surface, _OPTION_SYMBOL_KEYS))
+        or (_safe_int(_pick(surface, _INSTRUMENT_TOKEN_KEYS), 0) or 0) > 0
+    )
+
+
+def _batch8_option_timestamp_present(surface: Mapping[str, Any]) -> bool:
+    return bool(
+        (_safe_int(_batch8_pick(surface, "ts_event_ns", "exchange_ts_ns", "timestamp_ns"), 0) or 0) > 0
+        or (_safe_int(_batch8_pick(surface, "ts_local_ns", "received_ts_ns", "local_ts_ns"), 0) or 0) > 0
+        or _safe_bool(_batch8_pick(surface, "timestamp_present", "timestamp_ok"), False)
+    )
+
+
+def build_live_option_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    out = _BATCH8_ORIGINAL_BUILD_LIVE_OPTION_SURFACE(*args, **kwargs)
+    live_source = _copy_mapping(kwargs.get("live_source"))
+
+    identity_present = _batch8_option_identity_present(live_source) or _batch8_option_identity_present(out)
+
+    ltp = _safe_float(_batch8_pick(out, "ltp"), None)
+    best_bid = _safe_float(_batch8_pick(out, "best_bid", "bid"), None)
+    best_ask = _safe_float(_batch8_pick(out, "best_ask", "ask"), None)
+
+    quote_present = bool(ltp is not None and ltp > EPSILON)
+    book_present = bool(
+        best_bid is not None
+        and best_ask is not None
+        and best_bid > EPSILON
+        and best_ask > EPSILON
+        and best_ask >= best_bid
+    )
+    timestamp_present = _batch8_option_timestamp_present(live_source) or _batch8_option_timestamp_present(out)
+    live_present = bool(identity_present and (quote_present or book_present))
+    stale = bool(_safe_bool(_batch8_pick(out, "stale"), False) or not timestamp_present)
+
+    out["metadata_present"] = bool(identity_present)
+    out["quote_present"] = bool(quote_present)
+    out["book_present"] = bool(book_present)
+    out["timestamp_present"] = bool(timestamp_present)
+    out["live_present"] = bool(live_present)
+    out["fresh"] = bool(live_present and timestamp_present and not stale)
+    out["stale"] = bool(stale)
+    out["present"] = bool(live_present)
+    if not out["present"]:
+        out["tradability_ok"] = False
+    return out
+# ===== BATCH8_SHARED_CORE_GUARDS END =====

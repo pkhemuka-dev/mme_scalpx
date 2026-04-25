@@ -31,6 +31,7 @@ Design laws
 from __future__ import annotations
 
 import shutil
+import os
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -834,3 +835,118 @@ __all__ = [
     "RawCaptureBridgeResult",
     "run_first_real_raw_capture",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: optional purge guard and bridge write lock
+# =============================================================================
+
+_BATCH17_RAW_CAPTURE_BRIDGE_GUARD_VERSION = "1"
+
+import time as _batch17_time
+
+from app.mme_scalpx.research_capture.archive_writer import (
+    acquire_session_write_lock as _batch17_acquire_session_write_lock,
+    release_session_write_lock as _batch17_release_session_write_lock,
+    RESEARCH_CAPTURE_WRITE_LOCK_FILENAME as _BATCH17_LOCK_FILENAME,
+)
+from app.mme_scalpx.research_capture.utils import ensure_path_within_root as _batch17_ensure_path_within_root
+
+_BATCH17_OPTIONAL_DATASET_ALLOWLIST = frozenset(
+    {
+        ROUTE_RUNTIME_AUDIT,
+        ROUTE_SIGNALS_AUDIT,
+        "runtime_audit",
+        "signals_audit",
+    }
+)
+
+
+def _batch17_validate_optional_purge_target(
+    *,
+    dataset_root: str | Path,
+    archive_root: str | Path,
+    session_root: str | Path,
+    dataset_name: str,
+) -> Path:
+    if dataset_name not in _BATCH17_OPTIONAL_DATASET_ALLOWLIST:
+        raise RawCaptureBridgeError(f"optional dataset purge not allowed for dataset={dataset_name!r}")
+
+    archive = Path(archive_root).resolve()
+    session = _batch17_ensure_path_within_root(session_root, archive, label="optional_purge.session_root")
+    target = _batch17_ensure_path_within_root(dataset_root, session, label="optional_purge.dataset_root")
+
+    forbidden = {Path.cwd().resolve(), archive, session, archive.parent.resolve()}
+    if target in forbidden:
+        raise RawCaptureBridgeError(f"refusing to purge root-like research_capture path: {target}")
+
+    if target.name not in _BATCH17_OPTIONAL_DATASET_ALLOWLIST:
+        raise RawCaptureBridgeError(
+            f"optional purge target dirname {target.name!r} does not match known optional dataset"
+        )
+
+    return target
+
+
+def _batch17_quarantine_optional_dataset_root(
+    *,
+    dataset_root: str | Path,
+    archive_root: str | Path,
+    session_root: str | Path,
+    dataset_name: str,
+) -> Path | None:
+    target = _batch17_validate_optional_purge_target(
+        dataset_root=dataset_root,
+        archive_root=archive_root,
+        session_root=session_root,
+        dataset_name=dataset_name,
+    )
+    if not target.exists():
+        return None
+    quarantine = target.with_name(
+        f".quarantine_{target.name}_{int(_batch17_time.time_ns())}"
+    )
+    target.rename(quarantine)
+    return quarantine
+
+
+_BATCH17_ORIGINAL_SHUTIL_RMTREE = shutil.rmtree
+
+
+def _batch17_guarded_rmtree(path: str | Path, *args: Any, **kwargs: Any) -> None:
+    target = Path(path).resolve()
+    archive = (Path.cwd() / "run" / "research_capture").resolve()
+    parts = target.parts
+    dataset_name = target.name
+    if "research_capture" not in parts:
+        raise RawCaptureBridgeError(f"refusing destructive rmtree outside research_capture: {target}")
+    idx = parts.index("research_capture")
+    if len(parts) <= idx + 2:
+        raise RawCaptureBridgeError(f"refusing destructive rmtree on research_capture/session root: {target}")
+    session = Path(*parts[: idx + 2])
+    _batch17_quarantine_optional_dataset_root(
+        dataset_root=target,
+        archive_root=archive,
+        session_root=session,
+        dataset_name=dataset_name,
+    )
+
+
+shutil.rmtree = _batch17_guarded_rmtree
+
+
+_BATCH17_ORIGINAL_RUN_FIRST_REAL_RAW_CAPTURE = run_first_real_raw_capture
+
+
+def run_first_real_raw_capture(*args: Any, **kwargs: Any) -> RawCaptureBridgeResult:
+    owner = f"raw_capture_bridge:{os.getpid() if 'os' in globals() else 'pid'}:{int(_batch17_time.time_ns())}"
+    lock_root = (Path.cwd() / "run" / "research_capture").resolve()
+    lock_root.mkdir(parents=True, exist_ok=True)
+    acquired = False
+    try:
+        if not (lock_root / _BATCH17_LOCK_FILENAME).exists():
+            _batch17_acquire_session_write_lock(lock_root, owner=owner)
+            acquired = True
+        return _BATCH17_ORIGINAL_RUN_FIRST_REAL_RAW_CAPTURE(*args, **kwargs)
+    finally:
+        if acquired:
+            _batch17_release_session_write_lock(lock_root, owner=owner)

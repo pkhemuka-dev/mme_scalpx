@@ -1140,9 +1140,11 @@ def _resolve_settings_from_context(context: Any) -> AppSettings:
 
 def _resolve_redis_client_from_context(context: Any) -> Any:
     redis_runtime = getattr(context, "redis", None)
-    if redis_runtime is not None and hasattr(redis_runtime, "sync"):
+    if redis_runtime is None:
+        raise MonitorError("monitor.run(context) requires context.redis")
+    if hasattr(redis_runtime, "sync"):
         return redis_runtime.sync
-    return RX.get_redis()
+    return redis_runtime
 
 
 def run(context: Any) -> int:
@@ -1161,3 +1163,109 @@ def run(context: Any) -> int:
         logger=LOGGER,
     )
     return service.start()
+
+# =============================================================================
+# Batch 15 freeze hardening: missing-state visibility
+# =============================================================================
+
+_BATCH15_MONITOR_OPS_FREEZE_VERSION = "1"
+
+_BATCH15_CRITICAL_STATE_HASHES: Final[tuple[tuple[str, str, str], ...]] = (
+    ("execution", N.HASH_STATE_EXECUTION, N.HEALTH_STATUS_ERROR),
+    ("position", N.HASH_STATE_POSITION_MME, N.HEALTH_STATUS_ERROR),
+    ("risk", N.HASH_STATE_RISK, N.HEALTH_STATUS_ERROR),
+    ("features", N.HASH_STATE_FEATURES_MME_FUT, N.HEALTH_STATUS_WARN),
+    ("runtime", N.HASH_STATE_RUNTIME, N.HEALTH_STATUS_WARN),
+)
+
+
+def _batch15_read_hash(client: Any, key: str) -> dict[str, Any]:
+    try:
+        raw = RX.hgetall(key, client=client)
+    except Exception:
+        raw = client.hgetall(key)
+    if raw is None:
+        return {}
+    return dict(raw)
+
+
+def _batch15_state_missing_status(missing: Sequence[tuple[str, str]]) -> str:
+    labels = {label for label, _status in missing}
+    if {"execution", "position", "risk"} & labels:
+        return N.HEALTH_STATUS_ERROR
+    if missing:
+        return N.HEALTH_STATUS_WARN
+    return N.HEALTH_STATUS_OK
+
+
+def _batch15_missing_state_hashes(client: Any) -> list[tuple[str, str]]:
+    missing: list[tuple[str, str]] = []
+    for label, key, severity in _BATCH15_CRITICAL_STATE_HASHES:
+        if not _batch15_read_hash(client, key):
+            missing.append((label, severity))
+    return missing
+
+
+_BATCH15_ORIGINAL_BUILD_SNAPSHOT = MonitorService._build_snapshot
+
+
+def _batch15_build_snapshot(self: MonitorService, *args: Any, **kwargs: Any) -> SystemSnapshot:
+    snapshot = _BATCH15_ORIGINAL_BUILD_SNAPSHOT(self, *args, **kwargs)
+    missing = _batch15_missing_state_hashes(self.redis)
+
+    if not missing:
+        diagnostics = dict(snapshot.diagnostics)
+        diagnostics["missing_state_hashes"] = []
+        return SystemSnapshot(
+            ts_ms=snapshot.ts_ms,
+            ts_ns=snapshot.ts_ns,
+            ts_utc=snapshot.ts_utc,
+            monitor_instance_id=snapshot.monitor_instance_id,
+            overall_status=snapshot.overall_status,
+            summary=snapshot.summary,
+            startup_grace_active=snapshot.startup_grace_active,
+            services=snapshot.services,
+            execution_mode=snapshot.execution_mode,
+            control_mode=snapshot.control_mode,
+            risk_veto_entries=snapshot.risk_veto_entries,
+            position=snapshot.position,
+            diagnostics=diagnostics,
+        )
+
+    missing_labels = [label for label, _severity in missing]
+    missing_status = _batch15_state_missing_status(missing)
+    overall_status = snapshot.overall_status
+
+    if missing_status == N.HEALTH_STATUS_ERROR:
+        overall_status = N.HEALTH_STATUS_ERROR
+    elif missing_status == N.HEALTH_STATUS_WARN and overall_status == N.HEALTH_STATUS_OK:
+        overall_status = N.HEALTH_STATUS_WARN
+
+    summary = snapshot.summary
+    addition = "state_missing:" + "|".join(missing_labels)
+    if summary and summary != "all_ok":
+        summary = summary + "," + addition
+    else:
+        summary = addition
+
+    diagnostics = dict(snapshot.diagnostics)
+    diagnostics["missing_state_hashes"] = missing_labels
+
+    return SystemSnapshot(
+        ts_ms=snapshot.ts_ms,
+        ts_ns=snapshot.ts_ns,
+        ts_utc=snapshot.ts_utc,
+        monitor_instance_id=snapshot.monitor_instance_id,
+        overall_status=overall_status,
+        summary=summary,
+        startup_grace_active=snapshot.startup_grace_active,
+        services=snapshot.services,
+        execution_mode=snapshot.execution_mode,
+        control_mode=snapshot.control_mode,
+        risk_veto_entries=snapshot.risk_veto_entries,
+        position=snapshot.position,
+        diagnostics=diagnostics,
+    )
+
+
+MonitorService._build_snapshot = _batch15_build_snapshot

@@ -236,3 +236,127 @@ __all__ = [
     "stable_json_dumps",
     "utc_now_iso",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: path containment and atomic write firewall
+# =============================================================================
+
+_BATCH17_RESEARCH_CAPTURE_GUARD_VERSION = "1"
+
+
+def ensure_path_within_root(path: str | Path, root: str | Path, *, label: str) -> Path:
+    """Resolve and prove that path is under root."""
+    resolved_path = Path(path).resolve()
+    resolved_root = Path(root).resolve()
+    try:
+        resolved_path.relative_to(resolved_root)
+    except ValueError as exc:
+        raise ValueError(
+            f"{label} escapes root: {resolved_path.as_posix()} not under {resolved_root.as_posix()}"
+        ) from exc
+    return resolved_path
+
+
+def ensure_path_within_any_root(
+    path: str | Path,
+    roots: Sequence[str | Path],
+    *,
+    label: str,
+) -> Path:
+    resolved_path = Path(path).resolve()
+    errors: list[str] = []
+    for root in roots:
+        try:
+            return ensure_path_within_root(resolved_path, root, label=label)
+        except ValueError as exc:
+            errors.append(str(exc))
+    raise ValueError(f"{label} escapes all allowed roots: {resolved_path.as_posix()} errors={errors!r}")
+
+
+def reject_unsafe_path_fragment(value: str, *, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a non-empty string")
+    raw = value.strip()
+    candidate = Path(raw)
+    if candidate.is_absolute():
+        raise ValueError(f"{label} must be relative, got absolute path: {raw!r}")
+    if any(part in {"..", ""} for part in candidate.parts):
+        raise ValueError(f"{label} contains unsafe path segment: {raw!r}")
+    return raw
+
+
+def research_capture_project_root() -> Path:
+    return Path.cwd().resolve()
+
+
+def research_capture_run_root(project_root: str | Path | None = None) -> Path:
+    root = Path(project_root).resolve() if project_root is not None else research_capture_project_root()
+    return ensure_path_within_root(root / "run", root, label="research_capture.run_root")
+
+
+def research_capture_archive_root(project_root: str | Path | None = None) -> Path:
+    root = Path(project_root).resolve() if project_root is not None else research_capture_project_root()
+    return ensure_path_within_root(root / "run" / "research_capture", root, label="research_capture.archive_root")
+
+
+def _batch17_write_text_atomic(path: Path, text: str) -> None:
+    import tempfile as _batch17_tempfile
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with _batch17_tempfile.NamedTemporaryFile(
+        "w",
+        delete=False,
+        encoding="utf-8",
+        dir=str(path.parent),
+    ) as handle:
+        handle.write(text)
+        temp_path = Path(handle.name)
+    os.replace(temp_path, path)
+
+
+def _batch17_write_json_atomic(path: Path, payload: Mapping[str, Any]) -> None:
+    _batch17_write_text_atomic(
+        path,
+        json.dumps(dict(payload), indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+    )
+
+
+_BATCH17_ORIGINAL_ATOMIC_WRITE_TEXT = globals().get("atomic_write_text")
+_BATCH17_ORIGINAL_ATOMIC_WRITE_JSON = globals().get("atomic_write_json")
+
+
+def atomic_write_text(
+    path: str | Path,
+    text: str,
+    *,
+    root: str | Path | None = None,
+    label: str = "atomic_write_text",
+) -> Path:
+    resolved_root = Path(root).resolve() if root is not None else research_capture_project_root()
+    resolved_path = ensure_path_within_root(path, resolved_root, label=label)
+    if callable(_BATCH17_ORIGINAL_ATOMIC_WRITE_TEXT):
+        try:
+            _BATCH17_ORIGINAL_ATOMIC_WRITE_TEXT(resolved_path, text)
+        except TypeError:
+            _batch17_write_text_atomic(resolved_path, text)
+    else:
+        _batch17_write_text_atomic(resolved_path, text)
+    return resolved_path
+
+
+def atomic_write_json(
+    path: str | Path,
+    payload: Mapping[str, Any],
+    *,
+    root: str | Path | None = None,
+    label: str = "atomic_write_json",
+) -> Path:
+    resolved_root = Path(root).resolve() if root is not None else research_capture_project_root()
+    resolved_path = ensure_path_within_root(path, resolved_root, label=label)
+    if callable(_BATCH17_ORIGINAL_ATOMIC_WRITE_JSON):
+        try:
+            _BATCH17_ORIGINAL_ATOMIC_WRITE_JSON(resolved_path, dict(payload))
+        except TypeError:
+            _batch17_write_json_atomic(resolved_path, payload)
+    else:
+        _batch17_write_json_atomic(resolved_path, payload)
+    return resolved_path

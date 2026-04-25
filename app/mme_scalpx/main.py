@@ -117,6 +117,8 @@ LOGGER: Final[logging.Logger] = logging.getLogger("app.mme_scalpx.main")
 DEFAULT_SERVICE: Final[str] = "all"
 REPLAY_START_ENV_VAR: Final[str] = "MME_REPLAY_START_WALL_TIME_NS"
 BOOTSTRAP_PROVIDER_ENV_VAR: Final[str] = "MME_BOOTSTRAP_PROVIDER"
+PROVIDER_RUNTIME_STRICT_ENV_VAR: Final[str] = "MME_PROVIDER_RUNTIME_STRICT"
+ALLOW_LEGACY_PROVIDER_ALIAS_ENV_VAR: Final[str] = "MME_ALLOW_LEGACY_PROVIDER_ALIAS"
 THREAD_JOIN_TIMEOUT_S: Final[float] = 5.0
 SUPERVISOR_POLL_INTERVAL_S: Final[float] = 0.25
 STARTUP_LIVENESS_GRACE_S: Final[float] = 0.50
@@ -135,6 +137,10 @@ FORBIDDEN_RUNTIME_PATHS: Final[set[str]] = {
     "app.mme_scalpx.integrations.login",
     "app.mme_scalpx.domain.instruments",
     "app.mme_scalpx.services.reports",
+    "app.mme_scalpx.services.features_legacy_single",
+    "app/mme_scalpx/services/features_legacy_single.py",
+    "app.mme_scalpx.services.strategy_legacy_single",
+    "app/mme_scalpx/services/strategy_legacy_single.py",
 }
 
 
@@ -191,6 +197,130 @@ def _normalize_optional_str(value: Any) -> str | None:
         raise MainError("optional string field must be a string or None")
     normalized = value.strip()
     return normalized or None
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+
+    value = str(raw).strip().lower()
+    if value in {"1", "true", "yes", "y", "on"}:
+        return True
+    if value in {"0", "false", "no", "n", "off", ""}:
+        return False
+
+    raise BootstrapError(
+        f"{name} must be a boolean flag value, got {raw!r}"
+    )
+
+
+def _provider_runtime_strict_enabled() -> bool:
+    return _env_flag(PROVIDER_RUNTIME_STRICT_ENV_VAR, default=False)
+
+
+def _legacy_provider_alias_allowed() -> bool:
+    return _env_flag(ALLOW_LEGACY_PROVIDER_ALIAS_ENV_VAR, default=False)
+
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _parse_simple_bool_text(value: str | None) -> bool | None:
+    if value is None:
+        return None
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "y", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "n", "off"}:
+        return False
+    return None
+
+
+def _read_runtime_yaml_policy_snapshot(path: Path | None = None) -> dict[str, Any]:
+    """Best-effort simple runtime.yaml snapshot.
+
+    This does not make runtime.yaml authoritative. It only exposes policy fields
+    for doctor/proof output so runtime truth is visible instead of implicit.
+    """
+    candidate = path if path is not None else _project_root() / "etc" / "runtime.yaml"
+    snapshot: dict[str, Any] = {
+        "path": str(candidate),
+        "exists": candidate.exists(),
+        "runtime_mode": None,
+        "trading_enabled": None,
+        "allow_live_orders": None,
+        "bootstrap_groups_on_start": None,
+    }
+
+    if not candidate.exists() or not candidate.is_file():
+        return snapshot
+
+    section: str | None = None
+    try:
+        for raw_line in candidate.read_text(encoding="utf-8").splitlines():
+            line = raw_line.split("#", 1)[0].rstrip()
+            stripped = line.strip()
+            if not stripped:
+                continue
+
+            if not line.startswith(" ") and stripped.endswith(":"):
+                section = stripped[:-1].strip()
+                continue
+
+            if ":" not in stripped:
+                continue
+
+            key, value = stripped.split(":", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+
+            if section == "runtime":
+                if key == "mode":
+                    snapshot["runtime_mode"] = value or None
+                elif key == "trading_enabled":
+                    snapshot["trading_enabled"] = _parse_simple_bool_text(value)
+                elif key == "allow_live_orders":
+                    snapshot["allow_live_orders"] = _parse_simple_bool_text(value)
+
+            if section == "startup" and key == "bootstrap_groups_on_start":
+                snapshot["bootstrap_groups_on_start"] = _parse_simple_bool_text(value)
+
+    except OSError as exc:
+        snapshot["error"] = str(exc)
+
+    return snapshot
+
+
+def _effective_runtime_truth_report(
+    *,
+    settings: AppSettings,
+    bootstrap_groups_enabled: bool,
+) -> dict[str, Any]:
+    runtime_yaml = _read_runtime_yaml_policy_snapshot()
+    env_mme_runtime_mode = os.environ.get("MME_RUNTIME_MODE")
+    env_scalpx_runtime_mode = os.environ.get("SCALPX_RUNTIME_MODE")
+
+    return {
+        "source_of_truth": "settings.py/MME_* plus explicit CLI flags; runtime_yaml_observed_not_authoritative",
+        "settings_runtime_mode": settings.runtime.runtime_mode,
+        "effective_runtime_mode": settings.runtime.runtime_mode,
+        "settings_is_replay": settings.runtime.is_replay,
+        "env_mme_runtime_mode": env_mme_runtime_mode,
+        "env_scalpx_runtime_mode": env_scalpx_runtime_mode,
+        "runtime_yaml": runtime_yaml,
+        "bootstrap_groups_effective": bool(bootstrap_groups_enabled),
+        "runtime_yaml_bootstrap_groups_on_start": runtime_yaml.get("bootstrap_groups_on_start"),
+        "bootstrap_provider_env": os.environ.get(BOOTSTRAP_PROVIDER_ENV_VAR),
+        "provider_runtime_strict": _provider_runtime_strict_enabled(),
+        "legacy_provider_alias_allowed": _legacy_provider_alias_allowed(),
+        "runtime_behavior_changed_by_batch4": False,
+        "main_audit_runtime_truth_decision": (
+            "runtime_yaml is exposed for proof/reporting only; "
+            "main.py behavior remains settings/CLI-driven until a deliberate runtime-policy migration"
+        ),
+    }
 
 
 class JsonLogFormatter(logging.Formatter):
@@ -357,18 +487,24 @@ class FeedSurfaceBundle:
     dhan_feed_adapter: Any | None = None
     dhan_context_adapter: Any | None = None
 
-    def has_any_adapter(self) -> bool:
+    def has_marketdata_adapter(self, *, include_legacy: bool = True) -> bool:
         explicit_map = self.feed_adapters if isinstance(self.feed_adapters, Mapping) else None
         return any(
             (
-                self.legacy_feed_adapter is not None,
-                self.market_data_adapter is not None,
+                include_legacy and self.legacy_feed_adapter is not None,
+                include_legacy and self.market_data_adapter is not None,
                 bool(explicit_map),
                 self.zerodha_feed_adapter is not None,
                 self.dhan_feed_adapter is not None,
-                self.dhan_context_adapter is not None,
             )
         )
+
+    def has_context_adapter(self) -> bool:
+        return self.dhan_context_adapter is not None
+
+    def has_any_adapter(self) -> bool:
+        """Compatibility predicate; context-only adapters do not satisfy feeds."""
+        return self.has_marketdata_adapter(include_legacy=True)
 
 
 def _canonical_provider_id(value: Any) -> str | None:
@@ -458,15 +594,26 @@ def _resolve_feed_surface_bundle(
     if market_data_adapter is None:
         market_data_adapter = legacy_feed_adapter
 
-    inferred_provider_id = _infer_single_feed_provider_id(
-        settings=settings,
-        adapter=legacy_feed_adapter,
-        broker=dependencies.broker,
-    )
-    if inferred_provider_id == names.PROVIDER_ZERODHA and zerodha_feed_adapter is None:
-        zerodha_feed_adapter = legacy_feed_adapter
-    if inferred_provider_id == names.PROVIDER_DHAN and dhan_feed_adapter is None:
-        dhan_feed_adapter = legacy_feed_adapter
+    strict_provider_runtime = _provider_runtime_strict_enabled()
+    allow_legacy_alias = _legacy_provider_alias_allowed()
+
+    inferred_provider_id: str | None = None
+    if not strict_provider_runtime or allow_legacy_alias:
+        inferred_provider_id = _infer_single_feed_provider_id(
+            settings=settings,
+            adapter=legacy_feed_adapter,
+            broker=dependencies.broker,
+        )
+        if inferred_provider_id == names.PROVIDER_ZERODHA and zerodha_feed_adapter is None:
+            zerodha_feed_adapter = legacy_feed_adapter
+        if inferred_provider_id == names.PROVIDER_DHAN and dhan_feed_adapter is None:
+            dhan_feed_adapter = legacy_feed_adapter
+    elif legacy_feed_adapter is not None or market_data_adapter is not None:
+        LOGGER.warning(
+            "strict_provider_runtime_ignores_legacy_feed_alias legacy_feed_adapter=%s market_data_adapter=%s",
+            int(legacy_feed_adapter is not None),
+            int(market_data_adapter is not None),
+        )
 
     if zerodha_feed_adapter is not None:
         explicit_map[names.PROVIDER_ZERODHA] = zerodha_feed_adapter
@@ -482,6 +629,52 @@ def _resolve_feed_surface_bundle(
         dhan_feed_adapter=dhan_feed_adapter,
         dhan_context_adapter=dhan_context_adapter,
     )
+
+
+
+
+def _validate_provider_surfaces_for_strict_mode(feed_surfaces: FeedSurfaceBundle) -> None:
+    if not _provider_runtime_strict_enabled():
+        return
+
+    allow_legacy_alias = _legacy_provider_alias_allowed()
+
+    if not allow_legacy_alias and (
+        feed_surfaces.legacy_feed_adapter is not None
+        or feed_surfaces.market_data_adapter is not None
+    ):
+        raise DependencyError(
+            "strict provider runtime forbids legacy feed_adapter/market_data_adapter "
+            f"unless {ALLOW_LEGACY_PROVIDER_ALIAS_ENV_VAR}=1"
+        )
+
+    explicit_map = (
+        feed_surfaces.feed_adapters
+        if isinstance(feed_surfaces.feed_adapters, Mapping)
+        else {}
+    )
+
+    missing: list[str] = []
+    if feed_surfaces.zerodha_feed_adapter is None:
+        missing.append("zerodha_feed_adapter")
+    if feed_surfaces.dhan_feed_adapter is None:
+        missing.append("dhan_feed_adapter")
+    if names.PROVIDER_ZERODHA not in explicit_map:
+        missing.append("feed_adapters[ZERODHA]")
+    if names.PROVIDER_DHAN not in explicit_map:
+        missing.append("feed_adapters[DHAN]")
+
+    if missing:
+        raise DependencyError(
+            "strict provider runtime requires explicit provider market-data surfaces: "
+            + ", ".join(missing)
+        )
+
+    if feed_surfaces.dhan_context_adapter is None:
+        LOGGER.warning(
+            "strict_provider_runtime_without_dhan_context_adapter "
+            "miso_or_dhan_context_promotion_must_remain_disabled_or_degraded"
+        )
 
 
 def register_bootstrap_dependencies(
@@ -851,12 +1044,18 @@ def _require_service_dependencies(app: AppContext, service_name: str) -> None:
             settings=app.settings,
             dependencies=deps,
         )
-        if not feed_surfaces.has_any_adapter():
+        include_legacy_marketdata = (
+            not _provider_runtime_strict_enabled()
+            or _legacy_provider_alias_allowed()
+        )
+        if not feed_surfaces.has_marketdata_adapter(include_legacy=include_legacy_marketdata):
             raise DependencyError(
-                "feeds service requires at least one registered feed adapter surface. "
+                "feeds service requires at least one registered market-data adapter surface. "
                 "Use register_bootstrap_dependencies(feed_adapter=..., feed_adapters=..., "
-                "zerodha_feed_adapter=..., dhan_feed_adapter=..., or dhan_context_adapter=...)."
+                "zerodha_feed_adapter=..., or dhan_feed_adapter=...). "
+                "dhan_context_adapter alone is not a market-data feed adapter."
             )
+        _validate_provider_surfaces_for_strict_mode(feed_surfaces)
 
     if service_name == "execution":
         if deps.broker is None:
@@ -1036,16 +1235,18 @@ def _validate_service_module_contract(service_name: str, module: ModuleType) -> 
             f"runtime service {service_name!r} run() parameter must be named 'context', got {param.name!r}"
         )
 
+    module_name = module.__name__
     module_file = getattr(module, "__file__", None)
     if module_file is not None:
         module_path = Path(module_file).resolve()
         normalized_path = str(module_path).replace("\\", "/")
-        if "/app/mme_scalpx/services/" not in normalized_path:
+        if "/app/mme_scalpx/services/" not in normalized_path and not module_name.startswith(
+            "app.mme_scalpx.services."
+        ):
             raise ServiceContractError(
                 f"runtime service {service_name!r} module file {module_path} is not under app.mme_scalpx.services"
             )
 
-    module_name = module.__name__
     expected_module_name = _runtime_service_module_path(service_name)
     if module_name != expected_module_name:
         raise ServiceContractError(
@@ -1329,11 +1530,33 @@ def build_doctor_report(
             "description": getattr(service_def, "description", None),
         }
 
+    feed_surfaces = _resolve_feed_surface_bundle(
+        settings=app.settings,
+        dependencies=app.dependencies,
+    )
+
     return {
         "project": getattr(names, "PROJECT_NAME", "mme_scalpx"),
         "contracts_version": getattr(names, "CONTRACTS_VERSION", None),
         "schema_version": getattr(names, "DEFAULT_SCHEMA_VERSION", None),
         "runtime_mode": app.settings.runtime.runtime_mode,
+        "effective_runtime": _effective_runtime_truth_report(
+            settings=app.settings,
+            bootstrap_groups_enabled=bootstrap_groups_enabled,
+        ),
+        "provider_surfaces": {
+            "has_marketdata_adapter_without_legacy": feed_surfaces.has_marketdata_adapter(include_legacy=False),
+            "has_marketdata_adapter_with_legacy": feed_surfaces.has_marketdata_adapter(include_legacy=True),
+            "has_context_adapter": feed_surfaces.has_context_adapter(),
+            "strict_provider_runtime": _provider_runtime_strict_enabled(),
+            "legacy_provider_alias_allowed": _legacy_provider_alias_allowed(),
+            "feed_adapters": sorted(feed_surfaces.feed_adapters.keys()) if isinstance(feed_surfaces.feed_adapters, Mapping) else [],
+            "zerodha_feed_adapter": feed_surfaces.zerodha_feed_adapter is not None,
+            "dhan_feed_adapter": feed_surfaces.dhan_feed_adapter is not None,
+            "dhan_context_adapter": feed_surfaces.dhan_context_adapter is not None,
+            "legacy_feed_adapter": feed_surfaces.legacy_feed_adapter is not None,
+            "market_data_adapter": feed_surfaces.market_data_adapter is not None,
+        },
         "app_env": app.settings.app_env,
         "replay": app.settings.runtime.is_replay,
         "replay_start_wall_time_ns": replay_start_wall_time_ns,
@@ -1673,6 +1896,31 @@ def main(argv: Sequence[str] | None = None) -> int:
     finally:
         shutdown_application()
 
+
+# ============================================================================
+# Canonical runtime quarantine extension
+# ============================================================================
+#
+# names.py owns the forbidden-runtime registry. main.py extends any local
+# FORBIDDEN_RUNTIME_PATHS surface from that canonical source so legacy service
+# files cannot silently re-enter live provider-aware family runtime.
+try:
+    from app.mme_scalpx.core import names as _names_contract
+
+    _canonical_forbidden_runtime_paths = tuple(
+        _names_contract.get_forbidden_runtime_paths()
+    )
+    try:
+        FORBIDDEN_RUNTIME_PATHS = tuple(
+            dict.fromkeys((*FORBIDDEN_RUNTIME_PATHS, *_canonical_forbidden_runtime_paths))
+        )
+    except NameError:
+        FORBIDDEN_RUNTIME_PATHS = _canonical_forbidden_runtime_paths
+finally:
+    try:
+        del _names_contract
+    except NameError:
+        pass
 
 if __name__ == "__main__":
     raise SystemExit(main())

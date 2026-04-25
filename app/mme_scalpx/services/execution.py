@@ -68,8 +68,9 @@ Risk correction
 ---------------
 Risk owns entry veto and max_new_lots governance. Execution must never widen
 entry size beyond risk authority. On entries:
-- if decision.quantity_lots > 0: lots = min(decision.quantity_lots, risk_cap)
-- else: lots = risk_cap
+- promoted ENTER decisions must carry explicit quantity_lots > 0
+- lots = min(decision.quantity_lots, risk_cap)
+- zero/missing quantity is rejected and never widened by risk cap
 """
 
 import contextlib
@@ -381,6 +382,11 @@ class PendingOrder:
     avg_fill_price: str = ""
     cancel_requested: bool = False
     cancel_requested_ts_ns: int = 0
+    execution_provider_id: str = getattr(N, "PROVIDER_ZERODHA", "ZERODHA")
+    primary_execution_provider_id: str = getattr(N, "PROVIDER_ZERODHA", "ZERODHA")
+    fallback_execution_provider_id: str = getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE")
+    provider_route_reason: str = "primary_only"
+    provider_failover_used: bool = False
 
     def to_json_dict(self) -> dict[str, Any]:
         return {
@@ -401,6 +407,11 @@ class PendingOrder:
             "avg_fill_price": self.avg_fill_price,
             "cancel_requested": self.cancel_requested,
             "cancel_requested_ts_ns": self.cancel_requested_ts_ns,
+            "execution_provider_id": self.execution_provider_id,
+            "primary_execution_provider_id": self.primary_execution_provider_id,
+            "fallback_execution_provider_id": self.fallback_execution_provider_id,
+            "provider_route_reason": self.provider_route_reason,
+            "provider_failover_used": self.provider_failover_used,
         }
 
     @staticmethod
@@ -423,6 +434,20 @@ class PendingOrder:
             avg_fill_price=_safe_str(raw.get("avg_fill_price")),
             cancel_requested=_safe_bool(raw.get("cancel_requested"), False),
             cancel_requested_ts_ns=_safe_int(raw.get("cancel_requested_ts_ns"), 0),
+            execution_provider_id=_safe_str(
+                raw.get("execution_provider_id"),
+                getattr(N, "PROVIDER_ZERODHA", "ZERODHA"),
+            ),
+            primary_execution_provider_id=_safe_str(
+                raw.get("primary_execution_provider_id"),
+                getattr(N, "PROVIDER_ZERODHA", "ZERODHA"),
+            ),
+            fallback_execution_provider_id=_safe_str(
+                raw.get("fallback_execution_provider_id"),
+                getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE"),
+            ),
+            provider_route_reason=_safe_str(raw.get("provider_route_reason"), "primary_only"),
+            provider_failover_used=_safe_bool(raw.get("provider_failover_used"), False),
         )
 
 
@@ -499,6 +524,11 @@ class ExecutionService:
             "last_ack_type": "",
             "last_error": "",
             "pending_order_json": "",
+            "active_execution_provider_id": getattr(N, "PROVIDER_ZERODHA", "ZERODHA"),
+            "primary_execution_provider_id": getattr(N, "PROVIDER_ZERODHA", "ZERODHA"),
+            "fallback_execution_provider_id": getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE"),
+            "provider_route_reason": "primary_only",
+            "provider_failover_used": 0,
             "updated_at_ns": 0,
             "ts_ns": 0,
         }
@@ -542,6 +572,20 @@ class ExecutionService:
         state["last_ack_type"] = _safe_str(raw.get("last_ack_type"))
         state["last_error"] = _safe_str(raw.get("last_error"))
         state["pending_order_json"] = _safe_str(raw.get("pending_order_json"))
+        state["active_execution_provider_id"] = _safe_str(
+            raw.get("active_execution_provider_id"),
+            getattr(N, "PROVIDER_ZERODHA", "ZERODHA"),
+        )
+        state["primary_execution_provider_id"] = _safe_str(
+            raw.get("primary_execution_provider_id"),
+            getattr(N, "PROVIDER_ZERODHA", "ZERODHA"),
+        )
+        state["fallback_execution_provider_id"] = _safe_str(
+            raw.get("fallback_execution_provider_id"),
+            getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE"),
+        )
+        state["provider_route_reason"] = _safe_str(raw.get("provider_route_reason"), "primary_only")
+        state["provider_failover_used"] = 1 if _safe_bool(raw.get("provider_failover_used"), False) else 0
         state["updated_at_ns"] = _safe_int(
             raw.get("updated_at_ns") or raw.get("ts_ns"),
             0,
@@ -1052,7 +1096,7 @@ class ExecutionService:
         if self.pending_order is None:
             self.pending_order = PendingOrder(
                 intent=intent,
-                action=N.ACTION_EXIT if intent == "EXIT" else N.ACTION_HOLD,
+                action=self._infer_recovered_open_order_action(intent=intent, order=tracked),
                 decision_id=decision_id,
                 client_order_id=client_order_id,
                 option_symbol=_safe_str(tracked.get("option_symbol")),
@@ -1721,6 +1765,7 @@ class ExecutionService:
         ts_ns = self.now_ns()
         payload = {
             "ts_ns": ts_ns,
+            "ts_event_ns": ts_ns,
             "ts_iso": self._ts_iso(ts_ns),
             "decision_id": decision.decision_id,
             "ack_type": ack_type,
@@ -1756,6 +1801,7 @@ class ExecutionService:
         ts_ns = self.now_ns()
         payload = {
             "ts_ns": ts_ns,
+            "ts_event_ns": ts_ns,
             "ts_iso": self._ts_iso(ts_ns),
             "decision_id": decision_id,
             "ack_type": ack_type,
@@ -1789,6 +1835,7 @@ class ExecutionService:
         ts_ns = self.now_ns()
         payload = {
             "ts_ns": ts_ns,
+            "ts_event_ns": ts_ns,
             "ts_iso": self._ts_iso(ts_ns),
             "event_type": event_type,
             "decision_id": decision.decision_id,
@@ -1818,6 +1865,7 @@ class ExecutionService:
         ts_ns = self.now_ns()
         payload = {
             "ts_ns": ts_ns,
+            "ts_event_ns": ts_ns,
             "ts_iso": self._ts_iso(ts_ns),
             "event_type": event_type,
             "decision_id": pending.decision_id,
@@ -1856,6 +1904,7 @@ class ExecutionService:
         ts_ns = self.now_ns()
         payload = {
             "ts_ns": ts_ns,
+            "ts_event_ns": ts_ns,
             "ts_iso": self._ts_iso(ts_ns),
             "event_type": event_type,
             "decision_id": decision_id,
@@ -1881,6 +1930,7 @@ class ExecutionService:
         ts_ns = self.now_ns()
         payload = {
             "ts_ns": ts_ns,
+            "ts_event_ns": ts_ns,
             "ts_iso": self._ts_iso(ts_ns),
             "service": self.service_name,
             "instance_id": self.instance_id,
@@ -1900,6 +1950,7 @@ class ExecutionService:
         ts_ns = self.now_ns()
         payload = {
             "ts_ns": ts_ns,
+            "ts_event_ns": ts_ns,
             "ts_iso": self._ts_iso(ts_ns),
             "service": self.service_name,
             "instance_id": self.instance_id,
@@ -2013,3 +2064,327 @@ def run(context: Any) -> int | None:
         logger=LOGGER,
     )
     return service.start()
+
+# =============================================================================
+# Batch 13 freeze hardening: execution decision contract and restart safety
+# =============================================================================
+
+_BATCH13_EXECUTION_FREEZE_VERSION = "1"
+
+_BATCH13_SIDE_CALL = getattr(N, "SIDE_CALL", "CALL")
+_BATCH13_SIDE_PUT = getattr(N, "SIDE_PUT", "PUT")
+_BATCH13_POSITION_EFFECT_OPEN = getattr(N, "POSITION_EFFECT_OPEN", "OPEN")
+_BATCH13_POSITION_EFFECT_CLOSE = getattr(N, "POSITION_EFFECT_CLOSE", "CLOSE")
+_BATCH13_PROVIDER_ZERODHA = getattr(N, "PROVIDER_ZERODHA", "ZERODHA")
+_BATCH13_PROVIDER_UNAVAILABLE = getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE")
+
+
+def _batch13_parse_payload_from_fields(fields: Mapping[Any, Any]) -> tuple[dict[str, str], dict[str, Any]]:
+    row = _decode_mapping(fields)
+    payload = _json_loads_mapping(_safe_str(row.get("payload_json")))
+    return row, payload
+
+
+def _batch13_action_side(action: str) -> str:
+    if action == N.ACTION_ENTER_CALL:
+        return _BATCH13_SIDE_CALL
+    if action == N.ACTION_ENTER_PUT:
+        return _BATCH13_SIDE_PUT
+    return ""
+
+
+def _batch13_reject_reason_for_entry_contract(decision: DecisionView) -> str | None:
+    expected_side = _batch13_action_side(decision.action)
+    if expected_side and decision.side != expected_side:
+        return "entry_side_action_mismatch"
+
+    if _safe_str(decision.position_effect).upper() != _BATCH13_POSITION_EFFECT_OPEN:
+        return "entry_position_effect_not_open"
+
+    if decision.quantity_lots <= 0:
+        return "missing_or_zero_entry_quantity"
+
+    if not decision.instrument_key:
+        return "missing_entry_instrument_key"
+
+    option_symbol = _safe_str(decision.metadata.get("option_symbol"))
+    option_token = _safe_str(decision.metadata.get("option_token"))
+    strike = _safe_str(decision.metadata.get("strike"))
+
+    if not option_symbol:
+        return "missing_option_symbol"
+    if not option_token:
+        return "missing_option_token"
+    if not strike:
+        return "missing_entry_strike"
+
+    limit_price_raw = decision.metadata.get("limit_price")
+    limit_price = _safe_decimal(limit_price_raw, Decimal("0"))
+    if limit_price <= Decimal("0"):
+        return "missing_or_invalid_limit_price"
+
+    return None
+
+
+_BATCH13_ORIGINAL_PARSE_DECISION = ExecutionService._parse_decision
+
+
+def _batch13_parse_decision(self: ExecutionService, stream_id: str, fields: Mapping[str, Any]) -> DecisionView:
+    row, payload = _batch13_parse_payload_from_fields(fields)
+    flat_action = _safe_str(row.get("action")).upper()
+    payload_action = _safe_str(payload.get("action")).upper()
+
+    if not payload_action:
+        raise DecisionContractError("payload_json.action missing")
+    if flat_action != payload_action:
+        raise DecisionContractError(
+            f"flat action {flat_action!r} != payload_json.action {payload_action!r}"
+        )
+
+    decision = _BATCH13_ORIGINAL_PARSE_DECISION(self, stream_id, fields)
+
+    if decision.ts_event_ns <= 0:
+        raise DecisionContractError("decision ts_event_ns missing or non-positive")
+
+    if decision.action in {N.ACTION_ENTER_CALL, N.ACTION_ENTER_PUT}:
+        reason = _batch13_reject_reason_for_entry_contract(decision)
+        if reason is not None:
+            raise DecisionContractError(reason)
+
+    if decision.action == N.ACTION_EXIT:
+        if _safe_str(decision.position_effect).upper() not in {
+            _BATCH13_POSITION_EFFECT_CLOSE,
+            "EXIT",
+            "",
+        }:
+            raise DecisionContractError("exit_position_effect_invalid")
+
+    return decision
+
+
+ExecutionService._parse_decision = _batch13_parse_decision
+
+
+_BATCH13_ORIGINAL_RESOLVE_ENTRY_LOTS = ExecutionService._resolve_entry_lots
+
+
+def _batch13_resolve_entry_lots(
+    self: ExecutionService,
+    *,
+    strategy_quantity_lots: int,
+    risk_cap_lots: int,
+) -> int:
+    if strategy_quantity_lots <= 0:
+        return 0
+    if risk_cap_lots <= 0:
+        return 0
+    return min(strategy_quantity_lots, risk_cap_lots)
+
+
+ExecutionService._resolve_entry_lots = _batch13_resolve_entry_lots
+
+
+_BATCH13_ORIGINAL_HANDLE_ENTRY_DECISION = ExecutionService._handle_entry_decision
+
+
+def _batch13_handle_entry_decision(
+    self: ExecutionService,
+    decision: DecisionView,
+    current_ns: int,
+) -> None:
+    reason = _batch13_reject_reason_for_entry_contract(decision)
+    if reason is not None:
+        self._reject_decision(decision, reason)
+        return
+
+    _BATCH13_ORIGINAL_HANDLE_ENTRY_DECISION(self, decision, current_ns)
+
+
+ExecutionService._handle_entry_decision = _batch13_handle_entry_decision
+
+
+def _batch13_infer_recovered_open_order_action(
+    self: ExecutionService,
+    *,
+    intent: str,
+    order: Mapping[str, Any],
+) -> str:
+    if intent == "EXIT":
+        return N.ACTION_EXIT
+
+    action = _safe_str(order.get("action")).upper()
+    if action in {N.ACTION_ENTER_CALL, N.ACTION_ENTER_PUT}:
+        return action
+
+    right = _safe_str(
+        order.get("option_right")
+        or order.get("right")
+        or order.get("option_type")
+        or order.get("side")
+    ).upper()
+    if right in {"CE", "CALL", _BATCH13_SIDE_CALL}:
+        return N.ACTION_ENTER_CALL
+    if right in {"PE", "PUT", _BATCH13_SIDE_PUT}:
+        return N.ACTION_ENTER_PUT
+
+    symbol = _safe_str(
+        order.get("option_symbol")
+        or order.get("trading_symbol")
+        or order.get("tradingsymbol")
+    ).upper().replace(" ", "")
+    if symbol.endswith("CE"):
+        return N.ACTION_ENTER_CALL
+    if symbol.endswith("PE"):
+        return N.ACTION_ENTER_PUT
+
+    self.execution_state["mode"] = N.EXECUTION_MODE_EXIT_ONLY
+    self.execution_state["execution_mode"] = N.EXECUTION_MODE_EXIT_ONLY
+    self.execution_state["last_error"] = "recovered_open_entry_side_unknown"
+    raise FatalExecutionError(
+        "cannot infer recovered open ENTRY order side from broker order; manual reconciliation required"
+    )
+
+
+ExecutionService._infer_recovered_open_order_action = _batch13_infer_recovered_open_order_action
+
+
+def _batch13_publish_malformed_decision_reject(
+    self: ExecutionService,
+    *,
+    fields: Mapping[str, Any],
+    stream_id: str,
+    reason: str,
+) -> None:
+    row = _decode_mapping(fields)
+    decision_id = _safe_str(row.get("decision_id"))
+    action = _safe_str(row.get("action")).upper()
+
+    with contextlib.suppress(Exception):
+        payload = _json_loads_mapping(_safe_str(row.get("payload_json")))
+        decision_id = decision_id or _safe_str(payload.get("decision_id"))
+        action = action or _safe_str(payload.get("action")).upper()
+
+    ts_ns = self.now_ns()
+    payload = {
+        "ts_ns": ts_ns,
+        "ts_event_ns": ts_ns,
+        "ts_iso": self._ts_iso(ts_ns),
+        "ack_type": N.ACK_REJECTED,
+        "decision_id": decision_id or f"malformed:{stream_id}",
+        "action": action,
+        "reason": f"decision_contract_error:{reason}",
+        "entry_mode": _safe_str(row.get("entry_mode"), N.ENTRY_MODE_UNKNOWN),
+        "broker_order_id": "",
+        "broker_status": "",
+        "source_stream_id": stream_id,
+    }
+    RX.xadd_fields(
+        N.STREAM_DECISIONS_ACK,
+        payload,
+        maxlen_approx=self.stream_maxlen,
+        client=self.redis,
+    )
+
+
+ExecutionService._publish_malformed_decision_reject = _batch13_publish_malformed_decision_reject
+
+
+_BATCH13_ORIGINAL_POLL_DECISIONS = ExecutionService._poll_decisions
+
+
+def _batch13_poll_decisions(self: ExecutionService, current_ns: int) -> bool:
+    try:
+        response = RX.xreadgroup(
+            N.GROUP_EXEC,
+            self.consumer_name,
+            {N.STREAM_DECISIONS_MME: RX.STREAM_ID_NEW_ONLY},
+            count=32,
+            block_ms=self.stream_block_ms,
+            client=self.redis,
+        )
+    except Exception as exc:
+        self._record_exception("poll_decisions", exc)
+        if self.fail_fast:
+            raise
+        return False
+
+    progressed = False
+    for _stream_name, entries in response or []:
+        for stream_id, fields in entries:
+            progressed = True
+            try:
+                decision = self._parse_decision(stream_id, fields)
+                self._handle_decision(decision, current_ns)
+            except DecisionContractError as exc:
+                self._publish_malformed_decision_reject(
+                    fields=fields,
+                    stream_id=stream_id,
+                    reason=str(exc),
+                )
+                self._record_exception(
+                    "decision_contract_rejected",
+                    exc,
+                    extra={"stream_id": stream_id},
+                )
+            except Exception as exc:
+                self._record_exception(
+                    "handle_decision",
+                    exc,
+                    extra={"stream_id": stream_id},
+                )
+                if self.fail_fast:
+                    raise
+            finally:
+                with contextlib.suppress(Exception):
+                    RX.xack(
+                        N.STREAM_DECISIONS_MME,
+                        N.GROUP_EXEC,
+                        [stream_id],
+                        client=self.redis,
+                    )
+    return progressed
+
+
+ExecutionService._poll_decisions = _batch13_poll_decisions
+
+
+_BATCH13_ORIGINAL_APPLY_BROKER_ORDER_UPDATE = ExecutionService._apply_broker_order_update
+
+
+def _batch13_apply_broker_order_update(
+    self: ExecutionService,
+    pending: PendingOrder,
+    broker_order: Mapping[str, Any],
+    current_ns: int,
+) -> None:
+    status = _status_upper(broker_order.get("status"))
+    if status in {"FAILED", "REJECTED", "CANCELLED", "CANCELED", "EXPIRED"}:
+        reason = "order_cancelled"
+        if status in {"FAILED", "REJECTED"}:
+            reason = _safe_str(broker_order.get("message")) or status.lower()
+        elif pending.intent == "ENTRY" and pending.cancel_requested:
+            reason = "entry_timeout_cancelled"
+
+        with contextlib.suppress(Exception):
+            pending.broker_status = status
+            pending.broker_order_id = _safe_str(
+                broker_order.get("broker_order_id") or pending.broker_order_id
+            )
+            self._publish_order_terminal_event(
+                event_type=f"{pending.intent}_ORDER_TERMINAL",
+                pending=pending,
+                reason=reason,
+            )
+
+    _BATCH13_ORIGINAL_APPLY_BROKER_ORDER_UPDATE(
+        self,
+        pending,
+        broker_order,
+        current_ns,
+    )
+
+
+ExecutionService._apply_broker_order_update = _batch13_apply_broker_order_update
+
+
+_validate_name_surface_or_die()

@@ -726,3 +726,257 @@ def build_misc_family_surface(
         "dominant_branch": dominant_branch,
         "eligible": bool(call_ready or put_ready),
     }
+
+# =============================================================================
+# Batch 9 freeze hardening: doctrine-surface fail-closed guards
+# =============================================================================
+#
+# This module remains feature-surface only. These wrappers enforce publication
+# hygiene around branch/family readiness without adding strategy decisions,
+# provider routing, Redis I/O, or service behavior.
+
+_BATCH9_SURFACE_HARDENING_VERSION = "1"
+_BATCH9_FAMILY_LC = "misc"
+_BATCH9_FAMILY_ID = "MISC"
+_BATCH9_ALLOWED_BRANCH_IDS = (N.BRANCH_CALL, N.BRANCH_PUT)
+
+_BATCH9_ORIGINAL_BRANCH_BUILDER = build_misc_branch_surface
+_BATCH9_ORIGINAL_FAMILY_BUILDER = build_misc_family_surface
+
+
+def _batch9_text(value: Any, default: str = "") -> str:
+    if value is None:
+        return default
+    text = str(value).strip()
+    return text if text else default
+
+
+def _batch9_bool(value: Any, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    text = _batch9_text(value).lower()
+    if text in {"1", "true", "yes", "y", "on"}:
+        return True
+    if text in {"0", "false", "no", "n", "off"}:
+        return False
+    return default
+
+
+def _batch9_mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _batch9_pick(mapping: Mapping[str, Any] | None, *keys: str, default: Any = None) -> Any:
+    if not isinstance(mapping, Mapping):
+        return default
+    for key in keys:
+        if key in mapping:
+            return mapping.get(key)
+    return default
+
+
+def _batch9_branch_side(branch_id: str) -> str:
+    if branch_id == N.BRANCH_CALL:
+        return N.SIDE_CALL
+    if branch_id == N.BRANCH_PUT:
+        return N.SIDE_PUT
+    raise ValueError(f"invalid branch_id for {_BATCH9_FAMILY_ID}: {branch_id!r}")
+
+
+def _batch9_runtime_mode(
+    *,
+    runtime_mode_surface: Mapping[str, Any] | None,
+    surface: Mapping[str, Any] | None = None,
+) -> str:
+    return _batch9_text(
+        _batch9_pick(surface, "runtime_mode")
+        or _batch9_pick(runtime_mode_surface, "runtime_mode", "mode")
+        or "",
+        "",
+    ).upper()
+
+
+def _batch9_runtime_disabled(mode: str) -> bool:
+    disabled = {
+        _batch9_text(getattr(N, "STRATEGY_RUNTIME_MODE_DISABLED", "DISABLED")).upper(),
+        "DISABLED",
+    }
+    return _batch9_text(mode).upper() in disabled
+
+
+def _batch9_force_not_ready(surface: Mapping[str, Any], reason: str) -> dict[str, Any]:
+    out = dict(surface)
+    previous_failed_stage = _batch9_text(out.get("failed_stage"))
+    out["branch_ready"] = False
+    out["eligible"] = False
+    out["batch9_freeze_blocked_reason"] = reason
+    if previous_failed_stage and previous_failed_stage != reason:
+        out["pre_batch9_failed_stage"] = previous_failed_stage
+    if reason in {"runtime_disabled", "provider_not_ready"}:
+        out["context_pass"] = False
+    # Hard publication blocks must be the canonical failed_stage so downstream
+    # consumers never confuse an earlier doctrine-stage miss with a runtime /
+    # provider hard stop.
+    out["failed_stage"] = reason
+    return out
+
+
+def _batch9_branch_ready_truth(surface: Mapping[str, Any]) -> bool:
+    return bool(
+        _batch9_bool(surface.get("branch_ready"), False)
+        and _batch9_bool(surface.get("present"), False)
+        and _batch9_bool(surface.get("context_pass"), False)
+        and _batch9_bool(surface.get("option_tradability_pass"), False)
+        and not _batch9_text(surface.get("failed_stage"))
+    )
+
+
+def _batch9_normalize_branch_surface(
+    surface: Mapping[str, Any],
+    *,
+    branch_id: str,
+    runtime_mode_surface: Mapping[str, Any] | None,
+    provider_ready: bool,
+) -> dict[str, Any]:
+    side = _batch9_branch_side(branch_id)
+    out = dict(surface)
+    out["family_id"] = _batch9_text(out.get("family_id"), _BATCH9_FAMILY_ID)
+    out["branch_id"] = branch_id
+    out["side"] = side
+
+    mode = _batch9_runtime_mode(runtime_mode_surface=runtime_mode_surface, surface=out)
+    if _batch9_runtime_disabled(mode):
+        return _batch9_force_not_ready(out, "runtime_disabled")
+
+    if not bool(provider_ready):
+        return _batch9_force_not_ready(out, "provider_not_ready")
+
+    if _BATCH9_FAMILY_ID == "MISO" and not _batch9_bool(out.get("strike_bundle_present"), False):
+        return _batch9_force_not_ready(out, "strike_bundle_present")
+
+    if not _batch9_branch_ready_truth(out):
+        out["branch_ready"] = False
+        out["eligible"] = False
+        if not _batch9_text(out.get("failed_stage")):
+            out["failed_stage"] = "not_ready"
+        return out
+
+    out["branch_ready"] = True
+    out["eligible"] = True
+    out["failed_stage"] = ""
+    return out
+
+
+def build_misc_branch_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    branch_id = kwargs.get("branch_id")
+    if branch_id not in _BATCH9_ALLOWED_BRANCH_IDS:
+        raise ValueError(f"invalid branch_id for {_BATCH9_FAMILY_ID}: {branch_id!r}")
+
+    out = _BATCH9_ORIGINAL_BRANCH_BUILDER(*args, **kwargs)
+    return _batch9_normalize_branch_surface(
+        dict(out),
+        branch_id=branch_id,
+        runtime_mode_surface=kwargs.get("runtime_mode_surface"),
+        provider_ready=bool(kwargs.get("provider_ready", True)),
+    )
+
+
+def _batch9_surface_ready(surface: Mapping[str, Any]) -> bool:
+    return bool(
+        _batch9_bool(surface.get("branch_ready"), False)
+        and _batch9_bool(surface.get("present"), False)
+        and _batch9_bool(surface.get("context_pass"), False)
+        and _batch9_bool(surface.get("option_tradability_pass"), False)
+        and not _batch9_text(surface.get("failed_stage"))
+    )
+
+
+def _batch9_score(surface: Mapping[str, Any]) -> float:
+    try:
+        return float(surface.get("setup_score") or 0.0)
+    except Exception:
+        return 0.0
+
+
+def _batch9_ready_dominant_branch(call: Mapping[str, Any], put: Mapping[str, Any]) -> str:
+    call_ready = _batch9_surface_ready(call)
+    put_ready = _batch9_surface_ready(put)
+
+    if call_ready and put_ready:
+        call_score = _batch9_score(call)
+        put_score = _batch9_score(put)
+        if call_score > put_score:
+            return N.BRANCH_CALL
+        if put_score > call_score:
+            return N.BRANCH_PUT
+        return ""
+    if call_ready:
+        return N.BRANCH_CALL
+    if put_ready:
+        return N.BRANCH_PUT
+    return ""
+
+
+def _batch9_normalize_family_surface(
+    surface: Mapping[str, Any],
+    *,
+    call_surface: Mapping[str, Any] | None,
+    put_surface: Mapping[str, Any] | None,
+    runtime_mode_surface: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    out = dict(surface)
+    call = dict(_batch9_pick(out, "call") or call_surface or {})
+    put = dict(_batch9_pick(out, "put") or put_surface or {})
+
+    mode = _batch9_runtime_mode(runtime_mode_surface=runtime_mode_surface, surface=out)
+    disabled = _batch9_runtime_disabled(mode)
+
+    call_ready = _batch9_surface_ready(call)
+    put_ready = _batch9_surface_ready(put)
+
+    if disabled:
+        call_ready = False
+        put_ready = False
+        out["batch9_freeze_blocked_reason"] = "runtime_disabled"
+
+    if _BATCH9_FAMILY_ID == "MISO":
+        chain_context_ready = bool(
+            _batch9_bool(out.get("chain_context_ready"), False)
+            or _batch9_bool(call.get("strike_bundle_present"), False)
+            or _batch9_bool(put.get("strike_bundle_present"), False)
+        )
+        out["chain_context_ready"] = chain_context_ready
+        if not chain_context_ready:
+            call_ready = False
+            put_ready = False
+            out["batch9_freeze_blocked_reason"] = "miso_chain_context_not_ready"
+
+    dominant_ready = _batch9_ready_dominant_branch(call, put) if (call_ready or put_ready) else ""
+
+    out["family_id"] = _batch9_text(out.get("family_id"), _BATCH9_FAMILY_ID)
+    out["call"] = call
+    out["put"] = put
+    out["branches"] = {N.BRANCH_CALL: call, N.BRANCH_PUT: put}
+    out["call_ready"] = bool(call_ready)
+    out["put_ready"] = bool(put_ready)
+    out["eligible"] = bool(call_ready or put_ready)
+    out["dominant_ready_branch"] = dominant_ready
+    out["dominant_branch"] = dominant_ready if out["eligible"] else ""
+
+    if _BATCH9_FAMILY_ID == "MISO" and not out["eligible"]:
+        out["selected_side"] = None
+        out["selected_strike"] = None
+
+    return out
+
+
+def build_misc_family_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    out = _BATCH9_ORIGINAL_FAMILY_BUILDER(*args, **kwargs)
+    return _batch9_normalize_family_surface(
+        dict(out),
+        call_surface=kwargs.get("call_surface"),
+        put_surface=kwargs.get("put_surface"),
+        runtime_mode_surface=kwargs.get("runtime_mode_surface"),
+    )

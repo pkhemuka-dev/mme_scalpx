@@ -430,3 +430,59 @@ __all__ = [
     "artifact_exists",
     "read_json_artifact",
 ]
+
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS START =====
+# Batch 16 freeze-final guard:
+# Artifact writes must remain under the planned replay run root.
+
+def _batch16_path_inside(root: Path, candidate: Path) -> bool:
+    try:
+        candidate.resolve().relative_to(root.resolve())
+        return True
+    except Exception:
+        return False
+
+
+def validate_artifact_plan_path_containment(artifact_plan: ReplayArtifactPlan) -> dict[str, Any]:
+    root = Path(artifact_plan.root_dir).expanduser().resolve()
+    path_attrs = (
+        "manifest_path",
+        "log_dir",
+        "artifacts_dir",
+        "dataset_summary_path",
+        "scope_profile_path",
+        "integrity_report_path",
+        "metrics_summary_path",
+        "trade_log_path",
+        "candidate_audit_path",
+        "blocker_breakdown_path",
+        "exit_breakdown_path",
+        "differential_report_path",
+        "effective_inputs_path",
+        "effective_overrides_flat_path",
+    )
+
+    checked: list[str] = []
+    for attr in path_attrs:
+        value = getattr(artifact_plan, attr)
+        candidate = Path(value).expanduser()
+        if not _batch16_path_inside(root, candidate):
+            raise ReplayArtifactsValidationError(
+                f"artifact path {attr} escapes root_dir: {value!r} not under {str(root)!r}"
+            )
+        checked.append(attr)
+
+    return {
+        "ok": True,
+        "root_dir": str(root),
+        "checked_path_fields": checked,
+    }
+
+
+if "_validate_artifact_plan" in globals():
+    _BATCH16_ORIGINAL_VALIDATE_ARTIFACT_PLAN = _validate_artifact_plan
+
+    def _validate_artifact_plan(artifact_plan: ReplayArtifactPlan) -> None:
+        _BATCH16_ORIGINAL_VALIDATE_ARTIFACT_PLAN(artifact_plan)
+        validate_artifact_plan_path_containment(artifact_plan)
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====

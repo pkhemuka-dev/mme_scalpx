@@ -294,3 +294,17 @@ __all__ = [
     "build_capture_plan",
     "build_capture_plan_from_operator_inputs",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: capture output path containment
+# =============================================================================
+_BATCH17_CAPTURE_PLAN_GUARD_VERSION = "1"
+
+from app.mme_scalpx.research_capture.utils import ensure_path_within_root as _batch17_ensure_path_within_root
+
+_BATCH17_ORIGINAL_CAPTURE_OUTPUT_PATH = _capture_output_path
+
+def _capture_output_path(result: ManifestMaterializationResult, filename: str) -> str:
+    resolved_text = _BATCH17_ORIGINAL_CAPTURE_OUTPUT_PATH(result, filename)
+    run_root = Path(result.manifest_seed.metadata["run_root"]).resolve()
+    return str(_batch17_ensure_path_within_root(resolved_text, run_root, label=f"capture_output_path[{filename}]"))

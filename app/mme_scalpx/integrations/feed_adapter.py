@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Protocol, runtime_checkable
 
+from app.mme_scalpx.core import names
 from app.mme_scalpx.domain.instruments import RuntimeInstrumentSet
 from app.mme_scalpx.integrations.zerodha_feed_adapter import (
     FeedPollBundle,
@@ -236,7 +237,7 @@ class ZerodhaLiveFeedAdapter(BaseFeedAdapter):
                 {
                     "instrument_token": str(instrument_token),
                     "payload": _to_feeds_payload(tick),
-                    "provider": "ZERODHA",
+                    "provider": names.PROVIDER_ZERODHA,
                 }
             )
         return out

@@ -1066,5 +1066,58 @@ __all__ = [
     "StrategyAuditState",
     "TimingIdentity",
     "canonicalize_archive_row",
+    "batch17_validate_research_row_policy",
+    "batch17_production_firewall",
     "validate_capture_value_against_contract",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: unknown-field policy and production firewall
+# =============================================================================
+
+_BATCH17_MODEL_FIREWALL_VERSION = "1"
+
+
+def batch17_validate_research_row_policy(values: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Validate research row field policy without expanding production doctrine."""
+    if not isinstance(values, Mapping):
+        raise TypeError("values must be Mapping[str, Any]")
+
+    unknown = [name for name in values.keys() if name not in FIELD_SPECS_BY_NAME]
+    if unknown:
+        raise KeyError(f"unknown top-level research_capture fields: {unknown!r}")
+
+    if "raw_payload_json" in values and values.get("raw_payload_json") is not None:
+        validate_capture_value_against_contract("raw_payload_json", values["raw_payload_json"])
+
+    return _freeze_mapping(values)
+
+
+_BATCH17_ORIGINAL_CANONICALIZE_ARCHIVE_ROW = canonicalize_archive_row
+
+
+def canonicalize_archive_row(values: Mapping[str, Any], *, include_none: bool = False) -> dict[str, Any]:
+    batch17_validate_research_row_policy(values)
+    return _BATCH17_ORIGINAL_CANONICALIZE_ARCHIVE_ROW(values, include_none=include_none)
+
+
+def batch17_production_firewall() -> dict[str, bool]:
+    return {
+        "production_doctrine_mutated": False,
+        "production_params_mutated": False,
+        "live_runtime_mutated": False,
+        "research_outputs_are_advisory": True,
+        "promotion_requires_manual_patch_and_proof": True,
+    }
+
+
+_BATCH17_ORIGINAL_MANIFEST_TO_DICT = CaptureSessionManifest.to_dict
+
+
+def _batch17_manifest_to_dict(self: CaptureSessionManifest) -> dict[str, Any]:
+    payload = _BATCH17_ORIGINAL_MANIFEST_TO_DICT(self)
+    payload["production_firewall"] = batch17_production_firewall()
+    return payload
+
+
+CaptureSessionManifest.to_dict = _batch17_manifest_to_dict

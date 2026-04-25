@@ -54,7 +54,7 @@ from app.mme_scalpx.core import names
 from app.mme_scalpx.core.codec import (
     decode_envelope,
     decode_hash_fields,
-    decode_model_from_envelope,
+    decode_model_from_envelope_as,
     encode_envelope,
     encode_hash_fields,
     envelope_for_model,
@@ -1211,7 +1211,7 @@ def read_models_from_group(
     decoded: list[tuple[str, EventEnvelope, T]] = []
     for message_id, envelope in envelopes:
         try:
-            model = decode_model_from_envelope(model_cls, envelope)
+            model = decode_model_from_envelope_as(model_cls, envelope)
         except Exception as exc:
             raise StreamTransportError(
                 f"Failed to decode model {model_cls.__name__} from stream={stream_name!r} "
@@ -1249,7 +1249,7 @@ async def aread_models_from_group(
     decoded: list[tuple[str, EventEnvelope, T]] = []
     for message_id, envelope in envelopes:
         try:
-            model = decode_model_from_envelope(model_cls, envelope)
+            model = decode_model_from_envelope_as(model_cls, envelope)
         except Exception as exc:
             raise StreamTransportError(
                 f"Failed to async decode model {model_cls.__name__} from stream={stream_name!r} "

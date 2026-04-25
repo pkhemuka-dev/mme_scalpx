@@ -904,3 +904,79 @@ __all__ = [
     "build_exit_decision",
     "build_hold_decision",
 ]
+
+# =============================================================================
+# Batch 11 freeze hardening: entry decisions require order-intent metadata
+# =============================================================================
+
+_BATCH11_DECISION_ENTRY_CONTRACT_VERSION = "1"
+_BATCH11_ENTRY_REQUIRED_METADATA = (
+    "option_symbol",
+    "option_token",
+    "strike",
+    "limit_price",
+    "active_futures_provider_id",
+    "active_selected_option_provider_id",
+    "active_option_context_provider_id",
+)
+
+
+def _batch11_candidate_metadata(candidate: DoctrineSignalCandidate) -> dict[str, Any]:
+    raw = getattr(candidate, "metadata", {})
+    return dict(raw) if isinstance(raw, Mapping) else {}
+
+
+def _batch11_require_entry_contract(candidate: DoctrineSignalCandidate) -> None:
+    metadata = _batch11_candidate_metadata(candidate)
+    missing = []
+    for key in _BATCH11_ENTRY_REQUIRED_METADATA:
+        value = metadata.get(key)
+        if value in (None, ""):
+            missing.append(key)
+
+    if missing:
+        raise StrategyFamilyDecisionError(
+            "entry candidate missing execution-required metadata: "
+            + ", ".join(missing)
+        )
+
+
+_BATCH11_ORIGINAL_BUILD_ENTRY_DECISION = build_entry_decision
+
+
+def build_entry_decision(
+    *,
+    now_ns: int,
+    quantity_lots: int,
+    candidate: DoctrineSignalCandidate,
+    system_state: str = N.STATE_ENTRY_PENDING,
+    ts_expiry_ns: int | None = None,
+    explain: str | None = None,
+    active_futures_provider_id: str | None = None,
+    active_selected_option_provider_id: str | None = None,
+    active_option_context_provider_id: str | None = None,
+    extra_metadata: Mapping[str, Any] | None = None,
+) -> StrategyDecision:
+    _batch11_require_entry_contract(candidate)
+    metadata = _batch11_candidate_metadata(candidate)
+
+    return _BATCH11_ORIGINAL_BUILD_ENTRY_DECISION(
+        now_ns=now_ns,
+        quantity_lots=quantity_lots,
+        candidate=candidate,
+        system_state=system_state,
+        ts_expiry_ns=ts_expiry_ns,
+        explain=explain,
+        active_futures_provider_id=active_futures_provider_id or metadata.get("active_futures_provider_id"),
+        active_selected_option_provider_id=(
+            active_selected_option_provider_id or metadata.get("active_selected_option_provider_id")
+        ),
+        active_option_context_provider_id=(
+            active_option_context_provider_id or metadata.get("active_option_context_provider_id")
+        ),
+        extra_metadata={
+            **metadata,
+            **dict(extra_metadata or {}),
+            "batch11_entry_contract_checked": True,
+        },
+    )

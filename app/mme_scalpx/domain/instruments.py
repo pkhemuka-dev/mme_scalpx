@@ -264,18 +264,44 @@ def _month_end(d: date) -> date:
     return date(d.year, d.month + 1, 1) - timedelta(days=1)
 
 
-def _is_last_thursday(d: date) -> bool:
-    if d.weekday() != 3:
+def _validate_weekday_index(value: int, *, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise InstrumentValidationError(f"{field_name} must be int 0..6, got {value!r}")
+    if value < 0 or value > 6:
+        raise InstrumentValidationError(f"{field_name} must be 0..6, got {value!r}")
+    return value
+
+
+def _is_last_expiry_weekday(d: date, *, weekday: int) -> bool:
+    checked = _validate_weekday_index(weekday, field_name="weekday")
+    if d.weekday() != checked:
         return False
     return d + timedelta(days=7) > _month_end(d)
 
 
-def _is_probable_weekly_expiry(d: date) -> bool:
-    return d.weekday() == 3 and not _is_last_thursday(d)
+def _is_last_thursday(d: date) -> bool:
+    """Compatibility helper for old audit references; not used as live policy."""
+    return _is_last_expiry_weekday(d, weekday=3)
 
 
-def _is_probable_monthly_expiry(d: date) -> bool:
-    return _is_last_thursday(d)
+def _is_probable_weekly_expiry(d: date, *, weekly_expiry_weekday: int = 1) -> bool:
+    checked = _validate_weekday_index(
+        weekly_expiry_weekday,
+        field_name="weekly_expiry_weekday",
+    )
+    return d.weekday() == checked and not _is_last_expiry_weekday(d, weekday=checked)
+
+
+def _is_probable_monthly_expiry(d: date, *, monthly_expiry_weekday: int = 1) -> bool:
+    checked = _validate_weekday_index(
+        monthly_expiry_weekday,
+        field_name="monthly_expiry_weekday",
+    )
+    return _is_last_expiry_weekday(d, weekday=checked)
+
+
+def _exchange_date_from_datetime(value: datetime) -> date:
+    return _ensure_aware_utc(value).astimezone(IST).date()
 
 
 def _round_to_step(value: Decimal, step: Decimal) -> Decimal:
@@ -363,6 +389,9 @@ class InstrumentConfig:
     require_weekly_options: bool = True
     allow_monthly_fallback: bool = True
 
+    weekly_expiry_weekday: int = 1
+    monthly_expiry_weekday: int = 1
+
     strike_step_override: Decimal | None = None
 
     market_close_ist: time = time(15, 30)
@@ -384,6 +413,14 @@ class InstrumentConfig:
             raise InstrumentValidationError("freshness_max_age must be positive")
         if self.option_expiry_days_guard < 0:
             raise InstrumentValidationError("option_expiry_days_guard must be >= 0")
+        _validate_weekday_index(
+            self.weekly_expiry_weekday,
+            field_name="weekly_expiry_weekday",
+        )
+        _validate_weekday_index(
+            self.monthly_expiry_weekday,
+            field_name="monthly_expiry_weekday",
+        )
         if self.strike_step_override is not None and self.strike_step_override <= EPSILON:
             raise InstrumentValidationError("strike_step_override must be positive")
         if not self.allowed_derivative_exchanges:
@@ -717,6 +754,9 @@ def _canonical_key_map(config: InstrumentConfig) -> dict[str, tuple[str, ...]]:
             "exchange_token",
             "instrument_key",
             "instrument_key_id",
+            "security_id",
+            "securityId",
+            "dhan_security_id",
         ),
         "tradingsymbol": (
             explicit.get("tradingsymbol", ""),
@@ -1075,24 +1115,28 @@ class InstrumentRepository:
         return self._puts
 
     def get_current_future(self, *, now: datetime | None = None) -> ContractMetadata:
-        self.assert_fresh(now=now)
-        today = (now or _utc_now()).date()
-        candidates = [x for x in self._futures if x.expiry is not None and x.expiry >= today]
+        current = _ensure_aware_utc(now or _utc_now())
+        self.assert_fresh(now=current)
+        exchange_today = _exchange_date_from_datetime(current)
+        candidates = [
+            x for x in self._futures
+            if x.expiry is not None and x.expiry >= exchange_today
+        ]
         if not candidates:
             raise InstrumentNotFoundError(
-                f"no current future found for today or later: {today.isoformat()}"
+                f"no current future found for exchange date or later: {exchange_today.isoformat()}"
             )
         return min(candidates, key=lambda x: (x.expiry or date.max, x.tradingsymbol))
 
     def _eligible_option_expiries(self, *, now: datetime | None = None) -> list[date]:
-        current = now or _utc_now()
-        today = current.date()
+        current = _ensure_aware_utc(now or _utc_now())
+        exchange_today = _exchange_date_from_datetime(current)
 
         expiries = sorted(
             {
                 x.expiry
                 for x in (*self._calls, *self._puts)
-                if x.expiry is not None and x.expiry >= today
+                if x.expiry is not None and x.expiry >= exchange_today
             }
         )
         if not expiries:
@@ -1100,18 +1144,24 @@ class InstrumentRepository:
 
         current_ist = current.astimezone(IST)
         if current_ist.time() >= self.config.market_close_ist:
-            expiries = [exp for exp in expiries if exp > today]
+            expiries = [exp for exp in expiries if exp > exchange_today]
             if not expiries:
                 raise InstrumentNotFoundError(
                     "no option expiries available after market-close selection rule"
                 )
 
         guard = self.config.option_expiry_days_guard
-        guarded = [exp for exp in expiries if (exp - today).days <= guard]
+        guarded = [exp for exp in expiries if (exp - exchange_today).days <= guard]
         selected_pool = guarded if guarded else expiries
 
         if self.config.require_weekly_options:
-            weeklies = [exp for exp in selected_pool if _is_probable_weekly_expiry(exp)]
+            weeklies = [
+                exp for exp in selected_pool
+                if _is_probable_weekly_expiry(
+                    exp,
+                    weekly_expiry_weekday=self.config.weekly_expiry_weekday,
+                )
+            ]
             if weeklies:
                 return weeklies
             if not self.config.allow_monthly_fallback:
@@ -1561,6 +1611,8 @@ def _build_arg_parser() -> Any:
     parser.add_argument("--underlying-ltp", required=True, type=str)
     parser.add_argument("--freshness-days", type=int, default=7)
     parser.add_argument("--option-expiry-days-guard", type=int, default=9)
+    parser.add_argument("--weekly-expiry-weekday", type=int, default=1, help="Monday=0 ... Sunday=6; NIFTY default Tuesday=1")
+    parser.add_argument("--monthly-expiry-weekday", type=int, default=1, help="Monday=0 ... Sunday=6; NIFTY default Tuesday=1")
     parser.add_argument("--market-close-ist", type=str, default="15:30")
     parser.add_argument("--strike-step-override", type=str, default="")
     parser.add_argument("--allow-monthly-fallback", action="store_true")
@@ -1606,6 +1658,8 @@ def main() -> int:
         option_expiry_days_guard=int(args.option_expiry_days_guard),
         require_weekly_options=not bool(args.disable_weekly_requirement),
         allow_monthly_fallback=bool(args.allow_monthly_fallback),
+        weekly_expiry_weekday=int(args.weekly_expiry_weekday),
+        monthly_expiry_weekday=int(args.monthly_expiry_weekday),
         strike_step_override=strike_override,
         market_close_ist=_parse_hhmm(args.market_close_ist),
     )

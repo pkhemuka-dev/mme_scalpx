@@ -315,3 +315,33 @@ __all__ = [
     "ArtifactPlan",
     "build_artifact_plan",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: artifact path containment
+# =============================================================================
+_BATCH17_ARTIFACT_PLAN_GUARD_VERSION = "1"
+
+from app.mme_scalpx.research_capture.utils import ensure_path_within_any_root as _batch17_ensure_path_within_any_root
+
+_BATCH17_ORIGINAL_RESOLVE_ARTIFACT_PATH = _resolve_artifact_path
+
+def _resolve_artifact_path(
+    *,
+    entrypoint: str,
+    name: str,
+    run_root: Path,
+    report_root: Path,
+    export_root: Path,
+) -> Path:
+    resolved = _BATCH17_ORIGINAL_RESOLVE_ARTIFACT_PATH(
+        entrypoint=entrypoint,
+        name=name,
+        run_root=run_root,
+        report_root=report_root,
+        export_root=export_root,
+    )
+    return _batch17_ensure_path_within_any_root(
+        resolved,
+        (run_root, report_root, export_root),
+        label=f"artifact_path[{name}]",
+    )

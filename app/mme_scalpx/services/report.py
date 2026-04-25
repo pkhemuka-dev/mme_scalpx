@@ -1393,3 +1393,181 @@ def run(context: Any) -> int:
         instance_id=instance_id,
     )
     return service.start(context=context)
+
+# =============================================================================
+# Batch 15 freeze hardening: deterministic trade linking and PnL semantics
+# =============================================================================
+
+_BATCH15_REPORT_OPS_FREEZE_VERSION = "1"
+
+
+def _batch15_trade_stable_key(trade: TradeRecord) -> str:
+    for value in (
+        trade.position_id,
+        trade.decision_id,
+        trade.trade_key,
+    ):
+        text = _safe_str(value)
+        if text:
+            return text
+    return trade.trade_key
+
+
+def _batch15_merge_trade_records(trades: Sequence[TradeRecord]) -> list[TradeRecord]:
+    merged: dict[str, TradeRecord] = {}
+
+    for trade in trades:
+        key = _batch15_trade_stable_key(trade)
+        if key not in merged:
+            merged[key] = trade
+            continue
+
+        base = merged[key]
+        base.entry_ts = base.entry_ts or trade.entry_ts
+        base.exit_ts = base.exit_ts or trade.exit_ts
+        base.signal_ts = base.signal_ts or trade.signal_ts
+        base.confirm_ts = base.confirm_ts or trade.confirm_ts
+
+        for attr in (
+            "decision_id",
+            "position_id",
+            "entry_order_id",
+            "exit_order_id",
+            "symbol",
+            "instrument",
+            "side",
+            "expiry",
+            "entry_mode",
+            "exit_reason",
+            "entry_ack_status",
+            "exit_ack_status",
+        ):
+            if not getattr(base, attr):
+                setattr(base, attr, getattr(trade, attr))
+
+        if base.strike is None:
+            base.strike = trade.strike
+        base.entry_price = base.entry_price or trade.entry_price
+        base.exit_price = base.exit_price or trade.exit_price
+        base.entry_qty = base.entry_qty or trade.entry_qty
+        base.exit_qty = base.exit_qty or trade.exit_qty
+        base.filled_qty = base.filled_qty or trade.filled_qty
+        base.realized_pnl = base.realized_pnl or trade.realized_pnl
+        base.gross_pnl = base.gross_pnl or trade.gross_pnl
+        base.net_pnl = base.net_pnl or trade.net_pnl
+        base.fees += trade.fees
+
+        base.partial_fill = base.partial_fill or trade.partial_fill
+        base.degraded = base.degraded or trade.degraded
+        base.broker_mismatch = base.broker_mismatch or trade.broker_mismatch
+        base.raw_events.extend(trade.raw_events)
+
+    return list(merged.values())
+
+
+def _batch15_payload_values(trade: TradeRecord, key: str) -> list[float]:
+    out: list[float] = []
+    for event in trade.raw_events:
+        if not isinstance(event, Mapping):
+            continue
+        if key in event and event.get(key) not in (None, ""):
+            out.append(_safe_float(event.get(key), 0.0))
+    return out
+
+
+def _batch15_finalize_trade_pnl(trade: TradeRecord) -> None:
+    net_values = _batch15_payload_values(trade, "net_pnl")
+    gross_values = _batch15_payload_values(trade, "gross_pnl")
+    realized_values = _batch15_payload_values(trade, "realized_pnl")
+    pnl_values = _batch15_payload_values(trade, "pnl")
+
+    if net_values:
+        trade.net_pnl = net_values[-1]
+        trade.gross_pnl = gross_values[-1] if gross_values else trade.net_pnl + trade.fees
+        trade.realized_pnl = trade.net_pnl
+    elif gross_values:
+        trade.gross_pnl = gross_values[-1]
+        trade.net_pnl = trade.gross_pnl - trade.fees
+        trade.realized_pnl = trade.gross_pnl
+    elif realized_values:
+        trade.gross_pnl = realized_values[-1]
+        trade.net_pnl = trade.gross_pnl - trade.fees
+        trade.realized_pnl = trade.gross_pnl
+    elif pnl_values:
+        trade.gross_pnl = pnl_values[-1]
+        trade.net_pnl = trade.gross_pnl - trade.fees
+        trade.realized_pnl = trade.gross_pnl
+    else:
+        trade.gross_pnl = trade.realized_pnl
+        trade.net_pnl = trade.gross_pnl - trade.fees
+
+    if trade.entry_ts and trade.exit_ts:
+        trade.hold_seconds = max((trade.exit_ts - trade.entry_ts).total_seconds(), 0.0)
+    if trade.filled_qty == 0:
+        trade.filled_qty = trade.entry_qty or trade.exit_qty
+    if not trade.entry_mode:
+        trade.entry_mode = N.ENTRY_MODE_UNKNOWN
+
+
+_BATCH15_ORIGINAL_RECONSTRUCT_TRADES = ReviewEngine._reconstruct_trades
+
+
+def _batch15_reconstruct_trades(
+    self: ReviewEngine,
+    *,
+    ledger: Sequence[StreamRecord],
+    acks: Sequence[StreamRecord],
+    orders: Sequence[StreamRecord],
+) -> list[TradeRecord]:
+    trades = list(
+        _BATCH15_ORIGINAL_RECONSTRUCT_TRADES(
+            self,
+            ledger=ledger,
+            acks=acks,
+            orders=orders,
+        )
+    )
+    merged = _batch15_merge_trade_records(trades)
+    for trade in merged:
+        _batch15_finalize_trade_pnl(trade)
+
+    return sorted(
+        merged,
+        key=lambda item: (
+            item.entry_ts or item.exit_ts or datetime.min.replace(tzinfo=timezone.utc),
+            item.trade_key,
+        ),
+    )
+
+
+ReviewEngine._reconstruct_trades = _batch15_reconstruct_trades
+
+
+_BATCH15_ORIGINAL_BUILD_SESSION_PACK = ReviewEngine.build_session_pack
+
+
+def _batch15_build_session_pack(self: ReviewEngine, *, session_day: date) -> dict[str, Any]:
+    pack = dict(_BATCH15_ORIGINAL_BUILD_SESSION_PACK(self, session_day=session_day))
+    diagnostics = dict(pack.get("diagnostics", {}) or {})
+    source_counts = dict(diagnostics.get("source_counts", {}) or {})
+
+    truncation = {
+        "ledger_may_be_truncated": int(source_counts.get("ledger", 0)) >= int(self.cfg.history_limit),
+        "acks_may_be_truncated": int(source_counts.get("acks", 0)) >= int(self.cfg.ack_limit),
+        "orders_may_be_truncated": int(source_counts.get("orders", 0)) >= int(self.cfg.order_limit),
+        "health_may_be_truncated": int(source_counts.get("health", 0)) >= int(self.cfg.health_limit),
+        "errors_may_be_truncated": int(source_counts.get("errors", 0)) >= int(self.cfg.error_limit),
+    }
+    diagnostics["truncation"] = truncation
+    pack["diagnostics"] = diagnostics
+
+    session_report = dict(pack.get("session_report", {}) or {})
+    report_diag = dict(session_report.get("diagnostics", {}) or {})
+    report_diag["truncation"] = truncation
+    session_report["diagnostics"] = report_diag
+    pack["session_report"] = session_report
+
+    return pack
+
+
+ReviewEngine.build_session_pack = _batch15_build_session_pack

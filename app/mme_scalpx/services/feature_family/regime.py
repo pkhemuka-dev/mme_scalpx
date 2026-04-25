@@ -60,6 +60,14 @@ DEFAULT_CONTEXT_STALE_MS: Final[float] = 5_000.0
 DEFAULT_DEPTH20_STALE_MS: Final[float] = 1_500.0
 DEFAULT_SURFACE_STALE_MS: Final[float] = 1_000.0
 
+
+def _safe_str(value: Any, default: str = "") -> str:
+    """Import-safe string normalizer used by module-level regime constants."""
+    if value is None:
+        return default
+    text = str(value).strip()
+    return text if text else default
+
 _PROVIDER_STATUS_HEALTHY: Final[str] = _safe_str(getattr(N, "PROVIDER_STATUS_HEALTHY", "HEALTHY")).upper() if "N" in globals() else "HEALTHY"
 _PROVIDER_STATUS_DEGRADED: Final[str] = _safe_str(getattr(N, "PROVIDER_STATUS_DEGRADED", "DEGRADED")).upper() if "N" in globals() else "DEGRADED"
 _PROVIDER_STATUS_STALE: Final[str] = _safe_str(getattr(N, "PROVIDER_STATUS_STALE", "STALE")).upper() if "N" in globals() else "STALE"
@@ -109,12 +117,6 @@ def _safe_int(value: Any, default: int = 0) -> int:
     except Exception:
         return int(default)
 
-
-def _safe_str(value: Any, default: str = "") -> str:
-    if value is None:
-        return default
-    text = str(value).strip()
-    return text if text else default
 
 
 def _safe_bool(value: Any, default: bool = False) -> bool:
@@ -578,3 +580,73 @@ def build_regime_bundle(
         # compatibility alias for older single-regime consumers
         "regime": classic_regime,
     }
+
+# ===== BATCH8_SHARED_CORE_GUARDS START =====
+# Batch 8 freeze-final guard:
+# context_fresh alone is not enough for MISO BASE_5DEPTH.
+
+_BATCH8_ORIGINAL_BUILD_MISO_RUNTIME_MODE_SURFACE = build_miso_runtime_mode_surface
+
+
+def _batch8_context_has_ladder(ctx: Mapping[str, Any]) -> bool:
+    for key in ("strike_ladder", "strike_ladder_rows", "chain_rows", "option_chain", "chain", "rows", "strikes", "ladder"):
+        value = _pick(ctx, key)
+        if isinstance(value, Mapping):
+            rows = value.get("rows")
+            if isinstance(rows, (list, tuple)) and bool(rows):
+                return True
+            if bool(value):
+                return True
+        if isinstance(value, (list, tuple)) and bool(value):
+            return True
+    return False
+
+
+def _batch8_context_has_selected_call(ctx: Mapping[str, Any]) -> bool:
+    return bool(
+        _safe_str(_pick(ctx, "selected_call_instrument_key", "call_instrument_key", "ce_instrument_key"))
+        or _safe_str(_pick(ctx, "selected_call_security_id", "call_security_id", "ce_security_id"))
+        or _safe_str(_pick(ctx, "selected_call_token", "call_token", "ce_token"))
+    )
+
+
+def _batch8_context_has_selected_put(ctx: Mapping[str, Any]) -> bool:
+    return bool(
+        _safe_str(_pick(ctx, "selected_put_instrument_key", "put_instrument_key", "pe_instrument_key"))
+        or _safe_str(_pick(ctx, "selected_put_security_id", "put_security_id", "pe_security_id"))
+        or _safe_str(_pick(ctx, "selected_put_token", "put_token", "pe_token"))
+    )
+
+
+def build_miso_runtime_mode_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    out = _BATCH8_ORIGINAL_BUILD_MISO_RUNTIME_MODE_SURFACE(*args, **kwargs)
+    ctx = _as_mapping(kwargs.get("dhan_context"))
+
+    context_has_atm = _safe_float_or_none(_pick(ctx, "atm_strike", "atm", "atm_reference_strike", "underlying_atm_strike")) is not None
+    context_has_selected_call = _batch8_context_has_selected_call(ctx)
+    context_has_selected_put = _batch8_context_has_selected_put(ctx)
+    context_has_ladder = _batch8_context_has_ladder(ctx)
+    miso_context_ready = bool(
+        out.get("context_fresh")
+        and context_has_atm
+        and context_has_selected_call
+        and context_has_selected_put
+        and context_has_ladder
+    )
+
+    out["context_has_atm"] = context_has_atm
+    out["context_has_selected_call"] = context_has_selected_call
+    out["context_has_selected_put"] = context_has_selected_put
+    out["context_has_ladder"] = context_has_ladder
+    out["miso_context_ready"] = miso_context_ready
+
+    if not miso_context_ready:
+        out["runtime_mode"] = DEFAULT_MISO_MODE_DISABLED
+        out["base_5depth_available"] = False
+        out["depth20_enhanced_available"] = False
+        out["disabled"] = True
+        if out.get("futures_ok") and out.get("option_ok") and out.get("context_fresh"):
+            out["blocked_reason"] = "context_incomplete"
+
+    return out
+# ===== BATCH8_SHARED_CORE_GUARDS END =====

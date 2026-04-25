@@ -277,11 +277,49 @@ def _determine_provider_status(
     provider_health_map: Mapping[str, models.ProviderHealthState],
     dhan_context_state: models.DhanContextState | None,
 ) -> str:
+    """
+    Resolve provider status for a specific runtime role.
+
+    Freeze law:
+    Dhan provider-level health is not option-chain/context health.
+    For option_context + DHAN, a concrete DhanContextState is mandatory.
+    Without it, the context lane is UNAVAILABLE even if generic Dhan
+    market-data health is HEALTHY.
+    """
+
+    if role == names.PROVIDER_ROLE_OPTION_CONTEXT and provider_id == names.PROVIDER_DHAN:
+        if dhan_context_state is None:
+            return names.PROVIDER_STATUS_UNAVAILABLE
+
+        context_status = dhan_context_state.context_status
+        health_state = provider_health_map.get(provider_id)
+
+        if health_state is None:
+            return context_status
+
+        base_status = health_state.status
+
+        if base_status == names.PROVIDER_STATUS_DISABLED:
+            return names.PROVIDER_STATUS_DISABLED
+
+        if health_state.authenticated is False:
+            return names.PROVIDER_STATUS_AUTH_FAILED
+
+        if context_status in (
+            names.PROVIDER_STATUS_AUTH_FAILED,
+            names.PROVIDER_STATUS_STALE,
+            names.PROVIDER_STATUS_UNAVAILABLE,
+            names.PROVIDER_STATUS_DISABLED,
+        ):
+            return context_status
+
+        if health_state.stale:
+            return names.PROVIDER_STATUS_STALE
+
+        return context_status
+
     health_state = provider_health_map.get(provider_id)
     if health_state is None:
-        if role == names.PROVIDER_ROLE_OPTION_CONTEXT and provider_id == names.PROVIDER_DHAN:
-            if dhan_context_state is not None:
-                return dhan_context_state.context_status
         return names.PROVIDER_STATUS_UNAVAILABLE
 
     base_status = health_state.status
@@ -291,24 +329,6 @@ def _determine_provider_status(
 
     if health_state.authenticated is False:
         return names.PROVIDER_STATUS_AUTH_FAILED
-
-    if role == names.PROVIDER_ROLE_OPTION_CONTEXT and provider_id == names.PROVIDER_DHAN:
-        if dhan_context_state is None:
-            if health_state.stale:
-                return names.PROVIDER_STATUS_STALE
-            return base_status
-        if dhan_context_state.context_status == names.PROVIDER_STATUS_AUTH_FAILED:
-            return names.PROVIDER_STATUS_AUTH_FAILED
-        if dhan_context_state.context_status == names.PROVIDER_STATUS_STALE:
-            return names.PROVIDER_STATUS_STALE
-        if dhan_context_state.context_status in (
-            names.PROVIDER_STATUS_UNAVAILABLE,
-            names.PROVIDER_STATUS_DISABLED,
-        ):
-            return dhan_context_state.context_status
-        if health_state.stale:
-            return names.PROVIDER_STATUS_STALE
-        return dhan_context_state.context_status
 
     if health_state.stale:
         return names.PROVIDER_STATUS_STALE
@@ -408,6 +428,7 @@ class ProviderRuntimeConfig:
     allow_failback_when_recovered: bool = True
     require_flat_for_role_switch: bool = True
     invalidate_preposition_setup_on_switch: bool = True
+    enable_dhan_execution_fallback: bool = False
 
     def __post_init__(self) -> None:
         self.validate()
@@ -433,6 +454,10 @@ class ProviderRuntimeConfig:
         _require_bool(
             self.invalidate_preposition_setup_on_switch,
             "invalidate_preposition_setup_on_switch",
+        )
+        _require_bool(
+            self.enable_dhan_execution_fallback,
+            "enable_dhan_execution_fallback",
         )
 
 
@@ -857,6 +882,17 @@ def _resolve_provider_runtime_inputs(
         provider_health_map=inputs.provider_health,
         dhan_context_state=inputs.dhan_context_state,
     )
+    execution_fallback_message: str | None = None
+    if (
+        execution_fallback_provider_id == names.PROVIDER_DHAN
+        and not inputs.config.enable_dhan_execution_fallback
+    ):
+        execution_fallback_status = names.PROVIDER_STATUS_DISABLED
+        execution_fallback_message = (
+            "Dhan execution fallback disabled until concrete Dhan execution transport "
+            "is implemented and proof-enabled"
+        )
+
     execution_fallback_choice = _RoleChoice(
         role=names.PROVIDER_ROLE_EXECUTION_FALLBACK,
         provider_id=execution_fallback_provider_id,
@@ -875,6 +911,7 @@ def _resolve_provider_runtime_inputs(
             if inputs.previous_runtime_state is None
             else names.PROVIDER_TRANSITION_REASON_CONFIG_RELOAD
         ),
+        message=execution_fallback_message,
     )
 
     role_choices: dict[str, _RoleChoice] = {

@@ -1,64 +1,32 @@
-"""
-app/mme_scalpx/ops/bootstrap_groups.py
-
-Frozen-grade Redis consumer-group bootstrap for ScalpX MME.
-
-Purpose
--------
-Create required live consumer groups for the canonical MME streams in an
-idempotent, operator-safe way.
-
-Design rules
-------------
-- Canonical names only; no ad hoc stream/group names.
-- Safe to run repeatedly.
-- Uses MKSTREAM semantics so missing streams are created automatically.
-- Does not publish, mutate hashes, or alter runtime state beyond group creation.
-- Fails loudly on configuration/connection errors.
-"""
-
+#!/usr/bin/env python3
 from __future__ import annotations
+
+"""
+ops/bootstrap_groups.py
+
+Canonical Redis consumer-group bootstrap for ScalpX MME.
+
+Batch 15 freeze rule
+--------------------
+This operator tool does not own group specs. The only source of truth is
+app.mme_scalpx.core.names.get_group_specs().
+"""
 
 import argparse
 import os
 import sys
 from dataclasses import dataclass
-from typing import Iterable, List, Tuple
+from typing import Iterable
 
 import redis
 
-from mme_scalpx.core.names import (
-    GROUP_EXECUTION_MME_V1,
-    GROUP_FEATURES_MME_FUT_V1,
-    GROUP_MONITOR_MME_V1,
-    GROUP_RISK_MME_V1,
-    GROUP_STRATEGY_MME_V1,
-    STREAM_CMD_MME,
-    STREAM_DECISIONS_MME,
-    STREAM_ORDERS_MME,
-    STREAM_TICKS_MME_FUT,
-    STREAM_TICKS_MME_OPT,
-)
+from app.mme_scalpx.core import names as N
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class GroupSpec:
     stream: str
     group: str
-
-
-LIVE_GROUP_SPECS: Tuple[GroupSpec, ...] = (
-    GroupSpec(stream=STREAM_TICKS_MME_FUT, group=GROUP_FEATURES_MME_FUT_V1),
-    GroupSpec(stream=STREAM_TICKS_MME_OPT, group=GROUP_FEATURES_MME_FUT_V1),
-    GroupSpec(stream=STREAM_DECISIONS_MME, group=GROUP_EXECUTION_MME_V1),
-    GroupSpec(stream=STREAM_DECISIONS_MME, group=GROUP_RISK_MME_V1),
-    GroupSpec(stream=STREAM_DECISIONS_MME, group=GROUP_MONITOR_MME_V1),
-    GroupSpec(stream=STREAM_ORDERS_MME, group=GROUP_MONITOR_MME_V1),
-    GroupSpec(stream=STREAM_CMD_MME, group=GROUP_MONITOR_MME_V1),
-    GroupSpec(stream=STREAM_CMD_MME, group=GROUP_EXECUTION_MME_V1),
-    GroupSpec(stream=STREAM_CMD_MME, group=GROUP_RISK_MME_V1),
-    GroupSpec(stream=STREAM_CMD_MME, group=GROUP_STRATEGY_MME_V1),
-)
 
 
 def _env_str(name: str, default: str | None = None) -> str:
@@ -101,8 +69,8 @@ def build_redis_client() -> redis.Redis:
     ca_cert = os.getenv("SCALPX_REDIS_CA_CERT") or None
     client_cert = os.getenv("SCALPX_REDIS_CLIENT_CERT") or None
     client_key = os.getenv("SCALPX_REDIS_CLIENT_KEY") or None
-    socket_connect_timeout = float(os.getenv("SCALPX_REDIS_CONNECT_TIMEOUT_SEC", "5"))
-    socket_timeout = float(os.getenv("SCALPX_REDIS_SOCKET_TIMEOUT_SEC", "5"))
+    socket_connect_timeout = float(os.getenv("SCALPX_REDIS_CONNECT_TIMEOUT_SEC", "5") or "5")
+    socket_timeout = float(os.getenv("SCALPX_REDIS_SOCKET_TIMEOUT_SEC", "5") or "5")
 
     ssl_cert_reqs_map = {
         "none": "none",
@@ -133,6 +101,15 @@ def build_redis_client() -> redis.Redis:
     return client
 
 
+def canonical_group_specs(*, replay: bool = False) -> tuple[GroupSpec, ...]:
+    raw = N.get_group_specs(replay=replay)
+    out: list[GroupSpec] = []
+    for stream, groups in raw.items():
+        for group in groups:
+            out.append(GroupSpec(stream=str(stream), group=str(group)))
+    return tuple(out)
+
+
 def create_group(client: redis.Redis, spec: GroupSpec, start_id: str, verbose: bool) -> str:
     try:
         client.xgroup_create(name=spec.stream, groupname=spec.group, id=start_id, mkstream=True)
@@ -148,8 +125,8 @@ def create_group(client: redis.Redis, spec: GroupSpec, start_id: str, verbose: b
         raise
 
 
-def list_specs() -> None:
-    for spec in LIVE_GROUP_SPECS:
+def list_specs(*, replay: bool = False) -> None:
+    for spec in canonical_group_specs(replay=replay):
         print(f"{spec.stream} -> {spec.group}")
 
 
@@ -174,7 +151,7 @@ def run(specs: Iterable[GroupSpec], start_id: str, verbose: bool) -> int:
     return 0
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Bootstrap canonical ScalpX MME Redis consumer groups."
     )
@@ -182,6 +159,11 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
         "--start-id",
         default="0",
         help="Consumer-group start ID. Use '0' for historical replayable consumption or '$' for only new entries.",
+    )
+    parser.add_argument(
+        "--replay",
+        action="store_true",
+        help="Bootstrap replay consumer groups from names.get_group_specs(replay=True).",
     )
     parser.add_argument(
         "--list",
@@ -196,11 +178,11 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
 
     if args.list:
-        list_specs()
+        list_specs(replay=bool(args.replay))
         return 0
 
     start_id = args.start_id.strip()
@@ -208,7 +190,7 @@ def main(argv: List[str] | None = None) -> int:
         raise RuntimeError("--start-id must not be empty")
 
     return run(
-        specs=LIVE_GROUP_SPECS,
+        specs=canonical_group_specs(replay=bool(args.replay)),
         start_id=start_id,
         verbose=not args.quiet,
     )

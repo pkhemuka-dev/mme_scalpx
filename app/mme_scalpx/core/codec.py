@@ -39,10 +39,11 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 import types
 from dataclasses import MISSING, fields, is_dataclass
 from datetime import date, datetime
-from typing import Any, Final, Mapping, TypeVar, get_args, get_origin
+from typing import Any, Final, Mapping, TypeVar, get_args, get_origin, get_type_hints
 
 from . import names
 from .models import (
@@ -209,6 +210,23 @@ def _model_type_name(model: SchemaBase) -> str:
         )
     return model_type.strip()
 
+
+
+def _resolved_type_hints(model_cls: type[SchemaBase]) -> dict[str, Any]:
+    """Resolve postponed annotations for dataclass model fields.
+
+    The project uses from __future__ import annotations, so dataclass field.type
+    may be a string. Hash/event helpers must validate real annotations, not
+    unresolved strings.
+    """
+    try:
+        module = sys.modules.get(model_cls.__module__)
+        module_ns = vars(module) if module is not None else None
+        return get_type_hints(model_cls, globalns=module_ns, localns=module_ns)
+    except Exception as exc:
+        raise CodecError(
+            f"Failed to resolve type hints for {model_cls.__name__}: {exc}"
+        ) from exc
 
 def _is_union_type(origin: Any) -> bool:
     return origin in (types.UnionType, getattr(__import__("typing"), "Union", None))
@@ -553,6 +571,21 @@ def decode_model_from_envelope(
     )
     return model_from_type(decoded.envelope_type, decoded.payload)
 
+def decode_model_from_envelope_as(
+    model_cls: type[T],
+    envelope: EventEnvelope | Mapping[str, Any],
+) -> T:
+    """Decode envelope and require the expected SchemaBase subclass."""
+    if not isinstance(model_cls, type) or not issubclass(model_cls, SchemaBase):
+        raise CodecError("model_cls must be a SchemaBase subclass")
+
+    model = decode_model_from_envelope(envelope)
+    if not isinstance(model, model_cls):
+        raise CodecError(
+            f"Envelope decoded to {type(model).__name__}, expected {model_cls.__name__}"
+        )
+    return model
+
 
 def decode_model_from_envelope_json(raw: str | bytes | bytearray) -> SchemaBase:
     """
@@ -607,7 +640,11 @@ def decode_event_payload(data: Mapping[str, Any], model_cls: type[T]) -> T:
 
     source = _require_mapping(data, field_name="data")
 
-    model_fields = {dc_field.name: dc_field.type for dc_field in fields(model_cls)}
+    type_hints = _resolved_type_hints(model_cls)
+    model_fields = {
+        dc_field.name: type_hints.get(dc_field.name, dc_field.type)
+        for dc_field in fields(model_cls)
+    }
     decoded_data: dict[str, Any] = {}
 
     for field_name, annotation in model_fields.items():
@@ -738,10 +775,11 @@ def encode_hash_fields(model: SchemaBase) -> dict[str, str]:
         )
 
     model_cls = model.__class__
+    type_hints = _resolved_type_hints(model_cls)
     encoded: dict[str, str] = {}
 
     for dc_field in fields(model_cls):
-        annotation = dc_field.type
+        annotation = type_hints.get(dc_field.name, dc_field.type)
         if not _is_supported_hash_scalar_annotation(annotation):
             raise HashCodecError(
                 f"{model_cls.__name__}.{dc_field.name} is not hash-safe; "
@@ -768,10 +806,11 @@ def decode_hash_fields(model_cls: type[T], raw: Mapping[str, Any]) -> T:
         raise HashCodecError(str(exc)) from exc
 
     kwargs: dict[str, Any] = {}
+    type_hints = _resolved_type_hints(model_cls)
 
     for dc_field in fields(model_cls):
         field_name = dc_field.name
-        annotation = dc_field.type
+        annotation = type_hints.get(field_name, dc_field.type)
 
         if not _is_supported_hash_scalar_annotation(annotation):
             raise HashCodecError(
@@ -839,6 +878,7 @@ __all__ = [
     "decode_hash_fields",
     "decode_hash_model",
     "decode_model_from_envelope",
+    "decode_model_from_envelope_as",
     "decode_model_from_envelope_json",
     "decode_model_payload",
     "decode_optional_field",
@@ -853,3 +893,208 @@ __all__ = [
     "model_to_envelope_dict",
     "model_to_envelope_json",
 ]
+
+# ===== BATCH18_CORE_INFRA_SPINE_FREEZE START =====
+# Batch 18 freeze-final guard:
+# codec.py remains the serialization owner. These overrides preserve existing
+# wire format while making hash/event dataclass helpers safe under
+# `from __future__ import annotations`.
+
+import sys as _batch18_sys
+from dataclasses import MISSING as _batch18_MISSING, fields as _batch18_fields
+from typing import Any as _batch18_Any
+from typing import Mapping as _batch18_Mapping
+from typing import get_type_hints as _batch18_get_type_hints
+
+
+def _batch18_resolved_type_hints(model_cls: type) -> dict[str, _batch18_Any]:
+    module = _batch18_sys.modules.get(getattr(model_cls, "__module__", ""))
+    globalns = vars(module) if module is not None else {}
+    try:
+        return dict(_batch18_get_type_hints(model_cls, globalns=globalns, localns=dict(vars(model_cls))))
+    except Exception:
+        return {}
+
+
+def _batch18_require_schema_model_cls(model_cls: type, *, error_cls: type[Exception]) -> None:
+    schema_base = globals().get("SchemaBase")
+    if schema_base is None or not isinstance(model_cls, type) or not issubclass(model_cls, schema_base):
+        raise error_cls("model_cls must be a SchemaBase subclass")
+
+
+def _batch18_require_schema_model(model: object, *, error_cls: type[Exception]) -> None:
+    schema_base = globals().get("SchemaBase")
+    if schema_base is None or not isinstance(model, schema_base):
+        raise error_cls("model must be a SchemaBase instance")
+
+
+def _batch18_default_factory_is_missing(dc_field: object) -> bool:
+    return getattr(dc_field, "default_factory", _batch18_MISSING) is _batch18_MISSING
+
+
+def _batch18_decode_event_field_value(
+    annotation: _batch18_Any,
+    value: _batch18_Any,
+    *,
+    model_cls: type,
+    field_name: str,
+) -> _batch18_Any:
+    """
+    Compatibility shim for the existing codec.decode_optional_field() API.
+
+    Current codec.py shape is:
+        decode_optional_field(annotation, data, field_name)
+
+    The data argument must be the source mapping, and field_name must be the
+    actual key inside that mapping. Do not pass the scalar value directly.
+    """
+
+    try:
+        return decode_optional_field(
+            annotation,
+            {field_name: value},
+            field_name=field_name,
+        )
+    except Exception as exc:
+        raise CodecError(
+            f"Failed to decode {model_cls.__name__}.{field_name}: {exc}"
+        ) from exc
+
+
+def decode_model_from_envelope_as(model_cls: type[T], envelope: EventEnvelope | _batch18_Mapping[str, _batch18_Any]) -> T:
+    model = decode_model_from_envelope(envelope)
+    if not isinstance(model, model_cls):
+        raise CodecError(
+            f"Envelope decoded to {type(model).__name__}, expected {model_cls.__name__}"
+        )
+    return model
+
+
+def decode_event_payload(data: _batch18_Mapping[str, _batch18_Any], model_cls: type[T]) -> T:
+    _batch18_require_schema_model_cls(model_cls, error_cls=CodecError)
+
+    try:
+        source = _require_mapping(data, field_name="data")
+    except Exception:
+        try:
+            source = require_mapping(data, field_name="data")
+        except Exception as exc:
+            raise CodecError(str(exc)) from exc
+
+    type_hints = _batch18_resolved_type_hints(model_cls)
+    kwargs: dict[str, _batch18_Any] = {}
+
+    for dc_field in _batch18_fields(model_cls):
+        field_name = dc_field.name
+        annotation = type_hints.get(field_name, dc_field.type)
+
+        if field_name not in source:
+            if dc_field.default is not _batch18_MISSING:
+                continue
+            if not _batch18_default_factory_is_missing(dc_field):
+                continue
+            if _is_optional_annotation(annotation):
+                kwargs[field_name] = None
+                continue
+            raise CodecError(f"Missing required field: {field_name}")
+
+        try:
+            kwargs[field_name] = _batch18_decode_event_field_value(
+                annotation,
+                source[field_name],
+                model_cls=model_cls,
+                field_name=field_name,
+            )
+        except Exception as exc:
+            raise CodecError(str(exc)) from exc
+
+    try:
+        return model_cls(**kwargs)
+    except ModelValidationError as exc:
+        raise CodecError(
+            f"Decoded event payload is invalid for {model_cls.__name__}: {exc}"
+        ) from exc
+
+
+def encode_hash_fields(model: SchemaBase) -> dict[str, str]:
+    _batch18_require_schema_model(model, error_cls=HashCodecError)
+
+    model_cls = type(model)
+    type_hints = _batch18_resolved_type_hints(model_cls)
+    encoded: dict[str, str] = {}
+
+    for dc_field in _batch18_fields(model):
+        field_name = dc_field.name
+        annotation = type_hints.get(field_name, dc_field.type)
+
+        if not _is_supported_hash_scalar_annotation(annotation):
+            raise HashCodecError(
+                f"{model_cls.__name__}.{field_name} is not hash-safe; "
+                f"use JSON/event transport for complex fields"
+            )
+
+        value = getattr(model, field_name)
+        encoded[field_name] = _encode_hash_scalar(
+            value,
+            field_name=f"{model_cls.__name__}.{field_name}",
+        )
+
+    return encoded
+
+
+def decode_hash_fields(model_cls: type[T], raw: _batch18_Mapping[str, _batch18_Any]) -> T:
+    _batch18_require_schema_model_cls(model_cls, error_cls=HashCodecError)
+
+    try:
+        source = _require_mapping(raw, field_name="raw")
+    except Exception:
+        try:
+            source = require_mapping(raw, field_name="raw")
+        except Exception as exc:
+            raise HashCodecError(str(exc)) from exc
+
+    type_hints = _batch18_resolved_type_hints(model_cls)
+    kwargs: dict[str, _batch18_Any] = {}
+
+    for dc_field in _batch18_fields(model_cls):
+        field_name = dc_field.name
+        annotation = type_hints.get(field_name, dc_field.type)
+
+        if not _is_supported_hash_scalar_annotation(annotation):
+            raise HashCodecError(
+                f"{model_cls.__name__}.{field_name} is not hash-safe; "
+                f"use JSON/event transport for complex fields"
+            )
+
+        if field_name not in source:
+            if dc_field.default is not _batch18_MISSING:
+                continue
+            if not _batch18_default_factory_is_missing(dc_field):
+                continue
+            if _is_optional_annotation(annotation):
+                kwargs[field_name] = None
+                continue
+            raise HashCodecError(
+                f"Missing required hash field for {model_cls.__name__}: {field_name}"
+            )
+
+        kwargs[field_name] = _decode_hash_scalar(
+            annotation,
+            source[field_name],
+            field_name=f"{model_cls.__name__}.{field_name}",
+        )
+
+    try:
+        return model_cls(**kwargs)
+    except ModelValidationError as exc:
+        raise HashCodecError(
+            f"Decoded hash fields are invalid for {model_cls.__name__}: {exc}"
+        ) from exc
+
+
+try:
+    if "decode_model_from_envelope_as" not in __all__:
+        __all__.append("decode_model_from_envelope_as")
+except Exception:
+    pass
+# ===== BATCH18_CORE_INFRA_SPINE_FREEZE END =====

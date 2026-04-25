@@ -1213,3 +1213,58 @@ __all__ = [
     "normalize_raw_market_payload",
     "normalize_zerodha_tick",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: provider token identity preservation
+# =============================================================================
+
+_BATCH17_NORMALIZER_PROVIDER_IDENTITY_VERSION = "1"
+
+
+def batch17_provider_identity_fields(
+    raw_payload: Mapping[str, Any],
+    *,
+    broker_name: str,
+    canonical_instrument_key: str | None = None,
+) -> dict[str, Any]:
+    raw = _mapping(raw_payload)
+    broker = str(broker_name or "").strip().upper()
+
+    zerodha_token = _first_present(
+        raw,
+        "instrument_token",
+        "exchange_token",
+        "token",
+        ("instrument", "instrument_token"),
+        default=None,
+    )
+    dhan_security_id = _first_present(
+        raw,
+        "security_id",
+        "securityId",
+        "dhan_security_id",
+        ("instrument", "security_id"),
+        default=None,
+    )
+
+    source_token = dhan_security_id if broker == "DHAN" else zerodha_token
+    if source_token is None:
+        source_token = _first_present(
+            raw,
+            "instrument_key",
+            "symbol_token",
+            "tradingsymbol",
+            default=None,
+        )
+
+    equivalence_status = "provider_token_present" if source_token is not None else "provider_token_missing"
+
+    return {
+        "source_provider_id": broker,
+        "source_provider_token": source_token,
+        "canonical_instrument_key": canonical_instrument_key,
+        "zerodha_instrument_token": zerodha_token,
+        "dhan_security_id": dhan_security_id,
+        "equivalence_status": equivalence_status,
+        "raw_payload_json": __import__("json").dumps(dict(raw), sort_keys=True, default=str),
+    }

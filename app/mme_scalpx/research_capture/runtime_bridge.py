@@ -428,3 +428,22 @@ __all__ = [
     "RuntimeBridgeResult",
     "run_seeded_runtime_bridge",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: contained atomic JSON writes
+# =============================================================================
+_BATCH17_ATOMIC_JSON_GUARD_VERSION = "1"
+
+from app.mme_scalpx.research_capture.utils import atomic_write_json as _batch17_atomic_write_json
+
+_BATCH17_ORIGINAL_WRITE_JSON = globals().get("_write_json")
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    _batch17_atomic_write_json(
+        path,
+        payload,
+        root=Path.cwd(),
+        label=f"{__name__}._write_json",
+    )
+
+_write_json._batch17_atomic = True

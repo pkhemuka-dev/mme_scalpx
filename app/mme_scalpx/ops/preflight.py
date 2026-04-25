@@ -259,19 +259,19 @@ def run_checks() -> List[CheckResult]:
 
     # Imports
     for module_name in (
-        "mme_scalpx.main",
-        "mme_scalpx.core.names",
-        "mme_scalpx.core.redisx",
-        "mme_scalpx.core.settings",
-        "mme_scalpx.services.feeds",
-        "mme_scalpx.services.features",
-        "mme_scalpx.services.strategy",
-        "mme_scalpx.services.execution",
-        "mme_scalpx.services.risk",
-        "mme_scalpx.services.monitor",
-        "mme_scalpx.services.report",
-        "mme_scalpx.domain.instruments",
-        "mme_scalpx.integrations.login",
+        "app.mme_scalpx.main",
+        "app.mme_scalpx.core.names",
+        "app.mme_scalpx.core.redisx",
+        "app.mme_scalpx.core.settings",
+        "app.mme_scalpx.services.feeds",
+        "app.mme_scalpx.services.features",
+        "app.mme_scalpx.services.strategy",
+        "app.mme_scalpx.services.execution",
+        "app.mme_scalpx.services.risk",
+        "app.mme_scalpx.services.monitor",
+        "app.mme_scalpx.services.report",
+        "app.mme_scalpx.domain.instruments",
+        "app.mme_scalpx.integrations.login",
     ):
         results.append(_import_check(module_name))
 

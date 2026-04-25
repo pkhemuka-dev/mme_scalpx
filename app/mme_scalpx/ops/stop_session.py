@@ -1,33 +1,23 @@
-"""
-app/mme_scalpx/ops/stop_session.py
-
-Frozen-grade shutdown orchestrator for ScalpX MME.
-
-Purpose
--------
-Perform deterministic session shutdown in a controlled order:
-
-1. optionally publish pause-trading command
-2. optionally publish force-flatten command
-3. optionally stop the canonical runtime via systemd
-4. optionally verify post-stop health snapshot
-
-Design rules
-------------
-- explicit launch mode; no hidden fallback behavior
-- shutdown commands are optional and operator-controlled
-- no ad hoc shell tricks
-- safe dry-run mode for command publication path
-"""
-
+#!/usr/bin/env python3
 from __future__ import annotations
+
+"""
+ops/stop_session.py
+
+Deterministic shutdown orchestrator for ScalpX MME.
+
+Batch 15 freeze rule
+--------------------
+CMD_SET_MODE accepts control modes only. execution-only mode is not a control mode and is
+not published by this tool.
+"""
 
 import argparse
 import os
 import shutil
 import subprocess
 import sys
-from typing import List, Optional
+from typing import Optional
 
 
 def _env(name: str, default: Optional[str] = None) -> Optional[str]:
@@ -45,17 +35,23 @@ def _python_executable() -> str:
     return "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python"
 
 
-def _run(cmd: List[str]) -> int:
+def _run(cmd: list[str]) -> int:
     print("RUN", " ".join(cmd))
     completed = subprocess.run(cmd, check=False)
     return int(completed.returncode)
 
 
-def _publish_command(command_type: str, *, reason: str | None = None, mode: str | None = None, dry_run: bool = False) -> None:
+def _publish_command(
+    command_type: str,
+    *,
+    reason: str | None = None,
+    mode: str | None = None,
+    dry_run: bool = False,
+) -> None:
     cmd = [
         _python_executable(),
         "-m",
-        "mme_scalpx.ops.ops_cmd",
+        "app.mme_scalpx.ops.ops_cmd",
         command_type,
     ]
     if reason:
@@ -106,7 +102,7 @@ def _run_healthcheck(strict: bool) -> None:
     cmd = [
         _python_executable(),
         "-m",
-        "mme_scalpx.ops.healthcheck",
+        "app.mme_scalpx.ops.healthcheck",
     ]
     if strict:
         cmd.append("--strict")
@@ -115,96 +111,46 @@ def _run_healthcheck(strict: bool) -> None:
         raise RuntimeError(f"healthcheck failed with exit code {rc}")
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Deterministic shutdown orchestrator for ScalpX MME."
     )
-
+    parser.add_argument("--systemd", action="store_true")
+    parser.add_argument("--pause-trading", action="store_true")
+    parser.add_argument("--force-flatten", action="store_true")
     parser.add_argument(
-        "--systemd",
+        "--set-safe-mode",
         action="store_true",
-        help="Stop the runtime through the systemd main unit.",
+        help="Publish SET_MODE SAFE before stopping.",
     )
-    parser.add_argument(
-        "--pause-trading",
-        action="store_true",
-        help="Publish PAUSE_TRADING before shutdown.",
-    )
-    parser.add_argument(
-        "--force-flatten",
-        action="store_true",
-        help="Publish FORCE_FLATTEN before shutdown.",
-    )
-    parser.add_argument(
-        "--set-exit-only",
-        action="store_true",
-        help="Publish SET_MODE EXIT_ONLY before shutdown.",
-    )
-    parser.add_argument(
-        "--reason",
-        default="session shutdown",
-        help="Reason attached to operator commands.",
-    )
-    parser.add_argument(
-        "--dry-run-commands",
-        action="store_true",
-        help="Dry-run command publication without writing to Redis.",
-    )
-    parser.add_argument(
-        "--healthcheck-after-stop",
-        action="store_true",
-        help="Run healthcheck after shutdown sequence.",
-    )
-    parser.add_argument(
-        "--strict-healthcheck",
-        action="store_true",
-        help="Treat post-stop healthcheck warnings as failures.",
-    )
-
+    parser.add_argument("--verify-health", action="store_true")
+    parser.add_argument("--strict-health", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--reason", default="operator_stop_session")
     return parser.parse_args(argv)
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
 
-    print("STOP_SESSION")
-    print(f"  systemd={int(args.systemd)}")
-    print(f"  pause_trading={int(args.pause_trading)}")
-    print(f"  set_exit_only={int(args.set_exit_only)}")
-    print(f"  force_flatten={int(args.force_flatten)}")
-    print(f"  dry_run_commands={int(args.dry_run_commands)}")
-    print(f"  healthcheck_after_stop={int(args.healthcheck_after_stop)}")
-    print(f"  strict_healthcheck={int(args.strict_healthcheck)}")
-
     if args.pause_trading:
-        _publish_command(
-            "PAUSE_TRADING",
-            reason=args.reason,
-            dry_run=args.dry_run_commands,
-        )
-
-    if args.set_exit_only:
-        _publish_command(
-            "SET_MODE",
-            reason=args.reason,
-            mode="EXIT_ONLY",
-            dry_run=args.dry_run_commands,
-        )
+        _publish_command("PAUSE_TRADING", reason=args.reason, dry_run=args.dry_run)
 
     if args.force_flatten:
-        _publish_command(
-            "FORCE_FLATTEN",
-            reason=args.reason,
-            dry_run=args.dry_run_commands,
-        )
+        _publish_command("FORCE_FLATTEN", reason=args.reason, dry_run=args.dry_run)
+
+    if args.set_safe_mode:
+        _publish_command("SET_MODE", mode="SAFE", reason=args.reason, dry_run=args.dry_run)
 
     if args.systemd:
-        _stop_via_systemd()
+        if args.dry_run:
+            print("DRY_RUN     systemd stop skipped")
+        else:
+            _stop_via_systemd()
 
-    if args.healthcheck_after_stop:
-        _run_healthcheck(strict=args.strict_healthcheck)
+    if args.verify_health:
+        _run_healthcheck(strict=bool(args.strict_health))
 
-    print("STOP_SESSION_DONE")
     return 0
 
 

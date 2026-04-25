@@ -994,7 +994,6 @@ class BaseBrokerAdapter:
         tag: str | None = None,
         extra_params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        transport = self._require_transport()
         payload = self._build_order_payload(
             tradingsymbol=tradingsymbol,
             exchange=exchange,
@@ -1009,6 +1008,7 @@ class BaseBrokerAdapter:
             tag=tag,
             extra_params=extra_params,
         )
+        transport = self._require_transport()
 
         try:
             raw = transport.place_order(

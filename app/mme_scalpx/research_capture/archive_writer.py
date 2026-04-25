@@ -496,3 +496,166 @@ __all__ = [
     "write_manifest_files",
     "write_session_bundle",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: session write lock for append/rewrite safety
+# =============================================================================
+
+_BATCH17_ARCHIVE_LOCK_VERSION = "1"
+
+import time as _batch17_time
+
+RESEARCH_CAPTURE_WRITE_LOCK_FILENAME = ".research_capture_write.lock"
+
+
+def _batch17_session_root_for_records(
+    records: Sequence[CaptureRecord],
+    *,
+    archive_root_relative: str,
+) -> Path | None:
+    if not records:
+        return None
+    session_date = records[0].timing.session_date
+    return _session_root_from_session_date(
+        session_date,
+        archive_root_relative=archive_root_relative,
+    )
+
+
+def acquire_session_write_lock(
+    session_root: str | Path,
+    *,
+    owner: str,
+) -> Path:
+    if not isinstance(owner, str) or not owner.strip():
+        raise ValueError("owner must be a non-empty string")
+    root = Path(session_root).resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    lock_path = root / RESEARCH_CAPTURE_WRITE_LOCK_FILENAME
+    payload = {
+        "owner": owner.strip(),
+        "write_epoch": str(int(_batch17_time.time_ns())),
+        "created_ns": str(int(_batch17_time.time_ns())),
+    }
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
+    try:
+        fd = os.open(lock_path, flags)
+    except FileExistsError as exc:
+        raise RuntimeError(f"research_capture session write lock already held: {lock_path}") from exc
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, sort_keys=True)
+        handle.write("\n")
+    return lock_path
+
+
+def release_session_write_lock(
+    session_root: str | Path,
+    *,
+    owner: str | None = None,
+) -> None:
+    lock_path = Path(session_root).resolve() / RESEARCH_CAPTURE_WRITE_LOCK_FILENAME
+    if not lock_path.exists():
+        return
+    if owner is not None:
+        try:
+            payload = json.loads(lock_path.read_text(encoding="utf-8"))
+        except Exception:
+            payload = {}
+        if payload.get("owner") not in (owner, None):
+            raise RuntimeError(
+                f"cannot release research_capture write lock owned by {payload.get('owner')!r}"
+            )
+    lock_path.unlink()
+
+
+def require_session_write_lock(
+    session_root: str | Path,
+    *,
+    owner: str | None = None,
+) -> Path:
+    lock_path = Path(session_root).resolve() / RESEARCH_CAPTURE_WRITE_LOCK_FILENAME
+    if not lock_path.exists():
+        raise RuntimeError(f"research_capture append/overwrite requires session write lock: {lock_path}")
+    if owner is not None:
+        try:
+            payload = json.loads(lock_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise RuntimeError(f"invalid research_capture write lock payload: {lock_path}") from exc
+        if payload.get("owner") != owner:
+            raise RuntimeError(
+                f"research_capture write lock owner mismatch: {payload.get('owner')!r} != {owner!r}"
+            )
+    return lock_path
+
+
+_BATCH17_ORIGINAL_WRITE_CAPTURE_RECORDS = write_capture_records
+
+
+def write_capture_records(
+    records: Sequence[CaptureRecord],
+    *,
+    archive_root_relative: str = ARCHIVE_ROOT_RELATIVE,
+    partition_columns: Sequence[str] | None = None,
+    write_mode: str = ARCHIVE_WRITE_MODE,
+    compression: str = ARCHIVE_COMPRESSION,
+):
+    session_root = _batch17_session_root_for_records(
+        records,
+        archive_root_relative=archive_root_relative,
+    )
+    if session_root is not None and str(write_mode).lower() in {"append", "overwrite", "overwrite_session"}:
+        require_session_write_lock(session_root)
+    return _BATCH17_ORIGINAL_WRITE_CAPTURE_RECORDS(
+        records,
+        archive_root_relative=archive_root_relative,
+        partition_columns=partition_columns,
+        write_mode=write_mode,
+        compression=compression,
+    )
+
+
+_BATCH17_ORIGINAL_WRITE_SESSION_BUNDLE = write_session_bundle
+
+
+def write_session_bundle(
+    *,
+    session_date: str,
+    records: Sequence[CaptureRecord],
+    archive_root_relative: str = ARCHIVE_ROOT_RELATIVE,
+    partition_columns: Sequence[str] | None = None,
+    write_mode: str = ARCHIVE_WRITE_MODE,
+    compression: str = ARCHIVE_COMPRESSION,
+    source_availability=None,
+    warnings: Sequence[str] = (),
+    errors: Sequence[str] = (),
+    status: str = "session_written",
+    notes: Sequence[str] = (),
+) -> ArchiveWriteResult:
+    session_root = _session_root_from_session_date(
+        session_date,
+        archive_root_relative=archive_root_relative,
+    )
+    owner = f"write_session_bundle:{os.getpid()}:{int(_batch17_time.time_ns())}"
+    acquired = False
+    lock_path = session_root / RESEARCH_CAPTURE_WRITE_LOCK_FILENAME
+    if not lock_path.exists() and str(write_mode).lower() in {"append", "overwrite", "overwrite_session"}:
+        acquire_session_write_lock(session_root, owner=owner)
+        acquired = True
+    try:
+        result = _BATCH17_ORIGINAL_WRITE_SESSION_BUNDLE(
+            session_date=session_date,
+            records=records,
+            archive_root_relative=archive_root_relative,
+            partition_columns=partition_columns,
+            write_mode=write_mode,
+            compression=compression,
+            source_availability=source_availability,
+            warnings=warnings,
+            errors=errors,
+            status=status,
+            notes=tuple(notes) + (f"write_mode={write_mode}",),
+        )
+        return result
+    finally:
+        if acquired:
+            release_session_write_lock(session_root, owner=owner)

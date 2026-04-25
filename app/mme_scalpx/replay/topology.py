@@ -375,3 +375,20 @@ __all__ = [
     "topology_plan_to_dict",
     "stage_definition_to_dict",
 ]
+
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS START =====
+# Batch 16 freeze-final guard:
+# Machine-readable topology safety report proving shadow execution only.
+
+def topology_replay_safety_report(plan: ReplayTopologyPlan) -> dict[str, Any]:
+    stage_names = tuple(plan.stage_names)
+    live_execution_present = "execution" in stage_names
+    execution_shadow_present = STAGE_EXECUTION_SHADOW in stage_names
+    return {
+        "scope": plan.scope.value,
+        "stage_names": list(stage_names),
+        "execution_shadow_present": execution_shadow_present,
+        "live_execution_stage_present": live_execution_present,
+        "safe_for_replay": not live_execution_present,
+    }
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====

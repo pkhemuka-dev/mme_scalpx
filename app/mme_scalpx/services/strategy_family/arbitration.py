@@ -387,3 +387,30 @@ __all__ = [
     "rank_candidates",
     "select_best_candidate",
 ]
+
+# =============================================================================
+# Batch 11 freeze hardening: activation/arbitration priority semantics
+# =============================================================================
+#
+# Family leaves and activation treat priority as a score: higher is better.
+# Keep deterministic tie-breaks unchanged after priority/score.
+
+_BATCH11_ARBITRATION_PRIORITY_SEMANTICS = "higher_priority_is_better"
+
+
+def _sort_key(
+    item: RankedCandidate,
+) -> tuple[float, float, int, int, str, str, str, str, str, str, str]:
+    return (
+        -item.effective_priority,
+        -item.effective_score,
+        item.family_rank,
+        item.branch_rank,
+        item.doctrine_id,
+        item.entry_mode,
+        item.setup_kind,
+        item.instrument_key,
+        item.source_event_id,
+        item.trap_event_id,
+        item.burst_event_id,
+    )

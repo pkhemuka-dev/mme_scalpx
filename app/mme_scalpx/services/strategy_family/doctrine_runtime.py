@@ -712,3 +712,51 @@ __all__ = [
     "candidate_result",
     "no_signal_result",
 ]
+
+# =============================================================================
+# Batch 11 freeze hardening: plain dict conversion for slots dataclasses
+# =============================================================================
+
+_BATCH11_RUNTIME_TO_DICT_VERSION = "1"
+
+
+def _batch11_plain_value(value: Any) -> Any:
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        return value
+    if isinstance(value, Mapping):
+        return {str(k): _batch11_plain_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_batch11_plain_value(v) for v in value]
+    if isinstance(value, frozenset) or isinstance(value, set):
+        return sorted(_batch11_plain_value(v) for v in value)
+    if hasattr(value, "to_dict") and callable(value.to_dict):
+        return _batch11_plain_value(value.to_dict())
+    if hasattr(value, "__dataclass_fields__"):
+        return {
+            str(name): _batch11_plain_value(getattr(value, name))
+            for name in value.__dataclass_fields__.keys()
+        }
+    return str(value)
+
+
+def _batch11_dataclass_to_dict(self: Any) -> dict[str, Any]:
+    return {
+        str(name): _batch11_plain_value(getattr(self, name))
+        for name in self.__dataclass_fields__.keys()
+    }
+
+
+for _batch11_cls in (
+    ProviderTruthView,
+    RiskGateView,
+    PositionTruthView,
+    DoctrineBlocker,
+    DoctrineSignalCandidate,
+    DoctrineActionRequest,
+    DoctrineEvaluationResult,
+    DoctrineRuntimeInput,
+):
+    if not hasattr(_batch11_cls, "to_dict"):
+        setattr(_batch11_cls, "to_dict", _batch11_dataclass_to_dict)

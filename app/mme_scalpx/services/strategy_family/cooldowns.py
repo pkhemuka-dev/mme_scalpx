@@ -666,3 +666,20 @@ __all__ = [
     "SCOPE_SESSION_RESET",
     "route_cooldown",
 ]
+
+# =============================================================================
+# Batch 11 freeze hardening: MISR v1.7 cooldown defaults
+# =============================================================================
+
+_BATCH11_MISR_COOLDOWN_DEFAULTS_VERSION = "1"
+
+if N.STRATEGY_FAMILY_MISR in _DEFAULT_BY_FAMILY_AND_BUCKET:
+    _DEFAULT_BY_FAMILY_AND_BUCKET[N.STRATEGY_FAMILY_MISR].update(
+        {
+            "PROOF_FAIL": 10.0,
+            "LIQUIDITY": 12.0,
+            "FEED_FAIL": 15.0,
+            "RECONCILIATION": 15.0,
+            "SESSION_RESET": 0.0,
+        }
+    )

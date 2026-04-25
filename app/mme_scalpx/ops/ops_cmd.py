@@ -1,26 +1,23 @@
-"""
-app/mme_scalpx/ops/ops_cmd.py
-
-Frozen-grade operator command publisher for ScalpX MME.
-
-Purpose
--------
-Publish canonical operator/runtime control commands to STREAM_CMD_MME using:
-- names.py command constants
-- models.py OperatorCommand
-- codec.py model_to_envelope_dict()
-
-Design rules
-------------
-- Canonical stream only.
-- Canonical typed model only.
-- Canonical envelope encoding only.
-- No ad hoc raw Redis payload schema.
-- Safe dry-run mode.
-- Explicit operator intent and correlation id.
-"""
-
+#!/usr/bin/env python3
 from __future__ import annotations
+
+"""
+ops/ops_cmd.py
+
+Raw runtime command publisher for ScalpX MME.
+
+Batch 15 freeze rule
+--------------------
+Runtime control commands on STREAM_CMD_MME use raw fields consumed by runtime
+services:
+
+    cmd=<canonical command>
+    mode=<canonical control mode, for SET_MODE>
+    reason=<operator reason>
+
+This intentionally does not publish an OperatorCommand envelope until all
+runtime consumers decode envelopes explicitly.
+"""
 
 import argparse
 import json
@@ -28,25 +25,30 @@ import os
 import sys
 import time
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 import redis
 
-from mme_scalpx.core import names
-from mme_scalpx.core.codec import model_to_envelope_dict
-from mme_scalpx.core.models import OperatorCommand
+from app.mme_scalpx.core import names as N
 
 
 ALLOWED_COMMANDS = (
-    names.CMD_PARAMS_RELOAD,
-    names.CMD_PAUSE_TRADING,
-    names.CMD_RESUME_TRADING,
-    names.CMD_FORCE_FLATTEN,
-    names.CMD_SET_MODE,
+    N.CMD_PARAMS_RELOAD,
+    N.CMD_PAUSE_TRADING,
+    N.CMD_RESUME_TRADING,
+    N.CMD_FORCE_FLATTEN,
+    N.CMD_SET_MODE,
+)
+
+ALLOWED_CONTROL_MODES = (
+    N.CONTROL_MODE_NORMAL,
+    N.CONTROL_MODE_SAFE,
+    N.CONTROL_MODE_REPLAY,
+    N.CONTROL_MODE_DISABLED,
 )
 
 
-def _env(name: str, default: Optional[str] = None) -> Optional[str]:
+def _env(name: str, default: str | None = None) -> str | None:
     value = os.getenv(name, default)
     if value is None:
         return None
@@ -133,77 +135,64 @@ def _parse_set_pairs(items: list[str]) -> dict[str, Any]:
     return out
 
 
-def _build_command(
+def _build_command_fields(
     *,
     command_type: str,
     producer: str,
     reason: str | None,
     mode: str | None,
     params: dict[str, Any],
-) -> OperatorCommand:
-    ts_event_ns = time.time_ns()
+) -> dict[str, str]:
+    cmd = str(command_type).strip().upper()
+    if cmd not in ALLOWED_COMMANDS:
+        raise RuntimeError(f"unsupported command: {cmd!r}")
+
+    if cmd == N.CMD_SET_MODE:
+        resolved_mode = str(mode or "").strip().upper()
+        if resolved_mode not in ALLOWED_CONTROL_MODES:
+            raise RuntimeError(
+                f"SET_MODE requires mode in {ALLOWED_CONTROL_MODES}, got {resolved_mode!r}"
+            )
+    else:
+        resolved_mode = ""
+
+    ts_ns = time.time_ns()
     correlation_id = str(uuid.uuid4())
 
-    return OperatorCommand(
-        command_type=command_type,
-        ts_event_ns=ts_event_ns,
-        producer=producer,
-        correlation_id=correlation_id,
-        mode=mode,
-        reason=reason,
-        params=params,
-    )
+    fields: dict[str, str] = {
+        "ts_ns": str(ts_ns),
+        "ts_event_ns": str(ts_ns),
+        "cmd": cmd,
+        "command_type": cmd,
+        "producer": producer,
+        "service_name": "ops_cmd",
+        "correlation_id": correlation_id,
+    }
 
+    if reason:
+        fields["reason"] = reason
+    if resolved_mode:
+        fields["mode"] = resolved_mode
+    if params:
+        fields["params_json"] = json.dumps(params, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        for key, value in params.items():
+            key_text = str(key).strip()
+            if key_text and key_text not in fields:
+                fields[key_text] = str(value)
 
-def _encode_command(command: OperatorCommand) -> dict[str, str]:
-    return model_to_envelope_dict(
-        command,
-        ts_event_ns=command.ts_event_ns,
-        ts_ingest_ns=time.time_ns(),
-        producer=command.producer,
-        correlation_id=command.correlation_id,
-        stream=names.STREAM_CMD_MME,
-        replay=False,
-        schema_version=names.DEFAULT_SCHEMA_VERSION,
-    )
+    return fields
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Publish a canonical operator command to STREAM_CMD_MME."
+        description="Publish a raw canonical operator command to STREAM_CMD_MME."
     )
-    parser.add_argument(
-        "command_type",
-        choices=ALLOWED_COMMANDS,
-        help="Canonical command type.",
-    )
-    parser.add_argument(
-        "--reason",
-        default=None,
-        help="Optional operator reason/message.",
-    )
-    parser.add_argument(
-        "--mode",
-        default=None,
-        help="Required for CMD_SET_MODE; ignored otherwise.",
-    )
-    parser.add_argument(
-        "--producer",
-        default="ops_cmd",
-        help="Producer label embedded in envelope and command payload.",
-    )
-    parser.add_argument(
-        "--set",
-        dest="set_items",
-        action="append",
-        default=[],
-        help="Extra params entry in key=value form. May be supplied multiple times.",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print encoded envelope fields without writing to Redis.",
-    )
+    parser.add_argument("command_type", choices=ALLOWED_COMMANDS)
+    parser.add_argument("--reason", default=None)
+    parser.add_argument("--mode", default=None)
+    parser.add_argument("--producer", default="ops_cmd")
+    parser.add_argument("--set", dest="set_items", action="append", default=[])
+    parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -215,19 +204,18 @@ def main(argv: list[str] | None = None) -> int:
     reason = args.reason.strip() if args.reason is not None else None
     producer = args.producer.strip()
 
-    command = _build_command(
+    fields = _build_command_fields(
         command_type=args.command_type,
         producer=producer,
         reason=reason,
         mode=mode,
         params=params,
     )
-    fields = _encode_command(command)
 
-    print(f"STREAM      {names.STREAM_CMD_MME}")
-    print(f"TYPE        {command.command_type}")
-    print(f"PRODUCER    {command.producer}")
-    print(f"CORRELATION {command.correlation_id}")
+    print(f"STREAM      {N.STREAM_CMD_MME}")
+    print(f"TYPE        {fields['cmd']}")
+    print(f"PRODUCER    {fields['producer']}")
+    print(f"CORRELATION {fields['correlation_id']}")
     print("FIELDS")
     for key in sorted(fields.keys()):
         print(f"  {key}={fields[key]}")
@@ -237,8 +225,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     client = _redis_client()
-    entry_id = client.xadd(names.STREAM_CMD_MME, fields=fields)
-    print(f"PUBLISHED   stream={names.STREAM_CMD_MME} id={entry_id}")
+    entry_id = client.xadd(N.STREAM_CMD_MME, fields=fields)
+    print(f"PUBLISHED   stream={N.STREAM_CMD_MME} id={entry_id}")
     return 0
 
 

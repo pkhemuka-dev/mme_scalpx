@@ -682,3 +682,63 @@ def read_capture_report_dir(report_dir):
 def load_capture_report_dir(report_dir):
     return read_capture_report(report_dir)
 # RC_CANONICAL_PUBLIC_READER_ENTRYPOINTS_END
+
+# =============================================================================
+# Batch 17 freeze hardening: manifest-led dataset file trust
+# =============================================================================
+
+_BATCH17_READER_MANIFEST_TRUTH_VERSION = "1"
+
+from app.mme_scalpx.research_capture.utils import ensure_path_within_root as _batch17_ensure_path_within_root
+
+_BATCH17_ORIGINAL_SESSION_ROOT = _session_root
+
+
+def _session_root(session_date: str, *, archive_root_relative: str = ARCHIVE_ROOT_RELATIVE) -> Path:
+    archive_root = Path(archive_root_relative).resolve()
+    root = _BATCH17_ORIGINAL_SESSION_ROOT(
+        session_date,
+        archive_root_relative=archive_root_relative,
+    ).resolve()
+    return _batch17_ensure_path_within_root(root, archive_root, label="reader.session_root")
+
+
+def batch17_manifest_declared_dataset_files(
+    manifest: CaptureSessionManifest,
+    *,
+    session_root: str | Path,
+) -> Mapping[str, tuple[str, ...]]:
+    root = Path(session_root).resolve()
+    trusted: dict[str, tuple[str, ...]] = {}
+
+    for output in manifest.archive_outputs:
+        file_name = output.file_name or ARCHIVE_OUTPUT_FILENAMES[output.dataset.value]
+        matches = tuple(
+            sorted(
+                str(_batch17_ensure_path_within_root(path, root, label=f"reader.manifest_file[{output.dataset.value}]"))
+                for path in root.rglob(file_name)
+                if path.is_file()
+            )
+        )
+        trusted[output.dataset.value] = matches
+
+    return MappingProxyType(trusted)
+
+
+def batch17_extra_unmanifested_parquet_files(
+    manifest: CaptureSessionManifest,
+    *,
+    session_root: str | Path,
+) -> tuple[str, ...]:
+    root = Path(session_root).resolve()
+    trusted_paths = {
+        path
+        for paths in batch17_manifest_declared_dataset_files(manifest, session_root=root).values()
+        for path in paths
+    }
+    extras = []
+    for path in root.rglob("*.parquet"):
+        resolved = str(_batch17_ensure_path_within_root(path, root, label="reader.extra_parquet"))
+        if resolved not in trusted_paths:
+            extras.append(resolved)
+    return tuple(sorted(extras))

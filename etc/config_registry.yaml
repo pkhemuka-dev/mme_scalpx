@@ -1,0 +1,133 @@
+# ScalpX MME configuration registry
+# Batch 20 freeze-final governance surface.
+#
+# Purpose:
+# - classify active/reference/quarantined config surfaces;
+# - prevent legacy or placeholder files from silently becoming runtime truth;
+# - preserve legacy replay/rollback evidence without allowing live activation.
+
+registry_version: 1
+owner: mme_scalpx_integration_freeze
+updated_by_batch: batch20_legacy_quarantine
+
+status_values:
+  - ACTIVE
+  - ACTIVE_GENERIC_TUNABLES_ONLY
+  - REFERENCE_BASELINE
+  - QUARANTINED_REFERENCE
+  - QUARANTINED_PLACEHOLDER
+  - FUTURE_POLICY
+  - HISTORICAL_REFERENCE
+  - DISABLED
+
+runtime_law:
+  canonical_runtime_services:
+    - feeds
+    - features
+    - strategy
+    - execution
+    - risk
+    - monitor
+    - report
+  legacy_runtime_activation_allowed: false
+  runtime_load_requires_service_registry: true
+  forbidden_runtime_paths_are_enforced_by_main: true
+
+configs:
+  etc/runtime.yaml:
+    status: ACTIVE
+    owner: main_settings_runtime_truth
+    runtime_load_allowed: true
+    note: >
+      Runtime YAML is observed/proof-reported. If runtime.yaml is not authoritative
+      in current main.py behavior, proof_runtime_effective_config.py must show the
+      actual source of truth explicitly.
+
+  etc/params_mme.yaml:
+    status: ACTIVE_GENERIC_TUNABLES_ONLY
+    owner: runtime_tuning
+    runtime_load_allowed: conditional
+    not_doctrine_source: true
+    note: >
+      Must not be treated as frozen MIST/MISB/MISC/MISR/MISO doctrine source.
+
+  etc/risk_limits.yaml:
+    status: ACTIVE
+    owner: risk_service
+    runtime_load_allowed: conditional
+    note: >
+      Active sections must be reconciled by proof_risk_effective_config.py.
+
+  etc/execution.yaml:
+    status: ACTIVE
+    owner: execution_service
+    runtime_load_allowed: conditional
+    note: >
+      Entry order policy must be reconciled with StrategyOrderIntent and
+      proof_execution_family_entry_safety.py.
+
+  etc/symbols.yaml:
+    status: ACTIVE
+    owner: domain_instruments
+    runtime_load_allowed: conditional
+    note: >
+      Must expose expiry policy or instrument-master-only policy. Provider
+      equivalence must be proven separately.
+
+legacy_configs:
+  etc/strategy_family/frozen/legacy_single.yaml:
+    status: REFERENCE_BASELINE
+    runtime_load_allowed: false
+    replay_load_allowed: true
+    owner: strategy_family_migration
+    required_for: legacy_replay_baseline
+    note: Legacy single-strategy baseline reference only.
+
+  etc/strategy_family/frozen/legacy_single_v1_2.yaml:
+    status: REFERENCE_BASELINE
+    runtime_load_allowed: false
+    replay_load_allowed: true
+    owner: strategy_family_migration
+    required_for: legacy_replay_baseline
+    note: Preferred legacy baseline filename if present.
+
+  etc/strategy_family/rollout/legacy_live_family_shadow.yaml:
+    status: QUARANTINED_REFERENCE
+    runtime_load_allowed: false
+    replay_load_allowed: true
+    owner: strategy_family_rollout
+    note: >
+      Historical rollout reference unless explicitly re-enabled by a later
+      proof-backed rollout patch.
+
+  etc/strategy_family/rollout/family_live_legacy_shadow.yaml:
+    status: QUARANTINED_REFERENCE
+    runtime_load_allowed: false
+    replay_load_allowed: true
+    owner: strategy_family_rollout
+
+  etc/strategy_family/rollout/family_live_only.yaml:
+    status: FUTURE_POLICY
+    runtime_load_allowed: false
+    replay_load_allowed: false
+    owner: strategy_family_rollout
+
+placeholder_policy:
+  zero_byte_active_config_allowed: false
+  zero_byte_placeholder_allowed_only_if_classified: true
+  placeholder_runtime_load_allowed: false
+
+legacy_modules:
+  app/mme_scalpx/services/features_legacy_single.py:
+    status: REFERENCE_BASELINE
+    runtime_service_allowed: false
+    replay_allowed: true
+    shadow_comparison_allowed: true
+    must_be_forbidden_in_main: true
+
+  app/mme_scalpx/services/strategy_legacy_single.py:
+    status: REFERENCE_BASELINE
+    runtime_service_allowed: false
+    replay_allowed: true
+    shadow_comparison_allowed: true
+    must_be_forbidden_in_main: true

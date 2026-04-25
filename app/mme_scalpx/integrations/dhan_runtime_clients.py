@@ -936,7 +936,15 @@ class DhanFullFeedPollingAdapter:
 class DhanContextPollingAdapter:
     """
     feeds.py-compatible polling adapter for Dhan option-chain context.
-    Returns a single context-style item per poll when successful.
+
+    Stabilization contract
+    ----------------------
+    - Dhan option-chain context is an enhancement/context lane.
+    - It must not be hammered every feed loop.
+    - Last-good context may be reused during minimum-poll interval/backoff.
+    - Runtime must degrade gracefully when /optionchain is throttled/unavailable.
+    - This adapter performs no Redis writes, no provider failover, and no
+      strategy decisions.
     """
 
     def __init__(
@@ -944,19 +952,49 @@ class DhanContextPollingAdapter:
         *,
         client: DhanOptionChainContextClient,
         runtime_instruments: Any,
+        min_poll_interval_sec: float = 3.0,
+        stale_after_sec: float = 20.0,
+        backoff_base_sec: float = 5.0,
+        backoff_max_sec: float = 60.0,
+        emit_cached_during_backoff: bool = True,
     ) -> None:
         self._client = client
         self._runtime_instruments = runtime_instruments
+        self._min_poll_interval_sec = max(0.0, float(min_poll_interval_sec))
+        self._stale_after_sec = max(1.0, float(stale_after_sec))
+        self._backoff_base_sec = max(1.0, float(backoff_base_sec))
+        self._backoff_max_sec = max(self._backoff_base_sec, float(backoff_max_sec))
+        self._emit_cached_during_backoff = bool(emit_cached_during_backoff)
+
+        self._last_fetch_monotonic = 0.0
+        self._last_success_monotonic = 0.0
+        self._backoff_until_monotonic = 0.0
+        self._last_good_item: dict[str, Any] | None = None
+        self._consecutive_failures = 0
+        self._last_error = ""
+        self._last_error_kind = ""
 
     def info(self) -> dict[str, Any]:
+        now = time.monotonic()
         return {
             "adapter_name": self.__class__.__name__,
             "provider_id": "DHAN",
             "mode": "OPTIONCHAIN_CONTEXT_POLL",
+            "min_poll_interval_sec": self._min_poll_interval_sec,
+            "stale_after_sec": self._stale_after_sec,
+            "backoff_base_sec": self._backoff_base_sec,
+            "backoff_max_sec": self._backoff_max_sec,
+            "backoff_active": now < self._backoff_until_monotonic,
+            "consecutive_failures": self._consecutive_failures,
+            "last_error_kind": self._last_error_kind,
+            "has_cached_context": self._last_good_item is not None,
+            "cache_age_sec": self._cache_age_sec(now),
         }
 
     def health(self) -> dict[str, Any]:
-        return self.info()
+        payload = self.info()
+        payload["last_error"] = self._last_error
+        return payload
 
     @staticmethod
     def _contract_key(contract: Any) -> str:
@@ -978,16 +1016,85 @@ class DhanContextPollingAdapter:
         val = side_block.get("last_price")
         return _as_float(val)
 
-    def poll(self) -> list[dict[str, Any]]:
-        try:
-            snap = self._client.fetch_chain_snapshot()
-        except Exception:
-            return []
+    @staticmethod
+    def _classify_error(exc: Exception) -> str:
+        text = str(exc).lower()
+        if "429" in text or "rate" in text or "throttl" in text or "too many" in text:
+            return "RATE_LIMITED"
+        if "timeout" in text or "timed out" in text:
+            return "TIMEOUT"
+        if "unauthor" in text or "forbidden" in text or "401" in text or "403" in text:
+            return "AUTH_OR_PERMISSION"
+        return "UNAVAILABLE"
 
+    def _cache_age_sec(self, now: float | None = None) -> float | None:
+        if self._last_good_item is None or self._last_success_monotonic <= 0:
+            return None
+        now = time.monotonic() if now is None else now
+        return max(0.0, now - self._last_success_monotonic)
+
+    def _backoff_delay_sec(self) -> float:
+        multiplier = 2 ** min(max(self._consecutive_failures - 1, 0), 6)
+        return min(self._backoff_max_sec, self._backoff_base_sec * multiplier)
+
+    def _mark_failure(self, exc: Exception, *, now: float) -> None:
+        self._consecutive_failures += 1
+        self._last_error = str(exc) or exc.__class__.__name__
+        self._last_error_kind = self._classify_error(exc)
+        self._backoff_until_monotonic = now + self._backoff_delay_sec()
+
+    def _mark_success(self, *, now: float, item: dict[str, Any]) -> None:
+        self._last_success_monotonic = now
+        self._backoff_until_monotonic = 0.0
+        self._consecutive_failures = 0
+        self._last_error = ""
+        self._last_error_kind = ""
+        self._last_good_item = item
+
+    def _decorate_cached_item(
+        self,
+        item: Mapping[str, Any],
+        *,
+        now: float,
+        source: str,
+    ) -> dict[str, Any]:
+        out = dict(item)
+        payload_raw = out.get("payload")
+        payload = dict(payload_raw) if isinstance(payload_raw, Mapping) else {}
+
+        age = self._cache_age_sec(now)
+        stale = bool(age is not None and age > self._stale_after_sec)
+
+        if source == "LIVE":
+            status = "HEALTHY"
+        elif stale:
+            status = "STALE"
+        else:
+            status = "DEGRADED"
+
+        payload.update(
+            {
+                "context_status": status,
+                "provider_id": "DHAN",
+                "context_source": source,
+                "context_cache_age_sec": age,
+                "context_stale": stale,
+                "context_backoff_active": now < self._backoff_until_monotonic,
+                "context_consecutive_failures": self._consecutive_failures,
+                "context_last_error_kind": self._last_error_kind,
+                "context_last_error": self._last_error,
+            }
+        )
+
+        out["record_type"] = out.get("record_type") or "dhan_context"
+        out["payload"] = payload
+        return out
+
+    def _build_item_from_snapshot(self, snap: Mapping[str, Any]) -> dict[str, Any] | None:
         data = snap.get("data") if isinstance(snap, Mapping) else None
         oc = data.get("oc") if isinstance(data, Mapping) else None
         if not isinstance(oc, Mapping):
-            return []
+            return None
 
         ce_atm = getattr(self._runtime_instruments, "ce_atm", None)
         pe_atm = getattr(self._runtime_instruments, "pe_atm", None)
@@ -997,18 +1104,32 @@ class DhanContextPollingAdapter:
 
         selected_call_score = None
         selected_put_score = None
+        selected_call_security_id = None
+        selected_put_security_id = None
 
         for strike_raw, block in oc.items():
             if not isinstance(block, Mapping):
                 continue
-            strike_val = _as_float(strike_raw)
-            if ce_atm is not None and strike_val is not None and abs(strike_val - float(getattr(ce_atm, "strike"))) < 0.001:
-                selected_call_score = self._extract_ltp(block.get("ce"))
-            if pe_atm is not None and strike_val is not None and abs(strike_val - float(getattr(pe_atm, "strike"))) < 0.001:
-                selected_put_score = self._extract_ltp(block.get("pe"))
 
-        ce_atm = getattr(self._runtime_instruments, "ce_atm", None)
-        pe_atm = getattr(self._runtime_instruments, "pe_atm", None)
+            strike_val = _as_float(strike_raw)
+
+            if (
+                ce_atm is not None
+                and strike_val is not None
+                and abs(strike_val - float(getattr(ce_atm, "strike"))) < 0.001
+            ):
+                ce_block = block.get("ce")
+                selected_call_score = self._extract_ltp(ce_block)
+                selected_call_security_id = self._extract_security_id(ce_block)
+
+            if (
+                pe_atm is not None
+                and strike_val is not None
+                and abs(strike_val - float(getattr(pe_atm, "strike"))) < 0.001
+            ):
+                pe_block = block.get("pe")
+                selected_put_score = self._extract_ltp(pe_block)
+                selected_put_security_id = self._extract_security_id(pe_block)
 
         atm_strike = None
         if ce_atm is not None:
@@ -1018,18 +1139,78 @@ class DhanContextPollingAdapter:
 
         payload = {
             "context_status": "HEALTHY",
+            "provider_id": "DHAN",
+            "context_source": "LIVE",
+            "context_epoch_ns": time.time_ns(),
             "atm_strike": atm_strike,
             "selected_call_instrument_key": selected_call_key or "",
             "selected_put_instrument_key": selected_put_key or "",
+            "selected_call_security_id": selected_call_security_id or "",
+            "selected_put_security_id": selected_put_security_id or "",
             "selected_call_score": selected_call_score,
             "selected_put_score": selected_put_score,
         }
 
+        return {
+            "record_type": "dhan_context",
+            "payload": payload,
+        }
+
+    def poll(self) -> list[dict[str, Any]]:
+        now = time.monotonic()
+
+        if now < self._backoff_until_monotonic:
+            if self._emit_cached_during_backoff and self._last_good_item is not None:
+                return [
+                    self._decorate_cached_item(
+                        self._last_good_item,
+                        now=now,
+                        source="CACHED_BACKOFF",
+                    )
+                ]
+            return []
+
+        if (
+            self._last_good_item is not None
+            and self._min_poll_interval_sec > 0
+            and (now - self._last_fetch_monotonic) < self._min_poll_interval_sec
+        ):
+            return [
+                self._decorate_cached_item(
+                    self._last_good_item,
+                    now=now,
+                    source="CACHED_INTERVAL",
+                )
+            ]
+
+        self._last_fetch_monotonic = now
+
+        try:
+            snap = self._client.fetch_chain_snapshot()
+            item = self._build_item_from_snapshot(snap)
+            if item is None:
+                raise DhanRuntimeUnavailableError(
+                    "Dhan option-chain snapshot missing data.oc mapping"
+                )
+        except Exception as exc:
+            self._mark_failure(exc, now=now)
+            if self._emit_cached_during_backoff and self._last_good_item is not None:
+                return [
+                    self._decorate_cached_item(
+                        self._last_good_item,
+                        now=now,
+                        source="CACHED_ERROR",
+                    )
+                ]
+            return []
+
+        self._mark_success(now=now, item=item)
         return [
-            {
-                "record_type": "dhan_context",
-                "payload": payload,
-            }
+            self._decorate_cached_item(
+                item,
+                now=now,
+                source="LIVE",
+            )
         ]
 
 

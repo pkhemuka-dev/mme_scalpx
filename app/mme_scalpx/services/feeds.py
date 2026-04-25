@@ -45,6 +45,7 @@ import contextlib
 import json
 import logging
 import math
+import os
 from collections import deque
 from dataclasses import asdict, dataclass, field
 from decimal import Decimal
@@ -160,6 +161,7 @@ DEFAULT_ANOMALY_MIN_SAMPLES = 10
 DEFAULT_ANOMALY_MEDIAN_TICKS = 8.0
 DEFAULT_CONTEXT_STALE_MS = 5_000
 DEFAULT_CONTEXT_DEAD_MS = 15_000
+DEFAULT_SNAPSHOT_SYNC_MAX_MS = 250
 HEALTH_STREAM_MAXLEN = 10_000
 ERROR_STREAM_MAXLEN = 10_000
 PROVIDER_RUNTIME_STREAM_MAXLEN = 10_000
@@ -333,6 +335,7 @@ class FeedConfig:
     anomaly_median_ticks: float = DEFAULT_ANOMALY_MEDIAN_TICKS
     context_stale_ms: int = DEFAULT_CONTEXT_STALE_MS
     context_dead_ms: int = DEFAULT_CONTEXT_DEAD_MS
+    snapshot_sync_max_ms: int = DEFAULT_SNAPSHOT_SYNC_MAX_MS
     publish_every_tick: bool = True
     publish_provider_specific_streams: bool = True
     publish_compatibility_streams: bool = True
@@ -365,6 +368,8 @@ class FeedConfig:
             raise FeedConfigError("anomaly_median_ticks must be positive")
         if self.context_stale_ms <= 0 or self.context_dead_ms <= self.context_stale_ms:
             raise FeedConfigError("invalid context stale/dead thresholds")
+        if self.snapshot_sync_max_ms <= 0:
+            raise FeedConfigError("snapshot_sync_max_ms must be positive")
 
 
 @dataclass(slots=True, frozen=True)
@@ -1520,7 +1525,7 @@ class FeedService:
             cache_by_token=self._provider_caches[provider_id],
             now_ns=now_ns,
             stale_after_ms=self._broker_surfaces.stale_after_ms(provider_id, N.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA),
-            sync_tolerance_ms=self._broker_surfaces.dead_after_ms(provider_id, N.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA),
+            sync_tolerance_ms=self._cfg.snapshot_sync_max_ms,
         )
         if approved.role == M.InstrumentRole.FUTURES:
             fut_payload = self._build_futures_snapshot_payload(
@@ -2224,3 +2229,122 @@ def run(context: Any) -> int:
 
     LOGGER.info("feeds_service_stopped")
     return 0
+
+# =============================================================================
+# Batch 7 freeze hardening: provider market-data/context separation
+# =============================================================================
+
+def _batch7_env_flag(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    value = str(raw).strip().lower()
+    if value in {"1", "true", "yes", "y", "on"}:
+        return True
+    if value in {"0", "false", "no", "n", "off", ""}:
+        return False
+    raise FeedStartupError(f"{name} must be boolean-like, got {raw!r}")
+
+
+def _batch7_strict_provider_runtime_enabled() -> bool:
+    return _batch7_env_flag("MME_PROVIDER_RUNTIME_STRICT", default=False)
+
+
+def _batch7_is_context_only_surface(surface: Any) -> bool:
+    return bool(getattr(surface, "context_only", False))
+
+
+def _batch7_marketdata_adapter_map(
+    adapters: Mapping[str, ProviderAdapterSurface],
+) -> dict[str, ProviderAdapterSurface]:
+    return {
+        str(provider_id): surface
+        for provider_id, surface in dict(adapters or {}).items()
+        if not _batch7_is_context_only_surface(surface)
+    }
+
+
+def _batch7_context_adapter_map(
+    adapters: Mapping[str, ProviderAdapterSurface],
+) -> dict[str, ProviderAdapterSurface]:
+    return {
+        str(provider_id): surface
+        for provider_id, surface in dict(adapters or {}).items()
+        if _batch7_is_context_only_surface(surface)
+    }
+
+
+def _batch7_validate_adapter_surfaces(
+    adapters: Mapping[str, ProviderAdapterSurface],
+) -> None:
+    marketdata = _batch7_marketdata_adapter_map(adapters)
+    if not marketdata:
+        raise FeedStartupError(
+            "feeds service requires at least one true market-data adapter; "
+            "Dhan context-only adapter cannot satisfy market-data dependency"
+        )
+
+    if _batch7_strict_provider_runtime_enabled():
+        missing = [
+            provider_id
+            for provider_id in (N.PROVIDER_ZERODHA, N.PROVIDER_DHAN)
+            if provider_id not in marketdata
+        ]
+        if missing:
+            raise FeedStartupError(
+                "strict provider runtime requires true market-data adapters for: "
+                + ", ".join(missing)
+            )
+
+
+if "_extract_adapter_surfaces" in globals() and "_BATCH7_ORIGINAL_EXTRACT_ADAPTER_SURFACES" not in globals():
+    _BATCH7_ORIGINAL_EXTRACT_ADAPTER_SURFACES = _extract_adapter_surfaces
+
+    def _extract_adapter_surfaces(context: Any) -> dict[str, ProviderAdapterSurface]:
+        adapters = dict(_BATCH7_ORIGINAL_EXTRACT_ADAPTER_SURFACES(context))
+        _batch7_validate_adapter_surfaces(adapters)
+        return adapters
+
+# =============================================================================
+# Batch 7 corrective closure: preserve adapter extraction return contract
+# =============================================================================
+#
+# Original contract:
+#     _extract_adapter_surfaces(context) -> tuple[dict[str, ProviderAdapterSurface], Mapping[str, Any]]
+#
+# Earlier Batch 7 hardening accidentally treated the tuple as a dict. This
+# corrective wrapper preserves the original tuple shape while still enforcing
+# market-data vs context-only separation.
+
+def _batch7_extract_adapter_result_parts(result: Any) -> tuple[dict[str, ProviderAdapterSurface], Mapping[str, Any]]:
+    if (
+        isinstance(result, tuple)
+        and len(result) == 2
+        and isinstance(result[0], Mapping)
+    ):
+        adapters = dict(result[0])
+        settings = result[1] if isinstance(result[1], Mapping) else {}
+        return adapters, settings
+
+    if isinstance(result, Mapping):
+        return dict(result), {}
+
+    raise FeedStartupError(
+        "_extract_adapter_surfaces returned unsupported shape; expected "
+        "tuple[dict[str, ProviderAdapterSurface], Mapping[str, Any]]"
+    )
+
+
+def _batch7_extract_adapter_surfaces_contract_safe(
+    context: Any,
+) -> tuple[dict[str, ProviderAdapterSurface], Mapping[str, Any]]:
+    original = globals().get("_BATCH7_ORIGINAL_EXTRACT_ADAPTER_SURFACES")
+    if not callable(original):
+        raise FeedStartupError("original _extract_adapter_surfaces is unavailable")
+
+    adapters, settings = _batch7_extract_adapter_result_parts(original(context))
+    _batch7_validate_adapter_surfaces(adapters)
+    return adapters, settings
+
+
+_extract_adapter_surfaces = _batch7_extract_adapter_surfaces_contract_safe

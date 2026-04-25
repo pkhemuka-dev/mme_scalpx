@@ -15,6 +15,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from app.mme_scalpx.core import names
 from app.mme_scalpx.integrations.bootstrap_quote import build_kite
 from app.mme_scalpx.integrations.broker_api import (
     KiteTransportClient,
@@ -45,12 +46,12 @@ from app.mme_scalpx.integrations.zerodha_feed_adapter import (
 
 LOGGER = logging.getLogger(__name__)
 
-VERSION = "mme-bootstrap-provider-v5-dual-feed-dhan-context-best-effort"
+VERSION = "mme-bootstrap-provider-v6-provider-truth-freeze"
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DHAN_CONFIG_PATH = PROJECT_ROOT / "etc" / "brokers" / "dhan.yaml"
 
-PROVIDER_ZERODHA = "ZERODHA"
-PROVIDER_DHAN = "DHAN"
+PROVIDER_ZERODHA = getattr(names, "PROVIDER_ZERODHA", "ZERODHA")
+PROVIDER_DHAN = getattr(names, "PROVIDER_DHAN", "DHAN")
 
 
 class BootstrapProviderError(RuntimeError):
@@ -115,6 +116,10 @@ def _build_dhan_context_best_effort(
         return DhanContextPollingAdapter(
             client=context_client,
             runtime_instruments=runtime_instruments,
+            min_poll_interval_sec=max(float(context_cfg.context_refresh_ms) / 1000.0, 0.0),
+            stale_after_sec=max(float(context_cfg.option_context_stale_after_ms) / 1000.0, 1.0),
+            backoff_base_sec=max(float(context_cfg.option_context_dead_after_ms) / 3000.0, 1.0),
+            backoff_max_sec=max(float(context_cfg.option_context_dead_after_ms) / 1000.0, 5.0),
         )
     except Exception as exc:
         LOGGER.warning(
@@ -142,6 +147,8 @@ def _build_bootstrap_payload_for_runtime_instruments(
 
     dhan_feed_adapter = None
     dhan_context_adapter = None
+    resolved_ids: ResolvedDhanRuntimeIds | None = None
+    dhan_live_error: str | None = None
 
     try:
         dhan_feed_adapter, resolved_ids = _build_dhan_live_feed(
@@ -153,10 +160,35 @@ def _build_bootstrap_payload_for_runtime_instruments(
             resolved_ids=resolved_ids,
         )
     except Exception as exc:
+        dhan_live_error = str(exc) or exc.__class__.__name__
         LOGGER.warning(
             "bootstrap_provider_dhan_live_unavailable error=%s",
             exc,
         )
+
+    provider_bootstrap_report = {
+        "version": VERSION,
+        "zerodha_feed_adapter_configured": zerodha_feed_adapter is not None,
+        "zerodha_broker_configured": broker is not None,
+        "dhan_feed_adapter_configured": dhan_feed_adapter is not None,
+        "dhan_context_adapter_configured": dhan_context_adapter is not None,
+        "dhan_context_first_poll_required": dhan_context_adapter is not None,
+        "dhan_live_error": dhan_live_error,
+        "dhan_selected_expiry": None if resolved_ids is None else resolved_ids.selected_expiry,
+        "dhan_underlying_scrip": None if resolved_ids is None else resolved_ids.underlying_scrip,
+        "dhan_live_depth_mode_active": "FULL_TOP5_BASE",
+        "dhan_live_depth_mode_target": "TOP20_ENHANCED",
+        "dhan_context_bootstrap_status": (
+            names.PROVIDER_STATUS_DEGRADED
+            if dhan_context_adapter is not None
+            else names.PROVIDER_STATUS_UNAVAILABLE
+        ),
+        "dhan_execution_fallback_status": names.PROVIDER_STATUS_DISABLED,
+        "dhan_execution_fallback_reason": (
+            "Dhan execution fallback disabled until concrete Dhan execution transport "
+            "is implemented and proof-enabled"
+        ),
+    }
 
     return {
         "runtime_instruments": runtime_instruments,
@@ -166,6 +198,7 @@ def _build_bootstrap_payload_for_runtime_instruments(
         "dhan_context_adapter": dhan_context_adapter,
         "feed_adapters": feed_adapters,
         "broker": broker,
+        "provider_bootstrap_report": provider_bootstrap_report,
     }
 
 

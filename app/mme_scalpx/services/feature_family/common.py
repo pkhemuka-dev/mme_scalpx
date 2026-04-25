@@ -114,7 +114,7 @@ def _provider_id(value: Any, default: str | None = None) -> str | None:
 
 
 def _provider_status(value: Any, default: str | None = None) -> str | None:
-    fallback = default or getattr(N, "PROVIDER_STATUS_AVAILABLE", "AVAILABLE")
+    fallback = default or getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE")
     return _literal_or_none(_safe_str(value, fallback), C.ALLOWED_PROVIDER_STATUSES)
 
 
@@ -126,16 +126,18 @@ def _family_runtime_mode(value: Any) -> str:
 
 
 def _classic_runtime_mode(value: Any) -> str:
-    default = getattr(N, "STRATEGY_RUNTIME_MODE_NORMAL", "NORMAL")
-    text = _safe_str(value, default)
+    if value is None or not _safe_str(value):
+        return getattr(N, "STRATEGY_RUNTIME_MODE_DISABLED", "DISABLED")
+    text = _safe_str(value)
     if text not in C.CLASSIC_ALLOWED_STRATEGY_RUNTIME_MODES:
         text = getattr(N, "STRATEGY_RUNTIME_MODE_DISABLED", "DISABLED")
     return text
 
 
 def _miso_runtime_mode(value: Any) -> str:
-    default = getattr(N, "STRATEGY_RUNTIME_MODE_BASE_5DEPTH", "BASE-5DEPTH")
-    text = _safe_str(value, default)
+    if value is None or not _safe_str(value):
+        return getattr(N, "STRATEGY_RUNTIME_MODE_DISABLED", "DISABLED")
+    text = _safe_str(value)
     if text not in C.MISO_ALLOWED_STRATEGY_RUNTIME_MODES:
         text = getattr(N, "STRATEGY_RUNTIME_MODE_DISABLED", "DISABLED")
     return text
@@ -151,12 +153,21 @@ def derive_provider_ready_classic(
     active_futures_provider_id: Any,
     active_selected_option_provider_id: Any,
     strategy_runtime_mode: Any,
+    futures_provider_status: Any = None,
+    selected_option_provider_status: Any = None,
 ) -> bool:
+    allowed_statuses = {
+        getattr(N, "PROVIDER_STATUS_HEALTHY", "HEALTHY"),
+        getattr(N, "PROVIDER_STATUS_DEGRADED", "DEGRADED"),
+        getattr(N, "PROVIDER_STATUS_FAILOVER_ACTIVE", "FAILOVER_ACTIVE"),
+    }
     return bool(
         _provider_id(active_futures_provider_id)
         and _provider_id(active_selected_option_provider_id)
         and _classic_runtime_mode(strategy_runtime_mode)
         != getattr(N, "STRATEGY_RUNTIME_MODE_DISABLED", "DISABLED")
+        and _provider_status(futures_provider_status) in allowed_statuses
+        and _provider_status(selected_option_provider_status) in allowed_statuses
     )
 
 
@@ -166,13 +177,26 @@ def derive_provider_ready_miso(
     active_selected_option_provider_id: Any,
     active_option_context_provider_id: Any,
     strategy_runtime_mode: Any,
+    futures_provider_status: Any = None,
+    selected_option_provider_status: Any = None,
+    option_context_provider_status: Any = None,
+    dhan_context_ready: bool = False,
 ) -> bool:
+    allowed_statuses = {
+        getattr(N, "PROVIDER_STATUS_HEALTHY", "HEALTHY"),
+        getattr(N, "PROVIDER_STATUS_DEGRADED", "DEGRADED"),
+        getattr(N, "PROVIDER_STATUS_FAILOVER_ACTIVE", "FAILOVER_ACTIVE"),
+    }
     return bool(
         _provider_id(active_futures_provider_id) == N.PROVIDER_DHAN
         and _provider_id(active_selected_option_provider_id) == N.PROVIDER_DHAN
         and _provider_id(active_option_context_provider_id) == N.PROVIDER_DHAN
         and _miso_runtime_mode(strategy_runtime_mode)
         != getattr(N, "STRATEGY_RUNTIME_MODE_DISABLED", "DISABLED")
+        and _provider_status(futures_provider_status) in allowed_statuses
+        and _provider_status(selected_option_provider_status) in allowed_statuses
+        and _provider_status(option_context_provider_status) in allowed_statuses
+        and bool(dhan_context_ready)
     )
 
 
@@ -290,12 +314,12 @@ def build_provider_runtime_block(
     **_: Any,
 ) -> dict[str, Any]:
     return {
-        "active_futures_provider_id": _provider_id(active_futures_provider_id, N.PROVIDER_DHAN),
-        "active_selected_option_provider_id": _provider_id(active_selected_option_provider_id, N.PROVIDER_DHAN),
-        "active_option_context_provider_id": _provider_id(active_option_context_provider_id, N.PROVIDER_DHAN),
-        "active_execution_provider_id": _provider_id(active_execution_provider_id or execution_primary_provider_id, N.PROVIDER_ZERODHA),
-        "fallback_execution_provider_id": _provider_id(fallback_execution_provider_id or execution_fallback_provider_id, N.PROVIDER_DHAN),
-        "provider_runtime_mode": _safe_str(provider_runtime_mode, "NORMAL"),
+        "active_futures_provider_id": _provider_id(active_futures_provider_id, None),
+        "active_selected_option_provider_id": _provider_id(active_selected_option_provider_id, None),
+        "active_option_context_provider_id": _provider_id(active_option_context_provider_id, None),
+        "active_execution_provider_id": _provider_id(active_execution_provider_id or execution_primary_provider_id, None),
+        "fallback_execution_provider_id": _provider_id(fallback_execution_provider_id or execution_fallback_provider_id, None),
+        "provider_runtime_mode": _safe_str(provider_runtime_mode) or None,
         "family_runtime_mode": _family_runtime_mode(family_runtime_mode),
         "futures_provider_status": _provider_status(futures_provider_status),
         "selected_option_provider_status": _provider_status(selected_option_provider_status),

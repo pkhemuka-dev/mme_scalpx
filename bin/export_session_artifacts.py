@@ -8,6 +8,16 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+# Direct script import safety.
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from app.mme_scalpx.core import names as N
+
 IST = ZoneInfo("Asia/Kolkata")
 BASE = Path("/home/Lenovo/scalpx/projects/mme_scalpx/run/session_exports")
 
@@ -82,30 +92,30 @@ def main() -> int:
     outdir = BASE / day
     outdir.mkdir(parents=True, exist_ok=True)
 
-    fut_rows = stream_to_rows("ticks:mme:fut:stream")
-    opt_rows = stream_to_rows("ticks:mme:opt:stream")
+    fut_rows = stream_to_rows(N.STREAM_TICKS_MME_FUT)
+    opt_rows = stream_to_rows(N.STREAM_TICKS_MME_OPT)
 
     write_csv(outdir / "ticks_mme_fut_stream.csv", fut_rows)
     write_csv(outdir / "ticks_mme_opt_stream.csv", opt_rows)
 
     (outdir / "state_snapshot_mme_fut.json").write_text(
-        json.dumps(hgetall("state:snapshot:mme:fut"), indent=2, ensure_ascii=False),
+        json.dumps(hgetall(N.HASH_STATE_SNAPSHOT_MME_FUT), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     (outdir / "state_snapshot_mme_opt_selected.json").write_text(
-        json.dumps(hgetall("state:snapshot:mme:opt:selected"), indent=2, ensure_ascii=False),
+        json.dumps(hgetall(N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     (outdir / "state_runtime.json").write_text(
-        json.dumps(hgetall("state:runtime"), indent=2, ensure_ascii=False),
+        json.dumps(hgetall(N.HASH_STATE_RUNTIME), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     (outdir / "health_feeds.json").write_text(
-        json.dumps(hgetall("health:feeds"), indent=2, ensure_ascii=False),
+        json.dumps(hgetall(N.KEY_HEALTH_FEEDS), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     (outdir / "health_features.json").write_text(
-        json.dumps(hgetall("health:features"), indent=2, ensure_ascii=False),
+        json.dumps(hgetall(N.KEY_HEALTH_FEATURES), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
 
@@ -117,8 +127,8 @@ def main() -> int:
     manifest = {
         "session_date_ist": day,
         "exported_at_ist": now_ist().isoformat(),
-        "fut_tick_count": xlen("ticks:mme:fut:stream"),
-        "opt_tick_count": xlen("ticks:mme:opt:stream"),
+        "fut_tick_count": xlen(N.STREAM_TICKS_MME_FUT),
+        "opt_tick_count": xlen(N.STREAM_TICKS_MME_OPT),
         "first_fut_stream_id": first_fut.get("stream_id"),
         "first_fut_exchange_time_ist": ns_to_ist(first_fut.get("ts_exchange_ns") or first_fut.get("ts_event_ns") or first_fut.get("ts_recv_ns")),
         "last_fut_stream_id": last_fut.get("stream_id"),
@@ -127,9 +137,9 @@ def main() -> int:
         "first_opt_exchange_time_ist": ns_to_ist(first_opt.get("ts_exchange_ns") or first_opt.get("ts_event_ns") or first_opt.get("ts_recv_ns")),
         "last_opt_stream_id": last_opt.get("stream_id"),
         "last_opt_exchange_time_ist": ns_to_ist(last_opt.get("ts_exchange_ns") or last_opt.get("ts_event_ns") or last_opt.get("ts_recv_ns")),
-        "runtime_selection_version": hgetall("state:runtime").get("feeds_selection_version"),
-        "health_feeds_status": hgetall("health:feeds").get("status"),
-        "health_features_status": hgetall("health:features").get("status"),
+        "runtime_selection_version": hgetall(N.HASH_STATE_RUNTIME).get("feeds_selection_version"),
+        "health_feeds_status": hgetall(N.KEY_HEALTH_FEEDS).get("status"),
+        "health_features_status": hgetall(N.KEY_HEALTH_FEATURES).get("status"),
     }
     (outdir / "session_manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False),

@@ -882,3 +882,17 @@ __all__ = [
     "enrich_record",
     "enrich_records_sequentially",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: live-derived metrics are non-authoritative
+# =============================================================================
+
+_BATCH17_ENRICHER_NON_AUTHORITATIVE_VERSION = "1"
+
+
+def batch17_live_derived_non_authoritative_metadata() -> dict[str, Any]:
+    return {
+        "live_derived_metrics_non_authoritative": True,
+        "derived_not_production_used": True,
+        "offline_replay_required_for_contract_change": True,
+    }

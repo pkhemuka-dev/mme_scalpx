@@ -1379,6 +1379,11 @@ def validate_publishable_family_features_payload(payload: Mapping[str, Any]) -> 
     """
     Runtime-publication validator.
 
+    Publishable means structurally safe for Redis publication to live/replay
+    consumers. It does not mean entry-eligible. A publishable payload may still
+    carry snapshot.valid=False, UNAVAILABLE provider statuses, and all entry
+    stage flags false so strategy can deterministically HOLD.
+
     This validator is intentionally stricter than validate_family_features_payload():
     it forbids scaffold placeholders in provider/runtime surfaces and requires the
     payload to be publication-safe for live/replay consumers.

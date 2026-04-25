@@ -27,7 +27,7 @@ from typing import List, Optional, Sequence, Tuple
 
 import redis
 
-from mme_scalpx.core.names import (
+from app.mme_scalpx.core.names import (
     HASH_STATE_EXECUTION,
     HASH_STATE_LOGIN,
     HASH_STATE_POSITION_MME,

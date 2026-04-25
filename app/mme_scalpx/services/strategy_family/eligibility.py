@@ -819,3 +819,62 @@ __all__ = [
     "REASON_QUEUE_RELOAD_BLOCKED",
     "REASON_FUTURES_CONTRADICTION_BLOCKED",
 ]
+
+# =============================================================================
+# Batch 11 freeze hardening: support-vs-sequence readiness helpers
+# =============================================================================
+
+_BATCH11_ELIGIBILITY_SEQUENCE_VERSION = "1"
+
+
+def mist_micro_trap_resolved(support: Mapping[str, Any]) -> bool:
+    """Compatibility-safe MIST micro-trap resolution.
+
+    Preferred Batch 9+ field:
+        micro_trap_resolved
+
+    Legacy compatibility:
+        micro_trap_blocked represented the old resolved/not-blocked shell.
+    """
+    if "micro_trap_resolved" in support:
+        return bool(support.get("micro_trap_resolved"))
+    return bool(support.get("micro_trap_blocked"))
+
+
+def annotate_activation_readiness(
+    result: BranchEligibilityResult,
+    *,
+    support: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return report-only activation readiness annotations.
+
+    Eligibility remains necessary-but-not-sufficient. MISC/MISR sequence truth
+    must come from doctrine/state-machine layers, not from this static reducer.
+    """
+    support_map = dict(support or result.support or {})
+    structural_support_pass = bool(result.structural_pass)
+
+    sequence_keys = (
+        "state_machine_sequence_pass",
+        "sequence_pass",
+        "event_sequence_pass",
+        "setup_sequence_pass",
+        "trap_event_sequence_pass",
+    )
+    state_machine_sequence_pass = any(bool(support_map.get(key)) for key in sequence_keys)
+
+    activation_eligible = bool(
+        result.eligible
+        and structural_support_pass
+        and (
+            result.family_id not in (N.STRATEGY_FAMILY_MISC, N.STRATEGY_FAMILY_MISR)
+            or state_machine_sequence_pass
+        )
+    )
+
+    return {
+        "structural_support_pass": structural_support_pass,
+        "state_machine_sequence_pass": state_machine_sequence_pass,
+        "activation_eligible": activation_eligible,
+        "eligibility_is_necessary_not_sufficient": True,
+    }

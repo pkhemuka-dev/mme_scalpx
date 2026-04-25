@@ -1048,3 +1048,96 @@ def build_miso_strike_surface(
         "oi_wall_summary": wall_summary,
         "selection_mode_hint": "Dhan-mandatory strike ladder context",
     }
+
+# ===== BATCH8_SHARED_CORE_GUARDS START =====
+# Batch 8 freeze-final guard:
+# OI rows without ATM/reference are not OI-wall-ready.
+
+_BATCH8_ORIGINAL_SELECT_MISO_CANDIDATES = select_miso_candidates
+_BATCH8_ORIGINAL_BUILD_OI_WALL_SUMMARY = build_oi_wall_summary
+_BATCH8_ORIGINAL_BUILD_MISO_STRIKE_SURFACE = build_miso_strike_surface
+_BATCH8_ORIGINAL_BUILD_CLASSIC_STRIKE_SURFACE = build_classic_strike_surface
+_BATCH8_ORIGINAL_BUILD_STRIKE_LADDER_SURFACE = build_strike_ladder_surface
+
+
+def _batch8_readiness(
+    *,
+    dhan_context: Mapping[str, Any] | None,
+    futures_features: Mapping[str, Any] | None = None,
+    selected_features: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    rows = normalize_strike_ladder_rows(dhan_context)
+    reference = _atm_reference(
+        dhan_context=dhan_context,
+        futures_features=futures_features,
+        selected_features=selected_features,
+    )
+    ladder_present = bool(rows)
+    atm_reference_present = reference is not None
+    wall_computable = bool(ladder_present and atm_reference_present)
+    return {
+        "ladder_present": ladder_present,
+        "atm_reference_present": atm_reference_present,
+        "wall_computable": wall_computable,
+    }
+
+
+def select_miso_candidates(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    out = _BATCH8_ORIGINAL_SELECT_MISO_CANDIDATES(*args, **kwargs)
+    readiness = _batch8_readiness(dhan_context=kwargs.get("dhan_context"))
+    out.update(readiness)
+    out["present"] = bool(out.get("present") and readiness["ladder_present"] and readiness["atm_reference_present"])
+    return out
+
+
+def build_oi_wall_summary(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    out = _BATCH8_ORIGINAL_BUILD_OI_WALL_SUMMARY(*args, **kwargs)
+    readiness = _batch8_readiness(
+        dhan_context=kwargs.get("dhan_context"),
+        futures_features=kwargs.get("futures_features"),
+        selected_features=kwargs.get("selected_features"),
+    )
+    call_wall = out.get("call_wall")
+    put_wall = out.get("put_wall")
+    oi_wall_ready = bool(readiness["wall_computable"] and (call_wall is not None or put_wall is not None))
+    out.update(readiness)
+    out["oi_wall_ready"] = oi_wall_ready
+    if not oi_wall_ready:
+        out["near_any_wall"] = False
+    return out
+
+
+def build_miso_strike_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    out = _BATCH8_ORIGINAL_BUILD_MISO_STRIKE_SURFACE(*args, **kwargs)
+    wall_summary = out.get("oi_wall_summary") if isinstance(out.get("oi_wall_summary"), Mapping) else {}
+    readiness = _batch8_readiness(
+        dhan_context=kwargs.get("dhan_context"),
+        futures_features=kwargs.get("futures_features"),
+        selected_features=kwargs.get("selected_features"),
+    )
+    out.update(readiness)
+    out["oi_wall_ready"] = bool(wall_summary.get("oi_wall_ready", False))
+    out["chain_context_ready"] = bool(readiness["ladder_present"] and readiness["atm_reference_present"])
+    out["present"] = bool(out.get("present") and out["chain_context_ready"])
+    return out
+
+
+def build_classic_strike_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    out = _BATCH8_ORIGINAL_BUILD_CLASSIC_STRIKE_SURFACE(*args, **kwargs)
+    wall_summary = out.get("oi_wall_summary") if isinstance(out.get("oi_wall_summary"), Mapping) else {}
+    readiness = _batch8_readiness(
+        dhan_context=kwargs.get("dhan_context"),
+        futures_features=kwargs.get("futures_features"),
+        selected_features=kwargs.get("selected_features"),
+    )
+    out.update(readiness)
+    out["oi_wall_ready"] = bool(wall_summary.get("oi_wall_ready", False))
+    return out
+
+
+def build_strike_ladder_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    out = _BATCH8_ORIGINAL_BUILD_STRIKE_LADDER_SURFACE(*args, **kwargs)
+    readiness = _batch8_readiness(dhan_context=kwargs.get("dhan_context"))
+    out.update(readiness)
+    return out
+# ===== BATCH8_SHARED_CORE_GUARDS END =====

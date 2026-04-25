@@ -403,3 +403,61 @@ __all__ = [
     "engine_result_to_dict",
     "stage_execution_record_to_dict",
 ]
+
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS START =====
+# Batch 16 freeze-final guard:
+# Engine remains hook/stage-executor based, but stage output must be mapping
+# shaped and must not claim live broker/order side effects.
+
+_BATCH16_ORIGINAL_EXECUTE_STAGE = ReplayEngine._execute_stage
+
+_BATCH16_FORBIDDEN_LIVE_STAGE_OUTPUT_KEYS: tuple[str, ...] = (
+    "broker_order_id",
+    "live_order_id",
+    "order_sent_to_broker",
+    "live_order_sent",
+    "broker_request_payload",
+    "broker_response_payload",
+)
+
+
+def validate_replay_stage_output_summary(summary: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(summary, Mapping):
+        raise ReplayEngineValidationError(
+            f"stage output summary must be mapping, got {type(summary)!r}"
+        )
+
+    bad_keys = [
+        key
+        for key in _BATCH16_FORBIDDEN_LIVE_STAGE_OUTPUT_KEYS
+        if key in summary and summary.get(key) not in (None, "", False, 0)
+    ]
+    if bad_keys:
+        raise ReplayEngineValidationError(
+            f"stage output claims live broker/order side effects: {bad_keys!r}"
+        )
+
+    return dict(summary)
+
+
+def _batch16_execute_stage(
+    self: ReplayEngine,
+    context: ReplayEngineContext,
+    stage: ReplayStageDefinition,
+    stage_executor: ReplayStageExecutor,
+) -> None:
+    def guarded_executor(ctx: ReplayEngineContext, st: ReplayStageDefinition):
+        raw = stage_executor(ctx, st)
+        if raw is None:
+            return {}
+        if not isinstance(raw, Mapping):
+            raise ReplayEngineValidationError(
+                f"stage executor must return mapping or None, got {type(raw)!r}"
+            )
+        return validate_replay_stage_output_summary(raw)
+
+    return _BATCH16_ORIGINAL_EXECUTE_STAGE(self, context, stage, guarded_executor)
+
+
+ReplayEngine._execute_stage = _batch16_execute_stage
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====

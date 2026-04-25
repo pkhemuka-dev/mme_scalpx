@@ -508,3 +508,28 @@ __all__ = [
     "manifest_to_dict",
     "validate_manifest_payload",
 ]
+
+# =============================================================================
+# Batch 17 freeze hardening: production firewall in manifest surfaces
+# =============================================================================
+
+_BATCH17_MANIFEST_FIREWALL_VERSION = "1"
+
+
+def build_production_firewall_manifest_section() -> dict[str, bool]:
+    return {
+        "production_doctrine_mutated": False,
+        "production_params_mutated": False,
+        "live_runtime_mutated": False,
+        "research_outputs_are_advisory": True,
+        "promotion_requires_manual_patch_and_proof": True,
+    }
+
+
+_BATCH17_ORIGINAL_MANIFEST_TO_DICT = manifest_to_dict
+
+
+def manifest_to_dict(manifest: CaptureSessionManifest) -> dict[str, Any]:
+    payload = _BATCH17_ORIGINAL_MANIFEST_TO_DICT(manifest)
+    payload["production_firewall"] = build_production_firewall_manifest_section()
+    return payload

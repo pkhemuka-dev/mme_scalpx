@@ -407,3 +407,32 @@ __all__ = [
     "INTEGRITY_CHECK_RESET_CLEANLINESS",
     "INTEGRITY_CHECK_REPRODUCIBILITY",
 ]
+
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS START =====
+# Batch 16 freeze-final guard:
+# Placeholder PASS checks are allowed as scaffolding, but they must not produce
+# an aggregate freeze PASS verdict.
+
+_BATCH16_ORIGINAL_COMPUTE_INTEGRITY_VERDICT = compute_integrity_verdict
+
+
+def _batch16_is_placeholder_pass(result: ReplayIntegrityCheckResult) -> bool:
+    if result.verdict is not IntegrityVerdict.PASS:
+        return False
+    message = str(result.message or "").lower()
+    details = dict(result.details or {})
+    return (
+        "placeholder" in message
+        or details.get("placeholder") is True
+        or details.get("placeholder_check") is True
+    )
+
+
+def compute_integrity_verdict(
+    results: Sequence[ReplayIntegrityCheckResult],
+) -> IntegrityVerdict:
+    _validate_check_results(results)
+    if any(_batch16_is_placeholder_pass(result) for result in results):
+        return IntegrityVerdict.FAIL
+    return _BATCH16_ORIGINAL_COMPUTE_INTEGRITY_VERDICT(results)
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====

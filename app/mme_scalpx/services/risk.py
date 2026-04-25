@@ -1062,3 +1062,928 @@ def run(context: Any) -> int:
         logger=LOGGER,
     )
     return service.start()
+
+# ===== BATCH14_RISK_ENTRY_VETO_RESTART_IDEMPOTENCY START =====
+# Batch 14 freeze-final guard:
+# Preserve risk.py ownership, but harden the risk service so it remains
+# restart-safe, replay-key safe, idempotent for ledger processing, and
+# strictly entry-veto-only. Risk still never places orders and never blocks exits.
+
+import math as _batch14_math
+from dataclasses import dataclass as _batch14_dataclass
+
+
+@_batch14_dataclass(frozen=True, slots=True)
+class RiskRedisKeys:
+    trades_ledger_stream: str
+    command_stream: str
+    system_health_stream: str
+    system_errors_stream: str
+    risk_hash: str
+    execution_hash: str
+    position_hash: str
+    feeds_heartbeat: str | None
+    features_heartbeat: str
+    strategy_heartbeat: str
+    execution_heartbeat: str
+    risk_heartbeat: str
+    risk_group: str
+
+
+def _batch14_name_first(*names: str, required: bool = True) -> str | None:
+    for name in names:
+        if hasattr(N, name):
+            value = _safe_str(getattr(N, name))
+            if value:
+                return value
+    if required:
+        raise RiskConfigError(
+            "risk replay/live key resolver missing names.py export: "
+            + " or ".join(names)
+        )
+    return None
+
+
+def resolve_risk_redis_keys(replay_mode: bool) -> RiskRedisKeys:
+    if replay_mode:
+        return RiskRedisKeys(
+            trades_ledger_stream=_batch14_name_first(
+                "STREAM_REPLAY_TRADES_LEDGER",
+                "REPLAY_STREAM_TRADES_LEDGER",
+                "STREAM_TRADES_LEDGER_REPLAY",
+            ),
+            command_stream=_batch14_name_first(
+                "STREAM_REPLAY_CMD_MME",
+                "REPLAY_STREAM_CMD_MME",
+                "STREAM_CMD_MME_REPLAY",
+            ),
+            system_health_stream=_batch14_name_first(
+                "STREAM_REPLAY_SYSTEM_HEALTH",
+                "REPLAY_STREAM_SYSTEM_HEALTH",
+                "STREAM_SYSTEM_HEALTH_REPLAY",
+                required=False,
+            )
+            or N.STREAM_SYSTEM_HEALTH,
+            system_errors_stream=_batch14_name_first(
+                "STREAM_REPLAY_SYSTEM_ERRORS",
+                "REPLAY_STREAM_SYSTEM_ERRORS",
+                "STREAM_SYSTEM_ERRORS_REPLAY",
+                required=False,
+            )
+            or N.STREAM_SYSTEM_ERRORS,
+            risk_hash=_batch14_name_first(
+                "HASH_REPLAY_STATE_RISK",
+                "REPLAY_HASH_STATE_RISK",
+                "HASH_STATE_RISK_REPLAY",
+            ),
+            execution_hash=_batch14_name_first(
+                "HASH_REPLAY_STATE_EXECUTION",
+                "REPLAY_HASH_STATE_EXECUTION",
+                "HASH_STATE_EXECUTION_REPLAY",
+            ),
+            position_hash=_batch14_name_first(
+                "HASH_REPLAY_STATE_POSITION_MME",
+                "REPLAY_HASH_STATE_POSITION_MME",
+                "HASH_STATE_POSITION_MME_REPLAY",
+            ),
+            feeds_heartbeat=_batch14_name_first(
+                "KEY_REPLAY_HEALTH_FEEDS",
+                "REPLAY_KEY_HEALTH_FEEDS",
+                "KEY_HEALTH_FEEDS_REPLAY",
+                required=False,
+            ),
+            features_heartbeat=_batch14_name_first(
+                "KEY_REPLAY_HEALTH_FEATURES",
+                "REPLAY_KEY_HEALTH_FEATURES",
+                "KEY_HEALTH_FEATURES_REPLAY",
+            ),
+            strategy_heartbeat=_batch14_name_first(
+                "KEY_REPLAY_HEALTH_STRATEGY",
+                "REPLAY_KEY_HEALTH_STRATEGY",
+                "KEY_HEALTH_STRATEGY_REPLAY",
+            ),
+            execution_heartbeat=_batch14_name_first(
+                "KEY_REPLAY_HEALTH_EXECUTION",
+                "REPLAY_KEY_HEALTH_EXECUTION",
+                "KEY_HEALTH_EXECUTION_REPLAY",
+            ),
+            risk_heartbeat=_batch14_name_first(
+                "KEY_REPLAY_HEALTH_RISK",
+                "REPLAY_KEY_HEALTH_RISK",
+                "KEY_HEALTH_RISK_REPLAY",
+            ),
+            risk_group=_batch14_name_first(
+                "GROUP_REPLAY_RISK_MME_V1",
+                "GROUP_REPLAY_RISK",
+                "GROUP_RISK_REPLAY",
+            ),
+        )
+
+    return RiskRedisKeys(
+        trades_ledger_stream=N.STREAM_TRADES_LEDGER,
+        command_stream=N.STREAM_CMD_MME,
+        system_health_stream=N.STREAM_SYSTEM_HEALTH,
+        system_errors_stream=N.STREAM_SYSTEM_ERRORS,
+        risk_hash=N.HASH_STATE_RISK,
+        execution_hash=N.HASH_STATE_EXECUTION,
+        position_hash=N.HASH_STATE_POSITION_MME,
+        feeds_heartbeat=getattr(N, "KEY_HEALTH_FEEDS", None),
+        features_heartbeat=N.KEY_HEALTH_FEATURES,
+        strategy_heartbeat=N.KEY_HEALTH_STRATEGY,
+        execution_heartbeat=N.KEY_HEALTH_EXECUTION,
+        risk_heartbeat=N.KEY_HEALTH_RISK,
+        risk_group=N.GROUP_RISK,
+    )
+
+
+def _batch14_stream_id_tuple(stream_id: str) -> tuple[int, int]:
+    text = _safe_str(stream_id, "0-0")
+    try:
+        left, right = text.split("-", 1)
+        return int(left), int(right)
+    except Exception:
+        return 0, 0
+
+
+def _batch14_stream_id_lte(left: str, right: str) -> bool:
+    return _batch14_stream_id_tuple(left) <= _batch14_stream_id_tuple(right)
+
+
+def _batch14_valid_float(value: Any) -> tuple[bool, float]:
+    if value in (None, ""):
+        return False, 0.0
+    try:
+        number = float(value)
+    except Exception:
+        return False, 0.0
+    if not _batch14_math.isfinite(number):
+        return False, 0.0
+    return True, number
+
+
+def _batch14_parse_realized_pnl(payload: Mapping[str, Any]) -> tuple[float, str]:
+    # Prefer net accounting if available. pnl remains accepted only as legacy
+    # fallback after net_pnl and realized_pnl.
+    for field_name in ("net_pnl", "realized_pnl", "pnl"):
+        ok, value = _batch14_valid_float(payload.get(field_name))
+        if ok:
+            return value, field_name
+    raise RiskContractError("EXIT_FILL missing valid net_pnl/realized_pnl/pnl")
+
+
+def _batch14_event_key(payload: Mapping[str, Any], *, stream_id: str) -> str:
+    event_type = _safe_str(payload.get("event_type")).upper()
+    identity = (
+        _safe_str(payload.get("ledger_event_id"))
+        or _safe_str(payload.get("event_id"))
+        or _safe_str(payload.get("trade_id"))
+        or _safe_str(payload.get("fill_id"))
+        or _safe_str(payload.get("broker_order_id"))
+        or _safe_str(payload.get("order_id"))
+        or _safe_str(payload.get("decision_id"))
+        or _safe_str(stream_id)
+    )
+    return f"{event_type}:{identity}"
+
+
+_BATCH14_ORIGINAL_INIT = RiskService.__init__
+
+
+def _batch14_init(self, *args: Any, **kwargs: Any) -> None:
+    _BATCH14_ORIGINAL_INIT(self, *args, **kwargs)
+    self.keys = resolve_risk_redis_keys(self.cfg.replay_mode)
+    self._processed_ledger_event_keys: set[str] = set()
+    self._processed_entry_event_keys: set[str] = set()
+    self._processed_exit_event_keys: set[str] = set()
+    self._last_pnl_source = ""
+    self._feeds_heartbeat_fresh = False
+    self._features_heartbeat_fresh = False
+    self._strategy_heartbeat_fresh = False
+    self._execution_heartbeat_fresh = False
+    self._execution_state_known = False
+    self._position_state_known = False
+
+
+RiskService.__init__ = _batch14_init
+
+
+def _batch14_bootstrap(self) -> None:
+    RX.ensure_consumer_group(
+        self.keys.trades_ledger_stream,
+        self.keys.risk_group,
+        start_id=RX.DEFAULT_GROUP_START_ID,
+        mkstream=True,
+        client=self.redis,
+    )
+    RX.ensure_consumer_group(
+        self.keys.command_stream,
+        self.keys.risk_group,
+        start_id=RX.DEFAULT_GROUP_START_ID,
+        mkstream=True,
+        client=self.redis,
+    )
+
+    now_ns = self.now_ns()
+    self._restore_or_rebuild_risk_ledger(now_ns)
+    self.runtime.updated_at_ns = now_ns
+    self._refresh_dependency_state(now_ns)
+    self._recompute_veto(now_ns)
+    self._publish_state(now_ns, force=True)
+    self._publish_heartbeat(now_ns, force=True)
+    self._publish_health_event(
+        status=N.HEALTH_STATUS_OK,
+        event="risk_bootstrap_complete",
+        detail="risk_initialized",
+        ts_ns=now_ns,
+    )
+
+
+RiskService._bootstrap = _batch14_bootstrap
+
+
+def _batch14_read_risk_state(self) -> dict[str, str]:
+    return _decode_mapping(RX.hgetall(self.keys.risk_hash, client=self.redis))
+
+
+def _batch14_restore_from_hash(self, now_ns: int) -> bool:
+    raw = self._read_risk_state()
+    if not raw:
+        return False
+
+    trading_day = self._current_trading_day(now_ns)
+    if _safe_str(raw.get("trading_day")) != trading_day:
+        return False
+
+    self.ledger.trading_day = trading_day
+    self.ledger.realized_pnl = _safe_float(raw.get("day_realized_pnl"), 0.0)
+    self.ledger.loss_count = _safe_int(raw.get("day_loss_count"), 0)
+    self.ledger.win_count = _safe_int(raw.get("day_win_count"), 0)
+    self.ledger.consecutive_losses = _safe_int(raw.get("consecutive_losses"), 0)
+    self.ledger.trades_today = _safe_int(raw.get("trades_today"), 0)
+    self.ledger.last_trade_id = _safe_str(raw.get("last_trade_id"))
+    self.ledger.last_trade_stream_id = _safe_str(raw.get("last_trade_stream_id"), "0-0")
+    self.ledger.last_trade_ts_ns = _safe_int(raw.get("last_trade_ts_ns"), 0)
+    self.runtime.cooldown_until_ns = _safe_int(raw.get("cooldown_until_ns"), 0)
+
+    processed = _safe_str(raw.get("processed_ledger_event_keys"))
+    if processed:
+        self._processed_ledger_event_keys.update(x for x in processed.split("|") if x)
+    return True
+
+
+def _batch14_rebuild_from_stream(self, now_ns: int) -> bool:
+    xrange_fn = getattr(self.redis, "xrange", None)
+    if not callable(xrange_fn):
+        return False
+
+    trading_day = self._current_trading_day(now_ns)
+    self.ledger.reset_for_day(trading_day)
+    self._processed_ledger_event_keys.clear()
+    self._processed_entry_event_keys.clear()
+    self._processed_exit_event_keys.clear()
+
+    try:
+        entries = xrange_fn(self.keys.trades_ledger_stream, "-", "+")
+    except TypeError:
+        entries = xrange_fn(self.keys.trades_ledger_stream)
+    except Exception as exc:
+        self._publish_error_event(
+            event="risk_rebuild_stream_error",
+            detail=f"{type(exc).__name__}:{exc}",
+            ts_ns=now_ns,
+        )
+        return False
+
+    rebuilt = False
+    for message_id, fields in entries or []:
+        payload = _decode_mapping(fields)
+        ts_ns = _safe_int(payload.get("ts_ns") or payload.get("ts_event_ns"), now_ns)
+        if self._current_trading_day(ts_ns) != trading_day:
+            continue
+        self._apply_trade_ledger(fields, stream_id=_safe_str(message_id), now_ns=ts_ns)
+        rebuilt = True
+    return rebuilt
+
+
+def _batch14_restore_or_rebuild_risk_ledger(self, now_ns: int) -> None:
+    rebuilt = self._rebuild_risk_ledger_from_stream(now_ns)
+    if not rebuilt:
+        self._restore_risk_ledger_from_hash(now_ns)
+
+
+RiskService._read_risk_state = _batch14_read_risk_state
+RiskService._restore_risk_ledger_from_hash = _batch14_restore_from_hash
+RiskService._rebuild_risk_ledger_from_stream = _batch14_rebuild_from_stream
+RiskService._restore_or_rebuild_risk_ledger = _batch14_restore_or_rebuild_risk_ledger
+
+
+def _batch14_read_execution_state(self) -> dict[str, str]:
+    return _decode_mapping(RX.hgetall(self.keys.execution_hash, client=self.redis))
+
+
+def _batch14_read_position_state(self) -> dict[str, str]:
+    return _decode_mapping(RX.hgetall(self.keys.position_hash, client=self.redis))
+
+
+def _batch14_read_heartbeat(self, key: str) -> dict[str, str]:
+    return _decode_mapping(RX.hgetall(key, client=self.redis))
+
+
+RiskService._read_execution_state = _batch14_read_execution_state
+RiskService._read_position_state = _batch14_read_position_state
+RiskService._read_heartbeat = _batch14_read_heartbeat
+
+
+def _batch14_refresh_dependency_state(self, now_ns: int) -> None:
+    exec_state = self._read_execution_state()
+    pos_state = self._read_position_state()
+
+    self._execution_state_known = bool(exec_state)
+    self._position_state_known = bool(pos_state)
+
+    if exec_state:
+        execution_mode = _safe_str(exec_state.get("execution_mode"), "")
+        self.runtime.execution_healthy = bool(
+            execution_mode
+            and execution_mode not in {N.EXECUTION_MODE_FATAL, N.EXECUTION_MODE_DEGRADED}
+        )
+        self.runtime.broker_connected = not _safe_bool(exec_state.get("broker_degraded"), False)
+    else:
+        self.runtime.execution_healthy = False
+        self.runtime.broker_connected = False
+
+    if pos_state:
+        has_position = _safe_bool(pos_state.get("has_position"), False)
+        position_side = _safe_str(pos_state.get("position_side"), N.POSITION_SIDE_FLAT)
+        self.runtime.position_open = bool(has_position and position_side != N.POSITION_SIDE_FLAT)
+    else:
+        self.runtime.position_open = False
+
+    self._feeds_heartbeat_fresh = (
+        self._heartbeat_fresh(self.keys.feeds_heartbeat, now_ns)
+        if self.keys.feeds_heartbeat
+        else False
+    )
+    self._features_heartbeat_fresh = self._heartbeat_fresh(self.keys.features_heartbeat, now_ns)
+    self._strategy_heartbeat_fresh = self._heartbeat_fresh(self.keys.strategy_heartbeat, now_ns)
+    self._execution_heartbeat_fresh = self._heartbeat_fresh(self.keys.execution_heartbeat, now_ns)
+
+    self.runtime.upstream_healthy = bool(
+        self._feeds_heartbeat_fresh
+        and self._features_heartbeat_fresh
+        and self._strategy_heartbeat_fresh
+        and self._execution_heartbeat_fresh
+    )
+    self.runtime.trading_window_ok = (
+        self.cfg.thresholds.allow_entry_outside_window
+        or self.cfg.trading_window.contains(now_ns, self.tz)
+    )
+    self.runtime.updated_at_ns = now_ns
+
+
+RiskService._refresh_dependency_state = _batch14_refresh_dependency_state
+
+
+def _batch14_recompute_veto(self, now_ns: int) -> None:
+    veto_entries = False
+    veto_reason = ""
+
+    if self.runtime.control_mode == N.CONTROL_MODE_DISABLED:
+        veto_entries = True
+        veto_reason = "control_mode_disabled"
+    elif self.runtime.control_mode == N.CONTROL_MODE_SAFE:
+        veto_entries = True
+        veto_reason = "control_mode_safe"
+    elif self.runtime.manual_pause:
+        veto_entries = True
+        veto_reason = self.runtime.manual_pause_reason or "manual_pause"
+    elif self.runtime.cooldown_active(now_ns):
+        veto_entries = True
+        veto_reason = "cooldown_active"
+    elif self.ledger.realized_pnl <= (-1.0 * self.cfg.thresholds.daily_loss_limit):
+        veto_entries = True
+        veto_reason = "daily_loss_limit_hit"
+    elif (
+        self.cfg.thresholds.max_consecutive_losses > 0
+        and self.ledger.consecutive_losses >= self.cfg.thresholds.max_consecutive_losses
+    ):
+        veto_entries = True
+        veto_reason = "max_consecutive_losses_hit"
+    elif (
+        self.cfg.thresholds.max_trades_per_day > 0
+        and self.ledger.trades_today >= self.cfg.thresholds.max_trades_per_day
+    ):
+        veto_entries = True
+        veto_reason = "max_trades_per_day_hit"
+    elif not self._execution_state_known:
+        veto_entries = True
+        veto_reason = "execution_state_missing"
+    elif not self._position_state_known:
+        veto_entries = True
+        veto_reason = "position_state_missing"
+    elif self.runtime.position_open:
+        veto_entries = True
+        veto_reason = "position_open"
+    elif not self.runtime.trading_window_ok:
+        veto_entries = True
+        veto_reason = "outside_trading_window"
+    elif self.cfg.thresholds.require_execution_healthy and not self.runtime.execution_healthy:
+        veto_entries = True
+        veto_reason = "execution_unhealthy"
+    elif self.cfg.thresholds.require_upstream_heartbeats and not self.runtime.upstream_healthy:
+        veto_entries = True
+        veto_reason = "upstream_heartbeat_stale"
+    elif self.cfg.thresholds.require_broker_connected and not self.runtime.broker_connected:
+        veto_entries = True
+        veto_reason = "broker_disconnected"
+
+    self.runtime.veto_entries = veto_entries
+    self.runtime.veto_reason = veto_reason
+
+
+RiskService._recompute_veto = _batch14_recompute_veto
+
+
+def _batch14_ack(self, stream_name: str, message_id: str) -> None:
+    RX.xack(stream_name, self.keys.risk_group, [message_id], client=self.redis)
+
+
+def _batch14_claim_pending(self, stream_name: str, now_ns: int, *, count: int = 10):
+    claim_fn = getattr(self.redis, "xautoclaim", None)
+    if not callable(claim_fn):
+        return []
+
+    min_idle_ms = max(1, int(self.cfg.thresholds.stale_heartbeat_seconds * 1000))
+    try:
+        result = claim_fn(
+            stream_name,
+            self.keys.risk_group,
+            self.cfg.consumer_name,
+            min_idle_ms,
+            "0-0",
+            count=count,
+        )
+    except Exception as exc:
+        self._publish_error_event(
+            event="risk_pending_claim_error",
+            detail=f"{stream_name}:{type(exc).__name__}:{exc}",
+            ts_ns=now_ns,
+        )
+        return []
+
+    if isinstance(result, tuple):
+        if len(result) >= 2 and isinstance(result[1], list):
+            return result[1]
+        if len(result) >= 1 and isinstance(result[0], list):
+            return result[0]
+    if isinstance(result, list):
+        return result
+    return []
+
+
+RiskService._ack_stream_message = _batch14_ack
+RiskService._claim_pending_entries = _batch14_claim_pending
+
+
+def _batch14_apply_trade_ledger(
+    self,
+    fields: Mapping[str, Any],
+    *,
+    stream_id: str,
+    now_ns: int,
+) -> None:
+    payload = _decode_mapping(fields)
+    event_type = _safe_str(payload.get("event_type")).upper()
+    if event_type not in {"ENTRY_FILL", "EXIT_FILL"}:
+        return
+
+    stream_id_text = _safe_str(stream_id, "0-0")
+    if (
+        self.ledger.last_trade_stream_id
+        and _batch14_stream_id_lte(stream_id_text, self.ledger.last_trade_stream_id)
+        and stream_id_text != "0-0"
+    ):
+        return
+
+    event_key = _batch14_event_key(payload, stream_id=stream_id_text)
+    if event_key in self._processed_ledger_event_keys:
+        return
+
+    if event_type == "ENTRY_FILL":
+        self.ledger.trades_today += 1
+        self._processed_entry_event_keys.add(event_key)
+    else:
+        realized_pnl, pnl_source = _batch14_parse_realized_pnl(payload)
+        self.ledger.realized_pnl += realized_pnl
+        self._processed_exit_event_keys.add(event_key)
+
+        if realized_pnl < 0.0:
+            self.ledger.loss_count += 1
+            self.ledger.consecutive_losses += 1
+            cooldown_ns = int(self.cfg.thresholds.cooldown_seconds_after_loss * 1_000_000_000)
+            if cooldown_ns > 0:
+                self.runtime.set_cooldown_until(now_ns + cooldown_ns)
+        elif realized_pnl > 0.0:
+            self.ledger.win_count += 1
+            self.ledger.consecutive_losses = 0
+        else:
+            self.ledger.consecutive_losses = 0
+
+        self._last_pnl_source = pnl_source
+
+    self._processed_ledger_event_keys.add(event_key)
+    self.ledger.last_trade_id = (
+        _safe_str(payload.get("trade_id"))
+        or _safe_str(payload.get("decision_id"))
+        or _safe_str(payload.get("order_id"))
+        or event_key
+    )
+    self.ledger.last_trade_stream_id = stream_id_text
+    self.ledger.last_trade_ts_ns = _safe_int(payload.get("ts_ns") or payload.get("ts_event_ns"), now_ns)
+
+
+RiskService._apply_trade_ledger = _batch14_apply_trade_ledger
+
+
+def _batch14_process_trade_ledger(self, now_ns: int) -> bool:
+    progressed = False
+
+    pending = self._claim_pending_entries(self.keys.trades_ledger_stream, now_ns)
+    for message_id, fields in pending:
+        try:
+            self._apply_trade_ledger(fields, stream_id=_safe_str(message_id), now_ns=now_ns)
+        except RiskContractError as exc:
+            self._publish_error_event(
+                event="risk_trade_contract_error",
+                detail=str(exc),
+                ts_ns=now_ns,
+            )
+        except Exception as exc:
+            self._publish_error_event(
+                event="risk_trade_processing_error",
+                detail=f"{type(exc).__name__}:{exc}",
+                ts_ns=now_ns,
+            )
+            continue
+        self._ack_stream_message(self.keys.trades_ledger_stream, _safe_str(message_id))
+        progressed = True
+
+    results = RX.xreadgroup(
+        self.keys.risk_group,
+        self.cfg.consumer_name,
+        {self.keys.trades_ledger_stream: RX.STREAM_ID_NEW_ONLY},
+        count=10,
+        block_ms=self.cfg.thresholds.ledger_block_ms,
+        client=self.redis,
+    )
+
+    for stream_name, entries in results:
+        if stream_name != self.keys.trades_ledger_stream:
+            continue
+        for message_id, fields in entries:
+            try:
+                self._apply_trade_ledger(fields, stream_id=message_id, now_ns=now_ns)
+            except RiskContractError as exc:
+                self._publish_error_event(
+                    event="risk_trade_contract_error",
+                    detail=str(exc),
+                    ts_ns=now_ns,
+                )
+            except Exception as exc:
+                self._publish_error_event(
+                    event="risk_trade_processing_error",
+                    detail=f"{type(exc).__name__}:{exc}",
+                    ts_ns=now_ns,
+                )
+                continue
+            self._ack_stream_message(self.keys.trades_ledger_stream, message_id)
+            progressed = True
+
+    return progressed
+
+
+RiskService._process_trade_ledger = _batch14_process_trade_ledger
+
+
+def _batch14_apply_command(self, fields: Mapping[str, Any], *, now_ns: int) -> None:
+    payload = _decode_mapping(fields)
+    cmd = _safe_str(payload.get("cmd")).upper()
+    if not cmd:
+        raise RiskContractError("command payload missing cmd")
+
+    if cmd == N.CMD_PARAMS_RELOAD:
+        self.runtime.params_reload_requested = True
+        return
+
+    if cmd == N.CMD_PAUSE_TRADING:
+        self.runtime.manual_pause = True
+        self.runtime.manual_pause_reason = _safe_str(payload.get("reason"), "manual_pause")
+        return
+
+    if cmd == N.CMD_RESUME_TRADING:
+        self.runtime.manual_pause = False
+        self.runtime.manual_pause_reason = ""
+        if self.runtime.control_mode == N.CONTROL_MODE_NORMAL:
+            self.runtime.force_flatten_requested = False
+        return
+
+    if cmd == N.CMD_FORCE_FLATTEN:
+        self.runtime.force_flatten_requested = True
+        return
+
+    if cmd == N.CMD_SET_MODE:
+        mode = _safe_str(payload.get("mode")).upper()
+        allowed_modes = {
+            N.CONTROL_MODE_NORMAL,
+            N.CONTROL_MODE_SAFE,
+            N.CONTROL_MODE_REPLAY,
+            N.CONTROL_MODE_DISABLED,
+        }
+        if mode not in allowed_modes:
+            raise RiskContractError(f"invalid control mode: {mode!r}")
+
+        self.runtime.control_mode = mode
+        if mode == N.CONTROL_MODE_NORMAL:
+            self.runtime.manual_pause = False
+            self.runtime.manual_pause_reason = ""
+        elif mode == N.CONTROL_MODE_SAFE:
+            self.runtime.manual_pause = True
+            self.runtime.manual_pause_reason = "control_mode_safe"
+        elif mode == N.CONTROL_MODE_DISABLED:
+            self.runtime.manual_pause = True
+            self.runtime.manual_pause_reason = "control_mode_disabled"
+            self.runtime.force_flatten_requested = True
+        return
+
+    raise RiskContractError(f"unknown command: {cmd!r}")
+
+
+RiskService._apply_command = _batch14_apply_command
+
+
+def _batch14_process_control_commands(self, now_ns: int) -> bool:
+    progressed = False
+
+    pending = self._claim_pending_entries(self.keys.command_stream, now_ns)
+    for message_id, fields in pending:
+        try:
+            self._apply_command(fields, now_ns=now_ns)
+        except RiskContractError as exc:
+            self._publish_error_event(
+                event="risk_command_contract_error",
+                detail=str(exc),
+                ts_ns=now_ns,
+            )
+        except Exception as exc:
+            self._publish_error_event(
+                event="risk_command_processing_error",
+                detail=f"{type(exc).__name__}:{exc}",
+                ts_ns=now_ns,
+            )
+            continue
+        self._ack_stream_message(self.keys.command_stream, _safe_str(message_id))
+        progressed = True
+
+    results = RX.xreadgroup(
+        self.keys.risk_group,
+        self.cfg.consumer_name,
+        {self.keys.command_stream: RX.STREAM_ID_NEW_ONLY},
+        count=10,
+        block_ms=self.cfg.thresholds.command_block_ms,
+        client=self.redis,
+    )
+
+    for stream_name, entries in results:
+        if stream_name != self.keys.command_stream:
+            continue
+        for message_id, fields in entries:
+            try:
+                self._apply_command(fields, now_ns=now_ns)
+            except RiskContractError as exc:
+                self._publish_error_event(
+                    event="risk_command_contract_error",
+                    detail=str(exc),
+                    ts_ns=now_ns,
+                )
+            except Exception as exc:
+                self._publish_error_event(
+                    event="risk_command_processing_error",
+                    detail=f"{type(exc).__name__}:{exc}",
+                    ts_ns=now_ns,
+                )
+                continue
+            self._ack_stream_message(self.keys.command_stream, message_id)
+            progressed = True
+
+    return progressed
+
+
+RiskService._process_control_commands = _batch14_process_control_commands
+
+
+def _batch14_build_snapshot(self, now_ns: int) -> dict[str, str]:
+    stale_cutoff_ns = int(self.cfg.thresholds.stale_heartbeat_seconds * 1_000_000_000)
+    stale = (now_ns - self.runtime.updated_at_ns) > stale_cutoff_ns
+    max_new_lots = 0 if self.runtime.veto_entries else self.cfg.thresholds.max_new_lots_default
+
+    daily_stop_hit = self.ledger.realized_pnl <= (-1.0 * self.cfg.thresholds.daily_loss_limit)
+    max_loss_hit = (
+        self.cfg.thresholds.max_consecutive_losses > 0
+        and self.ledger.consecutive_losses >= self.cfg.thresholds.max_consecutive_losses
+    )
+    max_trades_hit = (
+        self.cfg.thresholds.max_trades_per_day > 0
+        and self.ledger.trades_today >= self.cfg.thresholds.max_trades_per_day
+    )
+
+    processed_keys = "|".join(sorted(self._processed_ledger_event_keys)[-200:])
+
+    return {
+        "ts_ns": str(now_ns),
+        "ts_event_ns": str(now_ns),
+        "control_mode": self.runtime.control_mode,
+        "mode": self.runtime.control_mode,
+        "veto_entries": "1" if self.runtime.veto_entries else "0",
+        "degraded_only": "0",
+        "force_flatten": "1" if self.runtime.force_flatten_requested else "0",
+        "allow_exits": "1",
+        "manual_pause": "1" if self.runtime.manual_pause else "0",
+        "manual_pause_reason": self.runtime.manual_pause_reason,
+        "trading_window_ok": "1" if self.runtime.trading_window_ok else "0",
+        "execution_healthy": "1" if self.runtime.execution_healthy else "0",
+        "execution_state_known": "1" if self._execution_state_known else "0",
+        "position_state_known": "1" if self._position_state_known else "0",
+        "position_open": "1" if self.runtime.position_open else "0",
+        "upstream_healthy": "1" if self.runtime.upstream_healthy else "0",
+        "feeds_heartbeat_fresh": "1" if self._feeds_heartbeat_fresh else "0",
+        "features_heartbeat_fresh": "1" if self._features_heartbeat_fresh else "0",
+        "strategy_heartbeat_fresh": "1" if self._strategy_heartbeat_fresh else "0",
+        "execution_heartbeat_fresh": "1" if self._execution_heartbeat_fresh else "0",
+        "broker_connected": "1" if self.runtime.broker_connected else "0",
+        "cooldown_until_ns": str(self.runtime.cooldown_until_ns),
+        "cooldown_active": "1" if self.runtime.cooldown_active(now_ns) else "0",
+        "day_realized_pnl": str(self.ledger.realized_pnl),
+        "trades_today": str(self.ledger.trades_today),
+        "day_loss_count": str(self.ledger.loss_count),
+        "day_win_count": str(self.ledger.win_count),
+        "consecutive_losses": str(self.ledger.consecutive_losses),
+        "trading_day": self.ledger.trading_day,
+        "stale": "1" if stale else "0",
+        "risk_heartbeat_stale": "1" if stale else "0",
+        "daily_stop_hit": "1" if daily_stop_hit else "0",
+        "max_loss_hit": "1" if max_loss_hit else "0",
+        "max_trades_hit": "1" if max_trades_hit else "0",
+        "max_new_lots": str(max_new_lots),
+        "params_reload_requested": "1" if self.runtime.params_reload_requested else "0",
+        "reason_code": self.runtime.veto_reason,
+        "reason_message": self.runtime.veto_reason,
+        "last_update_ns": str(now_ns),
+        "last_trade_id": self.ledger.last_trade_id,
+        "last_trade_stream_id": self.ledger.last_trade_stream_id,
+        "last_trade_ts_ns": str(self.ledger.last_trade_ts_ns),
+        "last_pnl_source": self._last_pnl_source,
+        "processed_ledger_event_keys": processed_keys,
+        "replay_mode": "1" if self.cfg.replay_mode else "0",
+        "risk_keys_trades_stream": self.keys.trades_ledger_stream,
+        "risk_keys_cmd_stream": self.keys.command_stream,
+        "risk_keys_state_hash": self.keys.risk_hash,
+    }
+
+
+RiskService._build_snapshot = _batch14_build_snapshot
+
+
+def _batch14_publish_state(self, now_ns: int, *, force: bool) -> None:
+    interval_ns = int(self.cfg.thresholds.state_publish_interval_seconds * 1_000_000_000)
+    if not force and (now_ns - self.runtime.last_state_publish_ns) < interval_ns:
+        return
+
+    RX.write_hash_fields(
+        self.keys.risk_hash,
+        self._build_snapshot(now_ns),
+        client=self.redis,
+    )
+    self.runtime.last_state_publish_ns = now_ns
+
+
+RiskService._publish_state = _batch14_publish_state
+
+
+def _batch14_risk_health_status(self) -> str:
+    if self.runtime.veto_entries:
+        return N.HEALTH_STATUS_WARN
+    return N.HEALTH_STATUS_OK
+
+
+def _batch14_publish_heartbeat(self, now_ns: int, *, force: bool) -> None:
+    interval_ns = int(self.cfg.thresholds.heartbeat_refresh_ms * 1_000_000)
+    if not force and (now_ns - self.runtime.last_heartbeat_ns) < interval_ns:
+        return
+
+    RX.write_heartbeat(
+        self.keys.risk_heartbeat,
+        service=N.SERVICE_RISK,
+        instance_id=self.cfg.instance_id,
+        status=self._risk_health_status(),
+        ts_event_ns=now_ns,
+        message=self.runtime.veto_reason or "ok",
+        ttl_ms=self.cfg.thresholds.heartbeat_ttl_ms,
+        client=self.redis,
+    )
+    self.runtime.last_heartbeat_ns = now_ns
+
+
+RiskService._risk_health_status = _batch14_risk_health_status
+RiskService._publish_heartbeat = _batch14_publish_heartbeat
+
+
+def _batch14_publish_health_event(
+    self,
+    *,
+    status: str,
+    event: str,
+    detail: str,
+    ts_ns: int,
+) -> None:
+    RX.xadd_fields(
+        self.keys.system_health_stream,
+        {
+            "event_type": event,
+            "service_name": N.SERVICE_RISK,
+            "instance_id": self.cfg.instance_id,
+            "status": status,
+            "detail": detail,
+            "ts_ns": str(ts_ns),
+            "ts_event_ns": str(ts_ns),
+        },
+        maxlen_approx=DEFAULT_HEALTH_STREAM_MAXLEN,
+        client=self.redis,
+    )
+
+
+def _batch14_publish_error_event(
+    self,
+    *,
+    event: str,
+    detail: str,
+    ts_ns: int,
+) -> None:
+    RX.xadd_fields(
+        self.keys.system_errors_stream,
+        {
+            "event_type": event,
+            "service_name": N.SERVICE_RISK,
+            "instance_id": self.cfg.instance_id,
+            "detail": detail,
+            "ts_ns": str(ts_ns),
+            "ts_event_ns": str(ts_ns),
+        },
+        maxlen_approx=DEFAULT_ERROR_STREAM_MAXLEN,
+        client=self.redis,
+    )
+
+
+RiskService._publish_health_event = _batch14_publish_health_event
+RiskService._publish_error_event = _batch14_publish_error_event
+
+
+def _batch14_publish_shutdown_heartbeat(self) -> None:
+    with contextlib.suppress(Exception):
+        RX.write_heartbeat(
+            self.keys.risk_heartbeat,
+            service=N.SERVICE_RISK,
+            instance_id=self.cfg.instance_id,
+            status="STOPPED",
+            ts_event_ns=self.now_ns(),
+            ttl_ms=self.cfg.thresholds.heartbeat_ttl_ms,
+            client=self.redis,
+        )
+
+
+RiskService._publish_shutdown_heartbeat = _batch14_publish_shutdown_heartbeat
+
+
+def build_risk_effective_config_report(context: Any) -> dict[str, Any]:
+    cfg = RiskConfig.from_context(context)
+    return {
+        "source_of_truth": "context_overrides_and_settings_runtime_only",
+        "risk_limits_yaml_status": "not_runtime_source_in_risk_py_batch14",
+        "replay_mode": cfg.replay_mode,
+        "timezone_name": cfg.timezone_name,
+        "trading_window": {
+            "start": cfg.trading_window.start.isoformat(timespec="minutes"),
+            "end": cfg.trading_window.end.isoformat(timespec="minutes"),
+        },
+        "thresholds": {
+            "daily_loss_limit": cfg.thresholds.daily_loss_limit,
+            "cooldown_seconds_after_loss": cfg.thresholds.cooldown_seconds_after_loss,
+            "max_consecutive_losses": cfg.thresholds.max_consecutive_losses,
+            "stale_heartbeat_seconds": cfg.thresholds.stale_heartbeat_seconds,
+            "require_upstream_heartbeats": cfg.thresholds.require_upstream_heartbeats,
+            "require_execution_healthy": cfg.thresholds.require_execution_healthy,
+            "require_broker_connected": cfg.thresholds.require_broker_connected,
+            "max_new_lots_default": cfg.thresholds.max_new_lots_default,
+            "max_trades_per_day": cfg.thresholds.max_trades_per_day,
+        },
+    }
+# ===== BATCH14_RISK_ENTRY_VETO_RESTART_IDEMPOTENCY END =====

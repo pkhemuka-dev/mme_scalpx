@@ -634,3 +634,74 @@ def build_tradability_summary(
         "miso_call_blocked_reason": _safe_str(_pick(miso_call_m, "blocked_reason")),
         "miso_put_blocked_reason": _safe_str(_pick(miso_put_m, "blocked_reason")),
     }
+
+# ===== BATCH8_SHARED_CORE_GUARDS START =====
+# Batch 8 freeze-final guard:
+# missing spread/depth/response must fail diagnostically, not default into
+# pass-looking numeric values.
+
+_BATCH8_ORIGINAL_BUILD_CLASSIC_OPTION_TRADABILITY_SURFACE = build_classic_option_tradability_surface
+_BATCH8_ORIGINAL_BUILD_MISO_OPTION_TRADABILITY_SURFACE = build_miso_option_tradability_surface
+
+
+def _batch8_selected_option_map(option_surface: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    option_map = _as_mapping(option_surface)
+    return _as_mapping(_pick(option_map, "selected_features") or option_map)
+
+
+def _batch8_raw_present(selected: Mapping[str, Any]) -> bool:
+    if not selected:
+        return False
+    if "live_present" in selected:
+        return _safe_bool(_pick(selected, "live_present"), False)
+    if "present" in selected:
+        return _safe_bool(_pick(selected, "present"), False)
+    return False
+
+
+def _batch8_apply_missing_diagnostics(out: dict[str, Any], selected: Mapping[str, Any]) -> dict[str, Any]:
+    present = _batch8_raw_present(selected)
+    spread_ratio = _safe_float_or_none(_pick(selected, "spread_ratio"))
+    depth_total = _safe_int(_pick(selected, "depth_total", "touch_depth", "option_touch_depth"), -1)
+    response_eff = _safe_float_or_none(_pick(selected, "response_efficiency", "response_eff", "option_response_efficiency"))
+
+    if not present:
+        out["present"] = False
+        out["entry_pass"] = False
+        out["blocked_reason"] = "not_present"
+
+    if spread_ratio is None:
+        out["spread_ratio"] = None
+        out["spread_pass"] = False
+        out["entry_pass"] = False
+        if out.get("blocked_reason") in ("", None):
+            out["blocked_reason"] = "spread_missing"
+
+    if depth_total is None or depth_total < 0:
+        out["depth_total"] = None
+        out["depth_pass"] = False
+        out["entry_pass"] = False
+        if out.get("blocked_reason") in ("", None):
+            out["blocked_reason"] = "depth_missing"
+
+    if response_eff is None:
+        out["response_efficiency"] = None
+        out["response_pass"] = False
+        out["entry_pass"] = False
+        if out.get("blocked_reason") in ("", None):
+            out["blocked_reason"] = "response_missing"
+
+    return out
+
+
+def build_classic_option_tradability_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    out = _BATCH8_ORIGINAL_BUILD_CLASSIC_OPTION_TRADABILITY_SURFACE(*args, **kwargs)
+    selected = _batch8_selected_option_map(kwargs.get("option_surface"))
+    return _batch8_apply_missing_diagnostics(out, selected)
+
+
+def build_miso_option_tradability_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    out = _BATCH8_ORIGINAL_BUILD_MISO_OPTION_TRADABILITY_SURFACE(*args, **kwargs)
+    selected = _batch8_selected_option_map(kwargs.get("option_surface"))
+    return _batch8_apply_missing_diagnostics(out, selected)
+# ===== BATCH8_SHARED_CORE_GUARDS END =====

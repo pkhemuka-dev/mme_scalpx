@@ -331,3 +331,72 @@ __all__ = [
     "injection_result_to_dict",
     "injection_batch_result_to_dict",
 ]
+
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS START =====
+# Batch 16 freeze-final guard:
+# Injector stays transport-abstracted, but it now enforces replay-safe channel
+# namespace before handing a request to transport.publish().
+
+from datetime import datetime as _batch16_datetime
+from .contracts import REPLAY_SAFE_CHANNEL_PREFIX as _BATCH16_REPLAY_SAFE_CHANNEL_PREFIX
+
+_BATCH16_ORIGINAL_VALIDATE_EVENT = _validate_event
+
+
+def _batch16_parse_event_time(value: str) -> _batch16_datetime:
+    raw = value.strip()
+    normalized = raw[:-1] + "+00:00" if raw.endswith("Z") else raw
+    try:
+        parsed = _batch16_datetime.fromisoformat(normalized)
+    except Exception as exc:
+        raise ReplayInjectorValidationError(
+            f"event_time must be ISO-8601 compatible, got {value!r}"
+        ) from exc
+
+    if parsed.tzinfo is None:
+        raise ReplayInjectorValidationError(
+            f"event_time must be timezone-aware, got {value!r}"
+        )
+    return parsed.astimezone().astimezone(parsed.tzinfo)
+
+
+def _batch16_validate_replay_channel(channel: str) -> None:
+    if not channel.startswith(_BATCH16_REPLAY_SAFE_CHANNEL_PREFIX):
+        raise ReplayInjectorValidationError(
+            "replay injection channel must use replay-safe prefix "
+            f"{_BATCH16_REPLAY_SAFE_CHANNEL_PREFIX!r}, got {channel!r}"
+        )
+
+
+def _validate_event(event: ReplayInjectionEvent) -> None:
+    _BATCH16_ORIGINAL_VALIDATE_EVENT(event)
+    _batch16_validate_replay_channel(event.channel.strip())
+    _ = _batch16_parse_event_time(event.event_time)
+
+
+def _validate_event_batch(events: Sequence[ReplayInjectionEvent]) -> None:
+    if not events:
+        raise ReplayInjectorValidationError("events batch must be non-empty")
+
+    previous_sequence: int | None = None
+    previous_event_time = None
+
+    for event in events:
+        _validate_event(event)
+        event_dt = _batch16_parse_event_time(event.event_time)
+
+        if previous_sequence is not None and event.sequence_id <= previous_sequence:
+            raise ReplayInjectorValidationError(
+                "event batch must be strictly increasing by sequence_id; "
+                f"got {event.sequence_id} after {previous_sequence}"
+            )
+
+        if previous_event_time is not None and event_dt < previous_event_time:
+            raise ReplayInjectorValidationError(
+                "event batch must be non-decreasing by parsed event_time; "
+                f"got {event.event_time!r}"
+            )
+
+        previous_sequence = event.sequence_id
+        previous_event_time = event_dt
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====

@@ -392,6 +392,54 @@ def _utc_iso_now() -> str:
     return datetime.now(tz=timezone.utc).isoformat(timespec="milliseconds")
 
 
+
+# ============================================================================
+# Runtime truth introspection helpers
+# ============================================================================
+#
+# Batch 3 deliberately does not change runtime_mode behavior. settings.py still
+# accepts its current low-level runtime choices until main.py composition audit
+# decides the final effective runtime owner. These helpers make the mismatch
+# explicit and auditable.
+
+def env_get_any(
+    env: Mapping[str, str],
+    suffix: str,
+    *,
+    prefixes: tuple[str, ...] = (DEFAULT_ENV_PREFIX, "SCALPX_"),
+) -> str | None:
+    """Read an environment suffix from accepted operational prefixes."""
+    for prefix in prefixes:
+        value = env.get(f"{prefix}{suffix}")
+        if value is not None:
+            return value
+    return None
+
+
+def runtime_mode_input_snapshot(env: Mapping[str, str]) -> dict[str, str | None]:
+    """Return all known runtime-mode inputs without deciding effective mode."""
+    return {
+        "MME_RUNTIME_MODE": env.get("MME_RUNTIME_MODE"),
+        "SCALPX_RUNTIME_MODE": env.get("SCALPX_RUNTIME_MODE"),
+        "settings_allowed_runtime_modes": ",".join(_ALLOWED_RUNTIME_MODES),
+        "settings_default_runtime_mode": DEFAULT_RUNTIME_MODE,
+    }
+
+
+def validate_runtime_mode_input_snapshot(env: Mapping[str, str]) -> dict[str, str | None]:
+    """Validate runtime-mode input surface for proof bundles.
+
+    This is intentionally observational. It does not reinterpret paper mode or
+    SCALPX_* into settings.runtime.runtime_mode before the main.py audit.
+    """
+    snapshot = runtime_mode_input_snapshot(env)
+    for key in ("MME_RUNTIME_MODE", "SCALPX_RUNTIME_MODE"):
+        value = snapshot.get(key)
+        if value is not None and not str(value).strip():
+            raise SettingsError(f"{key} cannot be blank when provided")
+    return snapshot
+
+
 # ============================================================================
 # Settings models
 # ============================================================================
@@ -1385,6 +1433,9 @@ __all__ = [
     "DEFAULT_STREAM_MAXLEN_APPROX",
     "DEFAULT_XREAD_BLOCK_MS",
     "DEFAULT_XREAD_COUNT",
+    "env_get_any",
+    "runtime_mode_input_snapshot",
+    "validate_runtime_mode_input_snapshot",
     "ExecutionSettings",
     "FeedsSettings",
     "LoggingSettings",
@@ -1414,3 +1465,77 @@ __all__ = [
     "setup_logging",
     "validate_settings",
 ]
+
+# ===== BATCH18_CORE_INFRA_SPINE_FREEZE START =====
+# Batch 18 freeze-final guard:
+# settings.py remains the low-level environment/settings loader. These helpers
+# do not change runtime behavior. They expose runtime-truth inputs so main/config
+# governance can prove whether YAML/env/systemd agree.
+
+import os as _batch18_os
+from typing import Mapping as _batch18_Mapping
+from typing import Any as _batch18_Any
+
+
+def runtime_mode_input_snapshot(
+    environ: _batch18_Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    env = dict(environ or _batch18_os.environ)
+    allowed = globals().get("ALLOWED_RUNTIME_MODES", ("live", "replay"))
+    default = globals().get("DEFAULT_RUNTIME_MODE", "live")
+    return {
+        "MME_RUNTIME_MODE": env.get("MME_RUNTIME_MODE", ""),
+        "SCALPX_RUNTIME_MODE": env.get("SCALPX_RUNTIME_MODE", ""),
+        "MME_TRADING_ENABLED": env.get("MME_TRADING_ENABLED", ""),
+        "SCALPX_TRADING_ENABLED": env.get("SCALPX_TRADING_ENABLED", ""),
+        "MME_ALLOW_LIVE_ORDERS": env.get("MME_ALLOW_LIVE_ORDERS", ""),
+        "SCALPX_ALLOW_LIVE_ORDERS": env.get("SCALPX_ALLOW_LIVE_ORDERS", ""),
+        "MME_BOOTSTRAP_GROUPS_ON_START": env.get("MME_BOOTSTRAP_GROUPS_ON_START", ""),
+        "SCALPX_BOOTSTRAP_GROUPS_ON_START": env.get("SCALPX_BOOTSTRAP_GROUPS_ON_START", ""),
+        "settings_allowed_runtime_modes": ",".join(str(x) for x in allowed),
+        "settings_default_runtime_mode": str(default),
+    }
+
+
+def build_effective_runtime_config_state(
+    *,
+    settings_runtime_mode: str,
+    runtime_yaml_mode: str | None = None,
+    project_env_runtime_mode: str | None = None,
+    env_runtime_mode: str | None = None,
+    source_of_truth: str = "settings.py",
+    notes: _batch18_Mapping[str, _batch18_Any] | None = None,
+) -> dict[str, _batch18_Any]:
+    values = {
+        "settings_runtime_mode": settings_runtime_mode,
+        "runtime_yaml_mode": runtime_yaml_mode,
+        "project_env_runtime_mode": project_env_runtime_mode,
+        "env_runtime_mode": env_runtime_mode,
+    }
+    present = {k: v for k, v in values.items() if v not in (None, "")}
+    normalized = {k: str(v).strip().lower() for k, v in present.items()}
+
+    conflicts: list[str] = []
+    unique_modes = set(normalized.values())
+    if len(unique_modes) > 1:
+        conflicts.append("runtime_mode_mismatch")
+
+    return {
+        "source_of_truth": source_of_truth,
+        "settings_runtime_behavior_changed": False,
+        "values": values,
+        "normalized_values": normalized,
+        "conflicts": conflicts,
+        "conflict_count": len(conflicts),
+        "status": "WARN" if conflicts else "OK",
+        "notes": dict(notes or {}),
+    }
+
+
+try:
+    for _name in ("runtime_mode_input_snapshot", "build_effective_runtime_config_state"):
+        if _name not in __all__:
+            __all__.append(_name)
+except Exception:
+    pass
+# ===== BATCH18_CORE_INFRA_SPINE_FREEZE END =====

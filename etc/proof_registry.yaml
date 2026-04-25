@@ -1,0 +1,174 @@
+# ScalpX MME proof registry
+# Batch 19 freeze-final governance surface.
+#
+# Purpose:
+# - classify proof scripts by scope/tier;
+# - prevent HOLD/report-only proofs from being misread as paper/live readiness;
+# - make write-capable proofs explicit;
+# - list P1/P0 proof gaps required before paper_armed.
+
+registry_version: 1
+owner: mme_scalpx_integration_freeze
+updated_by_batch: batch19_proof_tooling_governance
+
+status_values:
+  - ACTIVE_PASS_EXPECTED
+  - ACTIVE_OBSERVATION_ONLY
+  - ACTIVE_REDIS_SMOKE
+  - MISSING_REQUIRED_BEFORE_PAPER_ARMED
+  - FUTURE_POLICY
+  - QUARANTINED
+  - REFERENCE_ONLY
+
+proof_categories:
+  A: compile_import
+  B: contract_static
+  C: offline_deterministic
+  D: redis_smoke
+  E: live_observation
+  F: write_capable
+  G: broker_auth_probe
+  H: replay_research
+
+global_law:
+  hold_report_only_is_not_activation_ready: true
+  proof_must_state_does_not_prove: true
+  write_capable_proof_must_declare_live_or_replay: true
+  live_decision_stream_write_requires_explicit_guard: true
+  proof_json_required_under_run_proofs: true
+  proof_bundle_must_exclude:
+    - "__pycache__"
+    - "*.pyc"
+    - "*.bak.*"
+    - "secrets"
+    - "tokens"
+    - "unredacted_env"
+
+existing_hold_report_only_proofs:
+  bin/proof_family_features_offline.py:
+    status: ACTIVE_PASS_EXPECTED
+    category: C
+    tier: P1
+    proves:
+      - feature_family_payload_shape
+      - five_family_surface_presence
+    does_not_prove:
+      - provider_token_equivalence
+      - promoted_entry_safety
+      - execution_metadata_completeness
+      - live_candidate_quality
+    writes_live_redis: false
+    uses_broker: false
+    places_orders: false
+
+  bin/proof_strategy_hold_bridge_offline.py:
+    status: ACTIVE_PASS_EXPECTED
+    category: C
+    tier: P1
+    proves:
+      - strategy_hold_bridge
+      - action_hold
+      - qty_zero
+    does_not_prove:
+      - broker_rejection_of_enter
+      - risk_exit_never_blocked
+      - promoted_order_intent_validity
+    writes_live_redis: false
+    uses_broker: false
+    places_orders: false
+
+  bin/proof_strategy_activation_report_only.py:
+    status: ACTIVE_PASS_EXPECTED
+    category: C
+    tier: P1
+    proves:
+      - activation_report_only
+      - candidate_observation_without_promotion
+      - hold_decision_safety
+    does_not_prove:
+      - paper_armed_readiness
+      - order_intent_conversion
+      - execution_safety
+    writes_live_redis: false
+    uses_broker: false
+    places_orders: false
+
+  bin/proof_strategy_activation_report_redis_smoke.py:
+    status: ACTIVE_REDIS_SMOKE
+    category: D
+    tier: P1
+    proves:
+      - latest_feature_hash_readable
+      - hold_decision_can_be_built_from_redis_feature_hash
+      - redis_safe_fields
+    does_not_prove:
+      - activation_readiness
+      - paper_armed_readiness
+      - provider_token_equivalence
+      - execution_safety
+    default_mode: read_only
+    live_write_flag: --publish-hold-live
+    replay_write_flag: --publish-hold-replay
+    live_write_env_guard: I_UNDERSTAND_THIS_WRITES_LIVE_DECISION_STREAM
+    writes_live_redis: conditional_explicit_guarded
+    uses_broker: false
+    places_orders: false
+
+  bin/observe_strategy_activation_report_live.py:
+    status: ACTIVE_OBSERVATION_ONLY
+    category: E
+    tier: P1
+    proves:
+      - repeated_live_feature_hash_observation
+      - hold_action_in_current_lane
+      - qty_zero_in_current_lane
+      - activation_not_promoted
+      - live_orders_disabled
+    does_not_prove:
+      - activation_readiness
+      - paper_armed_readiness
+      - candidate_quality
+      - provider_token_equivalence
+      - risk_exit_never_blocked
+      - execution_metadata_completeness
+    writes_live_redis: false
+    uses_broker: false
+    places_orders: false
+
+required_before_paper_armed:
+  bin/proof_redis_contract_matrix.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: core_spine
+  bin/proof_runtime_effective_config.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: runtime_config
+  bin/proof_provider_runtime_roles.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: provider_runtime
+  bin/proof_runtime_instrument_provider_equivalence.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: domain_instruments
+  bin/proof_strategy_promoted_decision_contract.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: strategy_family
+  bin/proof_execution_family_entry_safety.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: execution
+  bin/proof_execution_hold_no_order.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: execution
+  bin/proof_risk_exit_never_blocked.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: risk
+  bin/proof_risk_restart_rebuild.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: risk
+  bin/proof_replay_engine_contracts.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: replay
+  bin/proof_research_capture_contracts.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: research_capture
+  bin/proof_config_runtime_truth.py:
+    status: MISSING_REQUIRED_BEFORE_PAPER_ARMED
+    owner: config_governance

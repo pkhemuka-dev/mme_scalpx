@@ -54,6 +54,8 @@ options:
     mode: nearest_valid
     include_weekly: true
     include_monthly: true
+    weekly_expiry_weekday: TUESDAY
+    monthly_expiry_weekday: TUESDAY
     offset: 0
 
   fallback:

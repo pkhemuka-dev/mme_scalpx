@@ -1323,6 +1323,338 @@ class StrategyDecision(SchemaBase):
             )
 
 
+
+@dataclass(frozen=True, slots=True)
+class ProviderInstrumentRef(SchemaBase):
+    """Provider/broker equivalence reference for one tradable option instrument."""
+
+    option_side: str
+    instrument_key: str
+    option_symbol: str
+    option_token: str
+    strike: float
+    provider_id: str | None = None
+    provider_exchange_segment: str | None = None
+    dhan_security_id: str | None = None
+    zerodha_token: str | None = None
+    expiry: str | None = None
+    trading_symbol: str | None = None
+
+    _TYPE: ClassVar[str] = "provider_instrument_ref"
+
+    def validate(self) -> None:
+        _require_literal(self.option_side, "option_side", allowed=ALLOWED_OPTION_SIDES)
+        _require_non_empty_str(self.instrument_key, "instrument_key")
+        _require_non_empty_str(self.option_symbol, "option_symbol")
+        _require_non_empty_str(self.option_token, "option_token")
+        _require_float(self.strike, "strike", min_value=0.0)
+        if self.provider_id is not None:
+            _require_literal(self.provider_id, "provider_id", allowed=ALLOWED_PROVIDER_IDS)
+        for field_name in (
+            "provider_exchange_segment",
+            "dhan_security_id",
+            "zerodha_token",
+            "expiry",
+            "trading_symbol",
+        ):
+            value = getattr(self, field_name)
+            if value is not None:
+                _optional_non_empty_str(value, field_name)
+
+
+@dataclass(frozen=True, slots=True)
+class StrategyFamilyCandidate(SchemaBase):
+    """Canonical cross-family candidate shape before promotion to order intent."""
+
+    candidate_id: str
+    ts_event_ns: int
+    strategy_family_id: str
+    doctrine_id: str
+    branch_id: str
+    side: str
+    family_runtime_mode: str
+    score: float
+    confidence: float
+    reason_code: str
+    strategy_runtime_mode: str | None = None
+    entry_mode: str = names.ENTRY_MODE_UNKNOWN
+    system_state: str = names.STATE_IDLE
+    source_event_id: str | None = None
+    trap_event_id: str | None = None
+    burst_event_id: str | None = None
+    active_futures_provider_id: str | None = None
+    active_selected_option_provider_id: str | None = None
+    active_option_context_provider_id: str | None = None
+    instrument_key: str | None = None
+    option_symbol: str | None = None
+    option_token: str | None = None
+    strike: float | None = None
+    limit_price: float | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    _TYPE: ClassVar[str] = "strategy_family_candidate"
+
+    def validate(self) -> None:
+        _require_non_empty_str(self.candidate_id, "candidate_id")
+        _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
+        _validate_family_doctrine_pair(self.strategy_family_id, self.doctrine_id)
+        _validate_branch_side_pair(self.branch_id, self.side)
+        _require_literal(self.family_runtime_mode, "family_runtime_mode", allowed=ALLOWED_FAMILY_RUNTIME_MODES)
+        if self.strategy_runtime_mode is not None:
+            _validate_strategy_runtime_mode_for_family(
+                self.strategy_family_id,
+                self.strategy_runtime_mode,
+                field_name="strategy_runtime_mode",
+            )
+        _require_literal(self.entry_mode, "entry_mode", allowed=ALLOWED_ENTRY_MODES)
+        _require_literal(self.system_state, "system_state", allowed=ALLOWED_SYSTEM_STATES)
+        _require_float(self.score, "score")
+        confidence = _require_float(self.confidence, "confidence")
+        _require(0.0 <= confidence <= 1.0, "confidence must be between 0.0 and 1.0")
+        _require_non_empty_str(self.reason_code, "reason_code")
+        for field_name in ("source_event_id", "trap_event_id", "burst_event_id"):
+            value = getattr(self, field_name)
+            if value is not None:
+                _optional_non_empty_str(value, field_name)
+        for field_name in (
+            "active_futures_provider_id",
+            "active_selected_option_provider_id",
+            "active_option_context_provider_id",
+        ):
+            value = getattr(self, field_name)
+            if value is not None:
+                _require_literal(value, field_name, allowed=ALLOWED_PROVIDER_IDS)
+        for field_name in ("instrument_key", "option_symbol", "option_token"):
+            value = getattr(self, field_name)
+            if value is not None:
+                _optional_non_empty_str(value, field_name)
+        if self.strike is not None:
+            _require_float(self.strike, "strike", min_value=0.0)
+        if self.limit_price is not None:
+            _require_float(self.limit_price, "limit_price", min_value=0.0)
+        metadata = _require_mapping(self.metadata, "metadata")
+        object.__setattr__(self, "metadata", {str(k): _plain_value(v) for k, v in metadata.items()})
+
+
+@dataclass(frozen=True, slots=True)
+class StrategyOrderIntent(SchemaBase):
+    """Strict promoted family order-intent bridge before StrategyDecision publish.
+
+    This model is intentionally stricter than StrategyDecision. StrategyDecision
+    remains the broad transport payload; StrategyOrderIntent is the promoted
+    entry-only contract that must have execution-critical option fields.
+    """
+
+    decision_id: str
+    ts_event_ns: int
+    action: str
+    side: str
+    position_effect: str
+    quantity_lots: int
+    instrument_key: str
+    strategy_family_id: str
+    doctrine_id: str
+    branch_id: str
+    family_runtime_mode: str
+    option_symbol: str
+    option_token: str
+    strike: float
+    limit_price: float
+    entry_mode: str
+    system_state: str
+    reason_code: str
+    ts_expiry_ns: int | None = None
+    strategy_runtime_mode: str | None = None
+    source_event_id: str | None = None
+    trap_event_id: str | None = None
+    burst_event_id: str | None = None
+    active_futures_provider_id: str | None = None
+    active_selected_option_provider_id: str | None = None
+    active_option_context_provider_id: str | None = None
+    execution_primary_provider_id: str | None = None
+    execution_fallback_provider_id: str | None = None
+    confidence: float = 0.0
+    stop_plan: StopPlan | None = None
+    target_plan: TargetPlan | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    _TYPE: ClassVar[str] = "strategy_order_intent"
+
+    def validate(self) -> None:
+        _require_non_empty_str(self.decision_id, "decision_id")
+        _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
+        if self.ts_expiry_ns is not None:
+            _require_int(self.ts_expiry_ns, "ts_expiry_ns", min_value=0)
+            _require(self.ts_expiry_ns >= self.ts_event_ns, "ts_expiry_ns must be >= ts_event_ns")
+
+        _require(
+            self.action in (names.ACTION_ENTER_CALL, names.ACTION_ENTER_PUT),
+            "StrategyOrderIntent supports promoted entry actions only",
+        )
+        _require_literal(self.side, "side", allowed=ALLOWED_OPTION_SIDES)
+        _require(
+            self.position_effect == names.POSITION_EFFECT_OPEN,
+            "StrategyOrderIntent requires OPEN position_effect",
+        )
+        _require_int(self.quantity_lots, "quantity_lots", min_value=1)
+        _require_non_empty_str(self.instrument_key, "instrument_key")
+
+        _validate_family_doctrine_pair(self.strategy_family_id, self.doctrine_id)
+        _validate_branch_side_pair(self.branch_id, self.side)
+        _require_literal(self.family_runtime_mode, "family_runtime_mode", allowed=ALLOWED_FAMILY_RUNTIME_MODES)
+        if self.strategy_runtime_mode is not None:
+            _validate_strategy_runtime_mode_for_family(
+                self.strategy_family_id,
+                self.strategy_runtime_mode,
+                field_name="strategy_runtime_mode",
+            )
+
+        if self.action == names.ACTION_ENTER_CALL:
+            _require(self.side == names.SIDE_CALL, "ENTER_CALL requires side CALL")
+        if self.action == names.ACTION_ENTER_PUT:
+            _require(self.side == names.SIDE_PUT, "ENTER_PUT requires side PUT")
+
+        _require_non_empty_str(self.option_symbol, "option_symbol")
+        _require_non_empty_str(self.option_token, "option_token")
+        _require_float(self.strike, "strike", min_value=0.0)
+        _require_float(self.limit_price, "limit_price", min_value=0.0)
+        _require_literal(self.entry_mode, "entry_mode", allowed=ALLOWED_ENTRY_MODES)
+        _require_literal(self.system_state, "system_state", allowed=ALLOWED_SYSTEM_STATES)
+        _require_non_empty_str(self.reason_code, "reason_code")
+
+        for field_name in ("source_event_id", "trap_event_id", "burst_event_id"):
+            value = getattr(self, field_name)
+            if value is not None:
+                _optional_non_empty_str(value, field_name)
+
+        for field_name in (
+            "active_futures_provider_id",
+            "active_selected_option_provider_id",
+            "active_option_context_provider_id",
+            "execution_primary_provider_id",
+            "execution_fallback_provider_id",
+        ):
+            value = getattr(self, field_name)
+            if value is not None:
+                _require_literal(value, field_name, allowed=ALLOWED_PROVIDER_IDS)
+
+        confidence = _require_float(self.confidence, "confidence")
+        _require(0.0 <= confidence <= 1.0, "confidence must be between 0.0 and 1.0")
+        metadata = _require_mapping(self.metadata, "metadata")
+        object.__setattr__(self, "metadata", {str(k): _plain_value(v) for k, v in metadata.items()})
+
+    def to_execution_metadata(self) -> dict[str, Any]:
+        metadata = dict(self.metadata)
+        metadata.update(
+            {
+                "option_symbol": self.option_symbol,
+                "option_token": self.option_token,
+                "strike": self.strike,
+                "limit_price": self.limit_price,
+                "family_id": self.strategy_family_id,
+                "strategy_family_id": self.strategy_family_id,
+                "doctrine_id": self.doctrine_id,
+                "branch_id": self.branch_id,
+                "family_runtime_mode": self.family_runtime_mode,
+                "strategy_runtime_mode": self.strategy_runtime_mode,
+                "entry_mode": self.entry_mode,
+                "reason_code": self.reason_code,
+                "confidence": self.confidence,
+                "active_futures_provider_id": self.active_futures_provider_id,
+                "active_selected_option_provider_id": self.active_selected_option_provider_id,
+                "active_option_context_provider_id": self.active_option_context_provider_id,
+                "execution_primary_provider_id": self.execution_primary_provider_id,
+                "execution_fallback_provider_id": self.execution_fallback_provider_id,
+                "source_event_id": self.source_event_id,
+                "trap_event_id": self.trap_event_id,
+                "burst_event_id": self.burst_event_id,
+            }
+        )
+        return {str(k): _plain_value(v) for k, v in metadata.items() if v is not None}
+
+    def to_strategy_decision_payload(self) -> dict[str, Any]:
+        return {
+            "decision_id": self.decision_id,
+            "ts_event_ns": self.ts_event_ns,
+            "ts_expiry_ns": self.ts_expiry_ns,
+            "action": self.action,
+            "side": self.side,
+            "position_effect": self.position_effect,
+            "quantity_lots": self.quantity_lots,
+            "instrument_key": self.instrument_key,
+            "strategy_family_id": self.strategy_family_id,
+            "doctrine_id": self.doctrine_id,
+            "branch_id": self.branch_id,
+            "family_runtime_mode": self.family_runtime_mode,
+            "strategy_runtime_mode": self.strategy_runtime_mode,
+            "source_event_id": self.source_event_id,
+            "trap_event_id": self.trap_event_id,
+            "burst_event_id": self.burst_event_id,
+            "active_futures_provider_id": self.active_futures_provider_id,
+            "active_selected_option_provider_id": self.active_selected_option_provider_id,
+            "active_option_context_provider_id": self.active_option_context_provider_id,
+            "entry_mode": self.entry_mode,
+            "strategy_mode": names.STRATEGY_AUTO,
+            "system_state": self.system_state,
+            "explain": self.reason_code,
+            "blocker_code": None,
+            "blocker_message": None,
+            "stop_plan": self.stop_plan.to_dict() if self.stop_plan is not None else None,
+            "target_plan": self.target_plan.to_dict() if self.target_plan is not None else None,
+            "metadata": self.to_execution_metadata(),
+        }
+
+    def to_strategy_decision(self) -> StrategyDecision:
+        return StrategyDecision.from_mapping(self.to_strategy_decision_payload())
+
+
+@dataclass(frozen=True, slots=True)
+class EffectiveRuntimeConfigState(SchemaBase):
+    """Auditable effective runtime configuration snapshot for proof bundles."""
+
+    ts_event_ns: int
+    runtime_mode: str
+    trading_enabled: bool
+    allow_live_orders: bool
+    provider_runtime_enabled: bool
+    bootstrap_groups_on_start: bool
+    source_of_truth: str
+    config_file_runtime_mode: str | None = None
+    systemd_runtime_mode: str | None = None
+    env_runtime_mode: str | None = None
+    settings_runtime_mode: str | None = None
+    family_runtime_mode: str | None = None
+    message: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    _TYPE: ClassVar[str] = "effective_runtime_config_state"
+
+    def validate(self) -> None:
+        allowed_runtime_modes = ("paper", "live", "replay")
+        _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
+        _require_literal(self.runtime_mode, "runtime_mode", allowed=allowed_runtime_modes)
+        _require_bool(self.trading_enabled, "trading_enabled")
+        _require_bool(self.allow_live_orders, "allow_live_orders")
+        _require_bool(self.provider_runtime_enabled, "provider_runtime_enabled")
+        _require_bool(self.bootstrap_groups_on_start, "bootstrap_groups_on_start")
+        _require_non_empty_str(self.source_of_truth, "source_of_truth")
+        for field_name in (
+            "config_file_runtime_mode",
+            "systemd_runtime_mode",
+            "env_runtime_mode",
+            "settings_runtime_mode",
+        ):
+            value = getattr(self, field_name)
+            if value is not None:
+                _require_literal(value, field_name, allowed=allowed_runtime_modes)
+        if self.family_runtime_mode is not None:
+            _require_literal(self.family_runtime_mode, "family_runtime_mode", allowed=ALLOWED_FAMILY_RUNTIME_MODES)
+        if self.message is not None:
+            _optional_non_empty_str(self.message, "message")
+        metadata = _require_mapping(self.metadata, "metadata")
+        object.__setattr__(self, "metadata", {str(k): _plain_value(v) for k, v in metadata.items()})
+
+
 @dataclass(frozen=True, slots=True)
 class OperatorCommand(SchemaBase):
     command_type: str
@@ -1657,6 +1989,15 @@ class DhanContextEvent(SchemaBase):
     atm_strike: float | None = None
     selected_call_instrument_key: str | None = None
     selected_put_instrument_key: str | None = None
+    selected_call_option_symbol: str | None = None
+    selected_put_option_symbol: str | None = None
+    selected_call_option_token: str | None = None
+    selected_put_option_token: str | None = None
+    selected_call_dhan_security_id: str | None = None
+    selected_put_dhan_security_id: str | None = None
+    selected_call_zerodha_token: str | None = None
+    selected_put_zerodha_token: str | None = None
+    provider_exchange_segment: str | None = None
     selected_call_score: float | None = None
     selected_put_score: float | None = None
     selected_call_delta: float | None = None
@@ -1702,7 +2043,20 @@ class DhanContextEvent(SchemaBase):
         _require_literal(self.context_status, "context_status", allowed=ALLOWED_PROVIDER_STATUSES)
         if self.atm_strike is not None:
             _require_float(self.atm_strike, "atm_strike", min_value=0.0)
-        for field_name in ("selected_call_instrument_key", "selected_put_instrument_key", "message"):
+        for field_name in (
+            "selected_call_instrument_key",
+            "selected_put_instrument_key",
+            "selected_call_option_symbol",
+            "selected_put_option_symbol",
+            "selected_call_option_token",
+            "selected_put_option_token",
+            "selected_call_dhan_security_id",
+            "selected_put_dhan_security_id",
+            "selected_call_zerodha_token",
+            "selected_put_zerodha_token",
+            "provider_exchange_segment",
+            "message",
+        ):
             value = getattr(self, field_name)
             if value is not None:
                 _optional_non_empty_str(value, field_name)
@@ -1767,6 +2121,15 @@ class DhanContextState(SchemaBase):
     atm_strike: float | None = None
     selected_call_instrument_key: str | None = None
     selected_put_instrument_key: str | None = None
+    selected_call_option_symbol: str | None = None
+    selected_put_option_symbol: str | None = None
+    selected_call_option_token: str | None = None
+    selected_put_option_token: str | None = None
+    selected_call_dhan_security_id: str | None = None
+    selected_put_dhan_security_id: str | None = None
+    selected_call_zerodha_token: str | None = None
+    selected_put_zerodha_token: str | None = None
+    provider_exchange_segment: str | None = None
     selected_call_score: float | None = None
     selected_put_score: float | None = None
     selected_call_delta: float | None = None
@@ -1827,7 +2190,20 @@ class DhanContextState(SchemaBase):
         _require_literal(self.context_status, "context_status", allowed=ALLOWED_PROVIDER_STATUSES)
         if self.atm_strike is not None:
             _require_float(self.atm_strike, "atm_strike", min_value=0.0)
-        for field_name in ("selected_call_instrument_key", "selected_put_instrument_key", "message"):
+        for field_name in (
+            "selected_call_instrument_key",
+            "selected_put_instrument_key",
+            "selected_call_option_symbol",
+            "selected_put_option_symbol",
+            "selected_call_option_token",
+            "selected_put_option_token",
+            "selected_call_dhan_security_id",
+            "selected_put_dhan_security_id",
+            "selected_call_zerodha_token",
+            "selected_put_zerodha_token",
+            "provider_exchange_segment",
+            "message",
+        ):
             value = getattr(self, field_name)
             if value is not None:
                 _optional_non_empty_str(value, field_name)
@@ -2002,6 +2378,10 @@ class ProviderTransitionEvent(SchemaBase):
     family_runtime_mode: str | None = None
     failover_mode: str | None = None
     override_mode: str | None = None
+    has_open_position: bool | None = None
+    setup_invalidated: bool = False
+    switch_allowed: bool = True
+    blocked_reason: str | None = None
     message: str | None = None
 
     _TYPE: ClassVar[str] = "provider_transition_event"
@@ -2023,6 +2403,17 @@ class ProviderTransitionEvent(SchemaBase):
             _require_literal(self.failover_mode, "failover_mode", allowed=ALLOWED_PROVIDER_FAILOVER_MODES)
         if self.override_mode is not None:
             _require_literal(self.override_mode, "override_mode", allowed=ALLOWED_PROVIDER_OVERRIDE_MODES)
+        if self.has_open_position is not None:
+            _require_bool(self.has_open_position, "has_open_position")
+        _require_bool(self.setup_invalidated, "setup_invalidated")
+        _require_bool(self.switch_allowed, "switch_allowed")
+        if self.blocked_reason is not None:
+            _optional_non_empty_str(self.blocked_reason, "blocked_reason")
+        if not self.switch_allowed:
+            _require(
+                self.blocked_reason is not None and self.blocked_reason.strip() != "",
+                "blocked provider transition requires blocked_reason",
+            )
         if self.message is not None:
             _optional_non_empty_str(self.message, "message")
 
@@ -2157,6 +2548,11 @@ class ExecutionState(SchemaBase):
     strategy_runtime_mode: str | None = None
     execution_primary_provider_id: str | None = None
     execution_fallback_provider_id: str | None = None
+    active_execution_provider_id: str | None = None
+    last_execution_provider_id: str | None = None
+    last_broker_order_id: str | None = None
+    provider_failover_used: bool = False
+    provider_route_reason: str | None = None
     lock_owner: str | None = None
     pending_order_id: str | None = None
     pending_decision_id: str | None = None
@@ -2188,6 +2584,20 @@ class ExecutionState(SchemaBase):
                 self.execution_fallback_provider_id,
                 "execution_fallback_provider_id",
                 allowed=ALLOWED_PROVIDER_IDS,
+            )
+        for field_name in ("active_execution_provider_id", "last_execution_provider_id"):
+            value = getattr(self, field_name)
+            if value is not None:
+                _require_literal(value, field_name, allowed=ALLOWED_PROVIDER_IDS)
+        if self.last_broker_order_id is not None:
+            _optional_non_empty_str(self.last_broker_order_id, "last_broker_order_id")
+        _require_bool(self.provider_failover_used, "provider_failover_used")
+        if self.provider_route_reason is not None:
+            _optional_non_empty_str(self.provider_route_reason, "provider_route_reason")
+        if self.provider_failover_used:
+            _require(
+                self.active_execution_provider_id is not None,
+                "provider_failover_used requires active_execution_provider_id",
             )
         if self.lock_owner is not None:
             _optional_non_empty_str(self.lock_owner, "lock_owner")
@@ -2546,6 +2956,10 @@ MODEL_REGISTRY: Final[Mapping[str, type[SchemaBase]]] = MappingProxyType(
             StopPlan,
             TargetPlan,
             StrategyDecision,
+            ProviderInstrumentRef,
+            StrategyFamilyCandidate,
+            StrategyOrderIntent,
+            EffectiveRuntimeConfigState,
             OperatorCommand,
             DecisionAck,
             OrderIntent,
@@ -2657,6 +3071,10 @@ __all__ = [
     "SnapshotMember",
     "SnapshotValidity",
     "StopPlan",
+    "EffectiveRuntimeConfigState",
+    "ProviderInstrumentRef",
+    "StrategyFamilyCandidate",
+    "StrategyOrderIntent",
     "StrategyDecision",
     "StrategyState",
     "TargetPlan",

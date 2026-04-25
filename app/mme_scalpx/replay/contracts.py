@@ -1763,3 +1763,134 @@ if "__all__" in globals():
         "build_economics_enriched_replay_dataset_declaration",
     )
 
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS START =====
+# Batch 16 freeze-final guard:
+# Replay-local validation surfaces for the current provider-aware five-family
+# feature payloads. These are field contracts, not Redis key names.
+
+import json as _batch16_json
+
+REPLAY_SAFE_CHANNEL_PREFIX = "replay:"
+
+MME_REPLAY_FAMILY_IDS: tuple[str, ...] = ("MIST", "MISB", "MISC", "MISR", "MISO")
+MME_REPLAY_BRANCH_IDS: tuple[str, ...] = ("CALL", "PUT")
+
+MME_REPLAY_REQUIRED_FEATURE_FRAME_FIELDS: tuple[str, ...] = (
+    "family_features_json",
+    "family_surfaces_json",
+    "family_frames_json",
+    "payload_json",
+    "ts_event_ns",
+)
+
+MME_REPLAY_REQUIRED_FAMILY_FEATURE_FIELDS: tuple[str, ...] = (
+    "provider_runtime",
+    "stage_flags",
+)
+
+
+class ReplayMMEPayloadValidationError(ValueError):
+    """Raised when a replayed MME payload row violates current frame contract."""
+
+
+def _batch16_json_object(value: Any, *, field_name: str) -> dict[str, Any]:
+    if isinstance(value, Mapping):
+        return dict(value)
+
+    if not isinstance(value, str) or not value.strip():
+        raise ReplayMMEPayloadValidationError(f"{field_name} must be JSON object or JSON string")
+
+    try:
+        parsed = _batch16_json.loads(value)
+    except Exception as exc:
+        raise ReplayMMEPayloadValidationError(f"{field_name} invalid JSON: {exc}") from exc
+
+    if not isinstance(parsed, dict):
+        raise ReplayMMEPayloadValidationError(f"{field_name} must decode to JSON object")
+
+    return parsed
+
+
+def validate_mme_replay_feature_frame(record: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(record, Mapping):
+        raise ReplayMMEPayloadValidationError(
+            f"feature frame record must be mapping, got {type(record)!r}"
+        )
+
+    missing = [
+        field_name
+        for field_name in MME_REPLAY_REQUIRED_FEATURE_FRAME_FIELDS
+        if field_name not in record or record.get(field_name) in (None, "")
+    ]
+    if missing:
+        raise ReplayMMEPayloadValidationError(
+            f"feature frame missing required fields: {missing!r}"
+        )
+
+    family_features = _batch16_json_object(
+        record.get("family_features_json"),
+        field_name="family_features_json",
+    )
+    family_surfaces = _batch16_json_object(
+        record.get("family_surfaces_json"),
+        field_name="family_surfaces_json",
+    )
+    family_frames = _batch16_json_object(
+        record.get("family_frames_json"),
+        field_name="family_frames_json",
+    )
+    payload = _batch16_json_object(record.get("payload_json"), field_name="payload_json")
+
+    missing_family_features = [
+        field_name
+        for field_name in MME_REPLAY_REQUIRED_FAMILY_FEATURE_FIELDS
+        if field_name not in family_features
+    ]
+    if missing_family_features:
+        raise ReplayMMEPayloadValidationError(
+            f"family_features_json missing required fields: {missing_family_features!r}"
+        )
+
+    families = family_features.get("families")
+    if families is not None:
+        if not isinstance(families, Mapping):
+            raise ReplayMMEPayloadValidationError("family_features_json.families must be mapping")
+        missing_families = [family_id for family_id in MME_REPLAY_FAMILY_IDS if family_id not in families]
+        if missing_families:
+            raise ReplayMMEPayloadValidationError(
+                f"family_features_json missing families: {missing_families!r}"
+            )
+
+    ts_event_ns_raw = record.get("ts_event_ns")
+    try:
+        ts_event_ns = int(float(ts_event_ns_raw))
+    except Exception as exc:
+        raise ReplayMMEPayloadValidationError(
+            f"ts_event_ns must be integer-like, got {ts_event_ns_raw!r}"
+        ) from exc
+
+    if ts_event_ns <= 0:
+        raise ReplayMMEPayloadValidationError("ts_event_ns must be > 0")
+
+    return {
+        "ok": True,
+        "ts_event_ns": ts_event_ns,
+        "required_frame_fields": list(MME_REPLAY_REQUIRED_FEATURE_FRAME_FIELDS),
+        "required_family_feature_fields": list(MME_REPLAY_REQUIRED_FAMILY_FEATURE_FIELDS),
+        "families_checked": list(MME_REPLAY_FAMILY_IDS),
+        "family_features_keys": sorted(str(k) for k in family_features.keys()),
+        "family_surfaces_keys": sorted(str(k) for k in family_surfaces.keys()),
+        "family_frames_keys": sorted(str(k) for k in family_frames.keys()),
+        "payload_keys": sorted(str(k) for k in payload.keys()),
+    }
+
+
+def replay_mme_payload_contract_to_dict() -> dict[str, Any]:
+    return {
+        "safe_channel_prefix": REPLAY_SAFE_CHANNEL_PREFIX,
+        "family_ids": list(MME_REPLAY_FAMILY_IDS),
+        "branch_ids": list(MME_REPLAY_BRANCH_IDS),
+        "required_feature_frame_fields": list(MME_REPLAY_REQUIRED_FEATURE_FRAME_FIELDS),
+        "required_family_feature_fields": list(MME_REPLAY_REQUIRED_FAMILY_FEATURE_FIELDS),
+    }
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====

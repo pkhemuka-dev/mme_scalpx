@@ -72,7 +72,7 @@ def _run_preflight(strict: bool) -> None:
     cmd = [
         _python_executable(),
         "-m",
-        "mme_scalpx.ops.preflight",
+        "app.mme_scalpx.ops.preflight",
     ]
     if strict:
         cmd.append("--strict")
@@ -85,7 +85,7 @@ def _run_bootstrap_groups(start_id: str) -> None:
     cmd = [
         _python_executable(),
         "-m",
-        "mme_scalpx.ops.bootstrap_groups",
+        "app.mme_scalpx.ops.bootstrap_groups",
         "--start-id",
         start_id,
     ]
@@ -135,7 +135,7 @@ def _start_direct_foreground() -> None:
     cmd = [
         _python_executable(),
         "-m",
-        "mme_scalpx.main",
+        "app.mme_scalpx.main",
     ]
     _run(cmd, replace_process=True)
 

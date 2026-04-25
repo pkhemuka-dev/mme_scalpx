@@ -783,11 +783,6 @@ def dataset_summary_to_dict(summary: ReplayDatasetSummary) -> dict[str, Any]:
     )
     payload = attach_replay_dataset_readiness_verdict_to_dataset_summary(payload)
     return payload
-        dataset_summary=payload,
-        recorded_surface=build_dataset_economics_recorded_surface(payload),
-        effective_inputs=None,
-    )
-    return payload
 
 def trading_day_to_dict(day: ReplayTradingDay) -> dict[str, Any]:
     return {
@@ -1438,3 +1433,16 @@ else:
     )
 
 # phase_a5_contract_aligned_source_mode
+
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS START =====
+# Batch 16 freeze-final guard:
+# Dataset owns historical artifact discovery only. This helper gives dataset
+# proofs a replay-local way to validate captured feature-frame rows against the
+# modern provider-aware / five-family MME payload contract without importing or
+# mutating live runtime services.
+
+def validate_mme_feature_frame_record(record: Mapping[str, Any]) -> dict[str, Any]:
+    from .contracts import validate_mme_replay_feature_frame
+
+    return validate_mme_replay_feature_frame(record)
+# ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====
