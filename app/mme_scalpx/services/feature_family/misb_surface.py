@@ -190,6 +190,103 @@ def _breakout_ref_price(
     return fut_ltp + max(abs(fut_vwap_distance) * 0.50, 0.0)
 
 
+
+def _batch26e_breakout_shelf(
+    fut: Mapping[str, Any],
+    *,
+    fut_ltp: float,
+    thresholds: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """Return explicit rolling breakout-shelf facts; never invent a proxy shelf."""
+    high = _safe_float_or_none(_pick(
+        fut,
+        "breakout_shelf_high",
+        "shelf_high",
+        "rolling_high",
+        "lookback_high",
+        "range_high",
+    ))
+    low = _safe_float_or_none(_pick(
+        fut,
+        "breakout_shelf_low",
+        "shelf_low",
+        "rolling_low",
+        "lookback_low",
+        "range_low",
+    ))
+    mid_in = _safe_float_or_none(_pick(
+        fut,
+        "breakout_shelf_mid",
+        "shelf_mid",
+        "rolling_mid",
+        "lookback_mid",
+        "range_mid",
+    ))
+    count = _safe_int(
+        _pick(
+            fut,
+            "breakout_shelf_snapshot_count",
+            "shelf_snapshot_count",
+            "valid_snapshot_count",
+            "lookback_snapshot_count",
+        ),
+        0,
+    )
+
+    if high is not None and low is not None and high < low:
+        high, low = low, high
+
+    mid = (
+        mid_in
+        if mid_in is not None
+        else ((high + low) / 2.0 if high is not None and low is not None else fut_ltp)
+    )
+    width = max((high - low), 0.0) if high is not None and low is not None else 0.0
+    width_pct_in = _safe_float_or_none(_pick(
+        fut,
+        "breakout_shelf_width_pct",
+        "shelf_width_pct",
+        "rolling_width_pct",
+        "range_width_pct",
+    ))
+    width_pct = (
+        width_pct_in
+        if width_pct_in is not None
+        else (0.0 if abs(mid) <= EPSILON else (width / max(abs(mid), EPSILON)) * 100.0)
+    )
+
+    min_count = _safe_int(
+        _pick(thresholds, "BREAKOUT_MIN_VALID_SNAPSHOTS", "BREAKOUT_SHELF_MIN_VALID_SNAPSHOTS"),
+        3,
+    )
+    width_min = _threshold_float(thresholds, "BREAKOUT_SHELF_MIN_WIDTH_PCT", DEFAULT_SHELF_WIDTH_MIN)
+    width_max = _threshold_float(thresholds, "BREAKOUT_SHELF_MAX_WIDTH_PCT", DEFAULT_SHELF_WIDTH_MAX)
+
+    explicit = high is not None and low is not None
+    valid = bool(explicit and count >= min_count and width_pct >= width_min and width_pct <= width_max)
+    missing_reason = (
+        ""
+        if valid
+        else "missing_explicit_shelf"
+        if not explicit
+        else "insufficient_shelf_snapshots"
+        if count < min_count
+        else "shelf_width_out_of_bounds"
+    )
+
+    return {
+        "breakout_shelf_high": high,
+        "breakout_shelf_low": low,
+        "breakout_shelf_mid": mid,
+        "breakout_shelf_width": width,
+        "breakout_shelf_width_pct": width_pct,
+        "breakout_shelf_snapshot_count": count,
+        "breakout_shelf_valid": valid,
+        "breakout_shelf_missing_reason": missing_reason,
+    }
+
+
+
 def _context_features(option_surface: Mapping[str, Any] | None) -> Mapping[str, Any]:
     return _as_mapping(_pick(_as_mapping(option_surface), "context_features"))
 
@@ -393,8 +490,13 @@ def build_misb_branch_surface(
         DEFAULT_BREAKOUT_BUFFER_MIN,
     )
 
-    shelf_width = max(abs(fut_vwap_distance), abs(fut_spread_ratio))
-    shelf_valid = shelf_width >= shelf_width_min and shelf_width <= shelf_width_max
+    shelf = _batch26e_breakout_shelf(
+        fut,
+        fut_ltp=fut_ltp,
+        thresholds=thresholds,
+    )
+    shelf_width = _safe_float(_pick(shelf, "breakout_shelf_width_pct"), 0.0)
+    shelf_valid = _safe_bool(_pick(shelf, "breakout_shelf_valid"), False)
 
     futures_bias_ok = _directional_ok(fut_delta, branch_id) and _directional_ok(fut_ema9_slope, branch_id)
 
@@ -419,10 +521,10 @@ def build_misb_branch_surface(
         and _ofi_direction_ok(fut_weighted_ofi_persist, branch_id, bull_ofi_min, bear_ofi_max)
     )
 
-    breakout_ref = _breakout_ref_price(
-        fut_ltp=fut_ltp,
-        fut_vwap_distance=fut_vwap_distance,
-        branch_id=branch_id,
+    breakout_ref = (
+        _safe_float(_pick(shelf, "breakout_shelf_high"), fut_ltp)
+        if bullish
+        else _safe_float(_pick(shelf, "breakout_shelf_low"), fut_ltp)
     )
     breakout_extension = abs(fut_ltp - breakout_ref)
     breakout_buffer_ok = breakout_extension >= breakout_buffer_min
@@ -481,7 +583,7 @@ def build_misb_branch_surface(
     )
 
     return {
-        "surface_kind": "misb",
+        "surface_kind": "misb_branch",
         "present": surface_present,
         "branch_ready": branch_ready,
         "family_id": _safe_str(getattr(N, "STRATEGY_FAMILY_MISB", "MISB")),
@@ -505,12 +607,23 @@ def build_misb_branch_surface(
         "trend_score": trend_score,
         "trend_score_ok": trend_score >= trend_score_min,
         "shelf_width": shelf_width,
+        "breakout_shelf_high": _pick(shelf, "breakout_shelf_high"),
+        "breakout_shelf_low": _pick(shelf, "breakout_shelf_low"),
+        "breakout_shelf_mid": _pick(shelf, "breakout_shelf_mid"),
+        "breakout_shelf_width": _pick(shelf, "breakout_shelf_width"),
+        "breakout_shelf_width_pct": _pick(shelf, "breakout_shelf_width_pct"),
+        "breakout_shelf_snapshot_count": _pick(shelf, "breakout_shelf_snapshot_count"),
+        "breakout_shelf_valid": shelf_valid,
+        "breakout_shelf_missing_reason": _pick(shelf, "breakout_shelf_missing_reason"),
+        "shelf_confirmed": shelf_valid,
         "shelf_valid": shelf_valid,
+        "breakout_triggered": breakout_trigger,
         "breakout_trigger": breakout_trigger,
         "breakout_ref": breakout_ref,
         "breakout_extension": breakout_extension,
         "breakout_buffer_ok": breakout_buffer_ok,
         "breakout_not_overextended": breakout_not_overextended,
+        "breakout_accepted": breakout_acceptance,
         "breakout_acceptance": breakout_acceptance,
         "continuation_support": continuation_support,
         "context_pass": context_pass,

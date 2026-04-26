@@ -45,6 +45,8 @@ from dataclasses import dataclass, field
 from typing import Any, Final, Mapping, Sequence
 
 from app.mme_scalpx.core import names as N
+from app.mme_scalpx.services.strategy_family import common as SF_COMMON
+from app.mme_scalpx.services.strategy_family import event_registry as MISR_EVENT_REGISTRY
 
 
 FAMILY_ID: Final[str] = getattr(N, "STRATEGY_FAMILY_MISR", "MISR")
@@ -450,15 +452,10 @@ def extract_provider_runtime(view: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def runtime_mode(view: Mapping[str, Any]) -> str:
-    common = extract_common(view)
-    provider_runtime = extract_provider_runtime(view)
-    return (
-        safe_str(common.get("strategy_runtime_mode_classic"))
-        or safe_str(common.get("classic_runtime_mode"))
-        or safe_str(provider_runtime.get("classic_runtime_mode"))
-        or RUNTIME_NORMAL
+    return SF_COMMON.resolve_classic_runtime_mode(
+        extract_common(view),
+        extract_provider_runtime(view),
     )
-
 
 def futures_block(view: Mapping[str, Any]) -> dict[str, Any]:
     common = extract_common(view)
@@ -502,21 +499,25 @@ def active_zone(view: Mapping[str, Any], surface: Mapping[str, Any]) -> dict[str
     return as_mapping(nested(view, "common", "active_zone", default={}))
 
 
+
+def trap_event_consumed(view: Mapping[str, Any], trap_event_id: str) -> bool:
+    """Return true when an external consumed-event registry blocks retry."""
+    return MISR_EVENT_REGISTRY.is_trap_event_consumed(
+        view,
+        trap_event_id=trap_event_id,
+        family_id=FAMILY_ID,
+    )
+
+
+
 def global_gates_pass(view: Mapping[str, Any]) -> tuple[bool, str | None]:
     if not safe_bool(view.get("safe_to_consume"), True):
         return False, "view_not_safe_to_consume"
 
-    stage = extract_stage_flags(view)
-    for key in ("data_valid", "data_quality_ok", "session_eligible", "warmup_complete"):
-        if key in stage and not safe_bool(stage.get(key), False):
-            return False, f"stage_{key}_failed"
+    ok, reason = SF_COMMON.validate_global_stage_gates(extract_stage_flags(view))
+    if not ok:
+        return False, reason
 
-    if safe_bool(stage.get("risk_veto_active"), False):
-        return False, "risk_veto_active"
-    if safe_bool(stage.get("reconciliation_lock_active"), False):
-        return False, "reconciliation_lock_active"
-    if safe_bool(stage.get("active_position_present"), False):
-        return False, "active_position_present"
     if runtime_mode(view) == RUNTIME_DISABLED:
         return False, "classic_runtime_disabled"
 
@@ -795,6 +796,24 @@ def evaluate_branch(view_like: Any, branch_id: str) -> MisrEvaluationResult:
             reason="instrument_key_missing",
         )
 
+    trap_event_id = safe_str(surface.get("trap_event_id"))
+    if not trap_event_id:
+        return no_signal_result(
+            branch_id=branch_id,
+            reason="trap_event_id_missing",
+            metadata={"active_zone": active_zone(view, surface)},
+        )
+
+    if trap_event_consumed(view, trap_event_id):
+        return no_signal_result(
+            branch_id=branch_id,
+            reason="trap_event_already_consumed",
+            metadata={
+                "trap_event_id": trap_event_id,
+                "active_zone": active_zone(view, surface),
+            },
+        )
+
     tick_size = safe_float(
         opt.get("tick_size"),
         safe_float(frame.get("tick_size"), DEFAULT_TICK_SIZE),
@@ -826,13 +845,15 @@ def evaluate_branch(view_like: Any, branch_id: str) -> MisrEvaluationResult:
         tick_size=tick_size,
         quantity_lots_hint=safe_int(nested(view, "risk", "preview_quantity_lots", default=0), 0) or None,
         source_event_id=safe_str(surface.get("source_event_id")) or None,
-        trap_event_id=safe_str(surface.get("trap_event_id")) or None,
+        trap_event_id=trap_event_id,
         metadata={
             "regime": regime,
             "runtime_mode": runtime_mode(view),
             "score_parts": dict(score_parts),
             "surface_kind": safe_str(surface.get("surface_kind")),
             "setup_kind": "fakeout_absorption_reclaim_reversal",
+            "trap_event_id": trap_event_id,
+            "event_consumed": False,
             "active_zone": active_zone(view, surface),
         },
     )
@@ -1058,29 +1079,11 @@ if "runtime_mode" in globals():
     _BATCH1_ORIGINAL_RUNTIME_MODE = runtime_mode
 
     def runtime_mode(view: Mapping[str, Any]) -> str:
-        common = extract_common(view)
-        provider_runtime = extract_provider_runtime(view)
-
-        text = (
-            safe_str(common.get("strategy_runtime_mode_classic"))
-            or safe_str(common.get("classic_runtime_mode"))
-            or safe_str(provider_runtime.get("classic_runtime_mode"))
+        return SF_COMMON.resolve_classic_runtime_mode(
+            extract_common(view),
+            extract_provider_runtime(view),
         )
-        if not text:
-            return RUNTIME_DISABLED
 
-        normalized = text.upper().replace("-", "_")
-        normal = safe_str(RUNTIME_NORMAL).upper().replace("-", "_")
-        degraded = safe_str(RUNTIME_DHAN_DEGRADED).upper().replace("-", "_")
-        disabled = safe_str(RUNTIME_DISABLED).upper().replace("-", "_")
-
-        if normalized == normal:
-            return RUNTIME_NORMAL
-        if normalized == degraded:
-            return RUNTIME_DHAN_DEGRADED
-        if normalized == disabled:
-            return RUNTIME_DISABLED
-        return RUNTIME_DISABLED
 else:
     _BATCH1_ORIGINAL_RUNTIME_MODE = None
 
@@ -1295,3 +1298,46 @@ def evaluate_doctrine(view_like: Any, branch_id: str | None = None):
 def get_evaluator():
     return evaluate
 # ===== BATCH1_STRATEGY_FAMILY_LEAF_CANDIDATE_CONTRACT END =====
+
+
+# =============================================================================
+# Batch 25P candidate metadata standardization
+# =============================================================================
+#
+# This wrapper standardizes candidate.metadata after doctrine evaluation. It does
+# not promote candidates, publish strategy decisions, call risk, or call execution.
+
+if "_BATCH25P_ORIGINAL_EVALUATE_BRANCH" not in globals():
+    _BATCH25P_ORIGINAL_EVALUATE_BRANCH = evaluate_branch
+    _BATCH25P_ORIGINAL_EVALUATE = evaluate
+
+
+def _batch25p_standardize_candidate_result(view_like: Any, result: Any) -> Any:
+    return SF_COMMON.standardize_candidate_result(
+        result,
+        view_like=view_like,
+        family_id=FAMILY_ID,
+        doctrine_id=DOCTRINE_ID,
+    )
+
+
+def evaluate_branch(view_like: Any, branch_id: str):
+    result = _BATCH25P_ORIGINAL_EVALUATE_BRANCH(view_like, branch_id)
+    return _batch25p_standardize_candidate_result(view_like, result)
+
+
+def evaluate(view_like: Any, branch_id: str | None = None):
+    if branch_id is not None:
+        return evaluate_branch(view_like, branch_id)
+
+    for candidate_branch in SUPPORTED_BRANCHES:
+        result = evaluate_branch(view_like, candidate_branch)
+        if result.is_candidate or result.is_blocked:
+            return result
+
+    return no_signal_result(
+        branch_id=None,
+        reason="all_branches_no_signal",
+        metadata={"family_id": FAMILY_ID},
+    )
+

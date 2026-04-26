@@ -11,6 +11,7 @@ explicitly thin until their replay wiring is frozen.
 """
 
 from __future__ import annotations
+from datetime import datetime, timezone
 
 import argparse
 import json
@@ -321,12 +322,60 @@ def build_placeholder_checks() -> dict[str, Any]:
     }
 
 
+
+def _normalize_replay_event_time(value: Any) -> str:
+    """
+    Normalize replay event timestamp to timezone-aware ISO-8601.
+
+    Accepted:
+    - ISO string with timezone
+    - nanoseconds epoch integer/string
+    - microseconds/milliseconds/seconds epoch numeric string
+    """
+    if value is None:
+        raise ReplayRunCliError("event timestamp is missing")
+
+    raw = str(value).strip()
+    if not raw:
+        raise ReplayRunCliError("event timestamp is empty")
+
+    if "-" in raw and ("T" in raw or " " in raw):
+        normalized = raw.replace(" ", "T")
+        if normalized.endswith("Z"):
+            return normalized
+        try:
+            dt = datetime.fromisoformat(normalized)
+        except Exception as exc:
+            raise ReplayRunCliError(f"invalid ISO replay event timestamp: {raw!r}") from exc
+        if dt.tzinfo is None:
+            raise ReplayRunCliError(f"replay event timestamp must be timezone-aware: {raw!r}")
+        return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+    try:
+        n = int(float(raw))
+    except Exception as exc:
+        raise ReplayRunCliError(f"unsupported replay event timestamp format: {raw!r}") from exc
+
+    digits = len(str(abs(n)))
+    if digits >= 18:
+        seconds = n / 1_000_000_000.0
+    elif digits >= 15:
+        seconds = n / 1_000_000.0
+    elif digits >= 12:
+        seconds = n / 1_000.0
+    else:
+        seconds = float(n)
+
+    dt = datetime.fromtimestamp(seconds, tz=timezone.utc)
+    return dt.isoformat().replace("+00:00", "Z")
+
+
 def resolve_event_timestamp(record: Mapping[str, Any]) -> str:
-    for key in ("ts_event", "ts", "timestamp", "event_time", "exchange_ts"):
+    for key in ("event_time", "ts_event", "ts", "timestamp", "exchange_ts", "ts_event_ns", "ts_exchange_ns"):
         value = record.get(key)
-        if isinstance(value, str) and value.strip():
-            return value
-    raise ReplayRunCliError(f"JSONL replay record missing timestamp field: {record!r}")
+        if value is not None and str(value).strip():
+            return _normalize_replay_event_time(value)
+    raise ReplayRunCliError(f"replay record missing timestamp field: {record!r}")
 
 
 def _phase_a4_present(value: Any) -> bool:
@@ -507,14 +556,26 @@ def build_feed_events_for_day(
     raw_events: list[dict[str, Any]] = []
 
     for file_summary in trading_day.files:
-        if file_summary.suffix != ".jsonl":
+        relative_path = Path(trading_day.date_str) / file_summary.relative_path
+        suffix = str(file_summary.suffix or "").lower()
+
+        if suffix == ".jsonl":
+            rows = repository.read_jsonl(relative_path)
+        elif suffix == ".json":
+            rows = repository.read_json(relative_path)
+            if isinstance(rows, Mapping):
+                rows = rows.get("rows") or rows.get("events") or rows.get("data") or []
+        elif suffix == ".csv":
+            rows = tuple(repository.iter_csv_rows(relative_path))
+        else:
             continue
 
-        relative_path = Path(trading_day.date_str) / file_summary.relative_path
-        rows = repository.read_jsonl(relative_path)
         logical_channel = f"{channel_prefix}:{file_summary.stem}"
 
         for row in rows:
+            if not isinstance(row, Mapping):
+                continue
+
             event_time = resolve_event_timestamp(row)
             normalized_payload = _build_replay_event_payload(
                 row=row,
@@ -1716,6 +1777,7 @@ def build_run_summary_payload(
     persisted_feature_rows: list[dict[str, Any]],
     persisted_strategy_decisions: list[dict[str, Any]],
     persisted_risk_outputs: list[dict[str, Any]],
+    persisted_execution_shadow_results: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     manifest = run_context.manifest
     replay = manifest.replay
@@ -1773,11 +1835,14 @@ def build_run_summary_payload(
         "feature_row_count": len(persisted_feature_rows),
         "strategy_row_count": len(persisted_strategy_decisions),
         "risk_row_count": len(persisted_risk_outputs),
+        "execution_shadow_row_count": len(persisted_execution_shadow_results or ()),
+        "execution_shadow_filled_count": _count_true(persisted_execution_shadow_results or (), "filled"),
 
         "feature_side_breakdown": _value_breakdown(persisted_feature_rows, "side"),
         "feature_leg_breakdown": _value_breakdown(persisted_feature_rows, "leg"),
         "strategy_action_breakdown": _value_breakdown(persisted_strategy_decisions, "decision_action"),
         "risk_action_breakdown": _value_breakdown(persisted_risk_outputs, "risk_action"),
+        "execution_shadow_action_breakdown": _value_breakdown(persisted_execution_shadow_results or (), "execution_action"),
 
         "feature_candidate_true_count": _count_true(persisted_feature_rows, "candidate"),
         "strategy_candidate_true_count": _count_true(persisted_strategy_decisions, "candidate"),
@@ -2321,6 +2386,30 @@ def main(argv: list[str]) -> int:
         encoding="utf-8",
     )
 
+    persisted_execution_shadow_results = [dict(row) for row in transport.execution_shadow_results]
+
+    (replay_artifacts_dir / "execution_shadow_results.json").write_text(
+        json.dumps(persisted_execution_shadow_results, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
+        encoding="utf-8",
+    )
+
+    # Overwrite the early placeholder 03_integrity_report.json with the real evaluated bundle.
+    real_integrity_payload = integrity_bundle_to_dict(integrity_bundle)
+    real_integrity_report_payload = {
+        "verdict": integrity_bundle.verdict.value,
+        "checks": real_integrity_payload.get("executed_checks", []),
+        "notes": real_integrity_payload.get("notes", []),
+        "integrity_bundle": real_integrity_payload,
+        "check_count": real_integrity_payload.get("check_count"),
+        "passed_checks": real_integrity_payload.get("passed_checks"),
+        "warned_checks": real_integrity_payload.get("warned_checks"),
+        "failed_checks": real_integrity_payload.get("failed_checks"),
+    }
+    Path(run_context.artifact_plan.integrity_report_path).write_text(
+        json.dumps(real_integrity_report_payload, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
+        encoding="utf-8",
+    )
+
     run_summary_payload = build_run_summary_payload(
         run_context=run_context,
         report_bundle=report_bundle,
@@ -2329,6 +2418,7 @@ def main(argv: list[str]) -> int:
         persisted_feature_rows=persisted_feature_rows,
         persisted_strategy_decisions=persisted_strategy_decisions,
         persisted_risk_outputs=persisted_risk_outputs,
+        persisted_execution_shadow_results=persisted_execution_shadow_results,
     )
 
     run_summary_json_path = replay_artifacts_dir / "10_run_summary.json"

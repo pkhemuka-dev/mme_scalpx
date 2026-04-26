@@ -1,16 +1,16 @@
 schema_version: 1
 config_name: provider_runtime
-config_revision: 2026-04-22-a
-
+config_revision: batch25s_config_systemd_alignment
 provider_runtime:
   enabled: true
-  family_runtime_mode: OBSERVE_ONLY
+  family_runtime_mode: observe_only
   failover_mode: MANUAL
   override_mode: AUTO
   allow_failback_when_recovered: true
   require_flat_for_role_switch: true
   invalidate_preposition_setup_on_switch: true
-
+  prohibit_silent_provider_switch: true
+  prohibit_mid_position_provider_migration: true
 policy_laws:
   prohibit_silent_provider_switch: true
   prohibit_mid_position_provider_migration: true
@@ -18,18 +18,39 @@ policy_laws:
   emit_provider_transition_events: true
   provider_runtime_hash_enabled: true
   provider_runtime_stream_enabled: true
-
 operating_defaults:
   selected_option_tradability_truth_provider: execution_primary
   option_context_required_for_miso: true
   zerodha_preferred_for_futures: true
   dhan_preferred_for_selected_option: true
   dhan_preferred_for_option_context: true
+  miso_futures_policy_current_baseline: ZERODHA_OR_DHAN_HEALTHY_SYNCED
+  miso_dhan_futures_rollout_enabled: false
   zerodha_preferred_for_execution_primary: true
   dhan_preferred_for_execution_fallback: true
-
+  futures_marketdata_preferred_provider: ZERODHA
+  selected_option_marketdata_preferred_provider: DHAN
+  option_context_preferred_provider: DHAN
+  execution_primary_provider: ZERODHA
+  execution_fallback_provider: DHAN
+  default_rollout_mode: observe_only
+  strategy_publication_mode: hold_only
+  order_intent_adapter_publication_enabled: false
 rollout_guardrails:
   current_rollout_stage: OBSERVE_ONLY
   allow_family_live_without_manual_promotion: false
   allow_auto_after_proof_before_formal_enablement: false
   allow_override_while_position_open: false
+batch25s_runtime_alignment:
+  default_rollout_remains_observe_only: true
+  provider_doctrine_alignment_source_batch: 25N
+  order_intent_adapter_source_batch: 25Q
+  risk_execution_seam_source_batch: 25R
+  strategy_promotion_enabled: false
+  execution_arming_enabled: false
+  service_restart_order:
+  - feeds
+  - features
+  - strategy
+  risk_execution_relationship: independent_but_health_linked
+  monitor_report_relationship: read_only_observability

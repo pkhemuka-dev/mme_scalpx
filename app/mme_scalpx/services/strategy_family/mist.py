@@ -45,6 +45,7 @@ from dataclasses import dataclass, field
 from typing import Any, Final, Mapping, Sequence
 
 from app.mme_scalpx.core import names as N
+from app.mme_scalpx.services.strategy_family import common as SF_COMMON
 
 
 FAMILY_ID: Final[str] = getattr(N, "STRATEGY_FAMILY_MIST", "MIST")
@@ -478,16 +479,10 @@ def extract_provider_runtime(view: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def runtime_mode(view: Mapping[str, Any]) -> str:
-    common = extract_common(view)
-    provider_runtime = extract_provider_runtime(view)
-    text = (
-        safe_str(common.get("strategy_runtime_mode_classic"))
-        or safe_str(common.get("classic_runtime_mode"))
-        or safe_str(provider_runtime.get("classic_runtime_mode"))
-        or RUNTIME_NORMAL
+    return SF_COMMON.resolve_classic_runtime_mode(
+        extract_common(view),
+        extract_provider_runtime(view),
     )
-    return text
-
 
 def selected_option(view: Mapping[str, Any], branch_id: str) -> dict[str, Any]:
     common = extract_common(view)
@@ -561,7 +556,7 @@ def pullback_resume_score(surface: Mapping[str, Any]) -> float:
 
     pullback = bool_any(surface, ("pullback_detected", "pullback_ok", "pullback_present"))
     resume = bool_any(surface, ("resume_confirmed", "resume_support", "resume_confirmation_ok"))
-    micro_trap = bool_any(surface, ("micro_trap_present", "micro_trap_ok"))
+    micro_trap = bool_any(surface, ("micro_trap_resolved", "micro_trap_clear", "micro_trap_blocked", "micro_trap_ok"))
     override = bool_any(surface, ("resume_override_pass", "override_ready"))
 
     score = 0.0
@@ -657,24 +652,9 @@ def global_gates_pass(view: Mapping[str, Any]) -> tuple[bool, str | None]:
     if not safe_bool(view.get("safe_to_consume"), True):
         return False, "view_not_safe_to_consume"
 
-    stage = extract_stage_flags(view)
-
-    required = {
-        "data_valid": True,
-        "data_quality_ok": True,
-        "session_eligible": True,
-        "warmup_complete": True,
-    }
-    for key, expected in required.items():
-        if key in stage and safe_bool(stage.get(key), False) != expected:
-            return False, f"stage_{key}_failed"
-
-    if safe_bool(stage.get("risk_veto_active"), False):
-        return False, "risk_veto_active"
-    if safe_bool(stage.get("reconciliation_lock_active"), False):
-        return False, "reconciliation_lock_active"
-    if safe_bool(stage.get("active_position_present"), False):
-        return False, "active_position_present"
+    ok, reason = SF_COMMON.validate_global_stage_gates(extract_stage_flags(view))
+    if not ok:
+        return False, reason
 
     if runtime_mode(view) == RUNTIME_DISABLED:
         return False, "classic_runtime_disabled"
@@ -904,29 +884,11 @@ if "runtime_mode" in globals():
     _BATCH1_ORIGINAL_RUNTIME_MODE = runtime_mode
 
     def runtime_mode(view: Mapping[str, Any]) -> str:
-        common = extract_common(view)
-        provider_runtime = extract_provider_runtime(view)
-
-        text = (
-            safe_str(common.get("strategy_runtime_mode_classic"))
-            or safe_str(common.get("classic_runtime_mode"))
-            or safe_str(provider_runtime.get("classic_runtime_mode"))
+        return SF_COMMON.resolve_classic_runtime_mode(
+            extract_common(view),
+            extract_provider_runtime(view),
         )
-        if not text:
-            return RUNTIME_DISABLED
 
-        normalized = text.upper().replace("-", "_")
-        normal = safe_str(RUNTIME_NORMAL).upper().replace("-", "_")
-        degraded = safe_str(RUNTIME_DHAN_DEGRADED).upper().replace("-", "_")
-        disabled = safe_str(RUNTIME_DISABLED).upper().replace("-", "_")
-
-        if normalized == normal:
-            return RUNTIME_NORMAL
-        if normalized == degraded:
-            return RUNTIME_DHAN_DEGRADED
-        if normalized == disabled:
-            return RUNTIME_DISABLED
-        return RUNTIME_DISABLED
 else:
     _BATCH1_ORIGINAL_RUNTIME_MODE = None
 
@@ -1141,3 +1103,46 @@ def evaluate_doctrine(view_like: Any, branch_id: str | None = None):
 def get_evaluator():
     return evaluate
 # ===== BATCH1_STRATEGY_FAMILY_LEAF_CANDIDATE_CONTRACT END =====
+
+
+# =============================================================================
+# Batch 25P candidate metadata standardization
+# =============================================================================
+#
+# This wrapper standardizes candidate.metadata after doctrine evaluation. It does
+# not promote candidates, publish strategy decisions, call risk, or call execution.
+
+if "_BATCH25P_ORIGINAL_EVALUATE_BRANCH" not in globals():
+    _BATCH25P_ORIGINAL_EVALUATE_BRANCH = evaluate_branch
+    _BATCH25P_ORIGINAL_EVALUATE = evaluate
+
+
+def _batch25p_standardize_candidate_result(view_like: Any, result: Any) -> Any:
+    return SF_COMMON.standardize_candidate_result(
+        result,
+        view_like=view_like,
+        family_id=FAMILY_ID,
+        doctrine_id=DOCTRINE_ID,
+    )
+
+
+def evaluate_branch(view_like: Any, branch_id: str):
+    result = _BATCH25P_ORIGINAL_EVALUATE_BRANCH(view_like, branch_id)
+    return _batch25p_standardize_candidate_result(view_like, result)
+
+
+def evaluate(view_like: Any, branch_id: str | None = None):
+    if branch_id is not None:
+        return evaluate_branch(view_like, branch_id)
+
+    for candidate_branch in SUPPORTED_BRANCHES:
+        result = evaluate_branch(view_like, candidate_branch)
+        if result.is_candidate or result.is_blocked:
+            return result
+
+    return no_signal_result(
+        branch_id=None,
+        reason="all_branches_no_signal",
+        metadata={"family_id": FAMILY_ID},
+    )
+

@@ -161,6 +161,7 @@ DEFAULT_ANOMALY_MIN_SAMPLES = 10
 DEFAULT_ANOMALY_MEDIAN_TICKS = 8.0
 DEFAULT_CONTEXT_STALE_MS = 5_000
 DEFAULT_CONTEXT_DEAD_MS = 15_000
+DEFAULT_DHAN_CONTEXT_LADDER_MAX_ROWS = 80
 DEFAULT_SNAPSHOT_SYNC_MAX_MS = 250
 HEALTH_STREAM_MAXLEN = 10_000
 ERROR_STREAM_MAXLEN = 10_000
@@ -285,6 +286,88 @@ def _path_get(mapping: Mapping[str, Any], *path: str) -> Any:
             return None
         cur = cur[key]
     return cur
+
+
+_DHAN_CONTEXT_CONTAINER_KEYS: Final[tuple[str, ...]] = (
+    "option_chain_ladder_json",
+    "strike_ladder_json",
+    "option_chain_ladder",
+    "strike_ladder",
+    "strike_ladder_rows",
+    "chain_rows",
+    "option_chain",
+    "chain",
+    "rows",
+    "records",
+    "data",
+    "ladder",
+    "strikes",
+)
+
+
+def _json_load_any(value: Any) -> Any:
+    if isinstance(value, (bytes, bytearray)):
+        try:
+            value = value.decode("utf-8")
+        except Exception:
+            return value
+    if isinstance(value, str):
+        text = value.strip()
+        if not text or text.lower() in {"null", "none"}:
+            return None
+        try:
+            return json.loads(text)
+        except Exception:
+            return value
+    return value
+
+
+def _dhan_side(value: Any) -> str | None:
+    text = _safe_str(value).upper()
+    if text in {"CALL", "CE", "C", "NIFTYCE"} or text.endswith("CE"):
+        return N.SIDE_CALL
+    if text in {"PUT", "PE", "P", "NIFTYPE"} or text.endswith("PE"):
+        return N.SIDE_PUT
+    return None
+
+
+def _extract_context_rows(value: Any) -> list[Mapping[str, Any]]:
+    parsed = _json_load_any(value)
+
+    if isinstance(parsed, Mapping):
+        row_like = any(
+            key in parsed
+            for key in (
+                "strike",
+                "strike_price",
+                "strikePrice",
+                "side",
+                "option_side",
+                "option_type",
+                "right",
+                "trading_symbol",
+                "symbol",
+                "token",
+                "instrument_token",
+                "security_id",
+            )
+        )
+        if row_like:
+            return [parsed]
+
+        out: list[Mapping[str, Any]] = []
+        for key in _DHAN_CONTEXT_CONTAINER_KEYS:
+            if key in parsed:
+                out.extend(_extract_context_rows(parsed.get(key)))
+        return out
+
+    if isinstance(parsed, Sequence) and not isinstance(parsed, (str, bytes, bytearray)):
+        out: list[Mapping[str, Any]] = []
+        for item in parsed:
+            out.extend(_extract_context_rows(item))
+        return out
+
+    return []
 
 
 def _iter_depth_levels(payload: Mapping[str, Any], side: str) -> list[Mapping[str, Any]]:
@@ -869,14 +952,15 @@ class TickNormalizer:
 
         call_components = self._build_score_components(payload, side="call")
         put_components = self._build_score_components(payload, side="put")
+        ladder_context = self._build_dhan_ladder_context(payload, provider_ns=provider_ns)
 
         event = M.DhanContextEvent(
             ts_event_ns=provider_ns,
             provider_id=N.PROVIDER_DHAN,
             context_status=self._derive_context_status(payload, now_ns=now_ns, provider_ns=provider_ns),
             atm_strike=_safe_float(_first_value(payload, "atm_strike", "atm"), math.nan),
-            selected_call_instrument_key=_safe_str(_first_value(payload, "selected_call_instrument_key", "call_instrument_key")) or None,
-            selected_put_instrument_key=_safe_str(_first_value(payload, "selected_put_instrument_key", "put_instrument_key")) or None,
+            selected_call_instrument_key=_safe_str(_first_value(payload, "selected_call_instrument_key", "call_instrument_key") or ladder_context["selected_call_context"].get("instrument_key")) or None,
+            selected_put_instrument_key=_safe_str(_first_value(payload, "selected_put_instrument_key", "put_instrument_key") or ladder_context["selected_put_context"].get("instrument_key")) or None,
             selected_call_score=self._none_if_nan(_safe_float(_first_value(payload, "selected_call_score", "call_score"), math.nan)),
             selected_put_score=self._none_if_nan(_safe_float(_first_value(payload, "selected_put_score", "put_score"), math.nan)),
             selected_call_delta=self._none_if_nan(_safe_float(_first_value(payload, "selected_call_delta", "call_delta"), math.nan)),
@@ -913,6 +997,22 @@ class TickNormalizer:
             provider_id=event.provider_id,
             context_status=event.context_status,
             atm_strike=event.atm_strike,
+            option_chain_ladder_json=ladder_context["option_chain_ladder_json"],
+            strike_ladder_json=ladder_context["strike_ladder_json"],
+            oi_wall_summary_json=ladder_context["oi_wall_summary_json"],
+            selected_call_context_json=ladder_context["selected_call_context_json"],
+            selected_put_context_json=ladder_context["selected_put_context_json"],
+            selected_call_option_symbol=_safe_str(ladder_context["selected_call_context"].get("trading_symbol")) or None,
+            selected_put_option_symbol=_safe_str(ladder_context["selected_put_context"].get("trading_symbol")) or None,
+            selected_call_option_token=_safe_str(ladder_context["selected_call_context"].get("instrument_token")) or None,
+            selected_put_option_token=_safe_str(ladder_context["selected_put_context"].get("instrument_token")) or None,
+            nearest_call_oi_resistance_strike=ladder_context["wall_summary"].get("nearest_call_oi_resistance_strike"),
+            nearest_put_oi_support_strike=ladder_context["wall_summary"].get("nearest_put_oi_support_strike"),
+            call_wall_distance_pts=ladder_context["wall_summary"].get("call_wall_distance_pts"),
+            put_wall_distance_pts=ladder_context["wall_summary"].get("put_wall_distance_pts"),
+            call_wall_strength_score=ladder_context["wall_summary"].get("call_wall_strength_score"),
+            put_wall_strength_score=ladder_context["wall_summary"].get("put_wall_strength_score"),
+            oi_bias=ladder_context["oi_bias_score"],
             selected_call_instrument_key=event.selected_call_instrument_key,
             selected_put_instrument_key=event.selected_put_instrument_key,
             selected_call_score=event.selected_call_score,
@@ -961,6 +1061,177 @@ class TickNormalizer:
             message=event.message,
         )
         return event, state
+
+    def _build_dhan_ladder_context(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        provider_ns: int,
+    ) -> dict[str, Any]:
+        raw_rows = _extract_context_rows(payload)
+        atm = self._none_if_nan(_safe_float(_first_value(payload, "atm_strike", "atm", "underlying_atm_strike"), math.nan))
+        normalized: list[dict[str, Any]] = []
+
+        for raw in raw_rows:
+            row = dict(raw)
+            metadata = row.get("metadata")
+            if isinstance(metadata, Mapping):
+                merged = dict(metadata)
+                merged.update(row)
+                row = merged
+
+            side = (
+                _dhan_side(_first_value(row, "side", "option_side", "option_type", "right"))
+                or _dhan_side(_first_value(row, "trading_symbol", "symbol"))
+            )
+            strike = self._none_if_nan(_safe_float(_first_value(row, "strike", "strike_price", "strikePrice"), math.nan))
+            if side not in (N.SIDE_CALL, N.SIDE_PUT) or strike is None:
+                continue
+
+            bid = self._none_if_nan(_safe_float(_first_value(row, "best_bid", "bid", "bestBid"), math.nan))
+            ask = self._none_if_nan(_safe_float(_first_value(row, "best_ask", "ask", "bestAsk"), math.nan))
+            ltp = self._none_if_nan(_safe_float(_first_value(row, "ltp", "last_price", "price"), math.nan))
+            spread = 0.0
+            if bid is not None and ask is not None and ask >= bid:
+                spread = ask - bid
+            ratio_default = 0.0
+            if ltp is not None and ltp > 0.0 and spread > 0.0:
+                ratio_default = spread / max(ltp * 0.001, 0.05)
+
+            token = _safe_str(_first_value(row, "instrument_token", "token", "security_id", "securityId"))
+            instrument_key = _safe_str(_first_value(row, "instrument_key", "instrumentKey")) or token
+            trading_symbol = _safe_str(_first_value(row, "trading_symbol", "tradingsymbol", "symbol"))
+
+            normalized.append(
+                {
+                    "side": side,
+                    "strike": strike,
+                    "instrument_key": instrument_key,
+                    "instrument_token": token,
+                    "trading_symbol": trading_symbol,
+                    "ltp": ltp,
+                    "best_bid": bid,
+                    "best_ask": ask,
+                    "bid": bid,
+                    "ask": ask,
+                    "bid_qty_5": _safe_int(_first_value(row, "bid_qty_5", "top5_bid_qty", "bid_qty", "best_bid_qty"), 0),
+                    "ask_qty_5": _safe_int(_first_value(row, "ask_qty_5", "top5_ask_qty", "ask_qty", "best_ask_qty"), 0),
+                    "volume": _safe_int(_first_value(row, "volume", "traded_volume", "totalVolume"), 0),
+                    "oi": _safe_int(_first_value(row, "oi", "open_interest", "openInterest"), 0),
+                    "oi_change": _safe_int(_first_value(row, "oi_change", "change_oi", "changeOpenInterest"), 0),
+                    "iv": self._none_if_nan(_safe_float(_first_value(row, "iv", "implied_volatility", "impliedVolatility"), math.nan)),
+                    "delta": self._none_if_nan(_safe_float(_first_value(row, "delta", "option_delta"), math.nan)),
+                    "spread_ratio": self._none_if_nan(_safe_float(_first_value(row, "spread_ratio"), ratio_default)) or ratio_default,
+                    "score": self._none_if_nan(_safe_float(_first_value(row, "score", "strike_score", "rank_score"), math.nan)),
+                    "provider_id": N.PROVIDER_DHAN,
+                    "ts_event_ns": provider_ns,
+                }
+            )
+
+        if atm is not None:
+            normalized.sort(key=lambda r: (abs(float(r["strike"]) - float(atm)), r["side"], float(r["strike"])))
+        else:
+            normalized.sort(key=lambda r: (r["side"], float(r["strike"])))
+
+        normalized = normalized[:DEFAULT_DHAN_CONTEXT_LADDER_MAX_ROWS]
+
+        call_rows = [row for row in normalized if row["side"] == N.SIDE_CALL]
+        put_rows = [row for row in normalized if row["side"] == N.SIDE_PUT]
+
+        selected_call_key = _safe_str(_first_value(payload, "selected_call_instrument_key", "call_instrument_key"))
+        selected_put_key = _safe_str(_first_value(payload, "selected_put_instrument_key", "put_instrument_key"))
+
+        def _select_row(rows: list[dict[str, Any]], selected_key: str) -> dict[str, Any]:
+            if selected_key:
+                for row in rows:
+                    if selected_key in {
+                        _safe_str(row.get("instrument_key")),
+                        _safe_str(row.get("instrument_token")),
+                        _safe_str(row.get("trading_symbol")),
+                    }:
+                        return dict(row)
+            if not rows:
+                return {}
+            return max(rows, key=lambda r: (_safe_float(r.get("score"), 0.0), _safe_int(r.get("oi"), 0)))
+
+        selected_call = _select_row(call_rows, selected_call_key)
+        selected_put = _select_row(put_rows, selected_put_key)
+
+        reference = atm
+        if reference is None:
+            strikes = [float(row["strike"]) for row in normalized if row.get("strike") is not None]
+            reference = sorted(strikes)[len(strikes) // 2] if strikes else None
+
+        def _wall(rows: list[dict[str, Any]], side: str) -> dict[str, Any]:
+            if not rows:
+                return {}
+            directional = rows
+            if reference is not None:
+                if side == N.SIDE_CALL:
+                    directional = [row for row in rows if float(row["strike"]) >= float(reference)] or rows
+                else:
+                    directional = [row for row in rows if float(row["strike"]) <= float(reference)] or rows
+            max_oi = max((_safe_int(row.get("oi"), 0) for row in rows), default=0)
+            wall = max(
+                directional,
+                key=lambda row: (
+                    _safe_int(row.get("oi"), 0),
+                    -abs(float(row["strike"]) - float(reference or row["strike"])),
+                ),
+            )
+            distance = None if reference is None else abs(float(wall["strike"]) - float(reference))
+            strength = 0.0 if max_oi <= 0 else min(max(_safe_int(wall.get("oi"), 0) / max_oi, 0.0), 1.0)
+            return {
+                **dict(wall),
+                "wall_kind": "CALL_OI_RESISTANCE" if side == N.SIDE_CALL else "PUT_OI_SUPPORT",
+                "wall_distance_points": distance,
+                "wall_strength_score": strength,
+                "near_wall": bool(distance is not None and distance <= 50.0),
+            }
+
+        call_wall = _wall(call_rows, N.SIDE_CALL)
+        put_wall = _wall(put_rows, N.SIDE_PUT)
+
+        total_call_oi = sum(_safe_int(row.get("oi"), 0) for row in call_rows)
+        total_put_oi = sum(_safe_int(row.get("oi"), 0) for row in put_rows)
+        bias_score = 0.0
+        if (total_call_oi + total_put_oi) > 0:
+            bias_score = (total_put_oi - total_call_oi) / max(total_put_oi + total_call_oi, 1)
+        bias_label = "PUT_SUPPORTIVE" if bias_score >= 0.15 else "CALL_SUPPORTIVE" if bias_score <= -0.15 else "NEUTRAL"
+
+        wall_summary = {
+            "present": bool(normalized),
+            "provider_id": N.PROVIDER_DHAN,
+            "ts_event_ns": provider_ns,
+            "atm_reference_strike": reference,
+            "ladder_size": len(normalized),
+            "has_call_rows": bool(call_rows),
+            "has_put_rows": bool(put_rows),
+            "nearest_call_oi_resistance_strike": call_wall.get("strike"),
+            "nearest_put_oi_support_strike": put_wall.get("strike"),
+            "call_wall_distance_pts": call_wall.get("wall_distance_points"),
+            "put_wall_distance_pts": put_wall.get("wall_distance_points"),
+            "call_wall_strength_score": call_wall.get("wall_strength_score", 0.0),
+            "put_wall_strength_score": put_wall.get("wall_strength_score", 0.0),
+            "call_wall": call_wall or None,
+            "put_wall": put_wall or None,
+            "oi_bias": bias_label,
+            "oi_bias_score": bias_score,
+            "oi_wall_ready": bool(call_wall or put_wall),
+        }
+
+        return {
+            "rows": normalized,
+            "selected_call_context": selected_call,
+            "selected_put_context": selected_put,
+            "wall_summary": wall_summary,
+            "option_chain_ladder_json": _json_dumps(normalized),
+            "strike_ladder_json": _json_dumps(normalized),
+            "oi_wall_summary_json": _json_dumps(wall_summary),
+            "selected_call_context_json": _json_dumps(selected_call),
+            "selected_put_context_json": _json_dumps(selected_put),
+            "oi_bias_score": bias_score,
+        }
 
     @staticmethod
     def _none_if_nan(value: float) -> float | None:

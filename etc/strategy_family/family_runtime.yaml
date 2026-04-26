@@ -1,0 +1,43 @@
+schema_version: 1
+default_runtime_mode: observe_only
+order_intent_adapter:
+  enabled: false
+  publication_enabled: false
+  preview_enabled: true
+  law: disabled_preview_only
+runtime_law:
+  observe_only:
+    preview_allowed: true
+    publish_allowed: false
+    strategy_publishes_hold_only: true
+  legacy_live_family_shadow:
+    preview_allowed: true
+    publish_allowed: false
+    strategy_publishes_hold_for_family: true
+  family_live_legacy_shadow:
+    preview_allowed: true
+    publish_allowed: false
+    requires_later_arming_proof: true
+  family_live_only:
+    preview_allowed: false
+    publish_allowed: false
+    forbidden_until_full_readiness_milestone: true
+config_name: family_runtime
+config_revision: batch25s_config_systemd_alignment
+rollout:
+  default: observe_only
+  promotion_enabled: false
+  execution_arming_enabled: false
+  market_session_observation_mode: hold_report_only
+
+batch26c_runtime_mode_law:
+  source_batch: 26C
+  missing_classic_runtime_mode: DISABLED
+  missing_miso_runtime_mode: DISABLED
+  unknown_classic_runtime_mode: DISABLED
+  unknown_miso_runtime_mode: DISABLED
+  silent_trade_capable_defaults_forbidden: true
+  miso_missing_mode_may_not_default_to_base_5depth: true
+  provider_ready_miso_authoritative_stage_flag: true
+  missing_provider_ready_miso_must_block: true
+  missing_dhan_context_fresh_must_block_miso: true

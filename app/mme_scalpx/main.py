@@ -457,6 +457,7 @@ class BootstrapDependencies:
     dhan_feed_adapter: Any | None = None
     dhan_context_adapter: Any | None = None
     broker: Any | None = None
+    provider_bootstrap_report: Mapping[str, Any] | None = None
 
     def to_safe_dict(self) -> dict[str, bool]:
         explicit_map = self.feed_adapters if isinstance(self.feed_adapters, Mapping) else None
@@ -469,6 +470,7 @@ class BootstrapDependencies:
             "dhan_feed_adapter_registered": self.dhan_feed_adapter is not None,
             "dhan_context_adapter_registered": self.dhan_context_adapter is not None,
             "broker_registered": self.broker is not None,
+            "provider_bootstrap_report_registered": isinstance(self.provider_bootstrap_report, Mapping),
         }
 
 
@@ -687,6 +689,7 @@ def register_bootstrap_dependencies(
     dhan_feed_adapter: Any | None = None,
     dhan_context_adapter: Any | None = None,
     broker: Any | None = None,
+    provider_bootstrap_report: Mapping[str, Any] | None = None,
 ) -> None:
     """
     Register external runtime dependencies required by frozen service contracts.
@@ -695,6 +698,14 @@ def register_bootstrap_dependencies(
     the only composition root. It only loads explicit objects that main.py will
     place into RuntimeContext when appropriate.
     """
+    normalized_provider_bootstrap_report: Mapping[str, Any] | None = None
+    if provider_bootstrap_report is not None:
+        if not isinstance(provider_bootstrap_report, Mapping):
+            raise BootstrapError(
+                "provider_bootstrap_report must be a mapping when provided"
+            )
+        normalized_provider_bootstrap_report = dict(provider_bootstrap_report)
+
     global _BOOTSTRAP_DEPENDENCIES
     with _BOOTSTRAP_DEPENDENCY_LOCK:
         _BOOTSTRAP_DEPENDENCIES = BootstrapDependencies(
@@ -706,6 +717,7 @@ def register_bootstrap_dependencies(
             dhan_feed_adapter=dhan_feed_adapter,
             dhan_context_adapter=dhan_context_adapter,
             broker=broker,
+            provider_bootstrap_report=normalized_provider_bootstrap_report,
         )
 
 
@@ -808,6 +820,7 @@ def maybe_register_bootstrap_dependencies(
         "dhan_feed_adapter",
         "dhan_context_adapter",
         "broker",
+        "provider_bootstrap_report",
     }
     unknown = set(result.keys()) - allowed
     if unknown:
@@ -825,6 +838,7 @@ def maybe_register_bootstrap_dependencies(
         dhan_feed_adapter=result.get("dhan_feed_adapter"),
         dhan_context_adapter=result.get("dhan_context_adapter"),
         broker=result.get("broker"),
+        provider_bootstrap_report=result.get("provider_bootstrap_report"),
     )
 
     LOGGER.info(

@@ -135,6 +135,7 @@ REASON_MISB_BREAKOUT_NOT_ACCEPTED: Final[str] = "MISB_BREAKOUT_NOT_ACCEPTED"
 REASON_MISC_COMPRESSION_FAIL: Final[str] = "MISC_COMPRESSION_FAIL"
 REASON_MISC_BREAKOUT_NOT_TRIGGERED: Final[str] = "MISC_BREAKOUT_NOT_TRIGGERED"
 REASON_MISC_EXPANSION_NOT_ACCEPTED: Final[str] = "MISC_EXPANSION_NOT_ACCEPTED"
+REASON_MISC_RETEST_MONITOR_INACTIVE: Final[str] = "MISC_RETEST_MONITOR_INACTIVE"
 REASON_MISC_RESUME_NOT_CONFIRMED: Final[str] = "MISC_RESUME_NOT_CONFIRMED"
 
 REASON_MISR_FAKE_BREAK_NOT_TRIGGERED: Final[str] = "MISR_FAKE_BREAK_NOT_TRIGGERED"
@@ -144,6 +145,8 @@ REASON_MISR_FLOW_FLIP_FAIL: Final[str] = "MISR_FLOW_FLIP_FAIL"
 REASON_MISR_HOLD_PROOF_FAIL: Final[str] = "MISR_HOLD_PROOF_FAIL"
 REASON_MISR_NO_MANS_LAND_FAIL: Final[str] = "MISR_NO_MANS_LAND_FAIL"
 REASON_MISR_REVERSAL_IMPULSE_FAIL: Final[str] = "MISR_REVERSAL_IMPULSE_FAIL"
+
+REASON_MISR_ACTIVE_ZONE_INVALID: Final[str] = "MISR_ACTIVE_ZONE_INVALID"
 
 # MISO structural reason labels
 REASON_MISO_BURST_NOT_DETECTED: Final[str] = "MISO_BURST_NOT_DETECTED"
@@ -427,24 +430,22 @@ def _classic_branch_support(
 
 def _mist_structural_reasons(support: Mapping[str, Any]) -> list[str]:
     reasons: list[str] = []
-    if not _bool(support.get("futures_bias_ok")):
+    if not _bool(support.get("trend_confirmed")):
         reasons.append(REASON_MIST_FUTURES_BIAS_FAIL)
     if not _bool(support.get("futures_impulse_ok")):
         reasons.append(REASON_MIST_FUTURES_IMPULSE_FAIL)
     if not _bool(support.get("pullback_detected")):
         reasons.append(REASON_MIST_PULLBACK_FAIL)
+    if not mist_micro_trap_resolved(support):
+        reasons.append(REASON_MIST_MICRO_TRAP_BLOCKED)
     if not _bool(support.get("resume_confirmed")):
         reasons.append(REASON_MIST_RESUME_FAIL)
-    if not _bool(support.get("micro_trap_blocked")):
-        reasons.append(REASON_MIST_MICRO_TRAP_BLOCKED)
     return reasons
 
 
 def _misb_structural_reasons(support: Mapping[str, Any]) -> list[str]:
     reasons: list[str] = []
-    if not _bool(support.get("futures_bias_ok")):
-        reasons.append(REASON_MISB_FUTURES_BIAS_FAIL)
-    if not _bool(support.get("shelf_valid")):
+    if not _bool(support.get("shelf_confirmed")):
         reasons.append(REASON_MISB_SHELF_INVALID)
     if not _bool(support.get("breakout_triggered")):
         reasons.append(REASON_MISB_BREAKOUT_NOT_TRIGGERED)
@@ -461,6 +462,8 @@ def _misc_structural_reasons(support: Mapping[str, Any]) -> list[str]:
         reasons.append(REASON_MISC_BREAKOUT_NOT_TRIGGERED)
     if not _bool(support.get("expansion_accepted")):
         reasons.append(REASON_MISC_EXPANSION_NOT_ACCEPTED)
+    if not _bool(support.get("retest_monitor_active")):
+        reasons.append(REASON_MISC_RETEST_MONITOR_INACTIVE)
     if not _bool(support.get("resume_confirmed")):
         reasons.append(REASON_MISC_RESUME_NOT_CONFIRMED)
     return reasons
@@ -468,6 +471,8 @@ def _misc_structural_reasons(support: Mapping[str, Any]) -> list[str]:
 
 def _misr_structural_reasons(support: Mapping[str, Any]) -> list[str]:
     reasons: list[str] = []
+    if not _bool(support.get("active_zone_valid")):
+        reasons.append(REASON_MISR_ACTIVE_ZONE_INVALID)
     if not _bool(support.get("fake_break_triggered")):
         reasons.append(REASON_MISR_FAKE_BREAK_NOT_TRIGGERED)
     if not _bool(support.get("absorption_pass")):
@@ -818,6 +823,8 @@ __all__ = [
     "REASON_CHAIN_CONTEXT_NOT_READY",
     "REASON_QUEUE_RELOAD_BLOCKED",
     "REASON_FUTURES_CONTRADICTION_BLOCKED",
+    "REASON_MISR_ACTIVE_ZONE_INVALID",
+    "REASON_MISC_RETEST_MONITOR_INACTIVE",
 ]
 
 # =============================================================================

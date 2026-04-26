@@ -44,6 +44,7 @@ can publish them directly into ``family_surfaces`` / ``family_features`` payload
 
 from dataclasses import dataclass
 from math import isfinite
+import json
 from typing import Any, Final, Iterable, Mapping, Sequence
 
 from app.mme_scalpx.core import names as N
@@ -164,6 +165,9 @@ _SCORE_KEYS: Final[tuple[str, ...]] = (
 )
 
 _CONTAINER_KEYS: Final[tuple[str, ...]] = (
+    "option_chain_ladder_json",
+    "strike_ladder_json",
+    "option_chain_ladder",
     "strike_ladder",
     "strike_ladder_rows",
     "chain_rows",
@@ -335,22 +339,96 @@ def _coalesce_container(context: Mapping[str, Any] | None) -> Sequence[Mapping[s
 
 
 def _extract_rows(value: Any) -> list[Mapping[str, Any]]:
+    """
+    Extract option-chain ladder rows from frozen Dhan context surfaces.
+
+    Batch 25J law:
+    - option_chain_ladder_json is canonical
+    - strike_ladder_json is a compatibility alias
+    - aliases must not be accumulated as separate row sources
+    - duplicate rows are removed by stable instrument/side/strike identity
+    """
+
+    if isinstance(value, (bytes, bytearray)):
+        try:
+            value = value.decode("utf-8")
+        except Exception:
+            return []
+
+    if isinstance(value, str):
+        text = value.strip()
+        if not text or text.lower() in {"null", "none"}:
+            return []
+        try:
+            value = json.loads(text)
+        except Exception:
+            return []
+
+    def _dedupe(rows: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+        out: list[Mapping[str, Any]] = []
+        seen: set[tuple[str, str, str]] = set()
+
+        for row in rows:
+            if not isinstance(row, Mapping):
+                continue
+
+            side = str(
+                row.get("side")
+                or row.get("option_side")
+                or row.get("right")
+                or row.get("option_type")
+                or ""
+            ).upper()
+            strike = str(
+                row.get("strike")
+                or row.get("strike_price")
+                or row.get("strikePrice")
+                or ""
+            )
+            instrument = str(
+                row.get("instrument_key")
+                or row.get("instrument_token")
+                or row.get("token")
+                or row.get("trading_symbol")
+                or row.get("symbol")
+                or ""
+            )
+
+            key = (instrument, side, strike)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(row)
+
+        return out
+
     if isinstance(value, Mapping):
         maybe_rows = value.get("rows")
-        if isinstance(maybe_rows, Sequence) and not isinstance(maybe_rows, (str, bytes)):
-            return [row for row in maybe_rows if isinstance(row, Mapping)]
+        if isinstance(maybe_rows, str):
+            try:
+                maybe_rows = json.loads(maybe_rows)
+            except Exception:
+                maybe_rows = None
+
+        if isinstance(maybe_rows, Sequence) and not isinstance(maybe_rows, (str, bytes, bytearray)):
+            return _dedupe([row for row in maybe_rows if isinstance(row, Mapping)])
+
         if any(k in value for k in _STRIKE_KEYS) and any(k in value for k in _SIDE_KEYS):
             return [value]
-        nested_rows: list[Mapping[str, Any]] = []
+
+        # Canonical-first. These are aliases, not additive sources.
         for key in _CONTAINER_KEYS:
             nested = value.get(key)
-            if isinstance(nested, Sequence) and not isinstance(nested, (str, bytes)):
-                nested_rows.extend(row for row in nested if isinstance(row, Mapping))
-        return nested_rows
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        return [row for row in value if isinstance(row, Mapping)]
-    return []
+            rows = _extract_rows(nested)
+            if rows:
+                return _dedupe(rows)
 
+        return []
+
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return _dedupe([row for row in value if isinstance(row, Mapping)])
+
+    return []
 
 def _resolve_rank_hint(row: Mapping[str, Any], side: str) -> int | None:
     keys = _CALL_RANK_KEYS if side == N.SIDE_CALL else _PUT_RANK_KEYS

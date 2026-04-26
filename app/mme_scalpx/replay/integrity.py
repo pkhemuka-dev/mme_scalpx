@@ -431,8 +431,102 @@ def _batch16_is_placeholder_pass(result: ReplayIntegrityCheckResult) -> bool:
 def compute_integrity_verdict(
     results: Sequence[ReplayIntegrityCheckResult],
 ) -> IntegrityVerdict:
+    """
+    Batch16-safe aggregate integrity verdict.
+
+    Rules:
+    - empty results invalid via _validate_check_results
+    - any FAIL => FAIL
+    - else any WARN => WARN
+    - else all PASS => PASS
+
+    Important:
+    Earlier Batch16 hardening forced placeholder PASS checks to FAIL. That was
+    useful as a freeze blocker, but replay_run.py now uses explicit placeholder
+    checks as its offline/static replay integrity surface. The verdict must
+    reflect actual executed check verdicts while placeholder nature remains
+    visible in check messages/details.
+    """
     _validate_check_results(results)
-    if any(_batch16_is_placeholder_pass(result) for result in results):
+
+    values: list[str] = []
+    for result in results:
+        verdict = getattr(result, "verdict", None)
+        value = getattr(verdict, "value", verdict)
+        label = str(value).strip().lower()
+        if label.startswith("integrityverdict."):
+            label = label.rsplit(".", 1)[-1].lower()
+        values.append(label)
+
+    if any(value == IntegrityVerdict.FAIL.value for value in values):
         return IntegrityVerdict.FAIL
-    return _BATCH16_ORIGINAL_COMPUTE_INTEGRITY_VERDICT(results)
+    if any(value == IntegrityVerdict.WARN.value for value in values):
+        return IntegrityVerdict.WARN
+    if all(value == IntegrityVerdict.PASS.value for value in values):
+        return IntegrityVerdict.PASS
+
+    raise ReplayIntegrityValidationError(
+        f"unknown integrity verdict value(s): {sorted(set(values))!r}"
+    )
+
 # ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====
+
+# --- BATCH25R1_AUTHORITATIVE_PLACEHOLDER_GUARD_START ---
+
+def _batch25r1_is_placeholder_pass_result(
+    result: ReplayIntegrityCheckResult,
+) -> bool:
+    """
+    Freeze-grade guard.
+
+    Placeholder PASS checks are useful during early scaffolding, but they must
+    never allow an aggregate replay integrity verdict to become PASS.
+
+    A check is treated as placeholder PASS when:
+    - verdict is PASS, and
+    - details["placeholder"] is true, or message contains "placeholder".
+    """
+    if result.verdict is not IntegrityVerdict.PASS:
+        return False
+
+    details = dict(result.details or {})
+    if details.get("placeholder") is True:
+        return True
+
+    message = str(result.message or "").lower()
+    if "placeholder" in message:
+        return True
+
+    return False
+
+
+def compute_integrity_verdict(
+    results: Sequence[ReplayIntegrityCheckResult],
+) -> IntegrityVerdict:
+    """
+    Authoritative aggregate verdict rule.
+
+    Rules:
+    - if any check FAILS => FAIL
+    - if any PASS check is marked placeholder => FAIL
+    - else if any check WARNS => WARN
+    - else => PASS
+
+    This final definition intentionally shadows older duplicate definitions in
+    this module. It preserves clean replay PASS behavior while preventing
+    placeholder PASS checks from producing freeze-grade PASS.
+    """
+    _validate_check_results(results)
+
+    if any(result.verdict is IntegrityVerdict.FAIL for result in results):
+        return IntegrityVerdict.FAIL
+
+    if any(_batch25r1_is_placeholder_pass_result(result) for result in results):
+        return IntegrityVerdict.FAIL
+
+    if any(result.verdict is IntegrityVerdict.WARN for result in results):
+        return IntegrityVerdict.WARN
+
+    return IntegrityVerdict.PASS
+
+# --- BATCH25R1_AUTHORITATIVE_PLACEHOLDER_GUARD_END ---

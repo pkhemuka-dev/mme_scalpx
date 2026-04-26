@@ -32,7 +32,7 @@ Design rules
 - It must not silently infer family/doctrine/profile coverage.
 - Static records must be immutable after import.
 - Classic MIS families remain degraded-safe when Dhan context is absent/stale.
-- MISO remains Dhan-mandatory on signal path and requires execution bridge truth.
+- MISO requires Dhan selected-option/context truth and healthy synced futures truth.
 """
 
 from dataclasses import dataclass
@@ -74,9 +74,14 @@ PROFILE_MISO_DHAN_MANDATORY_SIGNAL_PATH: Final[str] = (
     "MISO_DHAN_MANDATORY_SIGNAL_PATH"
 )
 
+PROFILE_MISO_DHAN_CONTEXT_HEALTHY_FUTURES_BASELINE: Final[str] = (
+    "MISO_DHAN_CONTEXT_HEALTHY_FUTURES_BASELINE"
+)
+
 ALLOWED_PROVIDER_PROFILE_IDS: Final[tuple[str, ...]] = (
     PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE,
     PROFILE_MISO_DHAN_MANDATORY_SIGNAL_PATH,
+    PROFILE_MISO_DHAN_CONTEXT_HEALTHY_FUTURES_BASELINE,
 )
 
 # ============================================================================
@@ -121,6 +126,7 @@ class RequiredProviderProfile:
     profile_id: str
     description: str
     futures_provider_id: str | None = None
+    allowed_futures_provider_ids: tuple[str, ...] = ()
     selected_option_provider_id: str | None = None
     option_context_provider_id: str | None = None
     execution_primary_provider_id: str | None = None
@@ -151,6 +157,22 @@ class RequiredProviderProfile:
                     f"{field_name} has unsupported provider id: {value!r}",
                 )
 
+        _require(
+            isinstance(self.allowed_futures_provider_ids, tuple),
+            "allowed_futures_provider_ids must be tuple[str, ...]",
+        )
+        seen_allowed_futures: set[str] = set()
+        for provider_id in self.allowed_futures_provider_ids:
+            _require(
+                provider_id in N.ALLOWED_PROVIDER_IDS,
+                f"allowed_futures_provider_ids has unsupported provider id: {provider_id!r}",
+            )
+            _require(
+                provider_id not in seen_allowed_futures,
+                f"duplicate allowed_futures_provider_ids provider id: {provider_id!r}",
+            )
+            seen_allowed_futures.add(provider_id)
+
         if self.profile_id == PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE:
             _require(
                 self.allow_dhan_degraded is True,
@@ -172,15 +194,41 @@ class RequiredProviderProfile:
             )
             _require(
                 self.futures_provider_id == N.PROVIDER_DHAN,
-                "MISO profile requires Dhan futures signal path",
+                "MISO legacy profile requires Dhan futures signal path",
             )
             _require(
                 self.selected_option_provider_id == N.PROVIDER_DHAN,
-                "MISO profile requires Dhan selected-option signal path",
+                "MISO legacy profile requires Dhan selected-option signal path",
             )
             _require(
                 self.option_context_provider_id == N.PROVIDER_DHAN,
-                "MISO profile requires Dhan option-context signal path",
+                "MISO legacy profile requires Dhan option-context signal path",
+            )
+
+        if self.profile_id == PROFILE_MISO_DHAN_CONTEXT_HEALTHY_FUTURES_BASELINE:
+            _require(
+                self.allow_dhan_degraded is False,
+                "MISO healthy-futures baseline profile must not allow Dhan-degraded signal path",
+            )
+            _require(
+                self.execution_bridge_required is True,
+                "MISO healthy-futures baseline profile must require execution bridge truth",
+            )
+            _require(
+                self.futures_provider_id is None,
+                "MISO healthy-futures baseline profile must not hard-code one futures provider",
+            )
+            _require(
+                self.allowed_futures_provider_ids == (N.PROVIDER_ZERODHA, N.PROVIDER_DHAN),
+                "MISO healthy-futures baseline profile allows Zerodha or Dhan futures only",
+            )
+            _require(
+                self.selected_option_provider_id == N.PROVIDER_DHAN,
+                "MISO healthy-futures baseline profile requires Dhan selected-option signal path",
+            )
+            _require(
+                self.option_context_provider_id == N.PROVIDER_DHAN,
+                "MISO healthy-futures baseline profile requires Dhan option-context signal path",
             )
 
 
@@ -317,6 +365,24 @@ _REQUIRED_PROVIDER_PROFILES_RAW: Final[dict[str, RequiredProviderProfile]] = {
         allow_dhan_degraded=False,
         execution_bridge_required=True,
     ),
+    PROFILE_MISO_DHAN_CONTEXT_HEALTHY_FUTURES_BASELINE: RequiredProviderProfile(
+        profile_id=PROFILE_MISO_DHAN_CONTEXT_HEALTHY_FUTURES_BASELINE,
+        description=(
+            "MISO current production baseline requires Dhan chain context and "
+            "Dhan selected-option live signal path, while allowing Zerodha or "
+            "Dhan futures when the futures provider is healthy, fresh, and "
+            "cross-provider synchronized. Dhan futures is required only in a "
+            "future explicit Dhan-futures rollout mode."
+        ),
+        futures_provider_id=None,
+        allowed_futures_provider_ids=(N.PROVIDER_ZERODHA, N.PROVIDER_DHAN),
+        selected_option_provider_id=N.PROVIDER_DHAN,
+        option_context_provider_id=N.PROVIDER_DHAN,
+        execution_primary_provider_id=N.PROVIDER_ZERODHA,
+        execution_fallback_provider_id=N.PROVIDER_DHAN,
+        allow_dhan_degraded=False,
+        execution_bridge_required=True,
+    ),
 }
 
 REQUIRED_PROVIDER_PROFILES: Final[Mapping[str, RequiredProviderProfile]] = MappingProxyType(
@@ -387,7 +453,7 @@ _DOCTRINE_CONTRACTS_RAW: Final[dict[str, DoctrineContractSpec]] = {
         setup_kind=SETUP_KIND_OPTION_LED_MICROSTRUCTURE_BURST,
         live_eligible=True,
         shadow_eligible=True,
-        required_provider_profile_id=PROFILE_MISO_DHAN_MANDATORY_SIGNAL_PATH,
+        required_provider_profile_id=PROFILE_MISO_DHAN_CONTEXT_HEALTHY_FUTURES_BASELINE,
         param_paths_by_branch={
             N.BRANCH_CALL: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MISO, N.BRANCH_CALL)],
             N.BRANCH_PUT: DOCTRINE_PARAM_PATHS[(N.STRATEGY_FAMILY_MISO, N.BRANCH_PUT)],
@@ -462,8 +528,8 @@ def _validate_registry() -> None:
         if family_id == N.STRATEGY_FAMILY_MISO:
             _require(
                 spec.required_provider_profile_id
-                == PROFILE_MISO_DHAN_MANDATORY_SIGNAL_PATH,
-                "MISO must use the Dhan-mandatory signal-path provider profile",
+                == PROFILE_MISO_DHAN_CONTEXT_HEALTHY_FUTURES_BASELINE,
+                "MISO must use the Dhan-option/context plus healthy-synced-futures provider profile",
             )
         else:
             _require(
@@ -528,6 +594,7 @@ __all__ = [
     "DoctrineContractsError",
     "PROFILE_CLASSIC_DHAN_ENHANCED_DEGRADED_SAFE",
     "PROFILE_MISO_DHAN_MANDATORY_SIGNAL_PATH",
+    "PROFILE_MISO_DHAN_CONTEXT_HEALTHY_FUTURES_BASELINE",
     "REQUIRED_PROVIDER_PROFILES",
     "RequiredProviderProfile",
     "SETUP_KIND_BREAKOUT_CONTINUATION",

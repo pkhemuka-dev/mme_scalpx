@@ -57,6 +57,11 @@ class FeatureFamilyContractError(ValueError):
 
 FAMILY_FEATURES_VERSION: Final[str] = "1.1"
 
+
+# Batch 25G contract-registry version. This is a field-name freeze only;
+# service adapter behavior is intentionally patched in later batches.
+CONTRACT_FIELD_REGISTRY_VERSION: Final[str] = "25G.1"
+
 # ============================================================================
 # Canonical vocabularies anchored to names.py
 # ============================================================================
@@ -174,19 +179,32 @@ SNAPSHOT_KEYS: Final[tuple[str, ...]] = (
     "samples_seen",
 )
 
-PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = (
+PROVIDER_RUNTIME_CANONICAL_KEYS: Final[tuple[str, ...]] = tuple(
+    N.CONTRACT_PROVIDER_RUNTIME_KEYS
+)
+
+PROVIDER_RUNTIME_COMPATIBILITY_KEYS: Final[tuple[str, ...]] = (
     "active_futures_provider_id",
     "active_selected_option_provider_id",
     "active_option_context_provider_id",
     "active_execution_provider_id",
     "fallback_execution_provider_id",
     "provider_runtime_mode",
-    "family_runtime_mode",
     "futures_provider_status",
     "selected_option_provider_status",
     "option_context_provider_status",
     "execution_provider_status",
 )
+
+PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = tuple(
+    dict.fromkeys(
+        (
+            *PROVIDER_RUNTIME_CANONICAL_KEYS,
+            *PROVIDER_RUNTIME_COMPATIBILITY_KEYS,
+        )
+    )
+)
+
 
 MARKET_KEYS: Final[tuple[str, ...]] = (
     "atm_strike",
@@ -318,18 +336,16 @@ COMMON_SIGNALS_KEYS: Final[tuple[str, ...]] = (
 )
 
 MIST_BRANCH_KEYS: Final[tuple[str, ...]] = (
-    "futures_bias_ok",
+    "trend_confirmed",
     "futures_impulse_ok",
     "pullback_detected",
     "resume_confirmed",
-    "micro_trap_blocked",
     "context_pass",
     "option_tradability_pass",
 )
 
 MISB_BRANCH_KEYS: Final[tuple[str, ...]] = (
-    "futures_bias_ok",
-    "shelf_valid",
+    "shelf_confirmed",
     "breakout_triggered",
     "breakout_accepted",
     "context_pass",
@@ -341,7 +357,8 @@ MISC_BRANCH_KEYS: Final[tuple[str, ...]] = (
     "directional_breakout_triggered",
     "expansion_accepted",
     "retest_monitor_active",
-    "retest_type",
+    "retest_valid",
+    "hesitation_valid",
     "resume_confirmed",
     "context_pass",
     "option_tradability_pass",
@@ -358,6 +375,7 @@ MISR_ACTIVE_ZONE_KEYS: Final[tuple[str, ...]] = (
 )
 
 MISR_BRANCH_KEYS: Final[tuple[str, ...]] = (
+    "active_zone_valid",
     "fake_break_triggered",
     "absorption_pass",
     "range_reentry_confirmed",
@@ -390,6 +408,165 @@ MISO_SIDE_SUPPORT_KEYS: Final[tuple[str, ...]] = (
     "futures_vwap_align_ok",
     "futures_contradiction_blocked",
     "tradability_pass",
+)
+
+
+# Batch 25M: canonical support alias and eligibility registry.
+# These are contract bridge aliases only. New producers should publish canonical
+# keys directly after Batch 25M.
+FAMILY_SUPPORT_ALIAS_MAP: Final[Mapping[str, Mapping[str, tuple[str, ...]]]] = MappingProxyType(
+    {
+        FAMILY_ID_MIST: MappingProxyType(
+            {
+                "trend_confirmed": ("trend_confirmed", "futures_bias_ok", "trend_direction_ok", "trend_ok"),
+                "futures_impulse_ok": ("futures_impulse_ok", "impulse_ok", "futures_ok"),
+                "pullback_detected": ("pullback_detected", "pullback_ok", "pullback_present"),
+                "micro_trap_resolved": ("micro_trap_resolved", "micro_trap_clear", "micro_trap_blocked"),
+                "resume_confirmed": ("resume_confirmed", "resume_support", "resume_confirmation_ok"),
+                "context_pass": ("context_pass", "oi_context_pass"),
+                "option_tradability_pass": ("option_tradability_pass", "tradability_pass", "option_tradability_ok"),
+            }
+        ),
+        FAMILY_ID_MISB: MappingProxyType(
+            {
+                "shelf_confirmed": ("shelf_confirmed", "shelf_valid", "shelf_ok", "shelf_score_ok"),
+                "breakout_triggered": ("breakout_triggered", "breakout_trigger", "breakout_trigger_ok"),
+                "breakout_accepted": ("breakout_accepted", "breakout_acceptance", "breakout_acceptance_ok"),
+                "context_pass": ("context_pass", "oi_context_pass"),
+                "option_tradability_pass": ("option_tradability_pass", "tradability_pass", "option_tradability_ok"),
+            }
+        ),
+        FAMILY_ID_MISC: MappingProxyType(
+            {
+                "compression_detected": ("compression_detected", "compression_detection", "compression_ok"),
+                "directional_breakout_triggered": ("directional_breakout_triggered", "breakout_trigger", "breakout_triggered"),
+                "expansion_accepted": ("expansion_accepted", "breakout_acceptance", "expansion_acceptance_ok"),
+                "retest_monitor_active": ("retest_monitor_active", "retest_monitor_alive"),
+                "retest_valid": ("retest_valid", "retest_ok"),
+                "hesitation_valid": ("hesitation_valid", "hesitation_ok"),
+                "resume_confirmed": ("resume_confirmed", "resume_support", "resume_confirmation_ok"),
+                "context_pass": ("context_pass", "oi_context_pass"),
+                "option_tradability_pass": ("option_tradability_pass", "tradability_pass", "option_tradability_ok"),
+            }
+        ),
+        FAMILY_ID_MISR: MappingProxyType(
+            {
+                "active_zone_valid": ("active_zone_valid", "zone_valid", "active_zone_ready"),
+                "active_zone": ("active_zone",),
+                "trap_event_id": ("trap_event_id",),
+                "fake_break_triggered": ("fake_break_triggered", "fake_break", "trap_detected", "fake_break_detected"),
+                "absorption_pass": ("absorption_pass", "absorption", "absorption_ok", "absorption_confirmed"),
+                "range_reentry_confirmed": ("range_reentry_confirmed", "range_reentry", "reentry_ok"),
+                "flow_flip_confirmed": ("flow_flip_confirmed", "flow_flip", "flow_flip_ok"),
+                "hold_inside_range_proved": ("hold_inside_range_proved", "hold_proof", "hold_proof_ok"),
+                "no_mans_land_cleared": ("no_mans_land_cleared", "no_mans_land_clear"),
+                "reversal_impulse_confirmed": ("reversal_impulse_confirmed", "reversal_impulse", "reversal_impulse_ok"),
+                "context_pass": ("context_pass", "oi_context_pass"),
+                "option_tradability_pass": ("option_tradability_pass", "tradability_pass", "option_tradability_ok"),
+            }
+        ),
+        FAMILY_ID_MISO: MappingProxyType(
+            {
+                "burst_detected": ("burst_detected", "burst_valid"),
+                "aggression_ok": ("aggression_ok", "aggressive_flow"),
+                "tape_speed_ok": ("tape_speed_ok", "tape_urgency_ok", "tape_speed_pass"),
+                "imbalance_persist_ok": ("imbalance_persist_ok", "persistence_ok", "imbalance_persistence_ok"),
+                "queue_reload_blocked": ("queue_reload_blocked", "queue_reload_veto"),
+                "queue_reload_clear": ("queue_ok", "queue_clear", "queue_reload_clear"),
+                "futures_vwap_align_ok": ("futures_vwap_align_ok", "futures_alignment_ok", "futures_vwap_alignment_ok"),
+                "futures_contradiction_blocked": ("futures_contradiction_blocked", "futures_contradiction_veto"),
+                "tradability_pass": ("tradability_pass", "option_tradability_pass", "option_tradability_ok"),
+            }
+        ),
+    }
+)
+
+FAMILY_SUPPORT_INVERTED_ALIAS_MAP: Final[Mapping[str, Mapping[str, tuple[str, ...]]]] = MappingProxyType(
+    {
+        FAMILY_ID_MISO: MappingProxyType(
+            {
+                "queue_reload_blocked": ("queue_ok",),
+                "futures_contradiction_blocked": ("futures_veto_clear",),
+            }
+        )
+    }
+)
+
+FAMILY_BRANCH_ELIGIBILITY_KEYS: Final[Mapping[str, tuple[str, ...]]] = MappingProxyType(
+    {
+        FAMILY_ID_MIST: (
+            "trend_confirmed",
+            "futures_impulse_ok",
+            "pullback_detected",
+            "micro_trap_resolved",
+            "resume_confirmed",
+            "option_tradability_pass",
+        ),
+        FAMILY_ID_MISB: (
+            "shelf_confirmed",
+            "breakout_triggered",
+            "breakout_accepted",
+            "option_tradability_pass",
+        ),
+        FAMILY_ID_MISC: (
+            "compression_detected",
+            "directional_breakout_triggered",
+            "expansion_accepted",
+            "retest_monitor_active",
+            "resume_confirmed",
+            "option_tradability_pass",
+        ),
+        FAMILY_ID_MISR: (
+            "active_zone_valid",
+            "fake_break_triggered",
+            "absorption_pass",
+            "range_reentry_confirmed",
+            "flow_flip_confirmed",
+            "hold_inside_range_proved",
+            "no_mans_land_cleared",
+            "reversal_impulse_confirmed",
+            "option_tradability_pass",
+        ),
+        FAMILY_ID_MISO: (
+            "burst_detected",
+            "aggression_ok",
+            "tape_speed_ok",
+            "imbalance_persist_ok",
+            "tradability_pass",
+        ),
+    }
+)
+
+
+# Canonical cross-service field registry anchored to core.names. Existing payload
+# validators above remain unchanged in Batch 25G to avoid mixing contract freeze
+# with live service behavior. Runtime adapters are repaired in subsequent batches.
+CANONICAL_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = tuple(N.CONTRACT_PROVIDER_RUNTIME_KEYS)
+CANONICAL_FEED_SNAPSHOT_KEYS: Final[tuple[str, ...]] = tuple(N.CONTRACT_FEED_SNAPSHOT_KEYS)
+CANONICAL_DHAN_CONTEXT_KEYS: Final[tuple[str, ...]] = tuple(N.CONTRACT_DHAN_CONTEXT_KEYS)
+CANONICAL_FAMILY_SUPPORT_KEYS: Final[Mapping[str, tuple[str, ...]]] = MappingProxyType(
+    {family_id: tuple(keys) for family_id, keys in N.CONTRACT_FAMILY_SUPPORT_KEYS.items()}
+)
+CANONICAL_EXECUTION_ENTRY_TOP_LEVEL_KEYS: Final[tuple[str, ...]] = tuple(
+    N.CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS
+)
+CANONICAL_EXECUTION_ENTRY_METADATA_KEYS: Final[tuple[str, ...]] = tuple(
+    N.CONTRACT_EXECUTION_ENTRY_METADATA_KEYS
+)
+CANONICAL_EXECUTION_ENTRY_KEYS: Final[tuple[str, ...]] = tuple(N.CONTRACT_EXECUTION_ENTRY_KEYS)
+CANONICAL_CONTRACT_FIELD_REGISTRY: Final[Mapping[str, tuple[str, ...] | Mapping[str, tuple[str, ...]]]] = MappingProxyType(
+    {
+        "provider_runtime": CANONICAL_PROVIDER_RUNTIME_KEYS,
+        "feed_snapshot": CANONICAL_FEED_SNAPSHOT_KEYS,
+        "dhan_context": CANONICAL_DHAN_CONTEXT_KEYS,
+        "family_support": CANONICAL_FAMILY_SUPPORT_KEYS,
+        "execution_entry_top_level": CANONICAL_EXECUTION_ENTRY_TOP_LEVEL_KEYS,
+        "execution_entry_metadata": CANONICAL_EXECUTION_ENTRY_METADATA_KEYS,
+        "execution_entry": CANONICAL_EXECUTION_ENTRY_KEYS,
+    }
+)
+CANONICAL_FIELD_COMPATIBILITY_ALIASES: Final[Mapping[str, str]] = MappingProxyType(
+    dict(N.CONTRACT_FIELD_COMPATIBILITY_ALIASES)
 )
 
 # ============================================================================
@@ -531,13 +708,32 @@ def build_empty_snapshot_block() -> dict[str, Any]:
 
 def build_empty_provider_runtime_block() -> dict[str, Any]:
     return {
+        # Canonical Batch 25G provider-runtime keys.
+        "futures_marketdata_provider_id": None,
+        "selected_option_marketdata_provider_id": None,
+        "option_context_provider_id": None,
+        "execution_primary_provider_id": None,
+        "execution_fallback_provider_id": None,
+        "futures_marketdata_status": None,
+        "selected_option_marketdata_status": None,
+        "option_context_status": None,
+        "execution_primary_status": None,
+        "execution_fallback_status": None,
+        "family_runtime_mode": N.FAMILY_RUNTIME_MODE_OBSERVE_ONLY,
+        "failover_mode": N.PROVIDER_FAILOVER_MODE_MANUAL,
+        "override_mode": N.PROVIDER_OVERRIDE_MODE_AUTO,
+        "transition_reason": N.PROVIDER_TRANSITION_REASON_BOOTSTRAP,
+        "provider_transition_seq": 0,
+        "failover_active": False,
+        "pending_failover": False,
+
+        # Compatibility keys consumed by existing strategy-family surfaces.
         "active_futures_provider_id": None,
         "active_selected_option_provider_id": None,
         "active_option_context_provider_id": None,
         "active_execution_provider_id": None,
         "fallback_execution_provider_id": None,
         "provider_runtime_mode": None,
-        "family_runtime_mode": N.FAMILY_RUNTIME_MODE_OBSERVE_ONLY,
         "futures_provider_status": None,
         "selected_option_provider_status": None,
         "option_context_provider_status": None,
@@ -694,11 +890,10 @@ def build_empty_stage_flags_block() -> dict[str, Any]:
 
 def build_empty_mist_branch_support() -> dict[str, Any]:
     return {
-        "futures_bias_ok": False,
+        "trend_confirmed": False,
         "futures_impulse_ok": False,
         "pullback_detected": False,
         "resume_confirmed": False,
-        "micro_trap_blocked": False,
         "context_pass": False,
         "option_tradability_pass": False,
     }
@@ -706,8 +901,7 @@ def build_empty_mist_branch_support() -> dict[str, Any]:
 
 def build_empty_misb_branch_support() -> dict[str, Any]:
     return {
-        "futures_bias_ok": False,
-        "shelf_valid": False,
+        "shelf_confirmed": False,
         "breakout_triggered": False,
         "breakout_accepted": False,
         "context_pass": False,
@@ -721,7 +915,8 @@ def build_empty_misc_branch_support() -> dict[str, Any]:
         "directional_breakout_triggered": False,
         "expansion_accepted": False,
         "retest_monitor_active": False,
-        "retest_type": None,
+        "retest_valid": False,
+        "hesitation_valid": False,
         "resume_confirmed": False,
         "context_pass": False,
         "option_tradability_pass": False,
@@ -742,6 +937,7 @@ def build_empty_misr_active_zone() -> dict[str, Any]:
 
 def build_empty_misr_branch_support() -> dict[str, Any]:
     return {
+        "active_zone_valid": False,
         "fake_break_triggered": False,
         "absorption_pass": False,
         "range_reentry_confirmed": False,
@@ -883,28 +1079,42 @@ def validate_provider_runtime_block(
         field_name="provider_runtime",
     )
 
-    strict_provider_fields = (
+    canonical_provider_fields = (
+        "futures_marketdata_provider_id",
+        "selected_option_marketdata_provider_id",
+        "option_context_provider_id",
+        "execution_primary_provider_id",
+        "execution_fallback_provider_id",
+    )
+    compatibility_provider_fields = (
         "active_futures_provider_id",
         "active_selected_option_provider_id",
-    )
-    optional_provider_fields = (
         "active_option_context_provider_id",
         "active_execution_provider_id",
         "fallback_execution_provider_id",
     )
-
-    strict_status_fields = (
+    canonical_status_fields = (
+        "futures_marketdata_status",
+        "selected_option_marketdata_status",
+        "option_context_status",
+        "execution_primary_status",
+        "execution_fallback_status",
+    )
+    compatibility_status_fields = (
         "futures_provider_status",
         "selected_option_provider_status",
-    )
-    optional_status_fields = (
         "option_context_provider_status",
         "execution_provider_status",
     )
 
-    for field_name in strict_provider_fields:
+    for field_name in canonical_provider_fields + compatibility_provider_fields:
         value = provider_runtime[field_name]
-        if publishable:
+        if publishable and field_name in (
+            "futures_marketdata_provider_id",
+            "selected_option_marketdata_provider_id",
+            "active_futures_provider_id",
+            "active_selected_option_provider_id",
+        ):
             _require_literal(
                 value,
                 field_name=f"provider_runtime.{field_name}",
@@ -917,17 +1127,14 @@ def validate_provider_runtime_block(
                 allowed=ALLOWED_PROVIDER_IDS,
             )
 
-    for field_name in optional_provider_fields:
+    for field_name in canonical_status_fields + compatibility_status_fields:
         value = provider_runtime[field_name]
-        _require_optional_literal(
-            value,
-            field_name=f"provider_runtime.{field_name}",
-            allowed=ALLOWED_PROVIDER_IDS,
-        )
-
-    for field_name in strict_status_fields:
-        value = provider_runtime[field_name]
-        if publishable:
+        if publishable and field_name in (
+            "futures_marketdata_status",
+            "selected_option_marketdata_status",
+            "futures_provider_status",
+            "selected_option_provider_status",
+        ):
             _require_literal(
                 value,
                 field_name=f"provider_runtime.{field_name}",
@@ -939,35 +1146,76 @@ def validate_provider_runtime_block(
                 field_name=f"provider_runtime.{field_name}",
                 allowed=ALLOWED_PROVIDER_STATUSES,
             )
-
-    for field_name in optional_status_fields:
-        value = provider_runtime[field_name]
-        _require_optional_literal(
-            value,
-            field_name=f"provider_runtime.{field_name}",
-            allowed=ALLOWED_PROVIDER_STATUSES,
-        )
 
     if publishable:
-        _require_str(
-            provider_runtime["provider_runtime_mode"],
-            field_name="provider_runtime.provider_runtime_mode",
-        )
         _require_literal(
             provider_runtime["family_runtime_mode"],
             field_name="provider_runtime.family_runtime_mode",
             allowed=ALLOWED_FAMILY_RUNTIME_MODES,
         )
     else:
-        _require_optional_non_empty_str(
-            provider_runtime["provider_runtime_mode"],
-            field_name="provider_runtime.provider_runtime_mode",
-        )
         _require_optional_literal(
             provider_runtime["family_runtime_mode"],
             field_name="provider_runtime.family_runtime_mode",
             allowed=ALLOWED_FAMILY_RUNTIME_MODES,
         )
+
+    _require_optional_non_empty_str(
+        provider_runtime["provider_runtime_mode"],
+        field_name="provider_runtime.provider_runtime_mode",
+    )
+
+    _require_literal(
+        provider_runtime["failover_mode"],
+        field_name="provider_runtime.failover_mode",
+        allowed=N.ALLOWED_PROVIDER_FAILOVER_MODES,
+    )
+    _require_literal(
+        provider_runtime["override_mode"],
+        field_name="provider_runtime.override_mode",
+        allowed=N.ALLOWED_PROVIDER_OVERRIDE_MODES,
+    )
+    _require_literal(
+        provider_runtime["transition_reason"],
+        field_name="provider_runtime.transition_reason",
+        allowed=N.ALLOWED_PROVIDER_TRANSITION_REASONS,
+    )
+    _require_int(
+        provider_runtime["provider_transition_seq"],
+        field_name="provider_runtime.provider_transition_seq",
+        min_value=0,
+    )
+    _require_bool(
+        provider_runtime["failover_active"],
+        field_name="provider_runtime.failover_active",
+    )
+    _require_bool(
+        provider_runtime["pending_failover"],
+        field_name="provider_runtime.pending_failover",
+    )
+
+    # Compatibility value-equivalence guards. These catch producer/consumer drift.
+    equivalence_pairs = (
+        ("futures_marketdata_provider_id", "active_futures_provider_id"),
+        ("selected_option_marketdata_provider_id", "active_selected_option_provider_id"),
+        ("option_context_provider_id", "active_option_context_provider_id"),
+        ("execution_primary_provider_id", "active_execution_provider_id"),
+        ("execution_fallback_provider_id", "fallback_execution_provider_id"),
+        ("futures_marketdata_status", "futures_provider_status"),
+        ("selected_option_marketdata_status", "selected_option_provider_status"),
+        ("option_context_status", "option_context_provider_status"),
+        ("execution_primary_status", "execution_provider_status"),
+    )
+    for canonical_key, compatibility_key in equivalence_pairs:
+        canonical_value = provider_runtime[canonical_key]
+        compatibility_value = provider_runtime[compatibility_key]
+        if canonical_value is not None or compatibility_value is not None:
+            _require(
+                canonical_value == compatibility_value,
+                "provider_runtime compatibility drift: "
+                f"{canonical_key}={canonical_value!r} "
+                f"{compatibility_key}={compatibility_value!r}",
+            )
 
 
 def validate_market_block(market: Mapping[str, Any]) -> None:
@@ -1175,19 +1423,7 @@ def validate_misc_family_support(value: Mapping[str, Any]) -> None:
         _validate_bool_mapping_fields(
             branch,
             field_name=f"families.MISC.branches.{branch_id}",
-            bool_keys=(
-                "compression_detected",
-                "directional_breakout_triggered",
-                "expansion_accepted",
-                "retest_monitor_active",
-                "resume_confirmed",
-                "context_pass",
-                "option_tradability_pass",
-            ),
-        )
-        _require_optional_non_empty_str(
-            branch["retest_type"],
-            field_name=f"families.MISC.branches.{branch_id}.retest_type",
+            bool_keys=MISC_BRANCH_KEYS,
         )
 
 
@@ -1451,8 +1687,57 @@ FAMILY_TO_VALIDATOR: Final[Mapping[str, Any]] = MappingProxyType(
 # Import-time contract self-check
 # ============================================================================
 
+
+def validate_contract_field_registry() -> None:
+    """Validate Batch 25G field registry alignment with core.names."""
+
+    N.validate_contract_field_registry()
+
+    def _require_tuple_match(local: tuple[str, ...], upstream: tuple[str, ...], label: str) -> None:
+        if tuple(local) != tuple(upstream):
+            raise FeatureFamilyContractError(
+                f"{label} drift: local={tuple(local)!r} upstream={tuple(upstream)!r}"
+            )
+
+    _require_tuple_match(
+        CANONICAL_PROVIDER_RUNTIME_KEYS,
+        N.CONTRACT_PROVIDER_RUNTIME_KEYS,
+        "CANONICAL_PROVIDER_RUNTIME_KEYS",
+    )
+    _require_tuple_match(
+        CANONICAL_FEED_SNAPSHOT_KEYS,
+        N.CONTRACT_FEED_SNAPSHOT_KEYS,
+        "CANONICAL_FEED_SNAPSHOT_KEYS",
+    )
+    _require_tuple_match(
+        CANONICAL_DHAN_CONTEXT_KEYS,
+        N.CONTRACT_DHAN_CONTEXT_KEYS,
+        "CANONICAL_DHAN_CONTEXT_KEYS",
+    )
+    _require_tuple_match(
+        CANONICAL_EXECUTION_ENTRY_KEYS,
+        N.CONTRACT_EXECUTION_ENTRY_KEYS,
+        "CANONICAL_EXECUTION_ENTRY_KEYS",
+    )
+
+    if tuple(CANONICAL_FAMILY_SUPPORT_KEYS.keys()) != tuple(N.CONTRACT_FAMILY_SUPPORT_KEYS.keys()):
+        raise FeatureFamilyContractError("CANONICAL_FAMILY_SUPPORT_KEYS family coverage drift")
+
+    for family_id, keys in CANONICAL_FAMILY_SUPPORT_KEYS.items():
+        _require_tuple_match(
+            tuple(keys),
+            tuple(N.CONTRACT_FAMILY_SUPPORT_KEYS[family_id]),
+            f"CANONICAL_FAMILY_SUPPORT_KEYS[{family_id}]",
+        )
+
+    if dict(CANONICAL_FIELD_COMPATIBILITY_ALIASES) != dict(N.CONTRACT_FIELD_COMPATIBILITY_ALIASES):
+        raise FeatureFamilyContractError("CANONICAL_FIELD_COMPATIBILITY_ALIASES drift")
+
+
+
 _validate_family_identities()
 validate_family_features_payload(build_empty_family_features_payload())
+validate_contract_field_registry()
 
 # ============================================================================
 # Exports
@@ -1461,6 +1746,7 @@ validate_family_features_payload(build_empty_family_features_payload())
 __all__ = [
     "FeatureFamilyContractError",
     "FAMILY_FEATURES_VERSION",
+    "CONTRACT_FIELD_REGISTRY_VERSION",
     "FAMILY_ID_MIST",
     "FAMILY_ID_MISB",
     "FAMILY_ID_MISC",
@@ -1493,6 +1779,8 @@ __all__ = [
     "KEY_FAMILIES",
     "TOP_LEVEL_KEYS",
     "SNAPSHOT_KEYS",
+    "PROVIDER_RUNTIME_CANONICAL_KEYS",
+    "PROVIDER_RUNTIME_COMPATIBILITY_KEYS",
     "PROVIDER_RUNTIME_KEYS",
     "MARKET_KEYS",
     "COMMON_KEYS",
@@ -1510,6 +1798,18 @@ __all__ = [
     "MISR_BRANCH_KEYS",
     "MISO_ROOT_KEYS",
     "MISO_SIDE_SUPPORT_KEYS",
+    "FAMILY_SUPPORT_ALIAS_MAP",
+    "FAMILY_SUPPORT_INVERTED_ALIAS_MAP",
+    "FAMILY_BRANCH_ELIGIBILITY_KEYS",
+    "CANONICAL_PROVIDER_RUNTIME_KEYS",
+    "CANONICAL_FEED_SNAPSHOT_KEYS",
+    "CANONICAL_DHAN_CONTEXT_KEYS",
+    "CANONICAL_FAMILY_SUPPORT_KEYS",
+    "CANONICAL_EXECUTION_ENTRY_TOP_LEVEL_KEYS",
+    "CANONICAL_EXECUTION_ENTRY_METADATA_KEYS",
+    "CANONICAL_EXECUTION_ENTRY_KEYS",
+    "CANONICAL_CONTRACT_FIELD_REGISTRY",
+    "CANONICAL_FIELD_COMPATIBILITY_ALIASES",
     "build_empty_snapshot_block",
     "build_empty_provider_runtime_block",
     "build_empty_market_block",
@@ -1546,9 +1846,506 @@ __all__ = [
     "validate_miso_family_support",
     "validate_families_block",
     "validate_family_features_payload",
+    "validate_contract_field_registry",
     "validate_publishable_family_features_payload",
     "assert_valid_family_features_payload",
     "assert_publishable_family_features_payload",
     "FAMILY_TO_EMPTY_BUILDER",
     "FAMILY_TO_VALIDATOR",
 ]
+
+
+# ============================================================================
+# Batch 25H canonical provider-runtime bridge
+# ============================================================================
+#
+# Purpose
+# -------
+# Batch 25G froze canonical provider-runtime field names in core.names.
+# Existing strategy-family consumers still use the older active_* compatibility
+# fields. This bridge keeps the family_features provider_runtime block
+# compatible while making canonical producer truth explicit.
+#
+# This is a contract seam only:
+# - no provider failover is performed here
+# - no strategy promotion is enabled here
+# - no execution arming is enabled here
+# - observe_only remains the safe default family runtime mode
+
+_BATCH25H_ORIGINAL_BUILD_EMPTY_PROVIDER_RUNTIME_BLOCK = build_empty_provider_runtime_block
+_BATCH25H_ORIGINAL_VALIDATE_PROVIDER_RUNTIME_BLOCK = validate_provider_runtime_block
+
+_BATCH25H_CANONICAL_TO_COMPAT: Final[dict[str, str]] = {
+    "futures_marketdata_provider_id": "active_futures_provider_id",
+    "selected_option_marketdata_provider_id": "active_selected_option_provider_id",
+    "option_context_provider_id": "active_option_context_provider_id",
+    "execution_primary_provider_id": "active_execution_provider_id",
+    "execution_fallback_provider_id": "fallback_execution_provider_id",
+    "futures_marketdata_status": "futures_provider_status",
+    "selected_option_marketdata_status": "selected_option_provider_status",
+    "option_context_status": "option_context_provider_status",
+    "execution_primary_status": "execution_provider_status",
+}
+
+
+def _batch25h_provider_default(key: str) -> Any:
+    if key in {"failover_active", "pending_failover"}:
+        return False
+    if key == "provider_transition_seq":
+        return 0
+    if key.endswith("_status"):
+        return getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE")
+    if key == "family_runtime_mode":
+        return getattr(N, "FAMILY_RUNTIME_MODE_OBSERVE_ONLY", "observe_only")
+    return None
+
+
+def build_empty_provider_runtime_block() -> dict[str, Any]:
+    out = dict(_BATCH25H_ORIGINAL_BUILD_EMPTY_PROVIDER_RUNTIME_BLOCK())
+
+    for key in getattr(N, "CONTRACT_PROVIDER_RUNTIME_KEYS", ()):
+        out.setdefault(key, _batch25h_provider_default(key))
+
+    for canonical, compat in _BATCH25H_CANONICAL_TO_COMPAT.items():
+        out.setdefault(compat, out.get(canonical))
+
+    out.setdefault("provider_runtime_mode", None)
+    out.setdefault("provider_runtime_blocked", True)
+    out.setdefault("provider_runtime_block_reason", "empty_provider_runtime_block")
+    out.setdefault("provider_runtime_missing_keys", tuple(getattr(N, "CONTRACT_PROVIDER_RUNTIME_KEYS", ())))
+
+    return out
+
+
+def validate_provider_runtime_block(
+    provider_runtime: Mapping[str, Any],
+    *,
+    field_name: str = "provider_runtime",
+) -> None:
+    if not isinstance(provider_runtime, Mapping):
+        raise FeatureFamilyContractError(f"{field_name} must be a mapping")
+
+    required_keys = set(_BATCH25H_ORIGINAL_BUILD_EMPTY_PROVIDER_RUNTIME_BLOCK().keys())
+    required_keys.update(getattr(N, "CONTRACT_PROVIDER_RUNTIME_KEYS", ()))
+    required_keys.update(_BATCH25H_CANONICAL_TO_COMPAT.values())
+    required_keys.update(
+        {
+            "provider_runtime_blocked",
+            "provider_runtime_block_reason",
+            "provider_runtime_missing_keys",
+        }
+    )
+
+    missing = sorted(key for key in required_keys if key not in provider_runtime)
+    if missing:
+        raise FeatureFamilyContractError(f"{field_name} missing provider-runtime keys: {missing!r}")
+
+    for key in getattr(N, "CONTRACT_PROVIDER_RUNTIME_KEYS", ()):
+        value = provider_runtime.get(key)
+        if key in {"failover_active", "pending_failover"}:
+            if not isinstance(value, bool):
+                raise FeatureFamilyContractError(f"{field_name}.{key} must be bool")
+            continue
+        if key == "provider_transition_seq":
+            if not isinstance(value, int):
+                raise FeatureFamilyContractError(f"{field_name}.{key} must be int")
+            continue
+        if value is not None and not isinstance(value, str):
+            raise FeatureFamilyContractError(f"{field_name}.{key} must be str or None")
+
+    for canonical, compat in _BATCH25H_CANONICAL_TO_COMPAT.items():
+        compat_value = provider_runtime.get(compat)
+        canonical_value = provider_runtime.get(canonical)
+        if compat_value is not None and not isinstance(compat_value, str):
+            raise FeatureFamilyContractError(f"{field_name}.{compat} must be str or None")
+        if canonical_value is not None and compat_value is not None and compat_value != canonical_value:
+            raise FeatureFamilyContractError(
+                f"{field_name}.{compat} drift: compat={compat_value!r} canonical={canonical_value!r}"
+            )
+
+    if not isinstance(provider_runtime.get("provider_runtime_blocked"), bool):
+        raise FeatureFamilyContractError(f"{field_name}.provider_runtime_blocked must be bool")
+
+    if not isinstance(provider_runtime.get("provider_runtime_block_reason"), str):
+        raise FeatureFamilyContractError(f"{field_name}.provider_runtime_block_reason must be str")
+
+    missing_keys = provider_runtime.get("provider_runtime_missing_keys")
+    if not isinstance(missing_keys, (tuple, list)):
+        raise FeatureFamilyContractError(f"{field_name}.provider_runtime_missing_keys must be tuple/list")
+
+
+def build_batch25h_provider_runtime_contract_block(values: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    out = build_empty_provider_runtime_block()
+    out.update(dict(values or {}))
+    validate_provider_runtime_block(out)
+    return out
+
+
+# ============================================================================
+# Batch 25H-C final provider-runtime contract surface
+# ============================================================================
+#
+# Corrective purpose
+# ------------------
+# 25H proved canonical/compat alias derivation, but the family-feature
+# provider_runtime subtree still needs a single validator surface that accepts:
+# - Batch 25G canonical provider-runtime keys
+# - existing compatibility keys consumed by strategy-family surfaces
+# - explicit blocker metadata for missing required runtime signals
+#
+# This remains a contract/adapter seam only:
+# - no provider failover is performed here
+# - no strategy promotion is enabled here
+# - no execution arming is enabled here
+# - observe_only remains the default family runtime mode
+
+PROVIDER_RUNTIME_CANONICAL_KEYS: Final[tuple[str, ...]] = tuple(
+    N.CONTRACT_PROVIDER_RUNTIME_KEYS
+)
+
+PROVIDER_RUNTIME_COMPATIBILITY_KEYS: Final[tuple[str, ...]] = (
+    "active_futures_provider_id",
+    "active_selected_option_provider_id",
+    "active_option_context_provider_id",
+    "active_execution_provider_id",
+    "fallback_execution_provider_id",
+    "provider_runtime_mode",
+    "futures_provider_status",
+    "selected_option_provider_status",
+    "option_context_provider_status",
+    "execution_provider_status",
+    "execution_fallback_provider_status",
+)
+
+PROVIDER_RUNTIME_BLOCKER_KEYS: Final[tuple[str, ...]] = (
+    "provider_ready_classic",
+    "provider_ready_miso",
+    "provider_runtime_blocked",
+    "provider_runtime_block_reason",
+    "provider_runtime_missing_keys",
+)
+
+PROVIDER_RUNTIME_KEYS = tuple(
+    dict.fromkeys(
+        (
+            *PROVIDER_RUNTIME_CANONICAL_KEYS,
+            *PROVIDER_RUNTIME_COMPATIBILITY_KEYS,
+            *PROVIDER_RUNTIME_BLOCKER_KEYS,
+        )
+    )
+)
+
+_BATCH25HC_CANONICAL_TO_COMPAT: Final[dict[str, str]] = {
+    "futures_marketdata_provider_id": "active_futures_provider_id",
+    "selected_option_marketdata_provider_id": "active_selected_option_provider_id",
+    "option_context_provider_id": "active_option_context_provider_id",
+    "execution_primary_provider_id": "active_execution_provider_id",
+    "execution_fallback_provider_id": "fallback_execution_provider_id",
+    "futures_marketdata_status": "futures_provider_status",
+    "selected_option_marketdata_status": "selected_option_provider_status",
+    "option_context_status": "option_context_provider_status",
+    "execution_primary_status": "execution_provider_status",
+    "execution_fallback_status": "execution_fallback_provider_status",
+}
+
+
+def _batch25hc_provider_status_unavailable() -> str:
+    return getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE")
+
+
+def _batch25hc_default_provider_runtime_value(key: str) -> Any:
+    if key in {"failover_active", "pending_failover"}:
+        return False
+    if key == "provider_transition_seq":
+        return 0
+    if key.endswith("_status") or key.endswith("_provider_status"):
+        return _batch25hc_provider_status_unavailable()
+    if key == "family_runtime_mode":
+        return getattr(N, "FAMILY_RUNTIME_MODE_OBSERVE_ONLY", "observe_only")
+    if key == "failover_mode":
+        return getattr(N, "PROVIDER_FAILOVER_MODE_MANUAL", "MANUAL")
+    if key == "override_mode":
+        return getattr(N, "PROVIDER_OVERRIDE_MODE_AUTO", "AUTO")
+    if key == "transition_reason":
+        return getattr(N, "PROVIDER_TRANSITION_REASON_BOOTSTRAP", "BOOTSTRAP")
+    if key in {"provider_ready_classic", "provider_ready_miso"}:
+        return False
+    if key == "provider_runtime_blocked":
+        return True
+    if key == "provider_runtime_block_reason":
+        return "empty_provider_runtime_block"
+    if key == "provider_runtime_missing_keys":
+        return tuple(PROVIDER_RUNTIME_CANONICAL_KEYS)
+    return None
+
+
+def build_empty_provider_runtime_block() -> dict[str, Any]:
+    out = {key: _batch25hc_default_provider_runtime_value(key) for key in PROVIDER_RUNTIME_KEYS}
+
+    for canonical, compat in _BATCH25HC_CANONICAL_TO_COMPAT.items():
+        out[compat] = out.get(canonical)
+
+    return out
+
+
+def validate_provider_runtime_block(
+    provider_runtime: Mapping[str, Any],
+    *,
+    publishable: bool = False,
+) -> None:
+    if not isinstance(provider_runtime, Mapping):
+        raise FeatureFamilyContractError("provider_runtime must be a mapping")
+
+    missing = [key for key in PROVIDER_RUNTIME_KEYS if key not in provider_runtime]
+    if missing:
+        raise FeatureFamilyContractError(f"provider_runtime missing keys: {missing!r}")
+
+    for key in PROVIDER_RUNTIME_CANONICAL_KEYS:
+        value = provider_runtime[key]
+
+        if key in {"failover_active", "pending_failover"}:
+            if not isinstance(value, bool):
+                raise FeatureFamilyContractError(f"provider_runtime.{key} must be bool")
+            continue
+
+        if key == "provider_transition_seq":
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise FeatureFamilyContractError(f"provider_runtime.{key} must be int")
+            continue
+
+        if key == "family_runtime_mode":
+            if value not in ALLOWED_FAMILY_RUNTIME_MODES:
+                raise FeatureFamilyContractError(
+                    f"provider_runtime.{key} invalid family runtime mode: {value!r}"
+                )
+            continue
+
+        if key.endswith("_status"):
+            if value is not None and not isinstance(value, str):
+                raise FeatureFamilyContractError(f"provider_runtime.{key} must be str or None")
+            continue
+
+        if value is not None and not isinstance(value, str):
+            raise FeatureFamilyContractError(f"provider_runtime.{key} must be str or None")
+
+    for canonical, compat in _BATCH25HC_CANONICAL_TO_COMPAT.items():
+        canonical_value = provider_runtime.get(canonical)
+        compat_value = provider_runtime.get(compat)
+
+        if compat_value is not None and not isinstance(compat_value, str):
+            raise FeatureFamilyContractError(f"provider_runtime.{compat} must be str or None")
+
+        if canonical_value is not None and compat_value is not None and compat_value != canonical_value:
+            raise FeatureFamilyContractError(
+                f"provider_runtime.{compat} drift: canonical={canonical_value!r} compat={compat_value!r}"
+            )
+
+    if not isinstance(provider_runtime["provider_ready_classic"], bool):
+        raise FeatureFamilyContractError("provider_runtime.provider_ready_classic must be bool")
+
+    if not isinstance(provider_runtime["provider_ready_miso"], bool):
+        raise FeatureFamilyContractError("provider_runtime.provider_ready_miso must be bool")
+
+    if not isinstance(provider_runtime["provider_runtime_blocked"], bool):
+        raise FeatureFamilyContractError("provider_runtime.provider_runtime_blocked must be bool")
+
+    if not isinstance(provider_runtime["provider_runtime_block_reason"], str):
+        raise FeatureFamilyContractError("provider_runtime.provider_runtime_block_reason must be str")
+
+    if not isinstance(provider_runtime["provider_runtime_missing_keys"], (tuple, list)):
+        raise FeatureFamilyContractError("provider_runtime.provider_runtime_missing_keys must be tuple/list")
+
+    if publishable:
+        required_publishable = (
+            "futures_marketdata_provider_id",
+            "selected_option_marketdata_provider_id",
+            "futures_marketdata_status",
+            "selected_option_marketdata_status",
+        )
+        for key in required_publishable:
+            value = provider_runtime.get(key)
+            if value in (None, ""):
+                raise FeatureFamilyContractError(f"publishable provider_runtime.{key} is required")
+
+
+def validate_family_features_payload(payload: Mapping[str, Any]) -> None:
+    if not isinstance(payload, Mapping):
+        raise FeatureFamilyContractError("family_features payload must be a mapping")
+
+    expected_top = set(TOP_LEVEL_KEYS)
+    actual_top = set(payload.keys())
+    if actual_top != expected_top:
+        raise FeatureFamilyContractError(
+            f"family_features top-level key drift: missing={sorted(expected_top - actual_top)!r} "
+            f"extra={sorted(actual_top - expected_top)!r}"
+        )
+
+    validate_snapshot_block(payload[KEY_SNAPSHOT])
+    validate_provider_runtime_block(payload[KEY_PROVIDER_RUNTIME])
+    validate_market_block(payload[KEY_MARKET])
+    validate_common_block(payload[KEY_COMMON])
+    validate_stage_flags_block(payload[KEY_STAGE_FLAGS])
+    validate_families_block(payload[KEY_FAMILIES])
+
+
+def assert_valid_family_features_payload(payload: Mapping[str, Any]) -> None:
+    validate_family_features_payload(payload)
+
+
+def build_batch25h_provider_runtime_contract_block(values: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    out = build_empty_provider_runtime_block()
+    out.update(dict(values or {}))
+
+    for canonical, compat in _BATCH25HC_CANONICAL_TO_COMPAT.items():
+        out[compat] = out.get(canonical)
+
+    validate_provider_runtime_block(out)
+    return out
+
+
+try:
+    __all__ = list(
+        dict.fromkeys(
+            [
+                *__all__,
+                "PROVIDER_RUNTIME_CANONICAL_KEYS",
+                "PROVIDER_RUNTIME_COMPATIBILITY_KEYS",
+                "PROVIDER_RUNTIME_BLOCKER_KEYS",
+                "build_batch25h_provider_runtime_contract_block",
+            ]
+        )
+    )
+except NameError:
+    pass
+
+# ============================================================================
+# Batch 26H surface-kind consolidation contract
+# ============================================================================
+
+from types import MappingProxyType as _Batch26H_MappingProxyType
+from typing import Any as _Batch26H_Any
+from typing import Final as _Batch26H_Final
+from typing import Mapping as _Batch26H_Mapping
+
+
+BATCH26H_EXPECTED_BRANCH_SURFACE_KINDS: _Batch26H_Final[_Batch26H_Mapping[str, str]] = _Batch26H_MappingProxyType(
+    {
+        FAMILY_ID_MIST: "mist_branch",
+        FAMILY_ID_MISB: "misb_branch",
+        FAMILY_ID_MISC: "misc_branch",
+        FAMILY_ID_MISR: "misr_branch",
+        FAMILY_ID_MISO: "miso_branch",
+    }
+)
+
+BATCH26H_EXPECTED_FAMILY_SURFACE_KINDS: _Batch26H_Final[_Batch26H_Mapping[str, str]] = _Batch26H_MappingProxyType(
+    {
+        FAMILY_ID_MIST: "mist_family",
+        FAMILY_ID_MISB: "misb_family",
+        FAMILY_ID_MISC: "misc_family",
+        FAMILY_ID_MISR: "misr_family",
+        FAMILY_ID_MISO: "miso_family",
+    }
+)
+
+
+def batch26h_expected_branch_surface_kind(family_id: str) -> str:
+    return BATCH26H_EXPECTED_BRANCH_SURFACE_KINDS[str(family_id).strip().upper()]
+
+
+def batch26h_expected_family_surface_kind(family_id: str) -> str:
+    return BATCH26H_EXPECTED_FAMILY_SURFACE_KINDS[str(family_id).strip().upper()]
+
+
+def validate_batch26h_surface_kinds(family_surfaces: _Batch26H_Mapping[str, _Batch26H_Any]) -> None:
+    families = family_surfaces.get("families", {})
+    if not isinstance(families, _Batch26H_Mapping):
+        raise FeatureFamilyContractError("Batch26H family_surfaces.families must be a mapping")
+
+    surfaces_by_branch = family_surfaces.get("surfaces_by_branch", {})
+    if not isinstance(surfaces_by_branch, _Batch26H_Mapping):
+        raise FeatureFamilyContractError("Batch26H family_surfaces.surfaces_by_branch must be a mapping")
+
+    for family_id in FAMILY_IDS:
+        family = families.get(family_id)
+        if not isinstance(family, _Batch26H_Mapping):
+            raise FeatureFamilyContractError(f"Batch26H missing family surface: {family_id}")
+
+        expected_family_kind = batch26h_expected_family_surface_kind(family_id)
+        actual_family_kind = family.get("surface_kind")
+        if actual_family_kind != expected_family_kind:
+            raise FeatureFamilyContractError(
+                f"Batch26H family surface_kind mismatch for {family_id}: "
+                f"expected {expected_family_kind!r}, got {actual_family_kind!r}"
+            )
+
+        branches = family.get("branches", {})
+        if not isinstance(branches, _Batch26H_Mapping):
+            raise FeatureFamilyContractError(f"Batch26H {family_id}.branches must be a mapping")
+
+        expected_branch_kind = batch26h_expected_branch_surface_kind(family_id)
+        for branch_id in BRANCH_IDS:
+            branch = branches.get(branch_id)
+            if not isinstance(branch, _Batch26H_Mapping):
+                raise FeatureFamilyContractError(f"Batch26H missing branch surface: {family_id}.{branch_id}")
+
+            actual_branch_kind = branch.get("surface_kind")
+            if actual_branch_kind != expected_branch_kind:
+                raise FeatureFamilyContractError(
+                    f"Batch26H branch surface_kind mismatch for {family_id}.{branch_id}: "
+                    f"expected {expected_branch_kind!r}, got {actual_branch_kind!r}"
+                )
+
+            branch_key = f"{family_id.lower()}_{str(branch_id).lower()}"
+            flat_branch = surfaces_by_branch.get(branch_key)
+            if not isinstance(flat_branch, _Batch26H_Mapping):
+                raise FeatureFamilyContractError(f"Batch26H missing surfaces_by_branch key: {branch_key}")
+
+            flat_kind = flat_branch.get("surface_kind")
+            if flat_kind != expected_branch_kind:
+                raise FeatureFamilyContractError(
+                    f"Batch26H surfaces_by_branch surface_kind mismatch for {branch_key}: "
+                    f"expected {expected_branch_kind!r}, got {flat_kind!r}"
+                )
+
+
+__all__ = tuple(
+    sorted(
+        set(globals().get("__all__", ()))
+        | {
+            "BATCH26H_EXPECTED_BRANCH_SURFACE_KINDS",
+            "BATCH26H_EXPECTED_FAMILY_SURFACE_KINDS",
+            "batch26h_expected_branch_surface_kind",
+            "batch26h_expected_family_surface_kind",
+            "validate_batch26h_surface_kinds",
+        }
+    )
+)
+
+# ============================================================================
+# Batch 26I-R1 — MISO inverted alias settlement
+# ============================================================================
+#
+# These aliases are family-scoped inverted aliases only. They must not be
+# inserted into non-inverting global alias maps.
+
+from types import MappingProxyType as _Batch26IR1_MappingProxyType
+
+_batch26ir1_existing_inverted_alias_map = dict(globals().get("FAMILY_SUPPORT_INVERTED_ALIAS_MAP", {}))
+_batch26ir1_miso_inverted_aliases = dict(_batch26ir1_existing_inverted_alias_map.get("MISO", {}))
+
+_batch26ir1_miso_inverted_aliases["queue_reload_blocked"] = tuple(
+    dict.fromkeys(
+        tuple(_batch26ir1_miso_inverted_aliases.get("queue_reload_blocked", ()))
+        + ("queue_ok", "queue_clear", "queue_reload_clear")
+    )
+)
+_batch26ir1_miso_inverted_aliases["futures_contradiction_blocked"] = tuple(
+    dict.fromkeys(
+        tuple(_batch26ir1_miso_inverted_aliases.get("futures_contradiction_blocked", ()))
+        + ("futures_veto_clear", "futures_clear")
+    )
+)
+
+_batch26ir1_existing_inverted_alias_map["MISO"] = _Batch26IR1_MappingProxyType(_batch26ir1_miso_inverted_aliases)
+FAMILY_SUPPORT_INVERTED_ALIAS_MAP = _Batch26IR1_MappingProxyType(_batch26ir1_existing_inverted_alias_map)

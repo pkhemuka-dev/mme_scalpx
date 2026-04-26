@@ -770,15 +770,21 @@ class DhanContextRow:
         object.__setattr__(self, "metadata", _freeze_mapping(self.metadata))
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        metadata = dict(self.metadata)
+        out = {
             "symbol": self.symbol,
+            "trading_symbol": self.symbol,
             "option_type": self.option_type,
+            "side": self.option_type,
             "strike": self.strike,
             "expiry": self.expiry,
             "token": self.token,
+            "instrument_token": self.token,
             "ltp": self.ltp,
             "bid": self.bid,
             "ask": self.ask,
+            "best_bid": self.bid,
+            "best_ask": self.ask,
             "volume": self.volume,
             "oi": self.oi,
             "iv": self.iv,
@@ -786,8 +792,24 @@ class DhanContextRow:
             "gamma": self.gamma,
             "theta": self.theta,
             "vega": self.vega,
-            "metadata": dict(self.metadata),
+            "metadata": metadata,
         }
+        for key in (
+            "instrument_key",
+            "bid_qty_5",
+            "ask_qty_5",
+            "bid_qty",
+            "ask_qty",
+            "oi_change",
+            "score",
+            "strike_score",
+            "spread_ratio",
+            "provider_id",
+            "ts_event_ns",
+        ):
+            if key in metadata and metadata[key] not in (None, ""):
+                out[key] = metadata[key]
+        return out
 
 
 @dataclass(frozen=True, slots=True)

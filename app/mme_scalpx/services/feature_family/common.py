@@ -553,34 +553,57 @@ def derive_stage_flags(**kwargs: Any) -> dict[str, Any]:
 
 
 def build_mist_branch_support(**kwargs: Any) -> dict[str, Any]:
+    trend_confirmed = _safe_bool(
+        kwargs.get("trend_confirmed", kwargs.get("futures_bias_ok", kwargs.get("trend_direction_ok"))),
+        False,
+    )
+    micro_trap_resolved = _safe_bool(
+        kwargs.get("micro_trap_resolved", kwargs.get("micro_trap_clear", kwargs.get("micro_trap_blocked"))),
+        False,
+    )
     return {
-        "futures_bias_ok": _safe_bool(kwargs.get("futures_bias_ok", kwargs.get("trend_direction_ok")), False),
+        # Canonical Batch 26D support keys.
+        "trend_confirmed": trend_confirmed,
         "futures_impulse_ok": _safe_bool(kwargs.get("futures_impulse_ok", kwargs.get("resume_support")), False),
         "pullback_detected": _safe_bool(kwargs.get("pullback_detected"), False),
+        "micro_trap_resolved": micro_trap_resolved,
+        "micro_trap_clear": micro_trap_resolved,
         "resume_confirmed": _safe_bool(kwargs.get("resume_confirmed", kwargs.get("resume_support")), False),
-        "micro_trap_blocked": _safe_bool(kwargs.get("micro_trap_blocked", kwargs.get("micro_trap_present")), False),
         "context_pass": _safe_bool(kwargs.get("context_pass"), False),
         "option_tradability_pass": _safe_bool(kwargs.get("option_tradability_pass"), False),
+        # Compatibility reader fields only; canonical truth above.
+        "futures_bias_ok": trend_confirmed,
+        "micro_trap_blocked": micro_trap_resolved,
     }
 
 
 def build_misb_branch_support(**kwargs: Any) -> dict[str, Any]:
+    shelf_confirmed = _safe_bool(kwargs.get("shelf_confirmed", kwargs.get("shelf_valid")), False)
+    breakout_triggered = _safe_bool(kwargs.get("breakout_triggered", kwargs.get("breakout_trigger", kwargs.get("breakout_trigger_ok"))), False)
+    breakout_accepted = _safe_bool(kwargs.get("breakout_accepted", kwargs.get("breakout_acceptance", kwargs.get("breakout_acceptance_ok"))), False)
     return {
-        "futures_bias_ok": _safe_bool(kwargs.get("futures_bias_ok"), False),
-        "shelf_valid": _safe_bool(kwargs.get("shelf_valid"), False),
-        "breakout_triggered": _safe_bool(kwargs.get("breakout_triggered", kwargs.get("breakout_trigger_ok")), False),
-        "breakout_accepted": _safe_bool(kwargs.get("breakout_accepted", kwargs.get("breakout_acceptance_ok")), False),
+        # Canonical Batch 26D support keys.
+        "shelf_confirmed": shelf_confirmed,
+        "breakout_triggered": breakout_triggered,
+        "breakout_accepted": breakout_accepted,
         "context_pass": _safe_bool(kwargs.get("context_pass"), False),
         "option_tradability_pass": _safe_bool(kwargs.get("option_tradability_pass"), False),
+        # Compatibility reader fields only; canonical truth above.
+        "futures_bias_ok": _safe_bool(kwargs.get("futures_bias_ok"), False),
+        "shelf_valid": shelf_confirmed,
     }
 
 
 def build_misc_branch_support(**kwargs: Any) -> dict[str, Any]:
+    retest_monitor_active = _safe_bool(
+        kwargs.get("retest_monitor_active", kwargs.get("retest_monitor_alive", kwargs.get("retest_valid"))),
+        False,
+    )
     return {
-        "compression_detected": _safe_bool(kwargs.get("compression_detected"), False),
-        "directional_breakout_triggered": _safe_bool(kwargs.get("directional_breakout_triggered", kwargs.get("breakout_trigger_ok")), False),
-        "expansion_accepted": _safe_bool(kwargs.get("expansion_accepted", kwargs.get("expansion_acceptance_ok")), False),
-        "retest_monitor_active": _safe_bool(kwargs.get("retest_monitor_active", kwargs.get("retest_valid")), False),
+        "compression_detected": _safe_bool(kwargs.get("compression_detected", kwargs.get("compression_detection")), False),
+        "directional_breakout_triggered": _safe_bool(kwargs.get("directional_breakout_triggered", kwargs.get("breakout_trigger", kwargs.get("breakout_trigger_ok"))), False),
+        "expansion_accepted": _safe_bool(kwargs.get("expansion_accepted", kwargs.get("breakout_acceptance", kwargs.get("expansion_acceptance_ok"))), False),
+        "retest_monitor_active": retest_monitor_active,
         "retest_type": _safe_str(kwargs.get("retest_type")) or None,
         "resume_confirmed": _safe_bool(kwargs.get("resume_confirmed", kwargs.get("resume_confirmation_ok")), False),
         "context_pass": _safe_bool(kwargs.get("context_pass"), False),
@@ -615,15 +638,24 @@ def build_misr_branch_support(**kwargs: Any) -> dict[str, Any]:
 
 
 def build_miso_side_support(**kwargs: Any) -> dict[str, Any]:
+    queue_reload_blocked = _safe_bool(
+        kwargs.get("queue_reload_blocked", kwargs.get("queue_reload_veto")),
+        False,
+    )
+    futures_contradiction_blocked = _safe_bool(
+        kwargs.get("futures_contradiction_blocked", kwargs.get("futures_contradiction_veto")),
+        False,
+    )
     return {
-        "burst_detected": _safe_bool(kwargs.get("burst_detected", kwargs.get("aggressive_flow")), False),
+        "burst_detected": _safe_bool(kwargs.get("burst_detected", kwargs.get("burst_valid", kwargs.get("aggressive_flow"))), False),
         "aggression_ok": _safe_bool(kwargs.get("aggression_ok", kwargs.get("aggressive_flow")), False),
-        "tape_speed_ok": _safe_bool(kwargs.get("tape_speed_ok"), False),
-        "imbalance_persist_ok": _safe_bool(kwargs.get("imbalance_persist_ok"), False),
-        "queue_reload_blocked": _safe_bool(kwargs.get("queue_reload_blocked", kwargs.get("queue_reload_veto")), False),
-        "futures_vwap_align_ok": _safe_bool(kwargs.get("futures_vwap_align_ok", kwargs.get("futures_vwap_alignment_ok")), False),
-        "futures_contradiction_blocked": _safe_bool(kwargs.get("futures_contradiction_blocked", kwargs.get("futures_contradiction_veto")), False),
-        "tradability_pass": _safe_bool(kwargs.get("tradability_pass"), False),
+        "tape_speed_ok": _safe_bool(kwargs.get("tape_speed_ok", kwargs.get("tape_urgency_ok")), False),
+        "imbalance_persist_ok": _safe_bool(kwargs.get("imbalance_persist_ok", kwargs.get("persistence_ok")), False),
+        "queue_reload_blocked": queue_reload_blocked,
+        "queue_reload_clear": not queue_reload_blocked,
+        "futures_vwap_align_ok": _safe_bool(kwargs.get("futures_vwap_align_ok", kwargs.get("futures_vwap_alignment_ok", kwargs.get("futures_alignment_ok"))), False),
+        "futures_contradiction_blocked": futures_contradiction_blocked,
+        "tradability_pass": _safe_bool(kwargs.get("tradability_pass", kwargs.get("option_tradability_pass")), False),
     }
 
 

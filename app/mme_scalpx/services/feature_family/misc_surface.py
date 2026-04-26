@@ -229,6 +229,106 @@ def _compression_proxy(
     return low, high, mid, width
 
 
+
+def _batch26e_compression_box(
+    fut: Mapping[str, Any],
+    *,
+    fut_ltp: float,
+    thresholds: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """Return explicit compression-box facts; never invent a proxy box."""
+    high = _safe_float_or_none(_pick(
+        fut,
+        "compression_high",
+        "compression_box_high",
+        "box_high",
+        "range_high",
+    ))
+    low = _safe_float_or_none(_pick(
+        fut,
+        "compression_low",
+        "compression_box_low",
+        "box_low",
+        "range_low",
+    ))
+    mid_in = _safe_float_or_none(_pick(
+        fut,
+        "compression_mid",
+        "compression_box_mid",
+        "box_mid",
+        "range_mid",
+    ))
+    count = _safe_int(
+        _pick(
+            fut,
+            "compression_snapshot_count",
+            "compression_valid_snapshot_count",
+            "box_snapshot_count",
+            "valid_snapshot_count",
+        ),
+        0,
+    )
+
+    if high is not None and low is not None and high < low:
+        high, low = low, high
+
+    mid = (
+        mid_in
+        if mid_in is not None
+        else ((high + low) / 2.0 if high is not None and low is not None else fut_ltp)
+    )
+    width = max((high - low), 0.0) if high is not None and low is not None else 0.0
+    width_pct_in = _safe_float_or_none(_pick(
+        fut,
+        "compression_width_pct",
+        "compression_box_width_pct",
+        "box_width_pct",
+        "range_width_pct",
+    ))
+    width_pct = (
+        width_pct_in
+        if width_pct_in is not None
+        else (0.0 if abs(mid) <= EPSILON else (width / max(abs(mid), EPSILON)) * 100.0)
+    )
+
+    min_count = _safe_int(
+        _pick(thresholds, "COMPRESSION_MIN_VALID_SNAPSHOTS", "COMPRESSION_MIN_SNAPSHOT_COUNT"),
+        3,
+    )
+    width_min = _threshold_float(thresholds, "COMPRESSION_MIN_WIDTH_PCT", DEFAULT_COMPRESSION_WIDTH_MIN)
+    width_max = _threshold_float(thresholds, "COMPRESSION_MAX_WIDTH_PCT", DEFAULT_COMPRESSION_WIDTH_MAX)
+
+    explicit = high is not None and low is not None
+    valid = bool(explicit and count >= min_count and width_pct >= width_min and width_pct <= width_max)
+    missing_reason = (
+        ""
+        if valid
+        else "missing_explicit_compression_box"
+        if not explicit
+        else "insufficient_compression_snapshots"
+        if count < min_count
+        else "compression_width_out_of_bounds"
+    )
+
+    return {
+        "compression_low": low,
+        "compression_high": high,
+        "compression_mid": mid,
+        "compression_width": width,
+        "compression_width_pct": width_pct,
+        "compression_snapshot_count": count,
+        "compression_valid": valid,
+        "compression_missing_reason": missing_reason,
+    }
+
+
+def _batch26e_event_id(prefix: str, branch_id: str, *parts: Any) -> str:
+    cleaned = [str(part).strip() for part in parts if part not in (None, "")]
+    base = "|".join(cleaned) if cleaned else "unresolved"
+    return f"{prefix}|{branch_id}|{base}"
+
+
+
 def _context_features(option_surface: Mapping[str, Any] | None) -> Mapping[str, Any]:
     return _as_mapping(_pick(_as_mapping(option_surface), "context_features"))
 
@@ -297,6 +397,9 @@ def build_misc_branch_surface(
     regime_surface: Mapping[str, Any] | None = None,
     runtime_mode_surface: Mapping[str, Any] | None = None,
     thresholds: Mapping[str, Any] | None = None,
+    compression_event_id: str | None = None,
+    breakout_event_id: str | None = None,
+    retest_monitor_started_ts_ms: int | None = None,
     provider_ready: bool = True,
     retest_elapsed_sec: float | None = None,
     hesitation_elapsed_sec: float | None = None,
@@ -419,20 +522,23 @@ def build_misc_branch_surface(
     hesitation_put_nof_max = _threshold_float(thresholds, "HESITATION_PUT_NOF_MAX", DEFAULT_HESITATION_PUT_NOF_MAX)
     premium_health_tol = _threshold_float(thresholds, "PREMIUM_HEALTH_TOLERANCE_POINTS", DEFAULT_PREMIUM_HEALTH_TOLERANCE_POINTS)
 
-    compression_low, compression_high, compression_mid, compression_width = _compression_proxy(
+    compression_box = _batch26e_compression_box(
+        fut,
         fut_ltp=fut_ltp,
-        fut_vwap_distance=fut_vwap_distance,
-        opt_context_score=opt_context_score,
-        fut_spread_ratio=fut_spread_ratio,
+        thresholds=thresholds,
     )
-    compression_width_pct = 0.0 if abs(compression_mid) <= EPSILON else (compression_width / max(abs(compression_mid), EPSILON)) * 100.0
+    compression_low = _safe_float(_pick(compression_box, "compression_low"), fut_ltp)
+    compression_high = _safe_float(_pick(compression_box, "compression_high"), fut_ltp)
+    compression_mid = _safe_float(_pick(compression_box, "compression_mid"), fut_ltp)
+    compression_width = _safe_float(_pick(compression_box, "compression_width"), 0.0)
+    compression_width_pct = _safe_float(_pick(compression_box, "compression_width_pct"), 0.0)
 
     if bullish:
         prebreak_distance = max(compression_high - fut_ltp, 0.0)
     else:
         prebreak_distance = max(fut_ltp - compression_low, 0.0)
 
-    compression_valid = compression_width_pct >= compression_width_min and compression_width_pct <= compression_width_max
+    compression_valid = _safe_bool(_pick(compression_box, "compression_valid"), False)
     prebreak_proximity_ok = prebreak_distance <= prebreak_proximity_tol
     directional_bias_ok = _directional_ok(fut_delta, branch_id) and _directional_ok(fut_ema9_slope, branch_id)
     compression_detection = (
@@ -470,7 +576,44 @@ def build_misc_branch_surface(
     )
 
     retest_timeout_sec = _retest_timeout_sec(regime_label, thresholds)
-    retest_elapsed = retest_elapsed_sec if retest_elapsed_sec is not None else 0.0
+    retest_elapsed = (
+        retest_elapsed_sec
+        if retest_elapsed_sec is not None
+        else _safe_float(_pick(fut, "retest_elapsed_sec"), 0.0)
+    )
+    hesitation_elapsed = (
+        hesitation_elapsed_sec
+        if hesitation_elapsed_sec is not None
+        else _safe_float(_pick(fut, "hesitation_elapsed_sec"), 0.0)
+    )
+    retest_started_ts = retest_monitor_started_ts_ms
+    if retest_started_ts is None:
+        retest_started_ts = _safe_int(
+            _pick(fut, "retest_monitor_started_ts_ms", "retest_started_ts_ms"),
+            0,
+        ) or None
+
+    compression_event_id_value = (
+        _safe_str(compression_event_id)
+        or _safe_str(_pick(fut, "compression_event_id"))
+        or _batch26e_event_id(
+            "MISC_COMPRESSION",
+            branch_id,
+            _pick(compression_box, "compression_low"),
+            _pick(compression_box, "compression_high"),
+            _pick(compression_box, "compression_snapshot_count"),
+        )
+    )
+    breakout_event_id_value = (
+        _safe_str(breakout_event_id)
+        or _safe_str(_pick(fut, "breakout_event_id"))
+        or _batch26e_event_id(
+            "MISC_BREAKOUT",
+            branch_id,
+            compression_event_id_value,
+            "CALL" if bullish else "PUT",
+        )
+    )
     retest_monitor_alive = (
         breakout_acceptance
         and retest_elapsed <= retest_timeout_sec
@@ -505,7 +648,6 @@ def build_misc_branch_surface(
         and premium_health_ok
     )
 
-    hesitation_elapsed = hesitation_elapsed_sec if hesitation_elapsed_sec is not None else 0.0
     hesitation_price_band_ok = abs(fut_ltp - breakout_ref) <= hesitation_band
     hesitation_retest = (
         retest_monitor_alive
@@ -567,7 +709,7 @@ def build_misc_branch_surface(
     )
 
     return {
-        "surface_kind": "misc",
+        "surface_kind": "misc_branch",
         "present": surface_present,
         "branch_ready": branch_ready,
         "family_id": _safe_str(getattr(N, "STRATEGY_FAMILY_MISC", "MISC")),
@@ -587,22 +729,32 @@ def build_misc_branch_surface(
         "tradability": trad,
         "regime_surface": regime,
         "runtime_mode_surface": mode,
+        "compression_event_id": compression_event_id_value,
+        "breakout_event_id": breakout_event_id_value,
         "compression_low": compression_low,
         "compression_high": compression_high,
         "compression_mid": compression_mid,
         "compression_width": compression_width,
         "compression_width_pct": compression_width_pct,
+        "compression_snapshot_count": _pick(compression_box, "compression_snapshot_count"),
+        "compression_missing_reason": _pick(compression_box, "compression_missing_reason"),
         "compression_valid": compression_valid,
         "prebreak_distance": prebreak_distance,
         "prebreak_proximity_ok": prebreak_proximity_ok,
         "directional_bias_ok": directional_bias_ok,
+        "compression_detected": compression_detection,
         "compression_detection": compression_detection,
+        "directional_breakout_triggered": breakout_trigger,
         "breakout_trigger": breakout_trigger,
         "breakout_ref": breakout_ref,
         "breakout_extension_pct": breakout_extension_pct,
+        "expansion_accepted": breakout_acceptance,
         "breakout_acceptance": breakout_acceptance,
         "retest_timeout_sec": retest_timeout_sec,
+        "retest_monitor_started_ts_ms": retest_started_ts,
         "retest_elapsed_sec": retest_elapsed,
+        "hesitation_elapsed_sec": hesitation_elapsed,
+        "retest_monitor_active": retest_monitor_alive,
         "retest_monitor_alive": retest_monitor_alive,
         "premium_health_ok": premium_health_ok,
         "retest_hold_ok": retest_hold_ok,

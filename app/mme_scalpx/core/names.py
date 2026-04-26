@@ -418,6 +418,263 @@ FAMILY_RUNTIME_MODES: Final[tuple[str, ...]] = (
     FAMILY_RUNTIME_MODE_FAMILY_LIVE_ONLY,
 )
 
+
+# ============================================================================
+# Batch 25G frozen cross-service field registry
+# ============================================================================
+
+CONTRACT_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = (
+    "futures_marketdata_provider_id",
+    "selected_option_marketdata_provider_id",
+    "option_context_provider_id",
+    "execution_primary_provider_id",
+    "execution_fallback_provider_id",
+    "futures_marketdata_status",
+    "selected_option_marketdata_status",
+    "option_context_status",
+    "execution_primary_status",
+    "execution_fallback_status",
+    "family_runtime_mode",
+    "failover_mode",
+    "override_mode",
+    "transition_reason",
+    "provider_transition_seq",
+    "failover_active",
+    "pending_failover",
+)
+
+CONTRACT_FEED_SNAPSHOT_KEYS: Final[tuple[str, ...]] = (
+    "future_json",
+    "selected_call_json",
+    "selected_put_json",
+    "ce_atm_json",
+    "ce_atm1_json",
+    "pe_atm_json",
+    "pe_atm1_json",
+    "bid_qty_5",
+    "ask_qty_5",
+    "provider_id",
+    "context_status",
+    "selected_call_instrument_key",
+    "selected_put_instrument_key",
+)
+
+CONTRACT_DHAN_CONTEXT_KEYS: Final[tuple[str, ...]] = (
+    "option_chain_ladder_json",
+    "strike_ladder_json",
+    "oi_wall_summary_json",
+    "selected_call_context_json",
+    "selected_put_context_json",
+    "nearest_call_oi_resistance_strike",
+    "nearest_put_oi_support_strike",
+    "call_wall_distance_pts",
+    "put_wall_distance_pts",
+    "call_wall_strength_score",
+    "put_wall_strength_score",
+    "oi_bias",
+)
+
+CONTRACT_MIST_SUPPORT_KEYS: Final[tuple[str, ...]] = (
+    "trend_confirmed",
+    "futures_impulse_ok",
+    "pullback_detected",
+    "micro_trap_resolved",
+    "resume_confirmed",
+    "context_pass",
+    "option_tradability_pass",
+)
+
+CONTRACT_MISB_SUPPORT_KEYS: Final[tuple[str, ...]] = (
+    "shelf_confirmed",
+    "breakout_triggered",
+    "breakout_accepted",
+    "context_pass",
+    "option_tradability_pass",
+)
+
+CONTRACT_MISC_SUPPORT_KEYS: Final[tuple[str, ...]] = (
+    "compression_detected",
+    "directional_breakout_triggered",
+    "expansion_accepted",
+    "retest_monitor_active",
+    "retest_valid",
+    "hesitation_valid",
+    "resume_confirmed",
+    "context_pass",
+    "option_tradability_pass",
+)
+
+CONTRACT_MISR_SUPPORT_KEYS: Final[tuple[str, ...]] = (
+    "active_zone_valid",
+    "active_zone",
+    "trap_event_id",
+    "fake_break_triggered",
+    "absorption_pass",
+    "range_reentry_confirmed",
+    "flow_flip_confirmed",
+    "hold_inside_range_proved",
+    "no_mans_land_cleared",
+    "reversal_impulse_confirmed",
+    "context_pass",
+    "option_tradability_pass",
+)
+
+CONTRACT_MISO_SUPPORT_KEYS: Final[tuple[str, ...]] = (
+    "burst_detected",
+    "aggression_ok",
+    "tape_speed_ok",
+    "imbalance_persist_ok",
+    "queue_reload_blocked",
+    "futures_vwap_align_ok",
+    "futures_contradiction_blocked",
+    "tradability_pass",
+)
+
+CONTRACT_FAMILY_SUPPORT_KEYS: Final[Mapping[str, tuple[str, ...]]] = MappingProxyType(
+    {
+        STRATEGY_FAMILY_MIST: CONTRACT_MIST_SUPPORT_KEYS,
+        STRATEGY_FAMILY_MISB: CONTRACT_MISB_SUPPORT_KEYS,
+        STRATEGY_FAMILY_MISC: CONTRACT_MISC_SUPPORT_KEYS,
+        STRATEGY_FAMILY_MISR: CONTRACT_MISR_SUPPORT_KEYS,
+        STRATEGY_FAMILY_MISO: CONTRACT_MISO_SUPPORT_KEYS,
+    }
+)
+
+CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS: Final[tuple[str, ...]] = (
+    "action",
+    "side",
+    "position_effect",
+    "quantity_lots",
+    "instrument_key",
+    "entry_mode",
+)
+
+CONTRACT_EXECUTION_ENTRY_METADATA_KEYS: Final[tuple[str, ...]] = (
+    "option_symbol",
+    "option_token",
+    "strike",
+    "limit_price",
+    "provider_id",
+    "execution_provider_id",
+    "strategy_family",
+    "strategy_branch",
+    "doctrine_id",
+    "candidate_id",
+)
+
+CONTRACT_EXECUTION_ENTRY_KEYS: Final[tuple[str, ...]] = (
+    *CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS,
+    *(f"metadata.{key}" for key in CONTRACT_EXECUTION_ENTRY_METADATA_KEYS),
+)
+
+CONTRACT_FIELD_REGISTRY: Final[Mapping[str, tuple[str, ...] | Mapping[str, tuple[str, ...]]]] = MappingProxyType(
+    {
+        "provider_runtime": CONTRACT_PROVIDER_RUNTIME_KEYS,
+        "feed_snapshot": CONTRACT_FEED_SNAPSHOT_KEYS,
+        "dhan_context": CONTRACT_DHAN_CONTEXT_KEYS,
+        "family_support": CONTRACT_FAMILY_SUPPORT_KEYS,
+        "execution_entry_top_level": CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS,
+        "execution_entry_metadata": CONTRACT_EXECUTION_ENTRY_METADATA_KEYS,
+        "execution_entry": CONTRACT_EXECUTION_ENTRY_KEYS,
+    }
+)
+
+CONTRACT_FIELD_COMPATIBILITY_ALIASES: Final[Mapping[str, str]] = MappingProxyType(
+    {
+        # Provider-runtime migration aliases. New code must publish canonical keys.
+        "active_futures_provider_id": "futures_marketdata_provider_id",
+        "active_selected_option_provider_id": "selected_option_marketdata_provider_id",
+        "active_option_context_provider_id": "option_context_provider_id",
+        "active_execution_provider_id": "execution_primary_provider_id",
+        "fallback_execution_provider_id": "execution_fallback_provider_id",
+        "futures_provider_status": "futures_marketdata_status",
+        "selected_option_provider_status": "selected_option_marketdata_status",
+        "option_context_provider_status": "option_context_status",
+        "execution_provider_status": "execution_primary_status",
+
+        # Family-support migration aliases. These are explicit bridge terms only.
+        "futures_bias_ok": "trend_confirmed",
+        "trend_direction_ok": "trend_confirmed",
+        "micro_trap_blocked": "micro_trap_resolved",
+        "micro_trap_clear": "micro_trap_resolved",
+        "shelf_valid": "shelf_confirmed",
+        "breakout_acceptance": "breakout_accepted",
+        "breakout_acceptance_ok": "breakout_accepted",
+        "compression_detection": "compression_detected",
+        "breakout_trigger": "directional_breakout_triggered",
+        "retest_monitor_alive": "retest_monitor_active",
+        "retest_monitor": "retest_monitor_active",
+        "fake_break": "fake_break_triggered",
+        "absorption": "absorption_pass",
+        "range_reentry": "range_reentry_confirmed",
+        "flow_flip": "flow_flip_confirmed",
+        "hold_proof": "hold_inside_range_proved",
+        "reversal_impulse": "reversal_impulse_confirmed",
+        "burst_valid": "burst_detected",
+        "tape_urgency_ok": "tape_speed_ok",
+        "persistence_ok": "imbalance_persist_ok",
+        "queue_reload_veto": "queue_reload_blocked",
+        "futures_alignment_ok": "futures_vwap_align_ok",
+    }
+)
+
+
+def get_contract_field_registry() -> dict[str, tuple[str, ...] | dict[str, tuple[str, ...]]]:
+    registry: dict[str, tuple[str, ...] | dict[str, tuple[str, ...]]] = {}
+    for surface, values in CONTRACT_FIELD_REGISTRY.items():
+        if isinstance(values, Mapping):
+            registry[surface] = {key: tuple(item) for key, item in values.items()}
+        else:
+            registry[surface] = tuple(values)
+    return registry
+
+
+def get_contract_field_compatibility_aliases() -> dict[str, str]:
+    return dict(CONTRACT_FIELD_COMPATIBILITY_ALIASES)
+
+
+def validate_contract_field_registry() -> None:
+    def _validate_tuple(surface: str, keys: tuple[str, ...]) -> None:
+        if not keys:
+            raise NamesContractError(f"Contract surface {surface!r} must not be empty")
+        for key in keys:
+            _require_non_empty_str(key, field_name=f"{surface}.key")
+        _assert_no_duplicates(keys, label=surface)
+
+    _validate_tuple("CONTRACT_PROVIDER_RUNTIME_KEYS", CONTRACT_PROVIDER_RUNTIME_KEYS)
+    _validate_tuple("CONTRACT_FEED_SNAPSHOT_KEYS", CONTRACT_FEED_SNAPSHOT_KEYS)
+    _validate_tuple("CONTRACT_DHAN_CONTEXT_KEYS", CONTRACT_DHAN_CONTEXT_KEYS)
+    _validate_tuple("CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS", CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS)
+    _validate_tuple("CONTRACT_EXECUTION_ENTRY_METADATA_KEYS", CONTRACT_EXECUTION_ENTRY_METADATA_KEYS)
+    _validate_tuple("CONTRACT_EXECUTION_ENTRY_KEYS", CONTRACT_EXECUTION_ENTRY_KEYS)
+
+    _assert_no_duplicates(tuple(CONTRACT_FAMILY_SUPPORT_KEYS.keys()), label="CONTRACT_FAMILY_SUPPORT_KEYS.keys")
+    if tuple(CONTRACT_FAMILY_SUPPORT_KEYS.keys()) != STRATEGY_FAMILY_IDS:
+        raise NamesContractError(
+            "CONTRACT_FAMILY_SUPPORT_KEYS must cover strategy families in STRATEGY_FAMILY_IDS order"
+        )
+    for family_id, keys in CONTRACT_FAMILY_SUPPORT_KEYS.items():
+        if family_id not in STRATEGY_FAMILY_IDS:
+            raise NamesContractError(f"Unknown family in support registry: {family_id!r}")
+        _validate_tuple(f"CONTRACT_FAMILY_SUPPORT_KEYS[{family_id}]", tuple(keys))
+
+    for surface, values in CONTRACT_FIELD_REGISTRY.items():
+        _require_non_empty_str(surface, field_name="CONTRACT_FIELD_REGISTRY.surface")
+        if isinstance(values, Mapping):
+            if not values:
+                raise NamesContractError(f"Contract registry surface {surface!r} must not be empty")
+            for family_id, family_keys in values.items():
+                _require_non_empty_str(family_id, field_name=f"CONTRACT_FIELD_REGISTRY[{surface}].family")
+                _validate_tuple(f"CONTRACT_FIELD_REGISTRY[{surface}][{family_id}]", tuple(family_keys))
+        else:
+            _validate_tuple(f"CONTRACT_FIELD_REGISTRY[{surface}]", tuple(values))
+
+    for alias, canonical in CONTRACT_FIELD_COMPATIBILITY_ALIASES.items():
+        _require_non_empty_str(alias, field_name="CONTRACT_FIELD_COMPATIBILITY_ALIASES.alias")
+        _require_non_empty_str(canonical, field_name=f"CONTRACT_FIELD_COMPATIBILITY_ALIASES[{alias!r}]")
+        if alias == canonical:
+            raise NamesContractError(f"Field alias {alias!r} must not target itself")
+
 # ============================================================================
 # Live streams
 # ============================================================================
@@ -1950,6 +2207,8 @@ def validate_names_hardening_contract() -> None:
                 f"Forbidden runtime path must end with .py: {path_name!r}"
             )
 
+    validate_contract_field_registry()
+
 # ============================================================================
 # Validation
 # ============================================================================
@@ -2302,6 +2561,13 @@ __all__ = tuple(
         "get_service_def",
         "all_live_names",
         "all_replay_names",
+        "get_contract_field_registry",
+        "get_contract_field_compatibility_aliases",
+        "validate_contract_field_registry",
         "validate_names_contract",
     }
 )
+
+# Batch 25K-J compatibility heartbeat aliases
+KEY_COMPAT_FEATURES_HEARTBEAT = "features:heartbeat"
+KEY_COMPAT_STRATEGY_HEARTBEAT = "strategy:heartbeat"

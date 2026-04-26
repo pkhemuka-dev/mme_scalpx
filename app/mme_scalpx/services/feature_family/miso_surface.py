@@ -37,6 +37,7 @@ from math import isfinite
 from typing import Any, Final, Mapping, Sequence
 
 from app.mme_scalpx.core import names as N
+from app.mme_scalpx.services.feature_family import miso_microstructure as MISO_MICRO
 
 REGIME_LOWVOL: Final[str] = "LOWVOL"
 REGIME_NORMAL: Final[str] = "NORMAL"
@@ -431,17 +432,38 @@ def build_miso_branch_surface(
     strike_bundle_present = strike_present and bool(selected_strike)
 
     burst_direction_ok = _directional_ok(opt_delta, branch_id)
-    aggression_ok = burst_direction_ok and abs(opt_delta) >= option_burst_delta_min
-    tape_urgency_ok = opt_velocity_ratio >= option_burst_vel_ratio_min
-    persistence_ok = _directional_ok(opt_weighted_ofi_persist, branch_id)
-    live_flow_ok = _directional_ok(opt_weighted_ofi, branch_id)
     response_ok = opt_response_eff >= option_response_eff_min
     spread_ok = opt_spread_ratio <= miso_spread_ratio_max
     depth_ok = opt_touch_depth >= miso_depth_min
-    queue_ok = not opt_queue_reload_veto
-    shadow_support_ok = shadow_support >= DEFAULT_SHADOW_SUPPORT_MIN or shadow_live_present or len(monitored_rows) >= 1
 
     futures_alignment_ok = _futures_vwap_alignment_ok(fut_vwap_distance, branch_id)
+    micro = MISO_MICRO.build_miso_microstructure_surface(
+        branch_id=branch_id,
+        side=side,
+        option_features=opt,
+        shadow_features=opt_shadow,
+        strike_surface=strike,
+        selected_strike=selected_strike,
+        shadow_rows=shadow_rows,
+        thresholds=thresholds,
+    )
+
+    aggression_flow_ratio = _safe_float(_pick(micro, "aggressive_flow_ratio"), 0.0)
+    speed_of_tape = _safe_float(_pick(micro, "speed_of_tape"), 0.0)
+    imbalance_persist_score = _safe_float(_pick(micro, "imbalance_persist_score"), 0.0)
+    queue_reload_score = _safe_float(_pick(micro, "queue_reload_score"), 0.0)
+
+    opt_queue_reload_veto = _safe_bool(_pick(micro, "queue_reload_blocked"), False)
+    aggression_ok = _safe_bool(_pick(micro, "aggression_ok"), False)
+    tape_urgency_ok = _safe_bool(_pick(micro, "tape_speed_ok"), False)
+    persistence_ok = _safe_bool(_pick(micro, "imbalance_persist_ok"), False)
+    live_flow_ok = _safe_bool(_pick(micro, "live_flow_ok"), False)
+    queue_ok = _safe_bool(_pick(micro, "queue_reload_clear"), False)
+    shadow_support = _safe_int(_pick(micro, "shadow_support_count"), 0)
+    shadow_support_ok = _safe_bool(_pick(micro, "shadow_support_ok"), False)
+    burst_event_id = _safe_str(_pick(micro, "burst_event_id")) or None
+    burst_event_id_valid = _safe_bool(_pick(micro, "burst_event_id_valid"), False)
+
     futures_contradiction_score = _futures_contradiction_score(
         futures_direction_score=fut_direction_score,
         futures_vwap_distance=fut_vwap_distance,
@@ -478,6 +500,7 @@ def build_miso_branch_surface(
         and depth_ok
         and queue_ok
         and shadow_support_ok
+        and burst_event_id_valid
     )
 
     burst_valid = trigger_ready and option_tradability_pass
@@ -515,12 +538,14 @@ def build_miso_branch_surface(
     )
 
     return {
-        "surface_kind": "miso",
+        "surface_kind": "miso_branch",
         "present": surface_present,
         "branch_ready": branch_ready,
         "family_id": _safe_str(getattr(N, "STRATEGY_FAMILY_MISO", "MISO")),
         "doctrine_id": _safe_str(getattr(N, "DOCTRINE_MISO", "MISO")),
         "branch_id": branch_id,
+        "burst_event_id": burst_event_id,
+        "burst_event_id_valid": burst_event_id_valid,
         "side": side,
         "regime": regime_label,
         "runtime_mode": runtime_mode,
@@ -531,6 +556,7 @@ def build_miso_branch_surface(
         "context_features": opt_context,
         "premium_health": opt_premium,
         "shadow_features": opt_shadow,
+        "microstructure": micro,
         "strike_surface": strike,
         "tradability": trad,
         "regime_surface": regime,
@@ -543,18 +569,29 @@ def build_miso_branch_surface(
         "tradable": tradable_rows,
         "shadow": shadow_rows,
         "shadow_support_count": shadow_support,
+        "aggressive_flow_ratio": aggression_flow_ratio,
+        "speed_of_tape": speed_of_tape,
+        "imbalance_persist_score": imbalance_persist_score,
+        "queue_reload_score": queue_reload_score,
         "aggression_ok": aggression_ok,
+        "tape_speed_ok": tape_urgency_ok,
         "tape_urgency_ok": tape_urgency_ok,
+        "imbalance_persist_ok": persistence_ok,
         "persistence_ok": persistence_ok,
         "live_flow_ok": live_flow_ok,
         "response_ok": response_ok,
         "spread_ok": spread_ok,
         "depth_ok": depth_ok,
+        "queue_reload_blocked": opt_queue_reload_veto,
+        "queue_reload_clear": queue_ok,
         "queue_ok": queue_ok,
         "shadow_support_ok": shadow_support_ok,
+        "burst_detected": burst_valid,
         "burst_valid": burst_valid,
+        "futures_vwap_align_ok": futures_alignment_ok,
         "futures_alignment_ok": futures_alignment_ok,
         "futures_contradiction_score": futures_contradiction_score,
+        "futures_contradiction_blocked": not futures_veto_clear,
         "futures_veto_clear": futures_veto_clear,
         "context_pass": context_pass,
         "option_tradability_pass": option_tradability_pass,
@@ -596,6 +633,11 @@ def build_miso_branch_surface(
             "opt_spread_ratio": opt_spread_ratio,
             "opt_touch_depth": opt_touch_depth,
             "opt_oi_bias": opt_oi_bias,
+            "aggressive_flow_ratio": aggression_flow_ratio,
+            "speed_of_tape": speed_of_tape,
+            "imbalance_persist_score": imbalance_persist_score,
+            "queue_reload_score": queue_reload_score,
+            "burst_event_id": burst_event_id,
         },
         "passed_stages": tuple(
             stage
@@ -942,3 +984,59 @@ def build_miso_family_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
         put_surface=kwargs.get("put_surface"),
         runtime_mode_surface=kwargs.get("runtime_mode_surface"),
     )
+
+# ============================================================================
+# Batch 26I-R1 — MISO canonical tradability producer overlay
+# ============================================================================
+#
+# Adds direct canonical tradability_pass and clear-side compatibility fields.
+# Blocked booleans remain blocker semantics; clear fields are inversions.
+
+_BATCH26IR1_ORIGINAL_BUILD_MISO_BRANCH_SURFACE = build_miso_branch_surface
+
+
+def _batch26ir1_bool(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in {"1", "true", "yes", "y", "ok", "pass", "passed", "ready"}:
+            return True
+        if text in {"0", "false", "no", "n", "fail", "failed", "blocked", "missing", "stale", "unavailable", ""}:
+            return False
+    return bool(value)
+
+
+def _batch26ir1_first(mapping: dict[str, object], *keys: str, default: object = None) -> object:
+    for key in keys:
+        if key in mapping and mapping[key] not in (None, ""):
+            return mapping[key]
+    return default
+
+
+def build_miso_branch_surface(*args, **kwargs):
+    out = dict(_BATCH26IR1_ORIGINAL_BUILD_MISO_BRANCH_SURFACE(*args, **kwargs))
+
+    queue_reload_blocked = _batch26ir1_bool(
+        _batch26ir1_first(out, "queue_reload_blocked", "queue_reload_veto")
+    )
+    futures_contradiction_blocked = _batch26ir1_bool(
+        _batch26ir1_first(out, "futures_contradiction_blocked", "futures_veto_blocked")
+    )
+
+    out.update(
+        {
+            "tradability_pass": _batch26ir1_bool(
+                _batch26ir1_first(out, "tradability_pass", "option_tradability_pass", "selected_option_tradability_ok")
+            ),
+            "queue_reload_blocked": queue_reload_blocked,
+            "queue_clear": not queue_reload_blocked,
+            "queue_reload_clear": not queue_reload_blocked,
+            "futures_contradiction_blocked": futures_contradiction_blocked,
+            "futures_clear": not futures_contradiction_blocked,
+        }
+    )
+
+    return out

@@ -1,60 +1,67 @@
 schema_version: 1
 config_name: provider_roles
-config_revision: 2026-04-22-a
-
+config_revision: batch25s_config_systemd_alignment
 provider_roles:
   futures_marketdata:
-    allowed_providers:
-      - ZERODHA
-      - DHAN
     preferred_provider: ZERODHA
-    backup_provider: DHAN
-    require_flat_for_switch: true
-    allow_mid_position_switch: false
-    preposition_switch_requires_setup_rebuild: true
-
+    allowed_providers:
+    - ZERODHA
+    - DHAN
+    required_status: HEALTHY
+    role_truth: futures_directional_truth
   selected_option_marketdata:
-    allowed_providers:
-      - DHAN
-      - ZERODHA
     preferred_provider: DHAN
-    backup_provider: ZERODHA
-    require_flat_for_switch: true
-    allow_mid_position_switch: false
-    preposition_switch_requires_setup_rebuild: true
-
+    allowed_providers:
+    - DHAN
+    required_status: HEALTHY
+    role_truth: selected_option_tradability_truth
   option_context:
-    allowed_providers:
-      - DHAN
     preferred_provider: DHAN
-    backup_provider: null
-    require_flat_for_switch: true
-    allow_mid_position_switch: false
-    preposition_switch_requires_setup_rebuild: true
-
+    allowed_providers:
+    - DHAN
+    required_status: HEALTHY
+    role_truth: oi_ladder_context_truth
   execution_primary:
-    allowed_providers:
-      - ZERODHA
-      - DHAN
     preferred_provider: ZERODHA
-    backup_provider: DHAN
-    require_flat_for_switch: true
-    allow_mid_position_switch: false
-    preposition_switch_requires_setup_rebuild: true
-
-  execution_fallback:
     allowed_providers:
-      - DHAN
-      - ZERODHA
+    - ZERODHA
+    required_status: HEALTHY
+    role_truth: execution_order_owner
+  execution_fallback:
     preferred_provider: DHAN
-    backup_provider: ZERODHA
-    require_flat_for_switch: true
-    allow_mid_position_switch: false
-    preposition_switch_requires_setup_rebuild: false
-
+    allowed_providers:
+    - DHAN
+    required_status: AVAILABLE
+    role_truth: manual_fallback_ready_only
 provider_role_laws:
   selected_option_tradability_truth_provider: execution_primary
   fallback_execution_provider_must_differ_from_primary: true
   option_context_may_not_silently_default_to_zerodha: true
   miso_requires_dhan_option_context: true
   miso_requires_dhan_selected_option_marketdata: true
+  miso_requires_dhan_futures_current_baseline: false
+  miso_allows_zerodha_futures_when_healthy_and_synced: true
+  miso_requires_futures_health_and_cross_provider_sync: true
+  miso_requires_dhan_futures_only_in_dhan_futures_rollout_mode: true
+miso_provider_doctrine_alignment:
+  source_batch: 25N
+  selected_option_provider_required: DHAN
+  option_context_provider_required: DHAN
+  futures_providers_allowed_when_healthy_and_synced:
+  - ZERODHA
+  - DHAN
+  dhan_futures_required_only_in_explicit_future_rollout_mode: true
+  current_baseline: ZERODHA futures + DHAN selected option + DHAN context + ZERODHA
+    execution
+
+batch26c_miso_provider_law_freeze:
+  source_batch: 26C
+  futures_marketdata_allowed_providers_when_healthy_and_synced:
+    - ZERODHA
+    - DHAN
+  selected_option_marketdata_required_provider: DHAN
+  option_context_required_provider: DHAN
+  dhan_futures_required_only_in_explicit_dhan_futures_rollout_mode: true
+  provider_ready_miso_is_authoritative_stage_flag: true
+  missing_provider_ready_miso_must_block: true
+  silent_provider_default_forbidden: true

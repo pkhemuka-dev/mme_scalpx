@@ -1,9 +1,7 @@
 schema_version: 1
 provider_id: DHAN
-config_revision: 2026-04-22-a
-
+config_revision: batch25s_config_systemd_alignment
 enabled: true
-
 capabilities:
   futures_marketdata:
     enabled: true
@@ -18,7 +16,6 @@ capabilities:
     enabled: true
     preferred_primary: false
     preferred_fallback: true
-
 health_contract:
   auth_required: true
   marketdata_required: true
@@ -31,7 +28,6 @@ health_contract:
     futures_marketdata: 5000
     selected_option_marketdata: 4000
     option_context: 15000
-
 transport_contract:
   selected_option_depth_mode: TOP20_ENHANCED
   selected_option_base_depth_mode: TOP5
@@ -39,13 +35,13 @@ transport_contract:
   chain_snapshot_required: true
   chain_snapshot_refresh_ms: 1000
   context_refresh_ms: 1000
-
+  option_context_ladder_max_rows: 80
+  option_context_ladder_required_for_miso: true
 execution_contract:
   allow_primary_execution: true
   allow_fallback_execution: true
   require_auth_for_order_send: true
   require_position_reconciliation: true
-
 strategy_relevance:
   mist:
     option_context_used: true
@@ -64,3 +60,16 @@ strategy_relevance:
     selected_option_marketdata_used: true
     futures_marketdata_used: true
     mandatory_for_live_signal_path: true
+config_name: dhan
+provider_roles:
+  selected_option_marketdata: true
+  option_context: true
+  execution_fallback: true
+  futures_marketdata: allowed_only_when_explicitly_enabled_and_synced
+depth_policy:
+  configured_target: TOP20_ENHANCED
+  runtime_active_mode: FULL_TOP5_BASE
+  runtime_active_mode_reason: batch25s_no_market_session_top20_activation_proof
+  must_not_report_top20_without_runtime_activation_proof: true
+  fallback_mode: FULL_TOP5_BASE
+  degraded_mode: DEGRADED_TOP5_OR_UNAVAILABLE

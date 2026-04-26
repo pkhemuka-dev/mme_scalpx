@@ -48,6 +48,7 @@ from dataclasses import dataclass, field
 from typing import Any, Final, Mapping, Sequence
 
 from app.mme_scalpx.core import names as N
+from app.mme_scalpx.services.strategy_family import common as SF_COMMON
 
 
 FAMILY_MIST: Final[str] = getattr(N, "STRATEGY_FAMILY_MIST", "MIST")
@@ -855,3 +856,96 @@ def _evaluation_to_frame(result: Any, *, family_id: str, branch_id: str) -> Doct
         )
 
     return frame
+
+
+# =============================================================================
+# Batch 25P candidate metadata report helper
+# =============================================================================
+
+def candidate_metadata_contract_report(frame):
+    """
+    Report-only candidate metadata contract inspection helper.
+
+    This helper does not promote candidates, publish strategy decisions, call
+    risk, call execution, or call broker APIs.
+    """
+    required = list(SF_COMMON.CANDIDATE_METADATA_REQUIRED_KEYS)
+
+    if frame is None:
+        return {
+            "present": False,
+            "complete": False,
+            "missing": required,
+            "required_keys": required,
+        }
+
+    candidate = getattr(frame, "candidate", None)
+    if candidate is None and isinstance(frame, dict):
+        candidate = frame.get("candidate")
+
+    if not isinstance(candidate, dict):
+        if hasattr(candidate, "to_dict"):
+            try:
+                candidate = candidate.to_dict()
+            except Exception:
+                candidate = None
+
+    if not isinstance(candidate, dict):
+        return {
+            "present": False,
+            "complete": False,
+            "missing": required,
+            "required_keys": required,
+        }
+
+    metadata = candidate.get("metadata")
+    if not isinstance(metadata, dict):
+        return {
+            "present": True,
+            "complete": False,
+            "missing": required,
+            "required_keys": required,
+        }
+
+    complete, missing = SF_COMMON.candidate_metadata_contract_status(metadata)
+    return {
+        "present": True,
+        "complete": complete,
+        "missing": missing,
+        "required_keys": required,
+    }
+
+
+# ============================================================================
+# Batch 25Q disabled order-intent preview bridge
+# ============================================================================
+
+def build_order_intent_preview_for_activation(
+    activation_decision: object,
+    *,
+    runtime_mode: str = "observe_only",
+    adapter_enabled: bool = False,
+    arming_proof_ok: bool = False,
+    final_readiness_ok: bool = False,
+) -> dict[str, object]:
+    from app.mme_scalpx.services.strategy_family import order_intent as _order_intent
+
+    selected = getattr(activation_decision, "selected", None)
+    selected_map = as_mapping(selected)
+    candidate = as_mapping(selected_map.get("candidate") or getattr(selected, "candidate", None))
+
+    if selected is not None:
+        candidate.setdefault("family_id", safe_str(getattr(selected, "family_id", selected_map.get("family_id"))))
+        candidate.setdefault("branch_id", safe_str(getattr(selected, "branch_id", selected_map.get("branch_id"))))
+        candidate.setdefault("action", safe_str(getattr(selected, "action", selected_map.get("action"))))
+        candidate.setdefault("score", safe_float(getattr(selected, "score", selected_map.get("score")), 0.0))
+
+    preview = _order_intent.build_order_intent_preview(
+        candidate,
+        runtime_mode=runtime_mode,
+        adapter_enabled=adapter_enabled,
+        arming_proof_ok=arming_proof_ok,
+        final_readiness_ok=final_readiness_ok,
+    )
+    return preview.to_dict()
+

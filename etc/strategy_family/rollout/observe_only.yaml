@@ -1,0 +1,8 @@
+schema_version: 1
+rollout_mode: observe_only
+default: true
+strategy_publish_mode: HOLD_ONLY
+family_order_intent_preview: true
+family_order_intent_publish: false
+execution_arming: false
+broker_orders_allowed: false

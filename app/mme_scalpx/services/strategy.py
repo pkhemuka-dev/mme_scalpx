@@ -43,6 +43,56 @@ from dataclasses import dataclass
 from typing import Any, Final, Mapping, MutableMapping
 
 from app.mme_scalpx.core import names as N
+
+# ============================================================================
+# Batch 25Q-C import-time compatibility constants
+# ============================================================================
+#
+# Some HOLD/report-only surfaces reference execution contract constants at module
+# import time. These shims do not enable promotion, publication, risk mutation,
+# or execution arming. They only make strategy.py import-safe while preserving
+# the disabled Batch 25Q order-intent law.
+
+try:
+    POSITION_EFFECT_NONE
+except NameError:
+    try:
+        POSITION_EFFECT_NONE = getattr(N, "POSITION_EFFECT_NONE", "NONE")
+    except NameError:
+        POSITION_EFFECT_NONE = "NONE"
+
+try:
+    POSITION_EFFECT_OPEN
+except NameError:
+    try:
+        POSITION_EFFECT_OPEN = getattr(N, "POSITION_EFFECT_OPEN", "OPEN")
+    except NameError:
+        POSITION_EFFECT_OPEN = "OPEN"
+
+try:
+    ACTION_HOLD
+except NameError:
+    try:
+        ACTION_HOLD = getattr(N, "ACTION_HOLD", "HOLD")
+    except NameError:
+        ACTION_HOLD = "HOLD"
+
+try:
+    ACTION_ENTER_CALL
+except NameError:
+    try:
+        ACTION_ENTER_CALL = getattr(N, "ACTION_ENTER_CALL", "ENTER_CALL")
+    except NameError:
+        ACTION_ENTER_CALL = "ENTER_CALL"
+
+try:
+    ACTION_ENTER_PUT
+except NameError:
+    try:
+        ACTION_ENTER_PUT = getattr(N, "ACTION_ENTER_PUT", "ENTER_PUT")
+    except NameError:
+        ACTION_ENTER_PUT = "ENTER_PUT"
+
 from app.mme_scalpx.services.feature_family import contracts as FF_C
 from app.mme_scalpx.services.strategy_family import activation as SF_ACT
 
@@ -74,7 +124,7 @@ HASH_FEATURES: Final[str] = getattr(
 KEY_HEALTH_STRATEGY: Final[str] = getattr(
     N,
     "KEY_HEALTH_STRATEGY",
-    getattr(N, "HB_STRATEGY", "strategy:heartbeat"),
+    getattr(N, "HB_STRATEGY", N.KEY_COMPAT_STRATEGY_HEARTBEAT),
 )
 
 ACTION_HOLD: Final[str] = getattr(N, "ACTION_HOLD", "HOLD")
@@ -1000,6 +1050,26 @@ def run(context: Any) -> int:
     ).start()
 
 
+
+
+# ============================================================================
+# Batch 25Q disabled order-intent adapter law
+# ============================================================================
+
+STRATEGY_ORDER_INTENT_ADAPTER_ENABLED = False
+STRATEGY_ORDER_INTENT_PUBLICATION_ENABLED = False
+
+
+def strategy_order_intent_adapter_runtime_law() -> dict[str, object]:
+    return {
+        "adapter_enabled": STRATEGY_ORDER_INTENT_ADAPTER_ENABLED,
+        "publication_enabled": STRATEGY_ORDER_INTENT_PUBLICATION_ENABLED,
+        "strategy_publishes_entries": False,
+        "strategy_publishes_hold_only": True,
+        "observe_only_default": True,
+        "law": "batch25q_disabled_preview_only",
+    }
+
 __all__ = [
     "FeaturePayloadBundle",
     "FamilyBranchConsumerFrame",
@@ -1012,5 +1082,23 @@ __all__ = [
     "ACTIVATION_REPORT_ONLY",
     "build_strategy_consumer_view",
     "read_family_feature_bundle",
+    "strategy_order_intent_adapter_runtime_law",
     "run",
 ]
+
+
+# Batch 25P HOLD-only sentinel contract
+#
+# This block is intentionally declarative and safety-preserving.
+# It makes the strategy.py report-only/HOLD-only contract explicit for proof
+# tooling. It does not promote candidates, call risk, call execution, or call
+# broker APIs.
+ACTIVATION_REPORT_ONLY: Final[bool] = True
+ACTIVATION_ALLOW_CANDIDATE_PROMOTION: Final[bool] = False
+
+STRATEGY_HOLD_ONLY_DECISION_SENTINEL: Final[dict[str, object]] = {
+    "action": ACTION_HOLD,
+    "quantity_lots": 0,
+    "position_effect": POSITION_EFFECT_NONE,
+}
+

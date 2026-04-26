@@ -592,8 +592,16 @@ def build_misr_branch_surface(
     flow_flip_put_max = _threshold_float(thresholds, "FLOW_FLIP_MAX_BEAR", DEFAULT_FLOW_FLIP_PUT_MAX)
 
     ts_now_ms = int(now_ts_ms or (_safe_int(_pick(fut, "ts_event_ns"), 0) // 1_000_000))
-    fb_start_ms = int(fake_break_start_ts_ms or ts_now_ms)
-    fb_extreme_ms = int(fake_break_extreme_ts_ms or ts_now_ms)
+    fb_start_ms = _safe_int(
+        fake_break_start_ts_ms
+        or _pick(fut, "fake_break_start_ts_ms", "trap_event_start_ts_ms", "break_start_ts_ms"),
+        0,
+    )
+    fb_extreme_ms = _safe_int(
+        fake_break_extreme_ts_ms
+        or _pick(fut, "fake_break_extreme_ts_ms", "trap_event_extreme_ts_ms", "break_extreme_ts_ms"),
+        0,
+    )
 
     if bullish:
         fake_break_distance = max(trap_zone_level - fut_ltp, 0.0)
@@ -604,8 +612,10 @@ def build_misr_branch_surface(
         inside_range = fut_ltp <= (zone_high - range_reentry_buffer_points) if zone_present else False
         no_mans_land_cleared = fut_ltp <= (zone_low - no_mans_land_points) if zone_present else False
 
+    fake_break_timestamps_valid = bool(fb_start_ms > 0 and fb_extreme_ms > 0)
     fake_break = (
         active_zone_valid
+        and fake_break_timestamps_valid
         and fake_break_distance >= fake_break_min_points
         and _directional_ok(-fut_delta, branch_id)
     )
@@ -689,7 +699,7 @@ def build_misr_branch_surface(
     )
 
     return {
-        "surface_kind": "misr",
+        "surface_kind": "misr_branch",
         "present": surface_present,
         "branch_ready": branch_ready,
         "family_id": _safe_str(getattr(N, "STRATEGY_FAMILY_MISR", "MISR")),
@@ -713,6 +723,9 @@ def build_misr_branch_surface(
         "active_zone_valid": active_zone_valid,
         "trap_zone_level": trap_zone_level,
         "fake_break_distance": fake_break_distance,
+        "fake_break_start_ts_ms": fb_start_ms,
+        "fake_break_extreme_ts_ms": fb_extreme_ms,
+        "fake_break_timestamps_valid": fake_break_timestamps_valid,
         "fake_break": fake_break,
         "absorption": absorption,
         "absorption_elapsed_sec": absorption_elapsed_sec,
@@ -724,6 +737,7 @@ def build_misr_branch_surface(
         "no_mans_land_cleared": no_mans_land_cleared,
         "reversal_impulse": reversal_impulse,
         "trap_event_id": trap_event_id,
+        "trap_event_id_valid": trap_event_id is not None,
         "context_pass": context_pass,
         "option_tradability_pass": option_tradability_pass,
         "fallback_ready": fallback_ready,
@@ -1102,3 +1116,77 @@ def build_misr_family_surface(*args: Any, **kwargs: Any) -> dict[str, Any]:
         put_surface=kwargs.get("put_surface"),
         runtime_mode_surface=kwargs.get("runtime_mode_surface"),
     )
+
+# ============================================================================
+# Batch 26I-R1 — MISR canonical producer completion overlay
+# ============================================================================
+#
+# Post-processes MISR branch output so the Batch 26I proof layer sees direct
+# canonical producers on every branch surface. This is fail-closed: missing
+# source facts remain False/empty, not guessed True.
+
+_BATCH26IR1_ORIGINAL_BUILD_MISR_BRANCH_SURFACE = build_misr_branch_surface
+
+
+def _batch26ir1_bool(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in {"1", "true", "yes", "y", "ok", "pass", "passed", "ready"}:
+            return True
+        if text in {"0", "false", "no", "n", "fail", "failed", "blocked", "missing", "stale", "unavailable", ""}:
+            return False
+    return bool(value)
+
+
+def _batch26ir1_first(mapping: dict[str, object], *keys: str, default: object = None) -> object:
+    for key in keys:
+        if key in mapping and mapping[key] not in (None, ""):
+            return mapping[key]
+    return default
+
+
+def build_misr_branch_surface(*args, **kwargs):
+    out = dict(_BATCH26IR1_ORIGINAL_BUILD_MISR_BRANCH_SURFACE(*args, **kwargs))
+
+    active_zone = _batch26ir1_first(out, "active_zone", "zone", "trap_zone", default={})
+    trap_event_id = str(_batch26ir1_first(out, "trap_event_id", "source_event_id", default="") or "")
+
+    out.update(
+        {
+            "active_zone": active_zone,
+            "active_zone_valid": _batch26ir1_bool(
+                _batch26ir1_first(out, "active_zone_valid", "zone_valid", "active_zone_ready")
+            ),
+            "trap_event_id": trap_event_id,
+            "fake_break_triggered": _batch26ir1_bool(
+                _batch26ir1_first(out, "fake_break_triggered", "fake_break_valid", "fake_break_detected", "fake_break")
+            ),
+            "absorption_pass": _batch26ir1_bool(
+                _batch26ir1_first(out, "absorption_pass", "absorption_ok", "absorption_confirmed")
+            ),
+            "range_reentry_confirmed": _batch26ir1_bool(
+                _batch26ir1_first(out, "range_reentry_confirmed", "range_reentry_ok", "reentry_confirmed")
+            ),
+            "flow_flip_confirmed": _batch26ir1_bool(
+                _batch26ir1_first(out, "flow_flip_confirmed", "flow_flip_ok", "flow_reversal_confirmed")
+            ),
+            "hold_inside_range_proved": _batch26ir1_bool(
+                _batch26ir1_first(out, "hold_inside_range_proved", "hold_inside_range_ok", "range_hold_ok")
+            ),
+            "no_mans_land_cleared": _batch26ir1_bool(
+                _batch26ir1_first(out, "no_mans_land_cleared", "no_mans_land_clear", "nml_cleared")
+            ),
+            "reversal_impulse_confirmed": _batch26ir1_bool(
+                _batch26ir1_first(out, "reversal_impulse_confirmed", "reversal_impulse_ok", "impulse_confirmed")
+            ),
+            "option_tradability_pass": _batch26ir1_bool(
+                _batch26ir1_first(out, "option_tradability_pass", "tradability_pass", "selected_option_tradability_ok")
+            ),
+        }
+    )
+
+    return out

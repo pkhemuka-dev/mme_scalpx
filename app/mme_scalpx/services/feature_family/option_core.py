@@ -440,6 +440,34 @@ def _velocity_ratio_proxy(
     return move / tick
 
 
+# Batch 26G V2 — exact timestamp integer parser.
+def _batch26g_exact_int(value: Any, default: int | None = None) -> int | None:
+    """Parse integer-like values without float precision loss.
+
+    Nanosecond timestamps exceed precise float integer range. Do not route
+    ltt_ns / trade_ts_ns through int(float(value)).
+    """
+    if value is None or value == "":
+        return default
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    text = str(value).strip()
+    if not text:
+        return default
+    if "." in text:
+        # Only accept decimal strings by truncating after decimal point without
+        # converting the full nanosecond value through float.
+        text = text.split(".", 1)[0]
+    try:
+        return int(text)
+    except Exception:
+        return default
+
+
 def build_live_option_surface(
     *,
     side: str,
@@ -634,6 +662,10 @@ def build_live_option_surface(
         "ask_qty_5": ask_qty,
         "depth_total": depth_total,
         "volume": _safe_int(_coalesce(_pick(source, _VOLUME_KEYS)), None),
+        "ltq": _safe_int(_coalesce(_pick(source, ("ltq", "last_traded_quantity", "lastTradeQty", "qty", "quantity"))), None),
+        "ltt_ns": _batch26g_exact_int(_coalesce(_pick(source, ("ltt_ns", "last_trade_ts_ns", "trade_ts_ns", "ltt"))), None),
+        "recent_ticks": _coalesce(_pick(source, ("recent_ticks", "trade_ticks", "tick_buffer", "ticks", "recent_trade_ticks")), ()),
+        "trade_ticks": _coalesce(_pick(source, ("trade_ticks", "recent_ticks", "tick_buffer", "ticks", "recent_trade_ticks")), ()),
         "oi": _safe_int(_coalesce(_pick(source, _OI_KEYS)), None),
         "delta_proxy": _safe_float(
             _coalesce(_pick(source, _DELTA_PROXY_KEYS)),

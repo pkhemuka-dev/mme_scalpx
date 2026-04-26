@@ -200,6 +200,27 @@ ALLOWED_PROVIDER_TRANSITION_REASONS: Final[tuple[str, ...]] = tuple(
 ALLOWED_CONTROL_MODES: Final[tuple[str, ...]] = tuple(names.ALLOWED_CONTROL_MODES)
 ALLOWED_COMMAND_TYPES: Final[tuple[str, ...]] = tuple(names.ALLOWED_COMMAND_TYPES)
 
+
+# Batch 25G frozen cross-service field registries anchored to core.names.
+MODEL_CONTRACT_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = tuple(
+    names.CONTRACT_PROVIDER_RUNTIME_KEYS
+)
+MODEL_CONTRACT_FEED_SNAPSHOT_KEYS: Final[tuple[str, ...]] = tuple(
+    names.CONTRACT_FEED_SNAPSHOT_KEYS
+)
+MODEL_CONTRACT_DHAN_CONTEXT_KEYS: Final[tuple[str, ...]] = tuple(
+    names.CONTRACT_DHAN_CONTEXT_KEYS
+)
+MODEL_CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS: Final[tuple[str, ...]] = tuple(
+    names.CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS
+)
+MODEL_CONTRACT_EXECUTION_ENTRY_METADATA_KEYS: Final[tuple[str, ...]] = tuple(
+    names.CONTRACT_EXECUTION_ENTRY_METADATA_KEYS
+)
+MODEL_CONTRACT_EXECUTION_ENTRY_KEYS: Final[tuple[str, ...]] = tuple(
+    names.CONTRACT_EXECUTION_ENTRY_KEYS
+)
+
 MISO_ALLOWED_STRATEGY_RUNTIME_MODES: Final[tuple[str, ...]] = (
     names.STRATEGY_RUNTIME_MODE_BASE_5DEPTH,
     names.STRATEGY_RUNTIME_MODE_DEPTH20_ENHANCED,
@@ -1446,6 +1467,7 @@ class StrategyOrderIntent(SchemaBase):
     """
 
     decision_id: str
+    candidate_id: str
     ts_event_ns: int
     action: str
     side: str
@@ -1482,6 +1504,7 @@ class StrategyOrderIntent(SchemaBase):
 
     def validate(self) -> None:
         _require_non_empty_str(self.decision_id, "decision_id")
+        _require_non_empty_str(self.candidate_id, "candidate_id")
         _require_int(self.ts_event_ns, "ts_event_ns", min_value=0)
         if self.ts_expiry_ns is not None:
             _require_int(self.ts_expiry_ns, "ts_expiry_ns", min_value=0)
@@ -1551,10 +1574,15 @@ class StrategyOrderIntent(SchemaBase):
                 "option_token": self.option_token,
                 "strike": self.strike,
                 "limit_price": self.limit_price,
+                "provider_id": self.active_selected_option_provider_id,
+                "execution_provider_id": self.execution_primary_provider_id,
                 "family_id": self.strategy_family_id,
+                "strategy_family": self.strategy_family_id,
                 "strategy_family_id": self.strategy_family_id,
                 "doctrine_id": self.doctrine_id,
+                "candidate_id": self.candidate_id,
                 "branch_id": self.branch_id,
+                "strategy_branch": self.branch_id,
                 "family_runtime_mode": self.family_runtime_mode,
                 "strategy_runtime_mode": self.strategy_runtime_mode,
                 "entry_mode": self.entry_mode,
@@ -2024,6 +2052,11 @@ class DhanContextEvent(SchemaBase):
     selected_put_cross_strike_spread_rank: float | None = None
     selected_call_cross_strike_volume_rank: float | None = None
     selected_put_cross_strike_volume_rank: float | None = None
+    option_chain_ladder_json: str | None = None
+    strike_ladder_json: str | None = None
+    oi_wall_summary_json: str | None = None
+    selected_call_context_json: str | None = None
+    selected_put_context_json: str | None = None
     nearest_call_oi_resistance_strike: float | None = None
     nearest_put_oi_support_strike: float | None = None
     call_wall_distance_pts: float | None = None
@@ -2055,6 +2088,11 @@ class DhanContextEvent(SchemaBase):
             "selected_call_zerodha_token",
             "selected_put_zerodha_token",
             "provider_exchange_segment",
+            "option_chain_ladder_json",
+            "strike_ladder_json",
+            "oi_wall_summary_json",
+            "selected_call_context_json",
+            "selected_put_context_json",
             "message",
         ):
             value = getattr(self, field_name)
@@ -2172,6 +2210,11 @@ class DhanContextState(SchemaBase):
     selected_put_gamma_score: float | None = None
     selected_call_iv_sanity_score: float | None = None
     selected_put_iv_sanity_score: float | None = None
+    option_chain_ladder_json: str | None = None
+    strike_ladder_json: str | None = None
+    oi_wall_summary_json: str | None = None
+    selected_call_context_json: str | None = None
+    selected_put_context_json: str | None = None
     nearest_call_oi_resistance_strike: float | None = None
     nearest_put_oi_support_strike: float | None = None
     call_wall_distance_pts: float | None = None
@@ -2202,6 +2245,11 @@ class DhanContextState(SchemaBase):
             "selected_call_zerodha_token",
             "selected_put_zerodha_token",
             "provider_exchange_segment",
+            "option_chain_ladder_json",
+            "strike_ladder_json",
+            "oi_wall_summary_json",
+            "selected_call_context_json",
+            "selected_put_context_json",
             "message",
         ):
             value = getattr(self, field_name)
@@ -3050,6 +3098,12 @@ __all__ = [
     "LoginState",
     "MODEL_REGISTRY",
     "MISO_ALLOWED_STRATEGY_RUNTIME_MODES",
+    "MODEL_CONTRACT_PROVIDER_RUNTIME_KEYS",
+    "MODEL_CONTRACT_FEED_SNAPSHOT_KEYS",
+    "MODEL_CONTRACT_DHAN_CONTEXT_KEYS",
+    "MODEL_CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS",
+    "MODEL_CONTRACT_EXECUTION_ENTRY_METADATA_KEYS",
+    "MODEL_CONTRACT_EXECUTION_ENTRY_KEYS",
     "ModelError",
     "ModelValidationError",
     "NON_MISO_ALLOWED_STRATEGY_RUNTIME_MODES",

@@ -1,0 +1,37 @@
+schema_version: 1
+strategy_family: MISO
+branch: PUT
+contract_revision: batch25n_miso_provider_doctrine_alignment
+
+provider_doctrine:
+  current_baseline:
+    futures_policy: ZERODHA_OR_DHAN_HEALTHY_SYNCED
+    futures_marketdata:
+      allowed_providers:
+        - ZERODHA
+        - DHAN
+      preferred_provider: ZERODHA
+      require_healthy: true
+      require_fresh: true
+      require_cross_provider_sync: true
+    selected_option_marketdata:
+      required_provider: DHAN
+      require_healthy: true
+      require_fresh: true
+    option_context:
+      required_provider: DHAN
+      require_healthy: true
+      require_fresh: true
+    execution_primary:
+      preferred_provider: ZERODHA
+    execution_fallback:
+      preferred_provider: DHAN
+
+  future_dhan_futures_rollout:
+    enabled_by_default: false
+    when_enabled_requires_futures_provider: DHAN
+
+runtime_safety:
+  observe_only_default: true
+  no_strategy_promotion_in_this_batch: true
+  no_execution_arming_in_this_batch: true

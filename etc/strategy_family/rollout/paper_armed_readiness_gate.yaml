@@ -1,0 +1,41 @@
+schema_version: 1
+gate_id: batch25w_paper_armed_readiness_gate
+contract_revision: 25W.1
+
+default_runtime_mode: observe_only
+paper_armed_enabled_by_default: false
+auto_enable_paper_armed: false
+operator_manual_arm_required: true
+
+manual_arm_policy:
+  allowed_first_runtime_mode: paper_armed
+  allowed_first_family_count: 1
+  allowed_first_branch_count: 1
+  max_quantity_lots_first_arm: 1
+  execution_provider_required: true
+  execution_provider_allowed_values:
+    - ZERODHA
+  selected_option_provider_required: true
+  selected_option_provider_allowed_values:
+    - DHAN
+  option_context_provider_required: true
+  option_context_provider_allowed_values:
+    - DHAN
+
+failover_policy:
+  automatic_failover_allowed: false
+  manual_failover_only: true
+  no_mid_position_provider_migration: true
+  pre_position_provider_change_requires_setup_rebuild: true
+
+rollback_policy:
+  rollback_target_runtime_mode: observe_only
+  rollback_must_disable_candidate_promotion: true
+  rollback_must_disable_live_orders: true
+  rollback_must_publish_hold_only: true
+
+final_proof_safety:
+  broker_order_send_disabled_in_final_proof: true
+  no_broker_api_call_in_proof: true
+  no_live_order_stream_write_in_proof: true
+  no_secret_dump: true

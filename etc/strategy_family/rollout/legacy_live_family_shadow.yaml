@@ -1,0 +1,8 @@
+schema_version: 1
+rollout_mode: legacy_live_family_shadow
+default: false
+strategy_publish_mode: LEGACY_ONLY_FAMILY_HOLD_SHADOW
+family_order_intent_preview: true
+family_order_intent_publish: false
+execution_arming: false
+broker_orders_allowed: false

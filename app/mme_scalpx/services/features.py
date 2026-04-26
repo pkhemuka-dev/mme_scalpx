@@ -1,4 +1,7 @@
 from __future__ import annotations
+from app.mme_scalpx.services.feature_family import option_core as _batch25kj_option_core
+from app.mme_scalpx.services.feature_family import option_core as _batch25ki_option_core
+from app.mme_scalpx.services.feature_family import option_core as _batch25kg_option_core
 
 """
 app/mme_scalpx/services/features.py
@@ -58,6 +61,83 @@ except Exception:  # pragma: no cover
 
 
 LOGGER = logging.getLogger("app.mme_scalpx.services.features")
+
+
+# =============================================================================
+# Batch 25K shared-builder ABI audit
+# =============================================================================
+
+FEATURE_BUILDER_ABI_AUDIT: dict[str, int] = {
+    "futures_core_builder_used": 0,
+    "option_core_builder_used": 0,
+    "strike_ladder_builder_used": 0,
+    "classic_strike_builder_used": 0,
+    "miso_strike_builder_used": 0,
+    "regime_builder_used": 0,
+    "tradability_builder_used": 0,
+    "fallback_builder_count": 0,
+    "call_first_typeerror_count": 0,
+    "exact_builder_exception_count": 0,
+}
+
+
+def _builder_abi_audit_reset() -> None:
+    for key in FEATURE_BUILDER_ABI_AUDIT:
+        FEATURE_BUILDER_ABI_AUDIT[key] = 0
+
+
+def _builder_abi_mark(key: str, count: int = 1) -> None:
+    FEATURE_BUILDER_ABI_AUDIT[key] = int(FEATURE_BUILDER_ABI_AUDIT.get(key, 0)) + int(count)
+
+
+def _builder_abi_audit_snapshot() -> dict[str, int]:
+    return dict(FEATURE_BUILDER_ABI_AUDIT)
+
+
+def _call_exact_builder(
+    module: Any | None,
+    function_name: str,
+    *,
+    audit_key: str,
+    fallback_allowed: bool = True,
+    **kwargs: Any,
+) -> Any | None:
+    if module is None:
+        if fallback_allowed:
+            _builder_abi_mark("fallback_builder_count")
+        return None
+
+    fn = getattr(module, function_name, None)
+    if not callable(fn):
+        if fallback_allowed:
+            _builder_abi_mark("fallback_builder_count")
+        return None
+
+    try:
+        out = fn(**kwargs)
+        _builder_abi_mark(audit_key)
+        return out
+    except TypeError as exc:
+        _builder_abi_mark("exact_builder_exception_count")
+        if fallback_allowed:
+            _builder_abi_mark("fallback_builder_count")
+        LOGGER.warning(
+            "shared_builder_abi_typeerror builder=%s kwargs=%s error=%s",
+            function_name,
+            sorted(kwargs.keys()),
+            exc,
+        )
+        return None
+    except Exception as exc:
+        _builder_abi_mark("exact_builder_exception_count")
+        if fallback_allowed:
+            _builder_abi_mark("fallback_builder_count")
+        LOGGER.warning(
+            "shared_builder_abi_exception builder=%s error=%s",
+            function_name,
+            exc,
+        )
+        return None
 
 
 # =============================================================================
@@ -190,7 +270,7 @@ HASH_OPTION_CONFIRM: Final[str] = getattr(
 KEY_HEALTH_FEATURES: Final[str] = getattr(
     N,
     "KEY_HEALTH_FEATURES",
-    getattr(N, "HB_FEATURES", "features:heartbeat"),
+    getattr(N, "HB_FEATURES", N.KEY_COMPAT_FEATURES_HEARTBEAT),
 )
 
 HASH_PROVIDER_RUNTIME: Final[str] = getattr(
@@ -455,6 +535,41 @@ def _provider_status(value: Any) -> str:
     return _safe_str(_literal(value, PROVIDER_STATUSES, default), default)
 
 
+def _optional_provider_id(value: Any) -> str | None:
+    """
+    Provider ID parser with no silent fallback.
+
+    Do not use _provider_id() in provider-runtime repair paths because _literal()
+    intentionally falls back to the first allowed value when no default is allowed.
+    For Batch 25H, missing provider identity must remain None and become an
+    explicit unavailable provider surface, not DHAN/ZERODHA by accident.
+    """
+
+    text = _safe_str(value)
+    return text if text in PROVIDER_IDS else None
+
+
+def _provider_failover_mode(value: Any) -> str:
+    allowed = tuple(getattr(N, "ALLOWED_PROVIDER_FAILOVER_MODES", ()))
+    default = getattr(N, "PROVIDER_FAILOVER_MODE_MANUAL", "MANUAL")
+    text = _safe_str(value)
+    return text if text in allowed else default
+
+
+def _provider_override_mode(value: Any) -> str:
+    allowed = tuple(getattr(N, "ALLOWED_PROVIDER_OVERRIDE_MODES", ()))
+    default = getattr(N, "PROVIDER_OVERRIDE_MODE_AUTO", "AUTO")
+    text = _safe_str(value)
+    return text if text in allowed else default
+
+
+def _provider_transition_reason(value: Any) -> str:
+    allowed = tuple(getattr(N, "ALLOWED_PROVIDER_TRANSITION_REASONS", ()))
+    default = getattr(N, "PROVIDER_TRANSITION_REASON_BOOTSTRAP", "BOOTSTRAP")
+    text = _safe_str(value)
+    return text if text in allowed else default
+
+
 def _family_runtime_mode(value: Any) -> str:
     return _safe_str(
         _literal(value, FAMILY_RUNTIME_MODES, FAMILY_RUNTIME_OBSERVE),
@@ -531,9 +646,18 @@ def _call_first(
         for var_args, var_kwargs in variants:
             try:
                 return fn(*var_args, **var_kwargs)
-            except TypeError:
+            except TypeError as exc:
+                _builder_abi_mark("call_first_typeerror_count")
+                LOGGER.warning(
+                    "optional_call_first_typeerror function=%s args=%s kwargs=%s error=%s",
+                    name,
+                    len(var_args),
+                    sorted(var_kwargs.keys()),
+                    exc,
+                )
                 continue
-            except Exception:
+            except Exception as exc:
+                LOGGER.warning("optional_call_first_exception function=%s error=%s", name, exc)
                 return None
     return None
 
@@ -715,6 +839,286 @@ class SnapshotReader:
 # =============================================================================
 
 
+
+# =============================================================================
+# Batch 25I — feed snapshot JSON/raw-surface adapter helpers
+# =============================================================================
+
+_FEED_SNAPSHOT_JSON_KEYS: Final[tuple[str, ...]] = (
+    "future_json",
+    "selected_call_json",
+    "selected_put_json",
+    "ce_atm_json",
+    "ce_atm1_json",
+    "pe_atm_json",
+    "pe_atm1_json",
+)
+
+_FEED_FUTURE_JSON_KEYS: Final[tuple[str, ...]] = (
+    "future_json",
+    "futures_json",
+    "selected_future_json",
+    "underlying_json",
+)
+
+_FEED_CALL_JSON_KEYS: Final[tuple[str, ...]] = (
+    "selected_call_json",
+    "ce_atm_json",
+    "ce_atm1_json",
+    "call_json",
+    "selected_ce_json",
+)
+
+_FEED_PUT_JSON_KEYS: Final[tuple[str, ...]] = (
+    "selected_put_json",
+    "pe_atm_json",
+    "pe_atm1_json",
+    "put_json",
+    "selected_pe_json",
+)
+
+
+def _feed_json_load(value: Any) -> Any:
+    if isinstance(value, (bytes, bytearray)):
+        try:
+            value = value.decode("utf-8")
+        except Exception:
+            return value
+    if isinstance(value, str):
+        text = value.strip()
+        if not text or text.lower() in {"null", "none"}:
+            return None
+        try:
+            return json.loads(text)
+        except Exception:
+            return value
+    return value
+
+
+def _feed_mapping(value: Any) -> dict[str, Any]:
+    parsed = _feed_json_load(value)
+    if isinstance(parsed, Mapping):
+        return dict(parsed)
+    return {}
+
+
+def _feed_side(value: Any) -> str | None:
+    text = _safe_str(value).upper()
+    if text in {"CALL", "CE", "C"} or text.endswith("CE"):
+        return "CALL"
+    if text in {"PUT", "PE", "P"} or text.endswith("PE"):
+        return "PUT"
+    return None
+
+
+def _feed_first_member(raw: Mapping[str, Any], keys: Sequence[str]) -> tuple[str | None, dict[str, Any]]:
+    for key in keys:
+        member = _feed_mapping(raw.get(key))
+        if member:
+            return key, member
+    return None, {}
+
+
+def _feed_merge_member(raw: Mapping[str, Any], member: Mapping[str, Any]) -> dict[str, Any]:
+    merged = dict(raw)
+    for key in _FEED_SNAPSHOT_JSON_KEYS:
+        merged.pop(key, None)
+    merged.update(dict(member))
+    return merged
+
+
+def _feed_depth_qty(row: Mapping[str, Any], side: str) -> float:
+    if side == "bid":
+        return _safe_float(
+            _pick(row, "bid_qty_5", "top5_bid_qty", "bid_qty", "best_bid_qty"),
+            0.0,
+        )
+    return _safe_float(
+        _pick(row, "ask_qty_5", "top5_ask_qty", "ask_qty", "best_ask_qty"),
+        0.0,
+    )
+
+
+def _feed_best_price(row: Mapping[str, Any], side: str) -> float:
+    if side == "bid":
+        return _safe_float(_pick(row, "best_bid", "bid", "bid_price"), 0.0)
+    return _safe_float(_pick(row, "best_ask", "ask", "ask_price"), 0.0)
+
+
+def _feed_ltp(row: Mapping[str, Any]) -> float:
+    return _safe_float(_pick(row, "ltp", "last_price", "price", "last_traded_price"), 0.0)
+
+
+def _feed_token(row: Mapping[str, Any]) -> str:
+    return _safe_str(
+        _pick(
+            row,
+            "instrument_token",
+            "option_token",
+            "token",
+            "security_id",
+            "securityId",
+        )
+    )
+
+
+def _feed_instrument_key(row: Mapping[str, Any]) -> str:
+    return _safe_str(
+        _pick(
+            row,
+            "instrument_key",
+            "instrumentKey",
+            "instrument_id",
+            "option_instrument_key",
+        )
+    ) or _feed_token(row)
+
+
+def _feed_trading_symbol(row: Mapping[str, Any]) -> str:
+    return _safe_str(
+        _pick(
+            row,
+            "trading_symbol",
+            "tradingsymbol",
+            "option_symbol",
+            "symbol",
+        )
+    )
+
+
+def _feed_provider_id(row: Mapping[str, Any], default: Any = None) -> str:
+    return _safe_str(_pick(row, "provider_id", "provider", default=default))
+
+
+
+
+
+def _batch26f_misr_event_context(shared_core: Mapping[str, Any], branch_id: str) -> dict[str, Any]:
+    """Read MISR branch event timestamps from explicit shared state only."""
+    family = "MISR"
+    branch_key = f"misr_{str(branch_id).lower()}"
+
+    sources = (
+        _nested(shared_core, "misr", "event_state", branch_id, default={}),
+        _nested(shared_core, "misr", "event_state", branch_key, default={}),
+        _nested(shared_core, "family_state", family, branch_id, default={}),
+        _nested(shared_core, "family_state", family, branch_key, default={}),
+        _nested(shared_core, "family_state", "misr", branch_id, default={}),
+        _nested(shared_core, "runtime_state", family, branch_id, default={}),
+        _nested(shared_core, "trap_events", branch_id, default={}),
+    )
+
+    merged: dict[str, Any] = {}
+    for source in sources:
+        if isinstance(source, Mapping):
+            merged.update(source)
+
+    return {
+        "fake_break_start_ts_ms": int(_safe_float(
+            merged.get("fake_break_start_ts_ms")
+            or merged.get("trap_event_start_ts_ms")
+            or merged.get("break_start_ts_ms"),
+            0.0,
+        )) or None,
+        "fake_break_extreme_ts_ms": int(_safe_float(
+            merged.get("fake_break_extreme_ts_ms")
+            or merged.get("trap_event_extreme_ts_ms")
+            or merged.get("break_extreme_ts_ms"),
+            0.0,
+        )) or None,
+        "hold_proof_elapsed_sec": _safe_float(
+            merged.get("hold_proof_elapsed_sec")
+            or merged.get("hold_elapsed_sec"),
+            0.0,
+        ),
+    }
+
+
+def _batch26f_misr_zone_registry_from_sources(
+    *,
+    shared_core: Mapping[str, Any],
+    futures_surface: Mapping[str, Any],
+) -> tuple[dict[str, Any], ...]:
+    try:
+        from app.mme_scalpx.services.feature_family.misr_zones import (
+            build_deterministic_misr_zone_registry,
+        )
+    except Exception:
+        return ()
+
+    try:
+        return build_deterministic_misr_zone_registry(
+            shared_core=shared_core,
+            futures_surface=futures_surface,
+        )
+    except Exception:
+        return ()
+
+
+
+def _batch26g_miso_microstructure_option_surface(
+    *,
+    shared_core: Mapping[str, Any],
+    branch_id: str,
+    option_surface: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Merge explicit MISO microstructure buffers into branch option surface.
+
+    This is read-only enrichment of already-produced surfaces. Missing buffers
+    remain missing, and MISO fails closed in miso_surface.py.
+    """
+    branch_key = "call" if branch_id == BRANCH_CALL else "put"
+    out = dict(option_surface or {})
+    selected = dict(_nested(out, "selected_features", default={}) or {})
+    raw = dict(_nested(selected, "raw", default={}) or {})
+
+    sources = (
+        _nested(shared_core, "miso_microstructure", branch_id, default={}),
+        _nested(shared_core, "miso_microstructure", branch_key, default={}),
+        _nested(shared_core, "microstructure", "miso", branch_id, default={}),
+        _nested(shared_core, "microstructure", "miso", branch_key, default={}),
+        _nested(shared_core, "options", branch_key, "microstructure", default={}),
+        _nested(shared_core, "options", branch_key, "selected_features", "microstructure", default={}),
+        _nested(shared_core, "options", branch_key, "selected_features", "raw", default={}),
+    )
+
+    for source in sources:
+        if not isinstance(source, Mapping):
+            continue
+        for key in (
+            "recent_ticks",
+            "trade_ticks",
+            "tick_buffer",
+            "ticks",
+            "recent_trade_ticks",
+            "ask_reloaded",
+            "bid_reloaded",
+            "queue_reload_veto",
+        ):
+            if key in source and key not in selected:
+                selected[key] = source.get(key)
+            if key in source and key not in raw:
+                raw[key] = source.get(key)
+
+    selected["raw"] = raw
+    out["selected_features"] = selected
+
+    shadow = dict(_nested(out, "shadow_features", default={}) or {})
+    shadow_sources = (
+        _nested(shared_core, "miso_shadow_microstructure", branch_id, default={}),
+        _nested(shared_core, "miso_shadow_microstructure", branch_key, default={}),
+        _nested(shared_core, "microstructure", "miso_shadow", branch_id, default={}),
+        _nested(shared_core, "microstructure", "miso_shadow", branch_key, default={}),
+        _nested(shared_core, "options", branch_key, "shadow_features", default={}),
+        _nested(shared_core, "options", branch_key, "shadow_surface", "live", default={}),
+    )
+    for source in shadow_sources:
+        if isinstance(source, Mapping):
+            shadow.update(source)
+    out["shadow_features"] = shadow
+
+    return out
+
 class FeatureEngine:
     def __init__(self, *, redis_client: Any, logger: logging.Logger | None = None):
         self.redis = redis_client
@@ -787,68 +1191,147 @@ class FeatureEngine:
         }
 
     def _provider_runtime(self, raw: Mapping[str, Any]) -> dict[str, Any]:
-        active_fut = _provider_id(
+        """
+        Normalize provider runtime from feeds.py canonical hash shape.
+
+        Batch 25H law:
+        - consume canonical ProviderRuntimeState.to_dict() keys first
+        - preserve old active_* compatibility keys for existing consumers
+        - never convert missing provider identities into DHAN/ZERODHA
+        - missing/stale status becomes explicit UNAVAILABLE, not HEALTHY
+        """
+
+        raw_map = dict(raw or {})
+
+        futures_provider = _optional_provider_id(
             _pick(
-                raw,
+                raw_map,
+                "futures_marketdata_provider_id",
                 "active_futures_provider_id",
                 "active_future_provider_id",
                 "futures_provider_id",
-            ),
-            PROVIDER_DHAN,
+            )
         )
-        active_opt = _provider_id(
+        selected_option_provider = _optional_provider_id(
             _pick(
-                raw,
+                raw_map,
+                "selected_option_marketdata_provider_id",
                 "active_selected_option_provider_id",
                 "selected_option_provider_id",
                 "option_provider_id",
-            ),
-            active_fut,
+            )
         )
-        active_ctx = _provider_id(
+        option_context_provider = _optional_provider_id(
             _pick(
-                raw,
-                "active_option_context_provider_id",
+                raw_map,
                 "option_context_provider_id",
+                "active_option_context_provider_id",
                 "context_provider_id",
-            ),
-            PROVIDER_DHAN,
+            )
         )
-        active_exec = _provider_id(
+        execution_primary_provider = _optional_provider_id(
             _pick(
-                raw,
-                "active_execution_provider_id",
+                raw_map,
                 "execution_primary_provider_id",
+                "active_execution_provider_id",
                 "execution_provider_id",
-            ),
-            PROVIDER_ZERODHA,
+            )
         )
-        fallback_exec = _provider_id(
-            _pick(raw, "fallback_execution_provider_id", "execution_fallback_provider_id"),
-            PROVIDER_DHAN,
+        execution_fallback_provider = _optional_provider_id(
+            _pick(
+                raw_map,
+                "execution_fallback_provider_id",
+                "fallback_execution_provider_id",
+            )
         )
 
+        futures_status = _provider_status(
+            _pick(
+                raw_map,
+                "futures_marketdata_status",
+                "futures_provider_status",
+                "active_futures_provider_status",
+                "futures_provider_statu",
+                "active_futures_provider_statu",
+            )
+        )
+        selected_option_status = _provider_status(
+            _pick(
+                raw_map,
+                "selected_option_marketdata_status",
+                "selected_option_provider_status",
+                "active_selected_option_provider_status",
+                "selected_option_provider_statu",
+                "active_selected_option_provider_statu",
+            )
+        )
+        option_context_status = _provider_status(
+            _pick(
+                raw_map,
+                "option_context_status",
+                "option_context_provider_status",
+                "active_option_context_provider_status",
+                "option_context_provider_statu",
+                "active_option_context_provider_statu",
+            )
+        )
+        execution_primary_status = _provider_status(
+            _pick(
+                raw_map,
+                "execution_primary_status",
+                "execution_provider_status",
+                "active_execution_provider_status",
+                "execution_provider_statu",
+                "active_execution_provider_statu",
+            )
+        )
+        execution_fallback_status = _provider_status(
+            _pick(
+                raw_map,
+                "execution_fallback_status",
+                "fallback_execution_provider_status",
+            )
+        )
+
+        family_runtime_mode = _family_runtime_mode(raw_map.get("family_runtime_mode"))
+
         return {
-            "active_futures_provider_id": active_fut,
-            "active_selected_option_provider_id": active_opt,
-            "active_option_context_provider_id": active_ctx,
-            "active_execution_provider_id": active_exec,
-            "fallback_execution_provider_id": fallback_exec,
-            "provider_runtime_mode": _safe_str(_pick(raw, "provider_runtime_mode", "runtime_mode"), "NORMAL"),
-            "family_runtime_mode": _family_runtime_mode(_pick(raw, "family_runtime_mode")),
-            "futures_provider_status": _provider_status(
-                _pick(raw, "futures_provider_status", "active_futures_provider_status")
+            # Canonical Batch 25G keys.
+            "futures_marketdata_provider_id": futures_provider,
+            "selected_option_marketdata_provider_id": selected_option_provider,
+            "option_context_provider_id": option_context_provider,
+            "execution_primary_provider_id": execution_primary_provider,
+            "execution_fallback_provider_id": execution_fallback_provider,
+            "futures_marketdata_status": futures_status,
+            "selected_option_marketdata_status": selected_option_status,
+            "option_context_status": option_context_status,
+            "execution_primary_status": execution_primary_status,
+            "execution_fallback_status": execution_fallback_status,
+            "family_runtime_mode": family_runtime_mode,
+            "failover_mode": _provider_failover_mode(raw_map.get("failover_mode")),
+            "override_mode": _provider_override_mode(raw_map.get("override_mode")),
+            "transition_reason": _provider_transition_reason(raw_map.get("transition_reason")),
+            "provider_transition_seq": _safe_int(raw_map.get("provider_transition_seq"), 0),
+            "failover_active": _safe_bool(raw_map.get("failover_active"), False),
+            "pending_failover": _safe_bool(raw_map.get("pending_failover"), False),
+
+            # Compatibility keys still consumed by current feature/strategy-family code.
+            "active_futures_provider_id": futures_provider,
+            "active_selected_option_provider_id": selected_option_provider,
+            "active_option_context_provider_id": option_context_provider,
+            "active_execution_provider_id": execution_primary_provider,
+            "fallback_execution_provider_id": execution_fallback_provider,
+            "provider_runtime_mode": (
+                _safe_str(_pick(raw_map, "provider_runtime_mode", "runtime_mode"))
+                or None
             ),
-            "selected_option_provider_status": _provider_status(
-                _pick(raw, "selected_option_provider_status", "active_selected_option_provider_status")
-            ),
-            "option_context_provider_status": _provider_status(
-                _pick(raw, "option_context_provider_status", "active_option_context_provider_status")
-            ),
-            "execution_provider_status": _provider_status(
-                _pick(raw, "execution_provider_status", "active_execution_provider_status")
-            ),
-            "raw": dict(raw),
+            "futures_provider_status": futures_status,
+            "selected_option_provider_status": selected_option_status,
+            "option_context_provider_status": option_context_status,
+            "execution_provider_status": execution_primary_status,
+
+            # Raw retained only for audit/debug. It is not a contract source.
+            "raw": raw_map,
         }
 
     def _shared_core(
@@ -922,6 +1405,7 @@ class FeatureEngine:
             "runtime_modes": runtime_modes,
             "tradability": tradability,
             "dhan_context": dict(dhan_context),
+            "builder_abi_audit": _builder_abi_audit_snapshot(),
         }
 
     def _futures_surface(
@@ -931,39 +1415,64 @@ class FeatureEngine:
         role: str,
         provider_id: str,
     ) -> dict[str, Any]:
-        built = _call_first(
+        surface_raw = (
+            _flatten_snapshot_member_for_futures_surface(raw, role=role, provider_id=provider_id)
+            if "_flatten_snapshot_member_for_futures_surface" in globals()
+            else dict(raw or {})
+        )
+
+        runtime_mode = _safe_str(_pick(surface_raw, "runtime_mode"), RUNTIME_NORMAL)
+        source_label = "dhan_futures" if role == "dhan" else "active_futures"
+        role_label = (
+            "miso_alignment_veto_truth"
+            if role == "dhan"
+            else "classic_directional_truth"
+        )
+
+        built = _call_exact_builder(
             self.shared_modules.get("futures_core"),
-            ("build_futures_surface", "build_active_futures_surface", "build_dhan_futures_surface"),
-            raw,
-            role=role,
+            "build_futures_surface",
+            audit_key="futures_core_builder_used",
+            futures_surface=surface_raw,
+            runtime_mode=runtime_mode,
+            source_label=source_label,
+            role_label=role_label,
             provider_id=provider_id,
         )
         if isinstance(built, Mapping):
             out = dict(built)
             out.setdefault("role", role)
             out.setdefault("provider_id", provider_id)
+            out.setdefault("source_label", source_label)
+            out.setdefault("role_label", role_label)
             return out
 
-        bid = _safe_float(_pick(raw, "bid", "best_bid"), 0.0)
-        ask = _safe_float(_pick(raw, "ask", "best_ask"), 0.0)
-        ltp = _safe_float(_pick(raw, "ltp", "last_price", "price"), 0.0)
-        bid_qty = _safe_float(_pick(raw, "bid_qty", "best_bid_qty", "top5_bid_qty"), 0.0)
-        ask_qty = _safe_float(_pick(raw, "ask_qty", "best_ask_qty", "top5_ask_qty"), 0.0)
+        bid = _safe_float(_pick(surface_raw, "bid", "best_bid"), 0.0)
+        ask = _safe_float(_pick(surface_raw, "ask", "best_ask"), 0.0)
+        ltp = _safe_float(_pick(surface_raw, "ltp", "last_price", "price"), 0.0)
+        bid_qty = _safe_float(
+            _pick(surface_raw, "bid_qty", "best_bid_qty", "top5_bid_qty", "bid_qty_5"),
+            0.0,
+        )
+        ask_qty = _safe_float(
+            _pick(surface_raw, "ask_qty", "best_ask_qty", "top5_ask_qty", "ask_qty_5"),
+            0.0,
+        )
 
         spread = max(0.0, ask - bid) if bid > 0 and ask > 0 else 0.0
         mid = (bid + ask) / 2.0 if bid > 0 and ask > 0 else ltp
         depth_total = bid_qty + ask_qty
         ofi = _ratio(bid_qty - ask_qty, bid_qty + ask_qty, 0.0)
-        vwap = _safe_float(_pick(raw, "vwap"), ltp)
+        vwap = _safe_float(_pick(surface_raw, "vwap"), ltp)
 
         return {
             "present": ltp > 0.0,
             "valid": ltp > 0.0,
             "role": role,
             "provider_id": provider_id,
-            "instrument_key": _safe_str(_pick(raw, "instrument_key"), getattr(N, "IK_MME_FUT", "")),
-            "instrument_token": _safe_str(_pick(raw, "instrument_token")),
-            "trading_symbol": _safe_str(_pick(raw, "trading_symbol", "symbol")),
+            "instrument_key": _safe_str(_pick(surface_raw, "instrument_key"), getattr(N, "IK_MME_FUT", "")),
+            "instrument_token": _safe_str(_pick(surface_raw, "instrument_token")),
+            "trading_symbol": _safe_str(_pick(surface_raw, "trading_symbol", "symbol")),
             "ltp": ltp,
             "bid": bid,
             "ask": ask,
@@ -971,35 +1480,39 @@ class FeatureEngine:
             "best_ask": ask,
             "spread": spread,
             "spread_ratio": _safe_float(
-                _pick(raw, "spread_ratio"),
+                _pick(surface_raw, "spread_ratio"),
                 _ratio(spread, max(mid * 0.0001, 0.05), 999.0),
             ),
             "depth_total": depth_total,
+            "touch_depth": depth_total,
             "depth_ok": depth_total >= DEFAULT_DEPTH_MIN,
             "top5_bid_qty": bid_qty,
             "top5_ask_qty": ask_qty,
             "bid_qty": bid_qty,
             "ask_qty": ask_qty,
+            "bid_qty_5": bid_qty,
+            "ask_qty_5": ask_qty,
             "ofi_ratio_proxy": ofi,
             "ofi_persist_score": _safe_float(
-                _pick(raw, "ofi_persist_score", "weighted_ofi_persist"),
+                _pick(surface_raw, "ofi_persist_score", "weighted_ofi_persist"),
                 ofi,
             ),
             "weighted_ofi": _clamp(0.5 + ofi / 2.0, 0.0, 1.0),
             "weighted_ofi_persist": _clamp(0.5 + ofi / 2.0, 0.0, 1.0),
             "nof": ofi,
-            "nof_slope": _safe_float(_pick(raw, "nof_slope"), 0.0),
-            "delta_3": _safe_float(_pick(raw, "delta_3", "ltp_delta_3"), 0.0),
-            "vel_ratio": _safe_float(_pick(raw, "vel_ratio", "velocity_ratio"), 1.0),
-            "velocity_ratio": _safe_float(_pick(raw, "velocity_ratio", "vel_ratio"), 1.0),
-            "vol_norm": _safe_float(_pick(raw, "vol_norm", "volume_norm"), 1.0),
+            "nof_slope": _safe_float(_pick(surface_raw, "nof_slope"), 0.0),
+            "delta_3": _safe_float(_pick(surface_raw, "delta_3", "ltp_delta_3"), 0.0),
+            "vel_ratio": _safe_float(_pick(surface_raw, "vel_ratio", "velocity_ratio"), 1.0),
+            "velocity_ratio": _safe_float(_pick(surface_raw, "velocity_ratio", "vel_ratio"), 1.0),
+            "vol_norm": _safe_float(_pick(surface_raw, "vol_norm", "volume_norm"), 1.0),
+            "volume_norm": _safe_float(_pick(surface_raw, "volume_norm", "vol_norm"), 1.0),
             "vwap": vwap,
             "vwap_distance": ltp - vwap if ltp > 0 and vwap > 0 else 0.0,
             "vwap_dist_pct": _ratio(ltp - vwap, vwap, 0.0) if ltp > 0 and vwap > 0 else 0.0,
             "above_vwap": bool(ltp > vwap) if ltp > 0 and vwap > 0 else False,
             "below_vwap": bool(ltp < vwap) if ltp > 0 and vwap > 0 else False,
-            "ts_event_ns": _safe_int(_pick(raw, "ts_event_ns", "event_ts_ns"), 0) or None,
-            "age_ms": _safe_int(_pick(raw, "age_ms"), 0) or None,
+            "ts_event_ns": _safe_int(_pick(surface_raw, "ts_event_ns", "event_ts_ns"), 0) or None,
+            "age_ms": _safe_int(_pick(surface_raw, "age_ms"), 0) or None,
         }
 
     def _option_surface(
@@ -1009,44 +1522,137 @@ class FeatureEngine:
         role: str,
         provider_id: str,
     ) -> dict[str, Any]:
-        built = _call_first(
-            self.shared_modules.get("option_core"),
-            ("build_option_surface", "build_selected_option_surface", "build_dhan_selected_option_surface"),
-            raw,
-            role=role,
-            provider_id=provider_id,
+        """
+        Batch 25K-I source-anchored repair.
+
+        This is the actual FeatureEngine._option_surface method. It must call
+        option_core.build_live_option_surface through the exact shared-builder
+        ABI path for both CALL and PUT surfaces.
+
+        Required ABI:
+            option_core.build_live_option_surface(
+                side=...,
+                live_source=...,
+                provider_id=...,
+                strike=...,
+                instrument_key=...,
+                instrument_token=...
+            )
+        """
+
+        raw_map = dict(raw or {})
+
+        role_hint = _safe_str(role)
+        symbol_hint = _safe_str(
+            _pick(raw_map, "option_symbol", "trading_symbol", "symbol", "instrument_key", "instrument_token")
         )
+
+        inferred_side = _normalize_side(_pick(raw_map, "side", "option_side", "right", "branch_id"))
+
+        if inferred_side not in (SIDE_CALL, SIDE_PUT):
+            probe = f"{role_hint} {symbol_hint}".upper()
+            if "PUT" in probe or " PE" in f" {probe} " or probe.endswith("PE") or "_PE" in probe or "-PE" in probe:
+                inferred_side = SIDE_PUT
+            elif "CALL" in probe or " CE" in f" {probe} " or probe.endswith("CE") or "_CE" in probe or "-CE" in probe:
+                inferred_side = SIDE_CALL
+
+        surface_raw = (
+            _flatten_snapshot_member_for_option_surface(
+                raw_map,
+                side=inferred_side,
+                role=role,
+                provider_id=provider_id,
+            )
+            if "_flatten_snapshot_member_for_option_surface" in globals()
+            else raw_map
+        )
+
+        side = _normalize_side(_pick(surface_raw, "side", "option_side", "right", "branch_id"))
+
+        if side not in (SIDE_CALL, SIDE_PUT):
+            probe = f"{role_hint} {symbol_hint} {_safe_str(_pick(surface_raw, 'option_symbol', 'trading_symbol', 'symbol', 'instrument_key', 'instrument_token'))}".upper()
+            if "PUT" in probe or " PE" in f" {probe} " or probe.endswith("PE") or "_PE" in probe or "-PE" in probe:
+                side = SIDE_PUT
+            elif "CALL" in probe or " CE" in f" {probe} " or probe.endswith("CE") or "_CE" in probe or "-CE" in probe:
+                side = SIDE_CALL
+
+        side_text = _safe_str(side).upper()
+        side_call_text = _safe_str(SIDE_CALL).upper()
+        side_put_text = _safe_str(SIDE_PUT).upper()
+
+        builder_side = ""
+        if side_text in {side_call_text, "CALL", "CE", "C"}:
+            builder_side = SIDE_CALL
+        elif side_text in {side_put_text, "PUT", "PE", "P"}:
+            builder_side = SIDE_PUT
+
+        built = None
+
+        if builder_side in (SIDE_CALL, SIDE_PUT):
+            option_core_module = None
+            try:
+                option_core_module = self.shared_modules.get("option_core")
+            except Exception:
+                option_core_module = None
+
+            if option_core_module is None:
+                option_core_module = _batch25ki_option_core
+
+            built = _call_exact_builder(
+                option_core_module,
+                "build_live_option_surface",
+                audit_key="option_core_builder_used",
+                fallback_allowed=False,
+                side=builder_side,
+                live_source=surface_raw,
+                provider_id=provider_id,
+                strike=_pick(surface_raw, "strike", "strike_price"),
+                instrument_key=_safe_str(_pick(surface_raw, "instrument_key")),
+                instrument_token=_safe_str(_pick(surface_raw, "instrument_token", "token")),
+            )
+
         if isinstance(built, Mapping):
             out = dict(built)
             out.setdefault("role", role)
             out.setdefault("provider_id", provider_id)
-            out.setdefault("side", _normalize_side(out.get("side") or out.get("option_side")))
+            out.setdefault("side", builder_side or side)
+            out.setdefault("option_side", builder_side or side)
+            out.setdefault("instrument_key", _safe_str(_pick(surface_raw, "instrument_key")))
+            out.setdefault("instrument_token", _safe_str(_pick(surface_raw, "instrument_token", "token")))
+            out.setdefault("option_symbol", _safe_str(_pick(surface_raw, "option_symbol", "trading_symbol", "symbol")))
+            out.setdefault("strike", _safe_float(_pick(surface_raw, "strike", "strike_price"), 0.0))
             return out
 
-        bid = _safe_float(_pick(raw, "bid", "best_bid"), 0.0)
-        ask = _safe_float(_pick(raw, "ask", "best_ask"), 0.0)
-        ltp = _safe_float(_pick(raw, "ltp", "last_price", "price"), 0.0)
-        bid_qty = _safe_float(_pick(raw, "bid_qty", "best_bid_qty", "top5_bid_qty"), 0.0)
-        ask_qty = _safe_float(_pick(raw, "ask_qty", "best_ask_qty", "top5_ask_qty"), 0.0)
+        bid = _safe_float(_pick(surface_raw, "bid", "best_bid"), 0.0)
+        ask = _safe_float(_pick(surface_raw, "ask", "best_ask"), 0.0)
+        ltp = _safe_float(_pick(surface_raw, "ltp", "last_price", "price"), 0.0)
+        bid_qty = _safe_float(
+            _pick(surface_raw, "bid_qty", "best_bid_qty", "top5_bid_qty", "bid_qty_5"),
+            0.0,
+        )
+        ask_qty = _safe_float(
+            _pick(surface_raw, "ask_qty", "best_ask_qty", "top5_ask_qty", "ask_qty_5"),
+            0.0,
+        )
+
         spread = max(0.0, ask - bid) if bid > 0 and ask > 0 else 0.0
         mid = (bid + ask) / 2.0 if bid > 0 and ask > 0 else ltp
         depth_total = bid_qty + ask_qty
-        side = _normalize_side(_pick(raw, "side", "option_side", "right"))
         ofi = _ratio(bid_qty - ask_qty, bid_qty + ask_qty, 0.0)
+        strike = _safe_float(_pick(surface_raw, "strike", "strike_price"), 0.0)
 
         return {
-            "present": ltp > 0.0 and side is not None,
-            "valid": ltp > 0.0 and side is not None,
+            "present": ltp > 0.0,
+            "valid": ltp > 0.0,
             "role": role,
             "provider_id": provider_id,
-            "instrument_key": _safe_str(_pick(raw, "instrument_key")),
-            "instrument_token": _safe_str(_pick(raw, "instrument_token")),
-            "trading_symbol": _safe_str(_pick(raw, "trading_symbol", "symbol")),
-            "symbol": _safe_str(_pick(raw, "symbol", "trading_symbol")),
-            "side": side,
-            "option_side": side,
-            "strike": _safe_float_or_none(_pick(raw, "strike", "strike_price")),
-            "entry_mode": _safe_str(_pick(raw, "entry_mode"), getattr(N, "ENTRY_MODE_UNKNOWN", "UNKNOWN")),
+            "side": builder_side or side,
+            "option_side": builder_side or side,
+            "instrument_key": _safe_str(_pick(surface_raw, "instrument_key")),
+            "instrument_token": _safe_str(_pick(surface_raw, "instrument_token", "token")),
+            "trading_symbol": _safe_str(_pick(surface_raw, "trading_symbol", "symbol")),
+            "option_symbol": _safe_str(_pick(surface_raw, "option_symbol", "trading_symbol", "symbol")),
+            "strike": strike,
             "ltp": ltp,
             "bid": bid,
             "ask": ask,
@@ -1054,35 +1660,39 @@ class FeatureEngine:
             "best_ask": ask,
             "spread": spread,
             "spread_ratio": _safe_float(
-                _pick(raw, "spread_ratio"),
-                _ratio(spread, max(mid * 0.001, 0.05), 999.0),
+                _pick(surface_raw, "spread_ratio"),
+                _ratio(spread, max(mid * 0.0001, 0.05), 999.0),
             ),
-            "spread_ticks": _ratio(spread, _safe_float(_pick(raw, "tick_size"), 0.05), 0.0),
             "depth_total": depth_total,
-            "depth_ok": depth_total >= DEFAULT_DEPTH_MIN,
+            "touch_depth": depth_total,
             "top5_bid_qty": bid_qty,
             "top5_ask_qty": ask_qty,
             "bid_qty": bid_qty,
             "ask_qty": ask_qty,
-            "ofi_ratio_proxy": ofi,
+            "bid_qty_5": bid_qty,
+            "ask_qty_5": ask_qty,
             "weighted_ofi": _clamp(0.5 + ofi / 2.0, 0.0, 1.0),
-            "weighted_ofi_persist": _clamp(0.5 + ofi / 2.0, 0.0, 1.0),
-            "delta_3": _safe_float(_pick(raw, "delta_3", "ltp_delta_3"), 0.0),
-            "nof_slope": _safe_float(_pick(raw, "nof_slope"), 0.0),
-            "velocity_ratio": _safe_float(_pick(raw, "velocity_ratio", "vel_ratio"), 1.0),
-            "response_efficiency": _safe_float(_pick(raw, "response_efficiency", "response_eff"), 0.0),
-            "tradability_ok": bool(ltp >= DEFAULT_PREMIUM_FLOOR and depth_total >= DEFAULT_DEPTH_MIN),
-            "impact_fraction": _safe_float(_pick(raw, "impact_fraction"), 0.0),
-            "tick_size": _safe_float(_pick(raw, "tick_size"), 0.05),
-            "lot_size": _safe_int(_pick(raw, "lot_size"), 0) or None,
-            "oi": _safe_float(_pick(raw, "oi", "open_interest"), 0.0),
-            "volume": _safe_float(_pick(raw, "volume"), 0.0),
-            "iv": _safe_float_or_none(_pick(raw, "iv", "implied_volatility")),
-            "context_score": _safe_float(_pick(raw, "context_score"), 0.0),
-            "ask_reloaded": _safe_bool(_pick(raw, "ask_reloaded"), False),
-            "bid_reloaded": _safe_bool(_pick(raw, "bid_reloaded"), False),
-            "ts_event_ns": _safe_int(_pick(raw, "ts_event_ns", "event_ts_ns"), 0) or None,
-            "age_ms": _safe_int(_pick(raw, "age_ms"), 0) or None,
+            "weighted_ofi_persist": _safe_float(
+                _pick(surface_raw, "weighted_ofi_persist", "ofi_persist_score"),
+                _clamp(0.5 + ofi / 2.0, 0.0, 1.0),
+            ),
+            "ofi_ratio_proxy": ofi,
+            "delta_3": _safe_float(_pick(surface_raw, "delta_3", "ltp_delta_3"), 0.0),
+            "velocity_ratio": _safe_float(_pick(surface_raw, "velocity_ratio", "vel_ratio"), 1.0),
+            "vel_ratio": _safe_float(_pick(surface_raw, "vel_ratio", "velocity_ratio"), 1.0),
+            "response_efficiency": _safe_float(
+                _pick(surface_raw, "response_efficiency", "response_eff"),
+                0.0,
+            ),
+            "impact_depth_fraction_one_lot": _safe_float(
+                _pick(surface_raw, "impact_depth_fraction_one_lot", "impact_depth_fraction", "impact_fraction"),
+                0.0,
+            ),
+            "entry_mode": _safe_str(_pick(surface_raw, "entry_mode")),
+            "tick_size": _safe_float(_pick(surface_raw, "tick_size"), 0.05),
+            "lot_size": _safe_int(_pick(surface_raw, "lot_size"), 0),
+            "ts_event_ns": _safe_int(_pick(surface_raw, "ts_event_ns", "event_ts_ns"), 0) or None,
+            "age_ms": _safe_int(_pick(surface_raw, "age_ms"), 0) or None,
         }
 
     def _blank_option(self, side: str) -> dict[str, Any]:
@@ -1112,32 +1722,33 @@ class FeatureEngine:
 
     def _split_options(
         self,
-        active: Mapping[str, Any],
-        dhan_selected: Mapping[str, Any],
-        dhan_context: Mapping[str, Any],
+        option_frame: Mapping[str, Any] | None,
+        *args: Any,
+        **kwargs: Any,
     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        call = self._blank_option(SIDE_CALL)
-        put = self._blank_option(SIDE_PUT)
+        """
+        Batch 25I side-specific selected option splitter.
 
-        candidates = (
-            dhan_selected,
-            active,
-            self._context_option(dhan_context, SIDE_CALL),
-            self._context_option(dhan_context, SIDE_PUT),
+        CALL prefers selected_call_json -> ce_atm_json -> ce_atm1_json.
+        PUT prefers selected_put_json -> pe_atm_json -> pe_atm1_json.
+        """
+
+        raw_map = dict(option_frame or {})
+
+        call_surface = self._option_surface(
+            raw_map,
+            side="CALL",
+            role="SELECTED_CALL",
+            provider_id=_feed_provider_id(raw_map),
         )
-        for option in candidates:
-            side = _normalize_side(_pick(option, "side", "option_side"))
-            present = _safe_bool(option.get("present"), False) or _safe_float(option.get("ltp"), 0.0) > 0.0
-            if side == SIDE_CALL and present:
-                call.update({k: v for k, v in dict(option).items() if v not in (None, "")})
-                call["side"] = SIDE_CALL
-                call["option_side"] = SIDE_CALL
-            elif side == SIDE_PUT and present:
-                put.update({k: v for k, v in dict(option).items() if v not in (None, "")})
-                put["side"] = SIDE_PUT
-                put["option_side"] = SIDE_PUT
+        put_surface = self._option_surface(
+            raw_map,
+            side="PUT",
+            role="SELECTED_PUT",
+            provider_id=_feed_provider_id(raw_map),
+        )
 
-        return call, put
+        return call_surface, put_surface
 
     def _context_option(self, dhan_context: Mapping[str, Any], side: str) -> dict[str, Any]:
         keys = (
@@ -1159,13 +1770,26 @@ class FeatureEngine:
 
     def _ladder(self, dhan_context: Mapping[str, Any]) -> list[dict[str, Any]]:
         raw_rows = None
-        for key in ("strike_ladder", "ladder", "chain", "option_chain", "records", "data"):
+        for key in (
+            "option_chain_ladder_json",
+            "strike_ladder_json",
+            "option_chain_ladder",
+            "strike_ladder",
+            "strike_ladder_rows",
+            "chain_rows",
+            "option_chain",
+            "chain",
+            "rows",
+            "ladder",
+            "records",
+            "data",
+        ):
             parsed = _json_load(dhan_context.get(key), None)
             if isinstance(parsed, list):
                 raw_rows = parsed
                 break
             if isinstance(parsed, Mapping):
-                for sub_key in ("data", "records", "items", "ladder", "chain"):
+                for sub_key in ("data", "records", "items", "rows", "ladder", "chain", "chain_rows"):
                     sub_parsed = _json_load(parsed.get(sub_key), None)
                     if isinstance(sub_parsed, list):
                         raw_rows = sub_parsed
@@ -1176,11 +1800,17 @@ class FeatureEngine:
         rows: list[dict[str, Any]] = []
         for item in raw_rows or []:
             row = _mapping(item)
-            strike = _safe_float_or_none(_pick(row, "strike", "strike_price"))
+            metadata = _mapping(row.get("metadata"))
+            if metadata:
+                merged = dict(metadata)
+                merged.update(row)
+                row = merged
+
+            strike = _safe_float_or_none(_pick(row, "strike", "strike_price", "strikePrice"))
             if strike is None:
                 continue
 
-            side = _normalize_side(_pick(row, "side", "option_side", "right"))
+            side = _normalize_side(_pick(row, "side", "option_side", "right", "option_type"))
             if side in (SIDE_CALL, SIDE_PUT):
                 rows.append(self._ladder_row(row, strike, side))
                 continue
@@ -1204,17 +1834,25 @@ class FeatureEngine:
         return {
             "strike": strike,
             "side": side,
-            "ltp": _safe_float(_pick(row, "ltp", "last_price"), 0.0),
+            "ltp": _safe_float(_pick(row, "ltp", "last_price", "price"), 0.0),
             "bid": bid,
             "ask": ask,
+            "best_bid": bid,
+            "best_ask": ask,
+            "bid_qty_5": _safe_float(_pick(row, "bid_qty_5", "top5_bid_qty", "bid_qty", "best_bid_qty"), 0.0),
+            "ask_qty_5": _safe_float(_pick(row, "ask_qty_5", "top5_ask_qty", "ask_qty", "best_ask_qty"), 0.0),
             "spread": max(0.0, ask - bid) if ask > 0 and bid > 0 else 0.0,
             "spread_ratio": _safe_float(_pick(row, "spread_ratio"), 0.0),
             "oi": _safe_float(_pick(row, "oi", "open_interest"), 0.0),
             "oi_change": _safe_float(_pick(row, "oi_change", "change_oi"), 0.0),
             "volume": _safe_float(_pick(row, "volume"), 0.0),
             "iv": _safe_float_or_none(_pick(row, "iv", "implied_volatility")),
+            "delta": _safe_float_or_none(_pick(row, "delta", "option_delta")),
+            "score": _safe_float_or_none(_pick(row, "score", "strike_score", "rank_score")),
+            "provider_id": _safe_str(_pick(row, "provider_id")),
+            "ts_event_ns": _safe_int(_pick(row, "ts_event_ns", "event_ts_ns", "timestamp_ns"), 0) or None,
             "instrument_key": _safe_str(_pick(row, "instrument_key")),
-            "instrument_token": _safe_str(_pick(row, "instrument_token")),
+            "instrument_token": _safe_str(_pick(row, "instrument_token", "token")),
             "trading_symbol": _safe_str(_pick(row, "trading_symbol", "symbol")),
         }
 
@@ -1227,36 +1865,98 @@ class FeatureEngine:
         call: Mapping[str, Any],
         put: Mapping[str, Any],
     ) -> dict[str, Any]:
-        built = _call_first(
-            self.shared_modules.get("strike_selection"),
-            (
-                "build_strike_selection_surface",
-                "build_family_strike_selection_surface",
-                "build_strike_context_surface",
-            ),
-            dhan_context,
-            futures=futures,
-            selected_option=selected,
-            call_option=call,
-            put_option=put,
-        )
-        if isinstance(built, Mapping):
-            out = dict(built)
-            out.setdefault("oi_wall_context", out)
-            return out
+        module = self.shared_modules.get("strike_selection")
 
-        ladder = self._ladder(dhan_context)
-        reference = (
-            _safe_float(futures.get("ltp"), 0.0)
-            or _safe_float(_pick(dhan_context, "atm_strike", "underlying_atm"), 0.0)
-            or _safe_float(selected.get("strike"), 0.0)
+        ladder_surface = _call_exact_builder(
+            module,
+            "build_strike_ladder_surface",
+            audit_key="strike_ladder_builder_used",
+            dhan_context=dhan_context,
+            futures_features=futures,
+            selected_features=selected,
         )
-        call_wall = self._nearest_wall(ladder, SIDE_CALL, reference)
-        put_wall = self._nearest_wall(ladder, SIDE_PUT, reference)
+        oi_wall_summary = _call_exact_builder(
+            module,
+            "build_oi_wall_summary",
+            audit_key="strike_ladder_builder_used",
+            fallback_allowed=False,
+            dhan_context=dhan_context,
+            futures_features=futures,
+            selected_features=selected,
+        )
 
-        call_strength = _safe_float(call_wall.get("wall_strength"), 0.0)
-        put_strength = _safe_float(put_wall.get("wall_strength"), 0.0)
-        oi_bias = _safe_str(_pick(dhan_context, "oi_bias"))
+        classic_call = _call_exact_builder(
+            module,
+            "build_classic_strike_surface",
+            audit_key="classic_strike_builder_used",
+            dhan_context=dhan_context,
+            side=SIDE_CALL,
+            futures_features=futures,
+            selected_features=call,
+        )
+        classic_put = _call_exact_builder(
+            module,
+            "build_classic_strike_surface",
+            audit_key="classic_strike_builder_used",
+            fallback_allowed=False,
+            dhan_context=dhan_context,
+            side=SIDE_PUT,
+            futures_features=futures,
+            selected_features=put,
+        )
+
+        miso_call = _call_exact_builder(
+            module,
+            "build_miso_strike_surface",
+            audit_key="miso_strike_builder_used",
+            dhan_context=dhan_context,
+            side=SIDE_CALL,
+            futures_features=futures,
+            selected_features=call,
+        )
+        miso_put = _call_exact_builder(
+            module,
+            "build_miso_strike_surface",
+            audit_key="miso_strike_builder_used",
+            fallback_allowed=False,
+            dhan_context=dhan_context,
+            side=SIDE_PUT,
+            futures_features=futures,
+            selected_features=put,
+        )
+
+        if isinstance(ladder_surface, Mapping):
+            ladder_rows = []
+            for container_key in ("calls", "puts", "rows", "ladder"):
+                value = ladder_surface.get(container_key)
+                if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+                    ladder_rows.extend(dict(row) for row in value if isinstance(row, Mapping))
+            ladder = ladder_rows or self._ladder(dhan_context)
+        else:
+            ladder = self._ladder(dhan_context)
+
+        wall_summary = dict(oi_wall_summary) if isinstance(oi_wall_summary, Mapping) else {}
+        call_wall = dict(wall_summary.get("call_wall") or {}) if wall_summary else {}
+        put_wall = dict(wall_summary.get("put_wall") or {}) if wall_summary else {}
+
+        if not call_wall or not put_wall:
+            reference = (
+                _safe_float(futures.get("ltp"), 0.0)
+                or _safe_float(_pick(dhan_context, "atm_strike", "underlying_atm"), 0.0)
+                or _safe_float(selected.get("strike"), 0.0)
+            )
+            call_wall = call_wall or self._nearest_wall(ladder, SIDE_CALL, reference)
+            put_wall = put_wall or self._nearest_wall(ladder, SIDE_PUT, reference)
+
+        call_strength = _safe_float(
+            _pick(call_wall, "wall_strength_score", "wall_strength"),
+            0.0,
+        )
+        put_strength = _safe_float(
+            _pick(put_wall, "wall_strength_score", "wall_strength"),
+            0.0,
+        )
+        oi_bias = _safe_str(_pick(wall_summary, "oi_bias", dhan_context.get("oi_bias")))
         if not oi_bias:
             if call_strength > put_strength + 0.05:
                 oi_bias = "CALL_WALL_DOMINANT"
@@ -1267,22 +1967,30 @@ class FeatureEngine:
 
         return {
             "chain_context_ready": bool(ladder or dhan_context),
-            "atm_strike": _safe_float_or_none(_pick(dhan_context, "atm_strike", "underlying_atm")),
+            "atm_strike": _safe_float_or_none(
+                _pick(wall_summary, "atm_reference_strike", dhan_context.get("atm_strike"), dhan_context.get("underlying_atm"))
+            ),
             "selected_strike": selected.get("strike"),
             "shadow_call_strike": call.get("strike"),
             "shadow_put_strike": put.get("strike"),
             "ladder": ladder,
             "ladder_size": len(ladder),
+            "ladder_surface": dict(ladder_surface) if isinstance(ladder_surface, Mapping) else {},
+            "classic_call": dict(classic_call) if isinstance(classic_call, Mapping) else {},
+            "classic_put": dict(classic_put) if isinstance(classic_put, Mapping) else {},
+            "miso_call": dict(miso_call) if isinstance(miso_call, Mapping) else {},
+            "miso_put": dict(miso_put) if isinstance(miso_put, Mapping) else {},
             "nearest_call_oi_resistance": call_wall,
             "nearest_put_oi_support": put_wall,
-            "nearest_call_oi_resistance_strike": call_wall.get("strike"),
-            "nearest_put_oi_support_strike": put_wall.get("strike"),
+            "nearest_call_oi_resistance_strike": _pick(call_wall, "strike"),
+            "nearest_put_oi_support_strike": _pick(put_wall, "strike"),
             "call_wall_strength": call_strength,
             "put_wall_strength": put_strength,
             "oi_bias": oi_bias,
             "oi_wall_context": {
                 "call": call_wall,
                 "put": put_wall,
+                "summary": wall_summary,
                 "oi_bias": oi_bias,
                 "law": "context_not_trigger",
             },
@@ -1494,15 +2202,16 @@ class FeatureEngine:
         futures: Mapping[str, Any],
         cross_option: Mapping[str, Any],
     ) -> dict[str, Any]:
-        built = _call_first(
+        built = _call_exact_builder(
             self.shared_modules.get("regime"),
-            ("build_regime_surface", "build_regime_bundle"),
+            "build_regime_surface",
+            audit_key="regime_builder_used",
             futures_surface=futures,
-            cross_option=cross_option,
         )
         if isinstance(built, Mapping):
             out = dict(built)
             out["regime"] = _regime(out.get("regime"))
+            out.setdefault("cross_option_ready", bool(cross_option.get("cross_option_ready")))
             return out
 
         score = max(
@@ -1578,15 +2287,18 @@ class FeatureEngine:
         put: Mapping[str, Any],
         regime: Mapping[str, Any],
     ) -> dict[str, Any]:
-        built_futures = _call_first(
-            self.shared_modules.get("tradability"),
-            ("build_futures_liquidity_surface",),
-            futures,
-            regime_surface=regime,
+        module = self.shared_modules.get("tradability")
+        regime_id = _regime(regime.get("regime"))
+
+        futures_liq_built = _call_exact_builder(
+            module,
+            "build_futures_liquidity_surface",
+            audit_key="tradability_builder_used",
+            futures_surface=futures,
         )
         futures_liq = (
-            dict(built_futures)
-            if isinstance(built_futures, Mapping)
+            dict(futures_liq_built)
+            if isinstance(futures_liq_built, Mapping)
             else {
                 "liquidity_pass": bool(futures.get("depth_ok")),
                 "spread_ratio": futures.get("spread_ratio"),
@@ -1594,12 +2306,51 @@ class FeatureEngine:
             }
         )
 
+        classic_call_built = _call_exact_builder(
+            module,
+            "build_classic_option_tradability_surface",
+            audit_key="tradability_builder_used",
+            branch_id=BRANCH_CALL,
+            option_surface=call,
+            regime=regime_id,
+            runtime_mode=RUNTIME_NORMAL,
+            selection_label="classic_call",
+        )
+        classic_put_built = _call_exact_builder(
+            module,
+            "build_classic_option_tradability_surface",
+            audit_key="tradability_builder_used",
+            fallback_allowed=False,
+            branch_id=BRANCH_PUT,
+            option_surface=put,
+            regime=regime_id,
+            runtime_mode=RUNTIME_NORMAL,
+            selection_label="classic_put",
+        )
+        miso_call_built = _call_exact_builder(
+            module,
+            "build_miso_option_tradability_surface",
+            audit_key="tradability_builder_used",
+            option_surface=call,
+            futures_surface=futures,
+            runtime_mode=RUNTIME_BASE_5DEPTH,
+        )
+        miso_put_built = _call_exact_builder(
+            module,
+            "build_miso_option_tradability_surface",
+            audit_key="tradability_builder_used",
+            fallback_allowed=False,
+            option_surface=put,
+            futures_surface=futures,
+            runtime_mode=RUNTIME_BASE_5DEPTH,
+        )
+
         return {
             "futures": futures_liq,
-            "classic_call": self._option_tradability(call, side=SIDE_CALL),
-            "classic_put": self._option_tradability(put, side=SIDE_PUT),
-            "miso_call": self._option_tradability(call, side=SIDE_CALL),
-            "miso_put": self._option_tradability(put, side=SIDE_PUT),
+            "classic_call": dict(classic_call_built) if isinstance(classic_call_built, Mapping) else self._option_tradability(call, side=SIDE_CALL),
+            "classic_put": dict(classic_put_built) if isinstance(classic_put_built, Mapping) else self._option_tradability(put, side=SIDE_PUT),
+            "miso_call": dict(miso_call_built) if isinstance(miso_call_built, Mapping) else self._option_tradability(call, side=SIDE_CALL),
+            "miso_put": dict(miso_put_built) if isinstance(miso_put_built, Mapping) else self._option_tradability(put, side=SIDE_PUT),
         }
 
     def _option_tradability(self, option: Mapping[str, Any], *, side: str) -> dict[str, Any]:
@@ -1679,121 +2430,253 @@ class FeatureEngine:
             "samples_seen": samples_seen,
         }
 
-    def _family_surfaces(
+    def _branch_runtime_mode_surface(
         self,
-        *,
-        generated_at_ns: int,
-        provider_runtime: Mapping[str, Any],
+        family_id: str,
         shared_core: Mapping[str, Any],
     ) -> dict[str, Any]:
-        families: dict[str, dict[str, Any]] = {}
-        surfaces_by_branch: dict[str, dict[str, Any]] = {}
+        mode_key = "miso" if family_id == FAMILY_MISO else "classic"
+        surface = dict(_nested(shared_core, "runtime_modes", mode_key, default={}))
+        mode = _safe_str(_pick(surface, "runtime_mode", "mode"), RUNTIME_DISABLED)
+        surface.setdefault("mode", mode)
+        surface.setdefault("runtime_mode", mode)
+        surface.setdefault("provider_ready", mode != RUNTIME_DISABLED)
+        return surface
 
-        for family_id in FAMILY_IDS:
-            module = self.family_modules.get(family_id)
-            branches: dict[str, dict[str, Any]] = {}
+    def _branch_futures_surface(
+        self,
+        family_id: str,
+        shared_core: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        # MISO is Dhan-context enhanced. Provider doctrine alignment remains 25N,
+        # so this batch uses Dhan futures when present and active futures as
+        # explicit fallback only to keep the service-path surface rich.
+        if family_id == FAMILY_MISO:
+            dhan = dict(_nested(shared_core, "futures", "dhan", default={}))
+            if dhan.get("present") or dhan.get("valid") or dhan.get("ltp"):
+                return dhan
+        return dict(_nested(shared_core, "futures", "active", default={}))
 
-            for branch_id in BRANCH_IDS:
-                surface = self._family_branch_surface(family_id, branch_id, module, shared_core)
-                branches[branch_id] = surface
-                surfaces_by_branch[f"{family_id.lower()}_{branch_id.lower()}"] = surface
+    def _branch_option_surface(
+        self,
+        branch_id: str,
+        shared_core: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        branch_key = "call" if branch_id == BRANCH_CALL else "put"
+        return dict(_nested(shared_core, "options", branch_key, default={}))
 
-            families[family_id] = self._family_surface(family_id, module, branches, shared_core)
+    def _branch_fallback_option_surface(
+        self,
+        family_id: str,
+        branch_id: str,
+        shared_core: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        # MISO branch builder does not accept fallback_option_surface.
+        if family_id == FAMILY_MISO:
+            return {}
+        opposite_key = "put" if branch_id == BRANCH_CALL else "call"
+        fallback = dict(_nested(shared_core, "options", opposite_key, default={}))
+        if fallback.get("present") or fallback.get("instrument_key"):
+            return fallback
+        return {}
 
-        return {
-            "schema_version": getattr(N, "DEFAULT_SCHEMA_VERSION", 1),
-            "surface_version": "family_surfaces.v1",
-            "service": SERVICE_FEATURES,
-            "generated_at_ns": generated_at_ns,
-            "provider_runtime": dict(provider_runtime),
-            "shared_core": shared_core,
-            "families": families,
-            "surfaces_by_branch": surfaces_by_branch,
-            "contract_note": "rich feature support only; family_features remains contracts.py exact-key payload",
-        }
+    def _branch_strike_surface(
+        self,
+        family_id: str,
+        branch_id: str,
+        shared_core: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        strike = dict(_nested(shared_core, "strike_selection", default={}))
+        branch_key = "call" if branch_id == BRANCH_CALL else "put"
 
-    def _family_branch_surface(
+        if family_id == FAMILY_MISO:
+            specific_key = f"miso_{branch_key}"
+        else:
+            specific_key = f"classic_{branch_key}"
+
+        specific = dict(strike.get(specific_key) or {})
+        out = dict(specific)
+        out.setdefault("source_surface_key", specific_key)
+        out.setdefault("family_id", family_id)
+        out.setdefault("branch_id", branch_id)
+        out.setdefault("side", _branch_side(branch_id))
+        out.setdefault("ladder", strike.get("ladder", []))
+        out.setdefault("ladder_size", strike.get("ladder_size", 0))
+        out.setdefault("ladder_surface", strike.get("ladder_surface", {}))
+        out.setdefault("oi_wall_context", strike.get("oi_wall_context", {}))
+        out.setdefault(
+            "nearest_call_oi_resistance",
+            strike.get("nearest_call_oi_resistance", {}),
+        )
+        out.setdefault(
+            "nearest_put_oi_support",
+            strike.get("nearest_put_oi_support", {}),
+        )
+        out.setdefault(
+            "nearest_call_oi_resistance_strike",
+            strike.get("nearest_call_oi_resistance_strike"),
+        )
+        out.setdefault(
+            "nearest_put_oi_support_strike",
+            strike.get("nearest_put_oi_support_strike"),
+        )
+        out.setdefault("call_wall_strength", strike.get("call_wall_strength"))
+        out.setdefault("put_wall_strength", strike.get("put_wall_strength"))
+        out.setdefault("oi_bias", strike.get("oi_bias"))
+        out.setdefault("chain_context_ready", strike.get("chain_context_ready"))
+        return out
+
+    def _branch_tradability_surface(
+        self,
+        family_id: str,
+        branch_id: str,
+        shared_core: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        branch_key = "call" if branch_id == BRANCH_CALL else "put"
+        prefix = "miso" if family_id == FAMILY_MISO else "classic"
+        key = f"{prefix}_{branch_key}"
+        surface = dict(_nested(shared_core, "tradability", key, default={}))
+        surface.setdefault("source_surface_key", key)
+        surface.setdefault("family_id", family_id)
+        surface.setdefault("branch_id", branch_id)
+        surface.setdefault("side", _branch_side(branch_id))
+        return surface
+
+    def _family_thresholds(
+        self,
+        family_id: str,
+        shared_core: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        thresholds = dict(_nested(shared_core, "thresholds", family_id, default={}))
+        thresholds.setdefault("family_id", family_id)
+        return thresholds
+
+    def _family_provider_ready(
+        self,
+        family_id: str,
+        branch_id: str,
+        provider_runtime: Mapping[str, Any],
+        shared_core: Mapping[str, Any],
+    ) -> bool:
+        runtime_surface = self._branch_runtime_mode_surface(family_id, shared_core)
+        option_surface = self._branch_option_surface(branch_id, shared_core)
+        futures_surface = self._branch_futures_surface(family_id, shared_core)
+
+        runtime_ready = bool(runtime_surface.get("provider_ready"))
+        option_ready = bool(option_surface.get("present") or option_surface.get("instrument_key"))
+        futures_ready = bool(futures_surface.get("present") or futures_surface.get("valid") or futures_surface.get("ltp"))
+
+        if family_id == FAMILY_MISO:
+            context_ready = bool(_nested(shared_core, "context_quality", "miso_context_ready", default=False))
+            # 25N will finalize strict provider doctrine. 25L only blocks missing
+            # surfaces from pretending to be ready.
+            return bool(runtime_ready and option_ready and futures_ready and context_ready)
+
+        return bool(runtime_ready and option_ready and futures_ready)
+
+    def _misr_zone_registry_surface(
+        self,
+        module: Any | None,
+        futures_surface: Mapping[str, Any],
+        shared_core: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        if module is None or not callable(getattr(module, "build_misr_zone_registry_surface", None)):
+            return {}
+
+        zones = _nested(shared_core, "misr", "zone_registry", default=[])
+        if not zones:
+            zones = _nested(shared_core, "zone_registry", default=[])
+        if not zones:
+            zones = _batch26f_misr_zone_registry_from_sources(
+                shared_core=shared_core,
+                futures_surface=futures_surface,
+            )
+
+        built = _call_exact_builder(
+            module,
+            "build_misr_zone_registry_surface",
+            audit_key="family_zone_registry_builder_used",
+            fallback_allowed=False,
+            zone_registry=zones,
+            futures_surface=futures_surface,
+            thresholds={},
+        )
+        return dict(built) if isinstance(built, Mapping) else {}
+
+    def _call_family_branch_builder(
         self,
         family_id: str,
         branch_id: str,
         module: Any | None,
         shared_core: Mapping[str, Any],
+        provider_runtime: Mapping[str, Any],
     ) -> dict[str, Any]:
-        side = _branch_side(branch_id)
-        option = dict(_nested(shared_core, "options", "call" if branch_id == BRANCH_CALL else "put", default={}))
-        futures = dict(_nested(shared_core, "futures", "active", default={}))
-        regime = dict(_nested(shared_core, "regime", default={}))
-        trad_key = ("miso" if family_id == FAMILY_MISO else "classic") + "_" + (
-            "call" if branch_id == BRANCH_CALL else "put"
-        )
-        tradability = dict(_nested(shared_core, "tradability", trad_key, default={}))
-        strike = dict(_nested(shared_core, "strike_selection", default={}))
-        runtime_mode = _nested(
+        family_lc = family_id.lower()
+        futures_surface = self._branch_futures_surface(family_id, shared_core)
+        option_surface = self._branch_option_surface(branch_id, shared_core)
+        if family_id == FAMILY_MISO:
+            option_surface = _batch26g_miso_microstructure_option_surface(
+                shared_core=shared_core,
+                branch_id=branch_id,
+                option_surface=option_surface,
+            )
+        strike_surface = self._branch_strike_surface(family_id, branch_id, shared_core)
+        tradability_surface = self._branch_tradability_surface(family_id, branch_id, shared_core)
+        regime_surface = dict(_nested(shared_core, "regime", default={}))
+        runtime_mode_surface = self._branch_runtime_mode_surface(family_id, shared_core)
+        thresholds = self._family_thresholds(family_id, shared_core)
+        provider_ready = self._family_provider_ready(
+            family_id,
+            branch_id,
+            provider_runtime,
             shared_core,
-            "runtime_modes",
-            "miso" if family_id == FAMILY_MISO else "classic",
-            "mode",
-            default=RUNTIME_DISABLED,
         )
 
-        family_lc = family_id.lower()
-        built = _call_first(
+        kwargs: dict[str, Any] = {
+            "branch_id": branch_id,
+            "futures_surface": futures_surface,
+            "option_surface": option_surface,
+            "strike_surface": strike_surface,
+            "tradability_surface": tradability_surface,
+            "regime_surface": regime_surface,
+            "runtime_mode_surface": runtime_mode_surface,
+            "thresholds": thresholds,
+            "provider_ready": provider_ready,
+        }
+
+        if family_id != FAMILY_MISO:
+            kwargs["fallback_option_surface"] = self._branch_fallback_option_surface(
+                family_id,
+                branch_id,
+                shared_core,
+            )
+
+        if family_id == FAMILY_MISC:
+            kwargs.update(_batch26e_misc_state_context(shared_core, branch_id))
+
+        if family_id == FAMILY_MISR:
+            kwargs.update(_batch26f_misr_event_context(shared_core, branch_id))
+            kwargs["zone_registry_surface"] = self._misr_zone_registry_surface(
+                module,
+                futures_surface,
+                shared_core,
+            )
+
+        built = _call_exact_builder(
             module,
-            (
-                f"build_{family_lc}_branch_surface",
-                f"build_{family_lc}_side_surface",
-                "build_branch_surface",
-                "build_side_surface",
-            ),
-            branch_id=branch_id,
-            side=side,
-            runtime_mode=runtime_mode,
-            futures_surface=futures,
-            option_surface=option,
-            selected_surface=option,
-            selected_features=option,
-            tradability_surface=tradability,
-            regime_surface=regime,
-            strike_context=strike,
-            cross_option_context=_nested(shared_core, "options", "cross_option", default={}),
-            shared_core=shared_core,
+            f"build_{family_lc}_branch_surface",
+            audit_key="family_branch_builder_used",
+            fallback_allowed=False,
+            **kwargs,
         )
 
         surface = dict(built) if isinstance(built, Mapping) else {}
-        surface.update(
-            {
-                "surface_kind": surface.get("surface_kind") or f"{family_lc}_branch",
-                "family_id": family_id,
-                "branch_id": branch_id,
-                "side": side,
-                "runtime_mode": surface.get("runtime_mode") or runtime_mode,
-                "present": bool(surface.get("present") or option.get("present") or option.get("instrument_key")),
-                "eligible": bool(
-                    surface.get("eligible")
-                    or surface.get("ready")
-                    or tradability.get("entry_pass")
-                    or tradability.get("tradability_ok")
-                ),
-                "futures_features": surface.get("futures_features") or futures,
-                "selected_features": surface.get("selected_features") or option,
-                "option_features": surface.get("option_features") or option,
-                "tradability": surface.get("tradability") or tradability,
-                "regime_surface": surface.get("regime_surface") or regime,
-                "oi_wall_context": surface.get("oi_wall_context")
-                or _nested(shared_core, "oi_wall_context", "call" if side == SIDE_CALL else "put", default={}),
-                "cross_option_context": surface.get("cross_option_context")
-                or _nested(shared_core, "options", "cross_option", default={}),
-                "context_pass": bool(surface.get("context_pass", True)),
-                "option_tradability_pass": bool(
-                    surface.get("option_tradability_pass")
-                    or tradability.get("entry_pass")
-                    or tradability.get("tradability_ok")
-                ),
-            }
-        )
+        if not surface:
+            _builder_abi_mark("family_branch_builder_missing_surface")
+
         return surface
 
-    def _family_surface(
+    def _call_family_root_builder(
         self,
         family_id: str,
         module: Any | None,
@@ -1803,28 +2686,62 @@ class FeatureEngine:
         family_lc = family_id.lower()
         call_surface = dict(branches.get(BRANCH_CALL, {}))
         put_surface = dict(branches.get(BRANCH_PUT, {}))
+        futures_surface = self._branch_futures_surface(family_id, shared_core)
 
-        built = _call_first(
-            module,
-            (f"build_{family_lc}_family_surface", "build_family_surface"),
-            call_surface=call_surface,
-            put_surface=put_surface,
-            call_support=call_surface,
-            put_support=put_surface,
-            runtime_mode_surface=_nested(
+        kwargs: dict[str, Any] = {
+            "call_surface": call_surface,
+            "put_surface": put_surface,
+            "runtime_mode_surface": self._branch_runtime_mode_surface(family_id, shared_core),
+            "regime_surface": dict(_nested(shared_core, "regime", default={})),
+        }
+
+
+        if family_id == FAMILY_MISR:
+            kwargs["zone_registry_surface"] = self._misr_zone_registry_surface(
+                module,
+                futures_surface,
                 shared_core,
-                "runtime_modes",
-                "miso" if family_id == FAMILY_MISO else "classic",
-                default={},
-            ),
-            regime_surface=_nested(shared_core, "regime", default={}),
-            shared_core=shared_core,
+            )
+
+        built = _call_exact_builder(
+            module,
+            f"build_{family_lc}_family_surface",
+            audit_key="family_root_builder_used",
+            fallback_allowed=False,
+            **kwargs,
         )
 
         surface = dict(built) if isinstance(built, Mapping) else {}
+        if not surface:
+            _builder_abi_mark("family_root_builder_missing_surface")
+
+        return surface
+
+
+    def _family_surface(
+        self,
+        family_id: str,
+        module: Any | None,
+        branches: Mapping[str, Mapping[str, Any]],
+        shared_core: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        call_surface = dict(branches.get(BRANCH_CALL, {}))
+        put_surface = dict(branches.get(BRANCH_PUT, {}))
+
+        surface = self._call_family_root_builder(family_id, module, branches, shared_core)
+
         surface.setdefault("family_id", family_id)
+        surface.setdefault("surface_kind", f"{family_id.lower()}_family")
         surface.setdefault("eligible", bool(call_surface.get("eligible") or put_surface.get("eligible")))
         surface.setdefault("branches", {BRANCH_CALL: call_surface, BRANCH_PUT: put_surface})
+        surface.setdefault("call", call_surface)
+        surface.setdefault("put", put_surface)
+        surface.setdefault(
+            "runtime_mode_surface",
+            self._branch_runtime_mode_surface(family_id, shared_core),
+        )
+        surface.setdefault("regime_surface", dict(_nested(shared_core, "regime", default={})))
+        surface.setdefault("rich_surface", True)
 
         if family_id == FAMILY_MISO:
             surface.setdefault(
@@ -1927,18 +2844,14 @@ class FeatureEngine:
         """
         Build the strict provider_runtime block for family_features.
 
-        This is intentionally a narrow contract-seam adapter.
-
-        It preserves the canonical provider-aware runtime fields used by the
-        live system, while defensively filling any legacy / transitional typo
-        keys already declared by feature_family.contracts.
-
-        Important:
-        - Do not add feed-stream behavior here.
-        - Do not perform provider failover here.
-        - Do not embed strategy logic here.
-        - Only patch keys that already exist in the contract block.
+        Batch 25H repairs the producer/consumer seam:
+        - canonical provider keys are preserved from feeds.py ProviderRuntimeState
+        - compatibility active_* keys mirror the canonical values
+        - provider status aliases mirror canonical status values
+        - missing provider identity remains None; missing status becomes UNAVAILABLE
+        - this method does not select providers or perform failover
         """
+
         block = _empty_builder("build_empty_provider_runtime_block")
 
         classic_mode = _classic_runtime_mode(
@@ -1960,131 +2873,139 @@ class FeatureEngine:
             )
         )
 
-        active_futures_provider_id = _provider_id(
+        futures_provider = _optional_provider_id(
             _pick(
                 provider_runtime,
+                "futures_marketdata_provider_id",
                 "active_futures_provider_id",
                 "active_future_provider_id",
                 "futures_provider_id",
-            ),
-            PROVIDER_DHAN,
+            )
         )
-        active_selected_option_provider_id = _provider_id(
+        selected_option_provider = _optional_provider_id(
             _pick(
                 provider_runtime,
+                "selected_option_marketdata_provider_id",
                 "active_selected_option_provider_id",
                 "selected_option_provider_id",
                 "option_provider_id",
-            ),
-            active_futures_provider_id,
+            )
         )
-        active_option_context_provider_id = _provider_id(
+        option_context_provider = _optional_provider_id(
             _pick(
                 provider_runtime,
-                "active_option_context_provider_id",
                 "option_context_provider_id",
+                "active_option_context_provider_id",
                 "context_provider_id",
-            ),
-            PROVIDER_DHAN,
+            )
         )
-        active_execution_provider_id = _provider_id(
+        execution_primary_provider = _optional_provider_id(
             _pick(
                 provider_runtime,
-                "active_execution_provider_id",
                 "execution_primary_provider_id",
+                "active_execution_provider_id",
                 "execution_provider_id",
-            ),
-            PROVIDER_ZERODHA,
+            )
         )
-        fallback_execution_provider_id = _provider_id(
+        execution_fallback_provider = _optional_provider_id(
             _pick(
                 provider_runtime,
-                "fallback_execution_provider_id",
                 "execution_fallback_provider_id",
-            ),
-            PROVIDER_DHAN,
+                "fallback_execution_provider_id",
+            )
         )
 
-        futures_provider_status = _provider_status(
-            _pick(
-                provider_runtime,
-                "futures_provider_status",
-                "active_futures_provider_status",
-                # Transitional typo compatibility.
-                "futures_provider_statu",
-                "active_futures_provider_statu",
-            )
+        futures_status = _provider_status(
+            _pick(provider_runtime, "futures_marketdata_status", "futures_provider_status")
         )
-        selected_option_provider_status = _provider_status(
+        selected_option_status = _provider_status(
             _pick(
                 provider_runtime,
+                "selected_option_marketdata_status",
                 "selected_option_provider_status",
-                "active_selected_option_provider_status",
-                "selected_option_provider_statu",
-                "active_selected_option_provider_statu",
             )
         )
-        option_context_provider_status = _provider_status(
-            _pick(
-                provider_runtime,
-                "option_context_provider_status",
-                "active_option_context_provider_status",
-                "option_context_provider_statu",
-                "active_option_context_provider_statu",
-            )
+        option_context_status = _provider_status(
+            _pick(provider_runtime, "option_context_status", "option_context_provider_status")
         )
-        execution_provider_status = _provider_status(
-            _pick(
-                provider_runtime,
-                "execution_provider_status",
-                "active_execution_provider_status",
-                "execution_provider_statu",
-                "active_execution_provider_statu",
-            )
+        execution_primary_status = _provider_status(
+            _pick(provider_runtime, "execution_primary_status", "execution_provider_status")
+        )
+        execution_fallback_status = _provider_status(
+            _pick(provider_runtime, "execution_fallback_status", "fallback_execution_provider_status")
         )
 
         values: dict[str, Any] = {
-            "active_futures_provider_id": active_futures_provider_id,
-            "active_selected_option_provider_id": active_selected_option_provider_id,
-            "active_option_context_provider_id": active_option_context_provider_id,
-            "active_execution_provider_id": active_execution_provider_id,
-            "execution_primary_provider_id": active_execution_provider_id,
-            "fallback_execution_provider_id": fallback_execution_provider_id,
-            "execution_fallback_provider_id": fallback_execution_provider_id,
-            "provider_runtime_mode": _safe_str(
-                _pick(provider_runtime, "provider_runtime_mode", "runtime_mode"),
-                "NORMAL",
-            ),
+            # Canonical Batch 25G keys.
+            "futures_marketdata_provider_id": futures_provider,
+            "selected_option_marketdata_provider_id": selected_option_provider,
+            "option_context_provider_id": option_context_provider,
+            "execution_primary_provider_id": execution_primary_provider,
+            "execution_fallback_provider_id": execution_fallback_provider,
+            "futures_marketdata_status": futures_status,
+            "selected_option_marketdata_status": selected_option_status,
+            "option_context_status": option_context_status,
+            "execution_primary_status": execution_primary_status,
+            "execution_fallback_status": execution_fallback_status,
             "family_runtime_mode": _family_runtime_mode(
                 provider_runtime.get("family_runtime_mode")
             ),
+            "failover_mode": _provider_failover_mode(provider_runtime.get("failover_mode")),
+            "override_mode": _provider_override_mode(provider_runtime.get("override_mode")),
+            "transition_reason": _provider_transition_reason(
+                provider_runtime.get("transition_reason")
+            ),
+            "provider_transition_seq": _safe_int(
+                provider_runtime.get("provider_transition_seq"),
+                0,
+            ),
+            "failover_active": _safe_bool(provider_runtime.get("failover_active"), False),
+            "pending_failover": _safe_bool(provider_runtime.get("pending_failover"), False),
+
+            # Compatibility keys.
+            "active_futures_provider_id": futures_provider,
+            "active_selected_option_provider_id": selected_option_provider,
+            "active_option_context_provider_id": option_context_provider,
+            "active_execution_provider_id": execution_primary_provider,
+            "fallback_execution_provider_id": execution_fallback_provider,
+            "provider_runtime_mode": (
+                _safe_str(_pick(provider_runtime, "provider_runtime_mode", "runtime_mode"))
+                or None
+            ),
+            "futures_provider_status": futures_status,
+            "selected_option_provider_status": selected_option_status,
+            "option_context_provider_status": option_context_status,
+            "execution_provider_status": execution_primary_status,
+
+            # Existing mode/readiness fields are retained only if the contract block has them.
             "classic_runtime_mode": classic_mode,
             "miso_runtime_mode": miso_mode,
-            "futures_provider_status": futures_provider_status,
-            "selected_option_provider_status": selected_option_provider_status,
-            "option_context_provider_status": option_context_provider_status,
-            "execution_provider_status": execution_provider_status,
             "provider_ready_classic": classic_mode != RUNTIME_DISABLED,
-            "provider_ready_miso": miso_mode != RUNTIME_DISABLED,
+            "provider_ready_miso": _batch26c_miso_provider_ready(
+                provider_runtime,
+                miso_mode=miso_mode,
+                futures_present=True,
+                selected_option_present=True,
+                dhan_context_ready=True,
+                dhan_context_fresh=True,
+            ),
 
-            # Defensive compatibility for any transitional typo keys that may
-            # still exist in feature_family.contracts. _patch_existing only
-            # writes these when the contract block already declares them.
-            "futures_provider_statu": futures_provider_status,
-            "selected_option_provider_statu": selected_option_provider_status,
-            "option_context_provider_statu": option_context_provider_status,
-            "execution_provider_statu": execution_provider_status,
+            # Transitional typo compatibility only if previous contracts still declare it.
+            "futures_provider_statu": futures_status,
+            "selected_option_provider_statu": selected_option_status,
+            "option_context_provider_statu": option_context_status,
+            "execution_provider_statu": execution_primary_status,
         }
 
         _patch_existing(block, values)
 
-        # Final guard: every provider status-like field declared by the contract
-        # must be a string. This prevents live publish rejection such as:
-        # provider_runtime.futures_provider_statu must be str
-        default_status = _provider_status(None)
         for key in tuple(block.keys()):
-            if key.endswith("_provider_status") or key.endswith("_provider_statu"):
-                block[key] = _safe_str(block.get(key), default_status)
+            if key.endswith("_provider_status") or key.endswith("_marketdata_status") or key.endswith("_status"):
+                if "status" in key:
+                    block[key] = _provider_status(block.get(key))
+            if key.endswith("_provider_id") or key.endswith("_provider"):
+                if block.get(key) == "":
+                    block[key] = None
 
         return block
 
@@ -2333,7 +3254,23 @@ class FeatureEngine:
                 "reconciliation_lock_active": False,
                 "active_position_present": False,
                 "provider_ready_classic": bool(provider.get("classic_runtime_mode") != RUNTIME_DISABLED),
-                "provider_ready_miso": bool(provider.get("miso_runtime_mode") != RUNTIME_DISABLED),
+                "provider_ready_miso": _batch26c_miso_provider_ready(
+                    provider,
+                    miso_mode=provider.get("miso_runtime_mode"),
+                    futures_present=bool(_nested(shared_core, "futures", "active", "present", default=False)),
+                    selected_option_present=bool(
+                        _nested(common, "selected_option", "selected_option_present", default=False)
+                        or _nested(common, "selected_option", "ltp", default=None)
+                    ),
+                    dhan_context_ready=bool(
+                        _nested(shared_core, "dhan_context_quality", "miso_context_ready", default=False)
+                        or _nested(shared_core, "dhan_context", default={})
+                    ),
+                    dhan_context_fresh=bool(
+                        _nested(shared_core, "dhan_context_quality", "fresh", default=False)
+                        or _nested(shared_core, "dhan_context", default={})
+                    ),
+                ),
                 "dhan_context_fresh": bool(_nested(shared_core, "dhan_context", default={})),
                 "selected_option_present": bool(
                     _nested(
@@ -2393,13 +3330,24 @@ class FeatureEngine:
                         or _nested(rich_family, "branches", BRANCH_PUT, default={})
                     )
                 )
+
+                call_support = self._canonical_support(
+                    family_id,
+                    _empty_builder("build_empty_miso_side_support"),
+                    call_surface,
+                )
+                put_support = self._canonical_support(
+                    family_id,
+                    _empty_builder("build_empty_miso_side_support"),
+                    put_surface,
+                )
+
                 _patch_existing(
                     family_block,
                     {
                         "eligible": bool(
-                            rich_family.get("eligible")
-                            or call_surface.get("eligible")
-                            or put_surface.get("eligible")
+                            self._family_branch_eligible(family_id, call_support)
+                            or self._family_branch_eligible(family_id, put_support)
                         ),
                         "mode": _miso_runtime_mode(
                             rich_family.get("mode")
@@ -2436,62 +3384,72 @@ class FeatureEngine:
                             "shadow_put_strike",
                             default=None,
                         ),
-                        "call_support": self._bool_support(
-                            _empty_builder("build_empty_miso_side_support"),
-                            call_surface,
-                        ),
-                        "put_support": self._bool_support(
-                            _empty_builder("build_empty_miso_side_support"),
-                            put_surface,
-                        ),
+                        "call_support": call_support,
+                        "put_support": put_support,
                     },
                 )
+
             elif family_id == FAMILY_MISR:
                 branches = dict(family_block.get("branches", {}))
-                branches[BRANCH_CALL] = self._bool_support(
+                active_zone = self._active_zone(_nested(rich_family, "active_zone", default={}))
+                active_zone_valid = self._active_zone_valid(active_zone, rich_family)
+
+                call_support = self._canonical_support(
+                    family_id,
                     _empty_builder("build_empty_misr_branch_support"),
                     _nested(rich_family, "branches", BRANCH_CALL, default={}),
+                    extra={"active_zone_valid": active_zone_valid},
                 )
-                branches[BRANCH_PUT] = self._bool_support(
+                put_support = self._canonical_support(
+                    family_id,
                     _empty_builder("build_empty_misr_branch_support"),
                     _nested(rich_family, "branches", BRANCH_PUT, default={}),
+                    extra={"active_zone_valid": active_zone_valid},
                 )
+
+                branches[BRANCH_CALL] = call_support
+                branches[BRANCH_PUT] = put_support
+
                 _patch_existing(
                     family_block,
                     {
                         "eligible": bool(
-                            rich_family.get("eligible")
-                            or any(branches[BRANCH_CALL].values())
-                            or any(branches[BRANCH_PUT].values())
+                            self._family_branch_eligible(family_id, call_support)
+                            or self._family_branch_eligible(family_id, put_support)
                         ),
-                        "active_zone": self._active_zone(
-                            _nested(rich_family, "active_zone", default={})
-                        ),
+                        "active_zone": active_zone,
                         "branches": branches,
                     },
                 )
+
             else:
                 builder = {
                     FAMILY_MIST: "build_empty_mist_branch_support",
                     FAMILY_MISB: "build_empty_misb_branch_support",
                     FAMILY_MISC: "build_empty_misc_branch_support",
                 }.get(family_id, "build_empty_mist_branch_support")
+
                 branches = dict(family_block.get("branches", {}))
-                branches[BRANCH_CALL] = self._bool_support(
+                call_support = self._canonical_support(
+                    family_id,
                     _empty_builder(builder),
                     _nested(rich_family, "branches", BRANCH_CALL, default={}),
                 )
-                branches[BRANCH_PUT] = self._bool_support(
+                put_support = self._canonical_support(
+                    family_id,
                     _empty_builder(builder),
                     _nested(rich_family, "branches", BRANCH_PUT, default={}),
                 )
+
+                branches[BRANCH_CALL] = call_support
+                branches[BRANCH_PUT] = put_support
+
                 _patch_existing(
                     family_block,
                     {
                         "eligible": bool(
-                            rich_family.get("eligible")
-                            or any(branches[BRANCH_CALL].values())
-                            or any(branches[BRANCH_PUT].values())
+                            self._family_branch_eligible(family_id, call_support)
+                            or self._family_branch_eligible(family_id, put_support)
                         ),
                         "branches": branches,
                     },
@@ -2507,70 +3465,142 @@ class FeatureEngine:
         _patch_existing(zone, dict(rich))
         return zone
 
+    def _canonical_support(
+        self,
+        family_id: str,
+        template: Mapping[str, Any],
+        rich: Mapping[str, Any],
+        *,
+        extra: Mapping[str, Any] | None = None,
+    ) -> dict[str, bool]:
+        out: dict[str, bool] = {
+            key: bool(value) for key, value in template.items() if isinstance(value, bool)
+        }
+        rich_map = dict(_mapping(rich))
+        if extra:
+            rich_map.update(dict(extra))
+
+        alias_map = getattr(FF_C, "FAMILY_SUPPORT_ALIAS_MAP", {})
+        inverted_alias_map = getattr(FF_C, "FAMILY_SUPPORT_INVERTED_ALIAS_MAP", {})
+
+        family_aliases = dict(alias_map.get(family_id, {})) if isinstance(alias_map, Mapping) else {}
+        family_inverted_aliases = (
+            dict(inverted_alias_map.get(family_id, {}))
+            if isinstance(inverted_alias_map, Mapping)
+            else {}
+        )
+
+        for canonical_key in out:
+            if canonical_key in rich_map:
+                out[canonical_key] = _safe_bool(rich_map[canonical_key], False)
+                continue
+
+            for alias in family_aliases.get(canonical_key, ()):
+                if alias in rich_map:
+                    out[canonical_key] = _safe_bool(rich_map[alias], False)
+                    break
+
+            if out[canonical_key]:
+                continue
+
+            for alias in family_inverted_aliases.get(canonical_key, ()):
+                if alias in rich_map:
+                    out[canonical_key] = not _safe_bool(rich_map[alias], False)
+                    break
+
+        return out
+
     def _bool_support(
         self,
         template: Mapping[str, Any],
         rich: Mapping[str, Any],
     ) -> dict[str, bool]:
+        # Compatibility wrapper retained for older tests only. Runtime code uses
+        # _canonical_support(family_id, ...) so aliases and negative flags are
+        # family-specific.
         out: dict[str, bool] = {
             key: bool(value) for key, value in template.items() if isinstance(value, bool)
         }
-        rich_map = dict(rich)
-
-        synonyms = {
-            "trend_confirmed": ("trend_confirmed", "trend_direction_ok", "trend_ok"),
-            "futures_impulse_ok": ("futures_impulse_ok", "impulse_ok", "futures_ok"),
-            "pullback_detected": ("pullback_detected", "pullback_ok", "pullback_present"),
-            "resume_confirmed": ("resume_confirmed", "resume_support", "resume_confirmation_ok"),
-            "context_pass": ("context_pass", "oi_context_pass"),
-            "option_tradability_pass": (
-                "option_tradability_pass",
-                "tradability_pass",
-                "option_tradability_ok",
-                "eligible",
-            ),
-            "shelf_confirmed": ("shelf_confirmed", "shelf_ok", "shelf_score_ok"),
-            "breakout_triggered": ("breakout_triggered", "breakout_trigger_ok"),
-            "breakout_accepted": ("breakout_accepted", "breakout_acceptance_ok"),
-            "compression_detected": ("compression_detected", "compression_ok"),
-            "expansion_accepted": ("expansion_accepted", "expansion_acceptance_ok"),
-            "retest_valid": ("retest_valid", "retest_ok"),
-            "hesitation_valid": ("hesitation_valid", "hesitation_ok"),
-            "trap_detected": ("trap_detected", "fake_break_detected"),
-            "fake_break_detected": ("fake_break_detected", "trap_detected"),
-            "absorption_confirmed": ("absorption_confirmed", "absorption_ok"),
-            "reclaim_confirmed": ("reclaim_confirmed", "reclaim_ok"),
-            "range_reentry_confirmed": ("range_reentry_confirmed", "reentry_ok"),
-            "flow_flip_confirmed": ("flow_flip_confirmed", "flow_flip_ok"),
-            "hold_inside_range_proved": ("hold_inside_range_proved", "hold_proof_ok"),
-            "no_mans_land_cleared": ("no_mans_land_cleared", "context_pass"),
-            "reversal_impulse_confirmed": ("reversal_impulse_confirmed", "reversal_impulse_ok"),
-            "burst_detected": ("burst_detected", "aggressive_flow", "eligible"),
-            "aggression_ok": ("aggression_ok", "aggressive_flow"),
-            "tape_speed_ok": ("tape_speed_ok", "tape_speed_pass"),
-            "imbalance_persist_ok": ("imbalance_persist_ok", "imbalance_persistence_ok"),
-            "queue_reload_blocked": ("queue_reload_blocked", "queue_reload_veto"),
-            "futures_vwap_align_ok": ("futures_vwap_align_ok", "futures_vwap_alignment_ok"),
-            "futures_contradiction_blocked": (
-                "futures_contradiction_blocked",
-                "futures_contradiction_veto",
-            ),
-            "tradability_pass": (
-                "tradability_pass",
-                "option_tradability_pass",
-                "eligible",
-            ),
-        }
-
+        rich_map = dict(_mapping(rich))
         for key in out:
             if key in rich_map:
                 out[key] = _safe_bool(rich_map[key], False)
-                continue
-            for alias in synonyms.get(key, ()):
-                if alias in rich_map:
-                    out[key] = _safe_bool(rich_map[alias], False)
-                    break
         return out
+
+    def _active_zone_valid(
+        self,
+        active_zone: Mapping[str, Any],
+        rich_family: Mapping[str, Any],
+    ) -> bool:
+        zone = dict(_mapping(active_zone))
+        rich = dict(_mapping(rich_family))
+        return bool(
+            rich.get("active_zone_valid")
+            or zone.get("zone_id")
+            or zone.get("zone_type")
+            or _safe_float(zone.get("quality_score"), 0.0) > 0.0
+        )
+
+    def _family_branch_eligible(
+        self,
+        family_id: str,
+        support: Mapping[str, Any],
+    ) -> bool:
+        values = dict(_mapping(support))
+
+        if family_id == FAMILY_MIST:
+            return bool(
+                values.get("trend_confirmed")
+                and values.get("futures_impulse_ok")
+                and values.get("pullback_detected")
+                and values.get("resume_confirmed")
+                and values.get("option_tradability_pass")
+            )
+
+        if family_id == FAMILY_MISB:
+            return bool(
+                values.get("shelf_confirmed")
+                and values.get("breakout_triggered")
+                and values.get("breakout_accepted")
+                and values.get("option_tradability_pass")
+            )
+
+        if family_id == FAMILY_MISC:
+            return bool(
+                values.get("compression_detected")
+                and values.get("directional_breakout_triggered")
+                and values.get("expansion_accepted")
+                and values.get("retest_monitor_active")
+                and values.get("resume_confirmed")
+                and values.get("option_tradability_pass")
+            )
+
+        if family_id == FAMILY_MISR:
+            return bool(
+                values.get("active_zone_valid")
+                and values.get("fake_break_triggered")
+                and values.get("absorption_pass")
+                and values.get("range_reentry_confirmed")
+                and values.get("flow_flip_confirmed")
+                and values.get("hold_inside_range_proved")
+                and values.get("no_mans_land_cleared")
+                and values.get("reversal_impulse_confirmed")
+                and values.get("option_tradability_pass")
+            )
+
+        if family_id == FAMILY_MISO:
+            return bool(
+                values.get("burst_detected")
+                and values.get("aggression_ok")
+                and values.get("tape_speed_ok")
+                and values.get("imbalance_persist_ok")
+                and not values.get("queue_reload_blocked")
+                and values.get("futures_vwap_align_ok")
+                and not values.get("futures_contradiction_blocked")
+                and values.get("tradability_pass")
+            )
+
+        return False
 
     def _family_frames(
         self,
@@ -2888,6 +3918,7 @@ def _dhan_context_quality(
         _pick(
             ctx,
             "context_status",
+            "option_context_status",
             "option_context_provider_status",
             "provider_status",
             "status",
@@ -2903,6 +3934,7 @@ def _dhan_context_quality(
             "timestamp_ns",
             "ts_provider_ns",
             "updated_at_ns",
+            "last_update_ns",
         ),
         0,
     )
@@ -2922,6 +3954,7 @@ def _dhan_context_quality(
             "selected_call_option_symbol",
             "selected_call_option_token",
             "selected_call_dhan_security_id",
+            "selected_call_context_json",
         )
     )
     has_selected_put = bool(
@@ -2931,27 +3964,42 @@ def _dhan_context_quality(
             "selected_put_option_symbol",
             "selected_put_option_token",
             "selected_put_dhan_security_id",
+            "selected_put_context_json",
         )
     )
-    ladder = _pick(
-        ctx,
+
+    ladder = None
+    for key in (
+        "option_chain_ladder_json",
+        "strike_ladder_json",
         "strike_ladder",
         "strike_ladder_rows",
         "chain_rows",
         "option_chain",
         "chain",
         "rows",
-    )
+        "ladder",
+    ):
+        parsed = _json_load(ctx.get(key), None)
+        if isinstance(parsed, list):
+            ladder = parsed
+            break
+        if isinstance(parsed, Mapping):
+            parsed_rows = _json_load(_pick(parsed, "rows", "data", "records", "chain_rows"), None)
+            if isinstance(parsed_rows, list):
+                ladder = parsed_rows
+                break
+
     has_ladder = isinstance(ladder, Sequence) and not isinstance(
         ladder,
         (str, bytes, bytearray),
     ) and len(ladder) > 0
 
-    oi_wall = _pick(ctx, "oi_wall_context", "oi_wall", "wall_context")
+    oi_wall = _json_load(_pick(ctx, "oi_wall_summary_json", "oi_wall_context", "oi_wall", "wall_context"), None)
     has_oi_wall = bool(oi_wall)
 
     fresh = bool(present and healthy and not stale)
-    miso_context_ready = bool(fresh and has_ladder and (has_selected_call or has_selected_put))
+    miso_context_ready = bool(fresh and has_ladder and has_oi_wall and (has_selected_call or has_selected_put))
 
     return {
         "present": present,
@@ -2965,6 +4013,25 @@ def _dhan_context_quality(
         "has_ladder": has_ladder,
         "has_oi_wall": has_oi_wall,
         "miso_context_ready": miso_context_ready,
+    }
+
+
+def _batch26e_misc_state_context(shared_core: Mapping[str, Any], branch_id: str) -> dict[str, Any]:
+    """Read optional MISC event/timing state from shared surfaces."""
+    state = (
+        _nested(shared_core, "misc_state", branch_id, default={})
+        or _nested(shared_core, "family_state", "MISC", branch_id, default={})
+        or _nested(shared_core, "family_state", "misc", branch_id, default={})
+        or _nested(shared_core, "runtime_state", "MISC", branch_id, default={})
+        or {}
+    )
+    state = state if isinstance(state, Mapping) else {}
+    return {
+        "compression_event_id": _safe_str(state.get("compression_event_id")) or None,
+        "breakout_event_id": _safe_str(state.get("breakout_event_id")) or None,
+        "retest_monitor_started_ts_ms": int(_safe_float(state.get("retest_monitor_started_ts_ms"), 0.0)) or None,
+        "retest_elapsed_sec": _safe_float(state.get("retest_elapsed_sec"), 0.0),
+        "hesitation_elapsed_sec": _safe_float(state.get("hesitation_elapsed_sec"), 0.0),
     }
 
 
@@ -3082,6 +4149,134 @@ if "_BATCH7_ORIGINAL_SHARED_CORE" not in globals():
     FeatureEngine._shared_core = _batch7_shared_core
 
 
+
+# ============================================================================
+# Batch 26C MISO provider-readiness authority
+# ============================================================================
+
+def _batch26c_provider_id(value: Any) -> str:
+    return _safe_str(value).strip().upper()
+
+
+def _batch26c_provider_status_ready(value: Any) -> bool:
+    if "_batch25h_provider_ready_status" in globals():
+        try:
+            return bool(_batch25h_provider_ready_status(value))  # type: ignore[name-defined]
+        except Exception:
+            pass
+    if "_batch7_provider_usable" in globals():
+        try:
+            return bool(_batch7_provider_usable(value))  # type: ignore[name-defined]
+        except Exception:
+            pass
+
+    status = _safe_str(value).strip().upper()
+    return status in {"OK", "WARN", "HEALTHY", "AVAILABLE", "READY", "CURRENT", "1", "TRUE"}
+
+
+def _batch26c_miso_dhan_futures_required(provider_runtime: Mapping[str, Any]) -> bool:
+    explicit = (
+        provider_runtime.get("miso_requires_dhan_futures")
+        or provider_runtime.get("miso_require_dhan_futures")
+        or provider_runtime.get("miso_dhan_futures_required")
+        or provider_runtime.get("dhan_futures_required_for_miso")
+        or provider_runtime.get("miso_dhan_futures_rollout_enabled")
+    )
+    if explicit is not None:
+        return _safe_bool(explicit, False)
+
+    rollout_mode = _safe_str(
+        provider_runtime.get("miso_futures_rollout_mode")
+        or provider_runtime.get("miso_provider_rollout_mode")
+        or provider_runtime.get("provider_rollout_mode")
+    ).strip().upper().replace("_", "-")
+    return rollout_mode in {
+        "DHAN-FUTURES",
+        "DHAN-FUTURES-ONLY",
+        "MISO-DHAN-FUTURES",
+        "REQUIRE-DHAN-FUTURES",
+    }
+
+
+def _batch26c_miso_provider_ready(
+    provider_runtime: Mapping[str, Any],
+    *,
+    miso_mode: Any,
+    futures_present: bool = True,
+    selected_option_present: bool = True,
+    dhan_context_ready: bool = True,
+    dhan_context_fresh: bool = True,
+) -> bool:
+    """Authoritative MISO provider-readiness law."""
+    mode = _safe_str(miso_mode).strip().upper().replace("_", "-")
+    disabled = _safe_str(RUNTIME_DISABLED).strip().upper().replace("_", "-")
+    if not mode or mode == disabled:
+        return False
+
+    futures_provider = _batch26c_provider_id(
+        provider_runtime.get("active_futures_provider_id")
+        or provider_runtime.get("futures_marketdata_provider_id")
+        or provider_runtime.get("futures_provider_id")
+    )
+    selected_provider = _batch26c_provider_id(
+        provider_runtime.get("active_selected_option_provider_id")
+        or provider_runtime.get("selected_option_marketdata_provider_id")
+        or provider_runtime.get("selected_option_provider_id")
+    )
+    context_provider = _batch26c_provider_id(
+        provider_runtime.get("active_option_context_provider_id")
+        or provider_runtime.get("option_context_provider_id")
+    )
+
+    futures_status = (
+        provider_runtime.get("futures_provider_status")
+        or provider_runtime.get("futures_marketdata_status")
+        or provider_runtime.get("active_futures_provider_status")
+    )
+    selected_status = (
+        provider_runtime.get("selected_option_provider_status")
+        or provider_runtime.get("selected_option_marketdata_status")
+        or provider_runtime.get("active_selected_option_provider_status")
+    )
+    context_status = (
+        provider_runtime.get("option_context_provider_status")
+        or provider_runtime.get("option_context_status")
+        or provider_runtime.get("active_option_context_provider_status")
+    )
+
+    futures_allowed = {
+        getattr(N, "PROVIDER_ZERODHA", "ZERODHA"),
+        getattr(N, "PROVIDER_DHAN", "DHAN"),
+    }
+    futures_ok = (
+        futures_present
+        and futures_provider in futures_allowed
+        and _batch26c_provider_status_ready(futures_status)
+    )
+
+    if _batch26c_miso_dhan_futures_required(provider_runtime):
+        futures_ok = (
+            futures_present
+            and futures_provider == getattr(N, "PROVIDER_DHAN", "DHAN")
+            and _batch26c_provider_status_ready(futures_status)
+        )
+
+    selected_ok = (
+        selected_option_present
+        and selected_provider == getattr(N, "PROVIDER_DHAN", "DHAN")
+        and _batch26c_provider_status_ready(selected_status)
+    )
+    context_ok = (
+        dhan_context_ready
+        and dhan_context_fresh
+        and context_provider == getattr(N, "PROVIDER_DHAN", "DHAN")
+        and _batch26c_provider_status_ready(context_status)
+    )
+
+    return bool(futures_ok and selected_ok and context_ok)
+
+
+
 def _batch7_patch_stage_flags(
     *,
     stage_flags: Mapping[str, Any],
@@ -3126,14 +4321,13 @@ def _batch7_patch_stage_flags(
         and _batch7_provider_usable(provider_runtime.get("futures_provider_status"))
         and _batch7_provider_usable(provider_runtime.get("selected_option_provider_status"))
     )
-    provider_ready_miso = bool(
-        miso_mode != RUNTIME_DISABLED
-        and quality.get("miso_context_ready") is True
-        and futures_present
-        and selected_option_present
-        and provider_runtime.get("active_futures_provider_id") == PROVIDER_DHAN
-        and provider_runtime.get("active_selected_option_provider_id") == PROVIDER_DHAN
-        and provider_runtime.get("active_option_context_provider_id") == PROVIDER_DHAN
+    provider_ready_miso = _batch26c_miso_provider_ready(
+        provider_runtime,
+        miso_mode=miso_mode,
+        futures_present=futures_present,
+        selected_option_present=selected_option_present,
+        dhan_context_ready=bool(quality.get("miso_context_ready") is True),
+        dhan_context_fresh=bool(quality.get("fresh")),
     )
 
     out["data_valid"] = snapshot_valid
@@ -3378,3 +4572,1530 @@ def _batch7_snapshot_block(
 
 
 FeatureEngine._snapshot_block = _batch7_snapshot_block
+
+
+# ============================================================================
+# Batch 25H provider-runtime producer/consumer repair
+# ============================================================================
+#
+# Purpose
+# -------
+# Normalize provider runtime from the Batch 25G canonical contract fields and
+# derive compatibility aliases for existing consumers.
+#
+# This patch does not:
+# - select/fail over providers
+# - promote strategies
+# - arm execution
+# - change feed or broker I/O
+#
+# Missing required provider-runtime signals become explicit blockers.
+
+_BATCH25H_ORIGINAL_PROVIDER_RUNTIME = FeatureEngine._provider_runtime
+_BATCH25H_ORIGINAL_CONTRACT_PROVIDER = FeatureEngine._contract_provider
+
+_BATCH25H_CANONICAL_TO_COMPAT = {
+    "futures_marketdata_provider_id": "active_futures_provider_id",
+    "selected_option_marketdata_provider_id": "active_selected_option_provider_id",
+    "option_context_provider_id": "active_option_context_provider_id",
+    "execution_primary_provider_id": "active_execution_provider_id",
+    "execution_fallback_provider_id": "fallback_execution_provider_id",
+    "futures_marketdata_status": "futures_provider_status",
+    "selected_option_marketdata_status": "selected_option_provider_status",
+    "option_context_status": "option_context_provider_status",
+    "execution_primary_status": "execution_provider_status",
+}
+
+_BATCH25H_CANONICAL_ALIASES = {
+    "futures_marketdata_provider_id": (
+        "active_futures_provider_id",
+        "active_future_provider_id",
+        "futures_provider_id",
+    ),
+    "selected_option_marketdata_provider_id": (
+        "active_selected_option_provider_id",
+        "selected_option_provider_id",
+        "option_provider_id",
+    ),
+    "option_context_provider_id": (
+        "active_option_context_provider_id",
+        "option_context_provider_id",
+        "context_provider_id",
+    ),
+    "execution_primary_provider_id": (
+        "active_execution_provider_id",
+        "execution_primary_provider_id",
+        "execution_provider_id",
+    ),
+    "execution_fallback_provider_id": (
+        "fallback_execution_provider_id",
+        "execution_fallback_provider_id",
+    ),
+    "futures_marketdata_status": (
+        "futures_provider_status",
+        "active_futures_provider_status",
+        "futures_provider_statu",
+        "active_futures_provider_statu",
+    ),
+    "selected_option_marketdata_status": (
+        "selected_option_provider_status",
+        "active_selected_option_provider_status",
+        "selected_option_provider_statu",
+        "active_selected_option_provider_statu",
+    ),
+    "option_context_status": (
+        "option_context_provider_status",
+        "active_option_context_provider_status",
+        "option_context_provider_statu",
+        "active_option_context_provider_statu",
+    ),
+    "execution_primary_status": (
+        "execution_provider_status",
+        "active_execution_provider_status",
+        "execution_provider_statu",
+        "active_execution_provider_statu",
+    ),
+    "execution_fallback_status": (
+        "execution_fallback_provider_status",
+        "fallback_execution_provider_status",
+    ),
+}
+
+
+def _batch25h_pick(mapping: Mapping[str, Any] | None, *keys: str, default: Any = None) -> Any:
+    source = dict(mapping or {})
+    for key in keys:
+        value = source.get(key)
+        if value not in (None, ""):
+            return value
+    return default
+
+
+def _batch25h_str_or_none(value: Any) -> str | None:
+    if value in (None, ""):
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _batch25h_bool(value: Any, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value in (None, ""):
+        return default
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "y", "on"}:
+        return True
+    if text in {"0", "false", "no", "n", "off"}:
+        return False
+    return default
+
+
+def _batch25h_int(value: Any, default: int = 0) -> int:
+    if value in (None, ""):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _batch25h_status(value: Any) -> str:
+    text = _batch25h_str_or_none(value)
+    if text is None:
+        return getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE")
+    return text
+
+
+def _batch25h_provider_ready_status(status: Any) -> bool:
+    value = str(status or "").strip().upper()
+    return value in {
+        "OK",
+        "READY",
+        "HEALTHY",
+        "DEGRADED",
+        "LIVE",
+        "AVAILABLE",
+    }
+
+
+def _batch25h_canonical_provider_runtime(raw: Mapping[str, Any] | None) -> dict[str, Any]:
+    source = dict(raw or {})
+    missing: list[str] = []
+
+    def canonical_value(key: str) -> str | None:
+        aliases = _BATCH25H_CANONICAL_ALIASES.get(key, ())
+        value = _batch25h_str_or_none(_batch25h_pick(source, key, *aliases))
+        if value is None:
+            missing.append(key)
+        return value
+
+    def canonical_status(key: str) -> str:
+        aliases = _BATCH25H_CANONICAL_ALIASES.get(key, ())
+        value = _batch25h_pick(source, key, *aliases)
+        if value in (None, ""):
+            missing.append(key)
+        return _batch25h_status(value)
+
+    family_runtime_mode = _batch25h_str_or_none(
+        _batch25h_pick(
+            source,
+            "family_runtime_mode",
+            default=getattr(N, "FAMILY_RUNTIME_MODE_OBSERVE_ONLY", "observe_only"),
+        )
+    ) or getattr(N, "FAMILY_RUNTIME_MODE_OBSERVE_ONLY", "observe_only")
+
+    out: dict[str, Any] = {
+        "futures_marketdata_provider_id": canonical_value("futures_marketdata_provider_id"),
+        "selected_option_marketdata_provider_id": canonical_value("selected_option_marketdata_provider_id"),
+        "option_context_provider_id": canonical_value("option_context_provider_id"),
+        "execution_primary_provider_id": canonical_value("execution_primary_provider_id"),
+        "execution_fallback_provider_id": canonical_value("execution_fallback_provider_id"),
+        "futures_marketdata_status": canonical_status("futures_marketdata_status"),
+        "selected_option_marketdata_status": canonical_status("selected_option_marketdata_status"),
+        "option_context_status": canonical_status("option_context_status"),
+        "execution_primary_status": canonical_status("execution_primary_status"),
+        "execution_fallback_status": canonical_status("execution_fallback_status"),
+        "family_runtime_mode": family_runtime_mode,
+        "failover_mode": _batch25h_str_or_none(_batch25h_pick(source, "failover_mode")) or "",
+        "override_mode": _batch25h_str_or_none(_batch25h_pick(source, "override_mode")) or "",
+        "transition_reason": _batch25h_str_or_none(_batch25h_pick(source, "transition_reason")) or "",
+        "provider_transition_seq": _batch25h_int(_batch25h_pick(source, "provider_transition_seq"), 0),
+        "failover_active": _batch25h_bool(_batch25h_pick(source, "failover_active"), False),
+        "pending_failover": _batch25h_bool(_batch25h_pick(source, "pending_failover"), False),
+    }
+
+    for canonical, compat in _BATCH25H_CANONICAL_TO_COMPAT.items():
+        out[compat] = out.get(canonical)
+
+    out["provider_runtime_mode"] = (
+        _batch25h_str_or_none(_batch25h_pick(source, "provider_runtime_mode", "runtime_mode"))
+        or None
+    )
+
+    classic_ready = bool(
+        out.get("futures_marketdata_provider_id")
+        and out.get("selected_option_marketdata_provider_id")
+        and _batch25h_provider_ready_status(out.get("futures_marketdata_status"))
+        and _batch25h_provider_ready_status(out.get("selected_option_marketdata_status"))
+    )
+
+    futures_provider_ok = bool(
+        out.get("futures_marketdata_provider_id") in {
+            getattr(N, "PROVIDER_ZERODHA", "ZERODHA"),
+            getattr(N, "PROVIDER_DHAN", "DHAN"),
+        }
+        and _batch25h_provider_ready_status(out.get("futures_marketdata_status"))
+    )
+    if _batch26c_miso_dhan_futures_required(out):
+        futures_provider_ok = bool(
+            out.get("futures_marketdata_provider_id") == getattr(N, "PROVIDER_DHAN", "DHAN")
+            and _batch25h_provider_ready_status(out.get("futures_marketdata_status"))
+        )
+
+    miso_ready = bool(
+        futures_provider_ok
+        and out.get("selected_option_marketdata_provider_id") == getattr(N, "PROVIDER_DHAN", "DHAN")
+        and _batch25h_provider_ready_status(out.get("selected_option_marketdata_status"))
+        and out.get("option_context_provider_id") == getattr(N, "PROVIDER_DHAN", "DHAN")
+        and _batch25h_provider_ready_status(out.get("option_context_status"))
+    )
+
+    out["provider_ready_classic"] = classic_ready
+    out["provider_ready_miso"] = miso_ready
+    out["provider_runtime_blocked"] = bool(missing)
+    out["provider_runtime_missing_keys"] = tuple(dict.fromkeys(missing))
+    out["provider_runtime_block_reason"] = (
+        "missing_required_provider_runtime_keys:" + ",".join(out["provider_runtime_missing_keys"])
+        if missing
+        else ""
+    )
+
+    # Preserve original raw keys under no new authority. Canonical keys above win.
+    for key, value in source.items():
+        out.setdefault(key, value)
+
+    return out
+
+
+def _batch25h_provider_runtime(self: FeatureEngine, raw: Mapping[str, Any]) -> dict[str, Any]:
+    return _batch25h_canonical_provider_runtime(raw)
+
+
+def _batch25h_contract_provider(
+    self: FeatureEngine,
+    provider_runtime: Mapping[str, Any],
+    shared_core: Mapping[str, Any],
+) -> dict[str, Any]:
+    base: dict[str, Any] = {}
+    try:
+        original = _BATCH25H_ORIGINAL_CONTRACT_PROVIDER(self, provider_runtime, shared_core)
+        if isinstance(original, Mapping):
+            base.update(dict(original))
+    except Exception as exc:
+        base["provider_runtime_original_error"] = str(exc)
+
+    canonical = _batch25h_canonical_provider_runtime({**dict(base), **dict(provider_runtime)})
+    out = dict(base)
+    out.update(canonical)
+
+    return out
+
+
+FeatureEngine._provider_runtime = _batch25h_provider_runtime
+FeatureEngine._contract_provider = _batch25h_contract_provider
+
+
+# ============================================================================
+# Batch 25H-C final provider-runtime method binding
+# ============================================================================
+
+_BATCH25HC_CANONICAL_TO_COMPAT = {
+    "futures_marketdata_provider_id": "active_futures_provider_id",
+    "selected_option_marketdata_provider_id": "active_selected_option_provider_id",
+    "option_context_provider_id": "active_option_context_provider_id",
+    "execution_primary_provider_id": "active_execution_provider_id",
+    "execution_fallback_provider_id": "fallback_execution_provider_id",
+    "futures_marketdata_status": "futures_provider_status",
+    "selected_option_marketdata_status": "selected_option_provider_status",
+    "option_context_status": "option_context_provider_status",
+    "execution_primary_status": "execution_provider_status",
+    "execution_fallback_status": "execution_fallback_provider_status",
+}
+
+_BATCH25HC_ALIASES = {
+    "futures_marketdata_provider_id": (
+        "active_futures_provider_id",
+        "active_future_provider_id",
+        "futures_provider_id",
+    ),
+    "selected_option_marketdata_provider_id": (
+        "active_selected_option_provider_id",
+        "selected_option_provider_id",
+        "option_provider_id",
+    ),
+    "option_context_provider_id": (
+        "active_option_context_provider_id",
+        "context_provider_id",
+    ),
+    "execution_primary_provider_id": (
+        "active_execution_provider_id",
+        "execution_provider_id",
+    ),
+    "execution_fallback_provider_id": (
+        "fallback_execution_provider_id",
+    ),
+    "futures_marketdata_status": (
+        "futures_provider_status",
+        "active_futures_provider_status",
+        "futures_provider_statu",
+    ),
+    "selected_option_marketdata_status": (
+        "selected_option_provider_status",
+        "active_selected_option_provider_status",
+        "selected_option_provider_statu",
+    ),
+    "option_context_status": (
+        "option_context_provider_status",
+        "active_option_context_provider_status",
+        "option_context_provider_statu",
+    ),
+    "execution_primary_status": (
+        "execution_provider_status",
+        "active_execution_provider_status",
+        "execution_provider_statu",
+    ),
+    "execution_fallback_status": (
+        "execution_fallback_provider_status",
+        "fallback_execution_provider_status",
+    ),
+}
+
+
+def _batch25hc_pick(source: Mapping[str, Any], key: str) -> Any:
+    keys = (key, *_BATCH25HC_ALIASES.get(key, ()))
+    for candidate in keys:
+        value = source.get(candidate)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def _batch25hc_text_or_none(value: Any) -> str | None:
+    if value in (None, ""):
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _batch25hc_bool(value: Any, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value in (None, ""):
+        return default
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "y", "on"}:
+        return True
+    if text in {"0", "false", "no", "n", "off"}:
+        return False
+    return default
+
+
+def _batch25hc_int(value: Any, default: int = 0) -> int:
+    if value in (None, ""):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _batch25hc_unavailable() -> str:
+    return getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE")
+
+
+def _batch25hc_status(value: Any) -> str:
+    return _batch25hc_text_or_none(value) or _batch25hc_unavailable()
+
+
+def _batch25hc_ready_status(value: Any) -> bool:
+    return str(value or "").strip().upper() in {
+        "OK",
+        "READY",
+        "HEALTHY",
+        "DEGRADED",
+        "LIVE",
+        "AVAILABLE",
+    }
+
+
+def _batch25hc_provider_runtime_from_raw(raw: Mapping[str, Any] | None) -> dict[str, Any]:
+    source = dict(raw or {})
+    missing: list[str] = []
+
+    def required_text(key: str) -> str | None:
+        value = _batch25hc_text_or_none(_batch25hc_pick(source, key))
+        if value is None:
+            missing.append(key)
+        return value
+
+    def required_status(key: str) -> str:
+        raw_value = _batch25hc_pick(source, key)
+        if raw_value in (None, ""):
+            missing.append(key)
+        return _batch25hc_status(raw_value)
+
+    out: dict[str, Any] = {
+        "futures_marketdata_provider_id": required_text("futures_marketdata_provider_id"),
+        "selected_option_marketdata_provider_id": required_text("selected_option_marketdata_provider_id"),
+        "option_context_provider_id": required_text("option_context_provider_id"),
+        "execution_primary_provider_id": required_text("execution_primary_provider_id"),
+        "execution_fallback_provider_id": required_text("execution_fallback_provider_id"),
+        "futures_marketdata_status": required_status("futures_marketdata_status"),
+        "selected_option_marketdata_status": required_status("selected_option_marketdata_status"),
+        "option_context_status": required_status("option_context_status"),
+        "execution_primary_status": required_status("execution_primary_status"),
+        "execution_fallback_status": required_status("execution_fallback_status"),
+        "family_runtime_mode": (
+            _batch25hc_text_or_none(source.get("family_runtime_mode"))
+            or getattr(N, "FAMILY_RUNTIME_MODE_OBSERVE_ONLY", "observe_only")
+        ),
+        "failover_mode": (
+            _batch25hc_text_or_none(source.get("failover_mode"))
+            or getattr(N, "PROVIDER_FAILOVER_MODE_MANUAL", "MANUAL")
+        ),
+        "override_mode": (
+            _batch25hc_text_or_none(source.get("override_mode"))
+            or getattr(N, "PROVIDER_OVERRIDE_MODE_AUTO", "AUTO")
+        ),
+        "transition_reason": (
+            _batch25hc_text_or_none(source.get("transition_reason"))
+            or getattr(N, "PROVIDER_TRANSITION_REASON_BOOTSTRAP", "BOOTSTRAP")
+        ),
+        "provider_transition_seq": _batch25hc_int(source.get("provider_transition_seq"), 0),
+        "failover_active": _batch25hc_bool(source.get("failover_active"), False),
+        "pending_failover": _batch25hc_bool(source.get("pending_failover"), False),
+    }
+
+    for canonical, compat in _BATCH25HC_CANONICAL_TO_COMPAT.items():
+        out[compat] = out.get(canonical)
+
+    out["provider_runtime_mode"] = _batch25hc_text_or_none(source.get("provider_runtime_mode"))
+
+    classic_ready = bool(
+        out["futures_marketdata_provider_id"]
+        and out["selected_option_marketdata_provider_id"]
+        and _batch25hc_ready_status(out["futures_marketdata_status"])
+        and _batch25hc_ready_status(out["selected_option_marketdata_status"])
+    )
+
+    miso_ready = bool(
+        classic_ready
+        and out["option_context_provider_id"]
+        and _batch25hc_ready_status(out["option_context_status"])
+    )
+
+    out["provider_ready_classic"] = classic_ready
+    out["provider_ready_miso"] = miso_ready
+    out["provider_runtime_missing_keys"] = tuple(dict.fromkeys(missing))
+    out["provider_runtime_blocked"] = bool(out["provider_runtime_missing_keys"])
+    out["provider_runtime_block_reason"] = (
+        "missing_required_provider_runtime_keys:" + ",".join(out["provider_runtime_missing_keys"])
+        if out["provider_runtime_missing_keys"]
+        else ""
+    )
+
+    for key, value in source.items():
+        out.setdefault(key, value)
+
+    return out
+
+
+def _batch25hc_provider_runtime(self: FeatureEngine, raw: Mapping[str, Any]) -> dict[str, Any]:
+    return _batch25hc_provider_runtime_from_raw(raw)
+
+
+def _batch25hc_contract_provider(
+    self: FeatureEngine,
+    provider_runtime: Mapping[str, Any],
+    shared_core: Mapping[str, Any],
+) -> dict[str, Any]:
+    return _batch25hc_provider_runtime_from_raw(provider_runtime)
+
+
+FeatureEngine._provider_runtime = _batch25hc_provider_runtime
+FeatureEngine._contract_provider = _batch25hc_contract_provider
+
+
+# Batch 25L corrective — option surface keyword ABI compatibility
+#
+# Some older Batch-7 wrapper assignments may leave FeatureEngine._option_surface
+# with a positional-only ABI. Batch 25I/25L service path calls it with
+# side=/role=/provider_id=. This final wrapper preserves the previous
+# implementation when it accepts the keyword ABI and falls back only for the
+# unexpected-keyword case.
+_BATCH25L_PREV_OPTION_SURFACE = FeatureEngine._option_surface
+
+
+def _batch25l_option_surface_kw_compat(
+    self: FeatureEngine,
+    raw: Mapping[str, Any] | None = None,
+    *args: Any,
+    side: str | None = None,
+    role: str | None = None,
+    provider_id: str | None = None,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    """
+    Batch 25K-J runtime-wrapper repair.
+
+    This function is the effective runtime FeatureEngine._option_surface after
+    Batch25L monkeypatching. It must also exercise the shared option_core
+    builder ABI, otherwise the class-method repair is bypassed.
+
+    Required ABI:
+        option_core.build_live_option_surface(
+            side=...,
+            live_source=...,
+            provider_id=...,
+            strike=...,
+            instrument_key=...,
+            instrument_token=...
+        )
+    """
+
+    raw_map = dict(raw or {})
+
+    def _resolve_side(surface: Mapping[str, Any], member_key: str | None = None) -> str:
+        direct = _feed_side(
+            side
+            or kwargs.get("option_side")
+            or kwargs.get("side")
+            or surface.get("side")
+            or surface.get("option_side")
+            or surface.get("right")
+            or surface.get("option_type")
+        )
+        if direct in {"CALL", "PUT"}:
+            return direct
+
+        probe = " ".join(
+            str(x or "")
+            for x in (
+                role,
+                member_key,
+                surface.get("role"),
+                surface.get("instrument_key"),
+                surface.get("instrument_token"),
+                surface.get("trading_symbol"),
+                surface.get("option_symbol"),
+                surface.get("symbol"),
+            )
+        ).upper()
+
+        if "PUT" in probe or " PE" in f" {probe} " or probe.endswith("PE") or "_PE" in probe or "-PE" in probe:
+            return "PUT"
+        if "CALL" in probe or " CE" in f" {probe} " or probe.endswith("CE") or "_CE" in probe or "-CE" in probe:
+            return "CALL"
+        return ""
+
+    def _builder_preview(surface: Mapping[str, Any], *, resolved_side: str, resolved_provider_id: str) -> dict[str, Any] | None:
+        if resolved_side not in {"CALL", "PUT"}:
+            return None
+
+        option_core_module = None
+        try:
+            option_core_module = self.shared_modules.get("option_core")
+        except Exception:
+            option_core_module = None
+
+        if option_core_module is None:
+            option_core_module = _batch25kj_option_core
+
+        built = _call_exact_builder(
+            option_core_module,
+            "build_live_option_surface",
+            audit_key="option_core_builder_used",
+            fallback_allowed=False,
+            side=resolved_side,
+            live_source=surface,
+            provider_id=resolved_provider_id,
+            strike=_pick(surface, "strike", "strike_price", "strikePrice"),
+            instrument_key=_feed_instrument_key(surface),
+            instrument_token=_feed_token(surface),
+        )
+
+        if not isinstance(built, Mapping):
+            return None
+
+        out = dict(built)
+        out.setdefault("present", True)
+        out.setdefault("valid", True)
+        out.setdefault("side", resolved_side)
+        out.setdefault("option_side", resolved_side)
+        out.setdefault("role", role or _safe_str(_pick(surface, "role"), "SELECTED_OPTION"))
+        out.setdefault("provider_id", resolved_provider_id)
+        out.setdefault("instrument_key", _feed_instrument_key(surface))
+        out.setdefault("instrument_token", _feed_token(surface))
+        out.setdefault("option_token", _feed_token(surface))
+        out.setdefault("trading_symbol", _feed_trading_symbol(surface))
+        out.setdefault("option_symbol", _feed_trading_symbol(surface))
+        out.setdefault("strike", _safe_float_or_none(_pick(surface, "strike", "strike_price", "strikePrice")))
+        out.setdefault("raw", surface)
+        return out
+
+    # First, try the previous option-surface implementation. If it returns a
+    # usable surface, still route the returned surface through the exact shared
+    # option_core builder so the ABI proof observes the real builder path.
+    try:
+        previous = _BATCH25L_PREV_OPTION_SURFACE(
+            self,
+            raw,
+            *args,
+            side=side,
+            role=role,
+            provider_id=provider_id,
+            **kwargs,
+        )
+        previous_map = dict(previous) if isinstance(previous, Mapping) else {}
+        if previous_map:
+            resolved_side = _resolve_side(previous_map)
+            resolved_provider_id = _feed_provider_id(previous_map, provider_id)
+            built = _builder_preview(
+                previous_map,
+                resolved_side=resolved_side,
+                resolved_provider_id=resolved_provider_id,
+            )
+            if isinstance(built, Mapping):
+                return built
+            return previous_map
+    except TypeError as exc:
+        message = str(exc)
+        unexpected_kw = (
+            "unexpected keyword argument 'side'" in message
+            or "unexpected keyword argument 'role'" in message
+            or "unexpected keyword argument 'provider_id'" in message
+        )
+        if not unexpected_kw:
+            raise
+
+    requested_side = _feed_side(
+        side
+        or kwargs.get("option_side")
+        or kwargs.get("side")
+        or raw_map.get("side")
+        or raw_map.get("option_side")
+    )
+
+    if requested_side == "CALL":
+        member_key, member = _feed_first_member(raw_map, _FEED_CALL_JSON_KEYS)
+    elif requested_side == "PUT":
+        member_key, member = _feed_first_member(raw_map, _FEED_PUT_JSON_KEYS)
+    else:
+        member_key, member = _feed_first_member(
+            raw_map,
+            (*_FEED_CALL_JSON_KEYS, *_FEED_PUT_JSON_KEYS),
+        )
+
+    surface = _feed_merge_member(raw_map, member) if member else raw_map
+    resolved_side = (
+        requested_side
+        or _resolve_side(surface, member_key)
+        or ("CALL" if member_key in _FEED_CALL_JSON_KEYS else "PUT" if member_key in _FEED_PUT_JSON_KEYS else "")
+    )
+
+    resolved_provider_id = _feed_provider_id(surface, provider_id)
+
+    built = _builder_preview(
+        surface,
+        resolved_side=resolved_side,
+        resolved_provider_id=resolved_provider_id,
+    )
+    if isinstance(built, Mapping):
+        return built
+
+    bid = _feed_best_price(surface, "bid")
+    ask = _feed_best_price(surface, "ask")
+    bid_qty_5 = _feed_depth_qty(surface, "bid")
+    ask_qty_5 = _feed_depth_qty(surface, "ask")
+    ltp = _feed_ltp(surface)
+    depth_total = bid_qty_5 + ask_qty_5
+    spread = max(0.0, ask - bid) if ask > 0.0 and bid > 0.0 else 0.0
+    strike = _safe_float_or_none(_pick(surface, "strike", "strike_price", "strikePrice"))
+
+    present = bool(ltp > 0.0 or bid > 0.0 or ask > 0.0 or depth_total > 0.0)
+    valid = bool(present and resolved_side in {"CALL", "PUT"} and strike is not None)
+
+    return {
+        "present": present,
+        "valid": valid,
+        "side": resolved_side,
+        "option_side": resolved_side,
+        "role": role or _safe_str(_pick(surface, "role"), "SELECTED_OPTION"),
+        "provider_id": resolved_provider_id,
+        "instrument_key": _feed_instrument_key(surface),
+        "instrument_token": _feed_token(surface),
+        "option_token": _feed_token(surface),
+        "trading_symbol": _feed_trading_symbol(surface),
+        "option_symbol": _feed_trading_symbol(surface),
+        "strike": strike,
+        "ltp": ltp,
+        "best_bid": bid,
+        "best_ask": ask,
+        "bid": bid,
+        "ask": ask,
+        "bid_qty": bid_qty_5,
+        "ask_qty": ask_qty_5,
+        "bid_qty_5": bid_qty_5,
+        "ask_qty_5": ask_qty_5,
+        "depth_total": depth_total,
+        "spread": spread,
+        "spread_ratio": _safe_float(_pick(surface, "spread_ratio"), 0.0),
+        "volume": _safe_float(_pick(surface, "volume", "traded_volume"), 0.0),
+        "oi": _safe_float(_pick(surface, "oi", "open_interest"), 0.0),
+        "oi_change": _safe_float(_pick(surface, "oi_change", "change_oi"), 0.0),
+        "iv": _safe_float_or_none(_pick(surface, "iv", "implied_volatility")),
+        "delta": _safe_float_or_none(_pick(surface, "delta", "option_delta")),
+        "tradability_ok": bool(valid and ltp > 0.0 and bid > 0.0 and ask > 0.0 and depth_total > 0.0),
+        "ts_event_ns": _safe_int(_pick(surface, "ts_event_ns", "event_ts_ns", "timestamp_ns"), 0),
+        "source_member_key": member_key,
+        "raw": surface,
+    }
+
+
+FeatureEngine._option_surface = _batch25l_option_surface_kw_compat
+
+
+# Batch 25L corrective 3 — futures surface feed-json compatibility
+#
+# Later wrapper assignments may route FeatureEngine._futures_surface through an
+# older fallback path that ignores future_json and bid_qty_5/ask_qty_5. This
+# final wrapper preserves the previous implementation when it correctly consumes
+# feed-shaped futures, and repairs only the feed-json/depth-loss case.
+_BATCH25L_PREV_FUTURES_SURFACE = FeatureEngine._futures_surface
+
+
+def _batch25l_futures_surface_feed_json_compat(
+    self: FeatureEngine,
+    raw: Mapping[str, Any] | None = None,
+    *args: Any,
+    role: str | None = None,
+    provider_id: str | None = None,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    raw_map = dict(raw or {})
+
+    result: dict[str, Any] = {}
+    try:
+        prev = _BATCH25L_PREV_FUTURES_SURFACE(
+            self,
+            raw,
+            *args,
+            role=role,
+            provider_id=provider_id,
+            **kwargs,
+        )
+        result = dict(prev) if isinstance(prev, Mapping) else {}
+    except TypeError as exc:
+        message = str(exc)
+        unexpected_kw = (
+            "unexpected keyword argument 'role'" in message
+            or "unexpected keyword argument 'provider_id'" in message
+        )
+        if not unexpected_kw:
+            raise
+
+    has_feed_future_json = any(bool(raw_map.get(key)) for key in _FEED_FUTURE_JSON_KEYS)
+    previous_depth = _safe_float(result.get("depth_total"), 0.0)
+    previous_source = _safe_str(result.get("source_member_key"))
+
+    if result and not has_feed_future_json:
+        return result
+
+    if result and has_feed_future_json and previous_depth > 0.0 and previous_source:
+        return result
+
+    member_key, member = _feed_first_member(raw_map, _FEED_FUTURE_JSON_KEYS)
+    surface = _feed_merge_member(raw_map, member) if member else raw_map
+
+    bid = _feed_best_price(surface, "bid")
+    ask = _feed_best_price(surface, "ask")
+    bid_qty_5 = _feed_depth_qty(surface, "bid")
+    ask_qty_5 = _feed_depth_qty(surface, "ask")
+    ltp = _feed_ltp(surface)
+    depth_total = bid_qty_5 + ask_qty_5
+
+    present = bool(ltp > 0.0 or bid > 0.0 or ask > 0.0 or depth_total > 0.0)
+    valid = bool(present and depth_total > 0.0)
+
+    repaired = {
+        "present": present,
+        "valid": valid,
+        "role": role or _safe_str(_pick(surface, "role"), "FUTURE"),
+        "provider_id": _feed_provider_id(surface, provider_id),
+        "instrument_key": _feed_instrument_key(surface),
+        "instrument_token": _feed_token(surface),
+        "trading_symbol": _feed_trading_symbol(surface),
+        "ltp": ltp,
+        "best_bid": bid,
+        "best_ask": ask,
+        "bid": bid,
+        "ask": ask,
+        "bid_qty": bid_qty_5,
+        "ask_qty": ask_qty_5,
+        "bid_qty_5": bid_qty_5,
+        "ask_qty_5": ask_qty_5,
+        "depth_total": depth_total,
+        "spread": max(0.0, ask - bid) if ask > 0.0 and bid > 0.0 else 0.0,
+        "volume": _safe_float(_pick(surface, "volume", "traded_volume"), 0.0),
+        "ts_event_ns": _safe_int(_pick(surface, "ts_event_ns", "event_ts_ns", "timestamp_ns"), 0),
+        "source_member_key": member_key,
+        "raw": surface,
+    }
+
+    # Preserve any additional non-conflicting fields from the previous surface.
+    for key, value in result.items():
+        repaired.setdefault(key, value)
+
+    return repaired
+
+
+FeatureEngine._futures_surface = _batch25l_futures_surface_feed_json_compat
+
+
+# Batch 25L corrective 4B — restore family branch and surfaces
+#
+# Prior 25L patch/rebind order left FeatureEngine without _family_branch_surface,
+# while build_payload() still requires _family_surfaces(). This restores the
+# service-path branch/root/surfaces bindings explicitly. No provider selection,
+# strategy promotion, risk, execution, broker, or Redis ownership behavior is changed.
+
+def _batch25l_family_branch_surface_restored(
+    self: FeatureEngine,
+    family_id: str,
+    branch_id: str,
+    module: Any | None,
+    shared_core: Mapping[str, Any],
+    *,
+    provider_runtime: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    side = _branch_side(branch_id)
+    option = self._branch_option_surface(branch_id, shared_core)
+    futures = self._branch_futures_surface(family_id, shared_core)
+    regime = dict(_nested(shared_core, "regime", default={}))
+    tradability = self._branch_tradability_surface(family_id, branch_id, shared_core)
+    strike = self._branch_strike_surface(family_id, branch_id, shared_core)
+    runtime_surface = self._branch_runtime_mode_surface(family_id, shared_core)
+    runtime_mode = _safe_str(_pick(runtime_surface, "runtime_mode", "mode"), RUNTIME_DISABLED)
+
+    surface = self._call_family_branch_builder(
+        family_id,
+        branch_id,
+        module,
+        shared_core,
+        provider_runtime or {},
+    )
+    surface = dict(surface) if isinstance(surface, Mapping) else {}
+
+    family_lc = family_id.lower()
+    surface.update(
+        {
+            "surface_kind": surface.get("surface_kind") or f"{family_lc}_branch",
+            "family_id": family_id,
+            "branch_id": branch_id,
+            "side": side,
+            "runtime_mode": surface.get("runtime_mode") or runtime_mode,
+            "runtime_mode_surface": surface.get("runtime_mode_surface") or runtime_surface,
+            "present": bool(
+                surface.get("present")
+                or option.get("present")
+                or option.get("instrument_key")
+            ),
+            "futures_features": surface.get("futures_features") or futures,
+            "selected_features": surface.get("selected_features") or option,
+            "option_features": surface.get("option_features") or option,
+            "strike_surface": surface.get("strike_surface") or strike,
+            "tradability": surface.get("tradability") or tradability,
+            "tradability_surface": surface.get("tradability_surface") or tradability,
+            "regime_surface": surface.get("regime_surface") or regime,
+            "oi_wall_context": surface.get("oi_wall_context")
+            or strike.get("oi_wall_context")
+            or _nested(
+                shared_core,
+                "oi_wall_context",
+                "call" if side == SIDE_CALL else "put",
+                default={},
+            ),
+            "cross_option_context": surface.get("cross_option_context")
+            or _nested(shared_core, "options", "cross_option", default={}),
+            "provider_ready": bool(
+                surface.get("provider_ready")
+                if "provider_ready" in surface
+                else self._family_provider_ready(
+                    family_id,
+                    branch_id,
+                    provider_runtime or {},
+                    shared_core,
+                )
+            ),
+        }
+    )
+
+    # 25M owns canonical eligibility truth. 25L only proves rich service-path surfaces.
+    surface.setdefault("eligible", bool(surface.get("branch_ready") or surface.get("ready")))
+    surface.setdefault("rich_surface", True)
+    return surface
+
+
+def _batch25l_family_surface_restored(
+    self: FeatureEngine,
+    family_id: str,
+    module: Any | None,
+    branches: Mapping[str, Mapping[str, Any]],
+    shared_core: Mapping[str, Any],
+) -> dict[str, Any]:
+    call_surface = dict(branches.get(BRANCH_CALL, {}))
+    put_surface = dict(branches.get(BRANCH_PUT, {}))
+
+    surface = self._call_family_root_builder(
+        family_id,
+        module,
+        branches,
+        shared_core,
+    )
+    surface = dict(surface) if isinstance(surface, Mapping) else {}
+
+    surface.setdefault("family_id", family_id)
+    surface.setdefault("surface_kind", f"{family_id.lower()}_family")
+    surface.setdefault("eligible", bool(call_surface.get("eligible") or put_surface.get("eligible")))
+    surface.setdefault("branches", {BRANCH_CALL: call_surface, BRANCH_PUT: put_surface})
+    surface.setdefault("call", call_surface)
+    surface.setdefault("put", put_surface)
+    surface.setdefault(
+        "runtime_mode_surface",
+        self._branch_runtime_mode_surface(family_id, shared_core),
+    )
+    surface.setdefault("regime_surface", dict(_nested(shared_core, "regime", default={})))
+    surface.setdefault("rich_surface", True)
+
+    if family_id == FAMILY_MISO:
+        surface.setdefault(
+            "mode",
+            _nested(shared_core, "runtime_modes", "miso", "mode", default=RUNTIME_DISABLED),
+        )
+        surface.setdefault(
+            "chain_context_ready",
+            bool(_nested(shared_core, "strike_selection", "chain_context_ready", default=False)),
+        )
+        surface.setdefault(
+            "selected_side",
+            _nested(shared_core, "options", "selected", "side", default=None),
+        )
+        surface.setdefault(
+            "selected_strike",
+            _nested(shared_core, "options", "selected", "strike", default=None),
+        )
+        surface.setdefault(
+            "shadow_call_strike",
+            _nested(shared_core, "strike_selection", "shadow_call_strike", default=None),
+        )
+        surface.setdefault(
+            "shadow_put_strike",
+            _nested(shared_core, "strike_selection", "shadow_put_strike", default=None),
+        )
+        surface.setdefault("call_support", call_surface)
+        surface.setdefault("put_support", put_surface)
+
+    return surface
+
+
+def _batch25l_family_surfaces_restored(
+    self: FeatureEngine,
+    *,
+    generated_at_ns: int,
+    provider_runtime: Mapping[str, Any],
+    shared_core: Mapping[str, Any],
+) -> dict[str, Any]:
+    families: dict[str, dict[str, Any]] = {}
+    surfaces_by_branch: dict[str, dict[str, Any]] = {}
+
+    for family_id in FAMILY_IDS:
+        module = self.family_modules.get(family_id)
+        branches: dict[str, dict[str, Any]] = {}
+
+        for branch_id in BRANCH_IDS:
+            branch_surface = self._family_branch_surface(
+                family_id,
+                branch_id,
+                module,
+                shared_core,
+                provider_runtime=provider_runtime,
+            )
+            branch_surface = dict(branch_surface) if isinstance(branch_surface, Mapping) else {}
+            branches[branch_id] = branch_surface
+            surfaces_by_branch[f"{family_id.lower()}_{branch_id.lower()}"] = branch_surface
+
+        root_surface = self._family_surface(
+            family_id,
+            module,
+            branches,
+            shared_core,
+        )
+        families[family_id] = dict(root_surface) if isinstance(root_surface, Mapping) else {}
+
+    return {
+        "schema_version": getattr(N, "DEFAULT_SCHEMA_VERSION", 1),
+        "surface_version": "family_surfaces.v25l",
+        "service": SERVICE_FEATURES,
+        "generated_at_ns": generated_at_ns,
+        "provider_runtime": dict(provider_runtime),
+        "shared_core": shared_core,
+        "families": families,
+        "surfaces_by_branch": surfaces_by_branch,
+        "builder_abi_audit": _builder_abi_audit_snapshot(),
+        "contract_note": "rich feature support only; family_features remains contracts.py exact-key payload",
+    }
+
+
+FeatureEngine._family_branch_surface = _batch25l_family_branch_surface_restored
+FeatureEngine._family_surface = _batch25l_family_surface_restored
+FeatureEngine._family_surfaces = _batch25l_family_surfaces_restored
+
+
+# Batch 25L corrective 5 — normalize branch surface_kind
+#
+# Family branch builders may return generic surface_kind values such as "mist".
+# The service-path contract needs branch surfaces to expose a branch-specific
+# kind, e.g. "mist_branch", while retaining the original builder label for audit.
+_BATCH25L_PREV_FAMILY_BRANCH_SURFACE = FeatureEngine._family_branch_surface
+
+
+def _batch25l_family_branch_surface_kind_normalized(
+    self: FeatureEngine,
+    family_id: str,
+    branch_id: str,
+    module: Any | None,
+    shared_core: Mapping[str, Any],
+    *,
+    provider_runtime: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    surface = _BATCH25L_PREV_FAMILY_BRANCH_SURFACE(
+        self,
+        family_id,
+        branch_id,
+        module,
+        shared_core,
+        provider_runtime=provider_runtime,
+    )
+    out = dict(surface) if isinstance(surface, Mapping) else {}
+
+    expected_kind = f"{family_id.lower()}_branch"
+    existing_kind = _safe_str(out.get("surface_kind"))
+
+    if existing_kind and existing_kind != expected_kind:
+        out.setdefault("builder_surface_kind", existing_kind)
+
+    out["surface_kind"] = expected_kind
+    out["family_id"] = family_id
+    out["branch_id"] = branch_id
+    out["side"] = _branch_side(branch_id)
+    out["rich_surface"] = True
+
+    return out
+
+
+FeatureEngine._family_branch_surface = _batch25l_family_branch_surface_kind_normalized
+
+
+# Batch 25M corrective 2 — branch-strict canonical family support
+#
+# MISR active_zone_valid is a root/context truth, but it must not make an
+# inactive sibling branch look partially active. The branch gets active_zone_valid
+# only when that branch also carries at least one branch-local setup signal.
+# MISC proof also now covers hesitation_ok -> hesitation_valid.
+
+def _batch25m_branch_has_any_setup_signal(
+    family_id: str,
+    rich: Mapping[str, Any],
+) -> bool:
+    rich_map = dict(_mapping(rich))
+    if not rich_map:
+        return False
+
+    alias_map = getattr(FF_C, "FAMILY_SUPPORT_ALIAS_MAP", {})
+    inverted_alias_map = getattr(FF_C, "FAMILY_SUPPORT_INVERTED_ALIAS_MAP", {})
+
+    family_aliases = dict(alias_map.get(family_id, {})) if isinstance(alias_map, Mapping) else {}
+    family_inverted_aliases = (
+        dict(inverted_alias_map.get(family_id, {}))
+        if isinstance(inverted_alias_map, Mapping)
+        else {}
+    )
+
+    candidate_keys: set[str] = set()
+    for canonical_key, aliases in family_aliases.items():
+        if canonical_key != "context_pass":
+            candidate_keys.add(canonical_key)
+            candidate_keys.update(str(alias) for alias in aliases)
+
+    for canonical_key, aliases in family_inverted_aliases.items():
+        candidate_keys.add(canonical_key)
+        candidate_keys.update(str(alias) for alias in aliases)
+
+    # Do not let active_zone_valid alone mark both MISR branches active when it
+    # was injected from root active_zone. Branch-local trap/reentry/proof signals
+    # must also exist.
+    if family_id == FAMILY_MISR:
+        candidate_keys.discard("active_zone_valid")
+        candidate_keys.discard("zone_valid")
+        candidate_keys.discard("active_zone_ready")
+
+    return any(_safe_bool(rich_map.get(key), False) for key in candidate_keys if key in rich_map)
+
+
+def _batch25m_contract_families_branch_strict(
+    self: FeatureEngine,
+    family_surfaces: Mapping[str, Any],
+    shared_core: Mapping[str, Any],
+) -> dict[str, Any]:
+    families = _empty_builder("build_empty_families_block")
+    rich = dict(_nested(family_surfaces, "families", default={}))
+
+    for family_id in FAMILY_IDS:
+        if family_id not in families:
+            continue
+
+        family_block = dict(families[family_id])
+        rich_family = dict(_mapping(rich.get(family_id)))
+
+        if family_id == FAMILY_MISO:
+            call_surface = dict(
+                _mapping(
+                    rich_family.get("call_support")
+                    or _nested(rich_family, "branches", BRANCH_CALL, default={})
+                )
+            )
+            put_surface = dict(
+                _mapping(
+                    rich_family.get("put_support")
+                    or _nested(rich_family, "branches", BRANCH_PUT, default={})
+                )
+            )
+
+            call_support = self._canonical_support(
+                family_id,
+                _empty_builder("build_empty_miso_side_support"),
+                call_surface,
+            )
+            put_support = self._canonical_support(
+                family_id,
+                _empty_builder("build_empty_miso_side_support"),
+                put_surface,
+            )
+
+            _patch_existing(
+                family_block,
+                {
+                    "eligible": bool(
+                        self._family_branch_eligible(family_id, call_support)
+                        or self._family_branch_eligible(family_id, put_support)
+                    ),
+                    "mode": _miso_runtime_mode(
+                        rich_family.get("mode")
+                        or rich_family.get("runtime_mode")
+                        or _nested(shared_core, "runtime_modes", "miso", "mode")
+                    ),
+                    "chain_context_ready": bool(
+                        rich_family.get("chain_context_ready")
+                        or _nested(
+                            shared_core,
+                            "strike_selection",
+                            "chain_context_ready",
+                            default=False,
+                        )
+                    ),
+                    "selected_side": _safe_str(
+                        rich_family.get("selected_side")
+                        or _nested(shared_core, "options", "selected", "side", default="")
+                    )
+                    or None,
+                    "selected_strike": rich_family.get("selected_strike")
+                    or _nested(shared_core, "options", "selected", "strike", default=None),
+                    "shadow_call_strike": rich_family.get("shadow_call_strike")
+                    or _nested(
+                        shared_core,
+                        "strike_selection",
+                        "shadow_call_strike",
+                        default=None,
+                    ),
+                    "shadow_put_strike": rich_family.get("shadow_put_strike")
+                    or _nested(
+                        shared_core,
+                        "strike_selection",
+                        "shadow_put_strike",
+                        default=None,
+                    ),
+                    "call_support": call_support,
+                    "put_support": put_support,
+                },
+            )
+
+        elif family_id == FAMILY_MISR:
+            branches = dict(family_block.get("branches", {}))
+            active_zone = self._active_zone(_nested(rich_family, "active_zone", default={}))
+            active_zone_valid = self._active_zone_valid(active_zone, rich_family)
+
+            call_rich = dict(_mapping(_nested(rich_family, "branches", BRANCH_CALL, default={})))
+            put_rich = dict(_mapping(_nested(rich_family, "branches", BRANCH_PUT, default={})))
+
+            call_support = self._canonical_support(
+                family_id,
+                _empty_builder("build_empty_misr_branch_support"),
+                call_rich,
+                extra={
+                    "active_zone_valid": bool(
+                        active_zone_valid
+                        and _batch25m_branch_has_any_setup_signal(family_id, call_rich)
+                    )
+                },
+            )
+            put_support = self._canonical_support(
+                family_id,
+                _empty_builder("build_empty_misr_branch_support"),
+                put_rich,
+                extra={
+                    "active_zone_valid": bool(
+                        active_zone_valid
+                        and _batch25m_branch_has_any_setup_signal(family_id, put_rich)
+                    )
+                },
+            )
+
+            branches[BRANCH_CALL] = call_support
+            branches[BRANCH_PUT] = put_support
+
+            _patch_existing(
+                family_block,
+                {
+                    "eligible": bool(
+                        self._family_branch_eligible(family_id, call_support)
+                        or self._family_branch_eligible(family_id, put_support)
+                    ),
+                    "active_zone": active_zone,
+                    "branches": branches,
+                },
+            )
+
+        else:
+            builder = {
+                FAMILY_MIST: "build_empty_mist_branch_support",
+                FAMILY_MISB: "build_empty_misb_branch_support",
+                FAMILY_MISC: "build_empty_misc_branch_support",
+            }.get(family_id, "build_empty_mist_branch_support")
+
+            branches = dict(family_block.get("branches", {}))
+            call_support = self._canonical_support(
+                family_id,
+                _empty_builder(builder),
+                _nested(rich_family, "branches", BRANCH_CALL, default={}),
+            )
+            put_support = self._canonical_support(
+                family_id,
+                _empty_builder(builder),
+                _nested(rich_family, "branches", BRANCH_PUT, default={}),
+            )
+
+            branches[BRANCH_CALL] = call_support
+            branches[BRANCH_PUT] = put_support
+
+            _patch_existing(
+                family_block,
+                {
+                    "eligible": bool(
+                        self._family_branch_eligible(family_id, call_support)
+                        or self._family_branch_eligible(family_id, put_support)
+                    ),
+                    "branches": branches,
+                },
+            )
+
+        families[family_id] = family_block
+
+    FF_C.validate_families_block(families)
+    return families
+
+
+FeatureEngine._contract_families = _batch25m_contract_families_branch_strict
+
+
+# ============================================================================
+# Batch 26H — final effective FeatureEngine family-surface consolidation
+# ============================================================================
+#
+# Final binding after older Batch-25/26 wrapper assignments. It captures the
+# current effective methods, preserves earlier functional fixes, and normalizes
+# final runtime output into one Batch 26H family-surface contract.
+
+_BATCH26H_PREV_FAMILY_BRANCH_SURFACE = FeatureEngine._family_branch_surface
+_BATCH26H_PREV_FAMILY_SURFACE = FeatureEngine._family_surface
+_BATCH26H_PREV_FAMILY_SURFACES = FeatureEngine._family_surfaces
+
+
+def _batch26h_expected_branch_surface_kind(family_id: str) -> str:
+    return f"{str(family_id).strip().lower()}_branch"
+
+
+def _batch26h_expected_family_surface_kind(family_id: str) -> str:
+    return f"{str(family_id).strip().lower()}_family"
+
+
+def _batch26h_finalize_branch_surface(
+    *,
+    family_id: str,
+    branch_id: str,
+    surface: Mapping[str, Any],
+) -> dict[str, Any]:
+    out = dict(surface) if isinstance(surface, Mapping) else {}
+
+    expected_kind = _batch26h_expected_branch_surface_kind(family_id)
+    existing_kind = _safe_str(out.get("surface_kind"))
+
+    if existing_kind and existing_kind != expected_kind:
+        out.setdefault("builder_surface_kind", existing_kind)
+
+    out["surface_kind"] = expected_kind
+    out["family_id"] = family_id
+    out["branch_id"] = branch_id
+    out["side"] = _branch_side(branch_id)
+    out["rich_surface"] = True
+    return out
+
+
+def _batch26h_finalize_family_surface(
+    *,
+    family_id: str,
+    surface: Mapping[str, Any],
+    branches: Mapping[str, Mapping[str, Any]],
+    shared_core: Mapping[str, Any],
+    engine: FeatureEngine,
+) -> dict[str, Any]:
+    call_surface = _batch26h_finalize_branch_surface(
+        family_id=family_id,
+        branch_id=BRANCH_CALL,
+        surface=branches.get(BRANCH_CALL, {}),
+    )
+    put_surface = _batch26h_finalize_branch_surface(
+        family_id=family_id,
+        branch_id=BRANCH_PUT,
+        surface=branches.get(BRANCH_PUT, {}),
+    )
+
+    out = dict(surface) if isinstance(surface, Mapping) else {}
+    expected_kind = _batch26h_expected_family_surface_kind(family_id)
+    existing_kind = _safe_str(out.get("surface_kind"))
+
+    if existing_kind and existing_kind != expected_kind:
+        out.setdefault("builder_surface_kind", existing_kind)
+
+    out["surface_kind"] = expected_kind
+    out["family_id"] = family_id
+    out["branches"] = {BRANCH_CALL: call_surface, BRANCH_PUT: put_surface}
+    out["call"] = call_surface
+    out["put"] = put_surface
+    out["eligible"] = bool(call_surface.get("eligible") or put_surface.get("eligible"))
+    out.setdefault(
+        "runtime_mode_surface",
+        engine._branch_runtime_mode_surface(family_id, shared_core),
+    )
+    out.setdefault("regime_surface", dict(_nested(shared_core, "regime", default={})))
+    out["rich_surface"] = True
+    return out
+
+
+def _batch26h_final_family_branch_surface(
+    self: FeatureEngine,
+    family_id: str,
+    branch_id: str,
+    module: Any | None,
+    shared_core: Mapping[str, Any],
+    *,
+    provider_runtime: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    surface = _BATCH26H_PREV_FAMILY_BRANCH_SURFACE(
+        self,
+        family_id,
+        branch_id,
+        module,
+        shared_core,
+        provider_runtime=provider_runtime,
+    )
+    return _batch26h_finalize_branch_surface(
+        family_id=family_id,
+        branch_id=branch_id,
+        surface=surface,
+    )
+
+
+def _batch26h_final_family_surface(
+    self: FeatureEngine,
+    family_id: str,
+    module: Any | None,
+    branches: Mapping[str, Mapping[str, Any]],
+    shared_core: Mapping[str, Any],
+) -> dict[str, Any]:
+    normalized_branches = {
+        BRANCH_CALL: _batch26h_finalize_branch_surface(
+            family_id=family_id,
+            branch_id=BRANCH_CALL,
+            surface=branches.get(BRANCH_CALL, {}),
+        ),
+        BRANCH_PUT: _batch26h_finalize_branch_surface(
+            family_id=family_id,
+            branch_id=BRANCH_PUT,
+            surface=branches.get(BRANCH_PUT, {}),
+        ),
+    }
+
+    surface = _BATCH26H_PREV_FAMILY_SURFACE(
+        self,
+        family_id,
+        module,
+        normalized_branches,
+        shared_core,
+    )
+    return _batch26h_finalize_family_surface(
+        family_id=family_id,
+        surface=surface,
+        branches=normalized_branches,
+        shared_core=shared_core,
+        engine=self,
+    )
+
+
+def _batch26h_final_family_surfaces(
+    self: FeatureEngine,
+    *,
+    generated_at_ns: int,
+    provider_runtime: Mapping[str, Any],
+    shared_core: Mapping[str, Any],
+) -> dict[str, Any]:
+    raw = _BATCH26H_PREV_FAMILY_SURFACES(
+        self,
+        generated_at_ns=generated_at_ns,
+        provider_runtime=provider_runtime,
+        shared_core=shared_core,
+    )
+    out = dict(raw) if isinstance(raw, Mapping) else {}
+
+    families_in = dict(out.get("families", {}))
+    surfaces_by_branch_in = dict(out.get("surfaces_by_branch", {}))
+
+    families: dict[str, dict[str, Any]] = {}
+    surfaces_by_branch: dict[str, dict[str, Any]] = {}
+
+    for family_id in FAMILY_IDS:
+        family_map = dict(families_in.get(family_id, {}))
+        branch_source = family_map.get("branches", {})
+        branch_source = branch_source if isinstance(branch_source, Mapping) else {}
+
+        call_key = f"{family_id.lower()}_{BRANCH_CALL.lower()}"
+        put_key = f"{family_id.lower()}_{BRANCH_PUT.lower()}"
+
+        call_branch = dict(branch_source.get(BRANCH_CALL) or surfaces_by_branch_in.get(call_key) or {})
+        put_branch = dict(branch_source.get(BRANCH_PUT) or surfaces_by_branch_in.get(put_key) or {})
+
+        branches = {
+            BRANCH_CALL: _batch26h_finalize_branch_surface(
+                family_id=family_id,
+                branch_id=BRANCH_CALL,
+                surface=call_branch,
+            ),
+            BRANCH_PUT: _batch26h_finalize_branch_surface(
+                family_id=family_id,
+                branch_id=BRANCH_PUT,
+                surface=put_branch,
+            ),
+        }
+
+        family = _batch26h_finalize_family_surface(
+            family_id=family_id,
+            surface=family_map,
+            branches=branches,
+            shared_core=shared_core,
+            engine=self,
+        )
+        families[family_id] = family
+        surfaces_by_branch[call_key] = branches[BRANCH_CALL]
+        surfaces_by_branch[put_key] = branches[BRANCH_PUT]
+
+    out["schema_version"] = out.get("schema_version", getattr(N, "DEFAULT_SCHEMA_VERSION", 1))
+    out["surface_version"] = "family_surfaces.v26h"
+    out["service"] = out.get("service", SERVICE_FEATURES)
+    out["generated_at_ns"] = out.get("generated_at_ns", generated_at_ns)
+    out["provider_runtime"] = dict(out.get("provider_runtime", provider_runtime))
+    out["shared_core"] = out.get("shared_core", shared_core)
+    out["families"] = families
+    out["surfaces_by_branch"] = surfaces_by_branch
+    out["builder_abi_audit"] = out.get("builder_abi_audit", _builder_abi_audit_snapshot())
+    out["contract_note"] = out.get(
+        "contract_note",
+        "Batch26H consolidated final family-surface contract; strategy remains HOLD/report-only.",
+    )
+
+    try:
+        if FF_C is not None and callable(getattr(FF_C, "validate_batch26h_surface_kinds", None)):
+            FF_C.validate_batch26h_surface_kinds(out)
+    except Exception as exc:
+        raise FeatureComputationError(f"Batch26H surface-kind validation failed: {exc}") from exc
+
+    return out
+
+
+FeatureEngine._family_branch_surface = _batch26h_final_family_branch_surface
+FeatureEngine._family_surface = _batch26h_final_family_surface
+FeatureEngine._family_surfaces = _batch26h_final_family_surfaces
+

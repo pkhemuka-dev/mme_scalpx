@@ -1,9 +1,7 @@
 schema_version: 1
 provider_id: ZERODHA
-config_revision: 2026-04-22-a
-
+config_revision: batch25s_config_systemd_alignment
 enabled: true
-
 capabilities:
   futures_marketdata:
     enabled: true
@@ -18,7 +16,6 @@ capabilities:
     enabled: true
     preferred_primary: true
     preferred_fallback: false
-
 health_contract:
   auth_required: true
   marketdata_required: true
@@ -29,19 +26,16 @@ health_contract:
   dead_after_ms:
     futures_marketdata: 5000
     selected_option_marketdata: 5000
-
 transport_contract:
   selected_option_depth_mode: TOP5
   futures_depth_mode: TOP5
   chain_snapshot_required: false
   context_refresh_ms: null
-
 execution_contract:
   allow_primary_execution: true
   allow_fallback_execution: true
   require_auth_for_order_send: true
   require_position_reconciliation: true
-
 strategy_relevance:
   mist:
     futures_marketdata_used: true
@@ -64,3 +58,14 @@ strategy_relevance:
     selected_option_marketdata_used: false
     execution_primary_supported: true
     execution_fallback_supported: false
+config_name: zerodha
+provider_roles:
+  futures_marketdata: true
+  execution_primary: true
+  selected_option_marketdata: tradability_truth_only_when_execution_provider_selected
+  option_context: false
+batch25s_policy:
+  primary_futures_provider: true
+  primary_execution_provider: true
+  mid_position_provider_migration_allowed: false
+  preposition_provider_change_requires_setup_rebuild: true

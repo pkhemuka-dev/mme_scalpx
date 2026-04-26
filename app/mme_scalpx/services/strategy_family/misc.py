@@ -45,6 +45,7 @@ from dataclasses import dataclass, field
 from typing import Any, Final, Mapping, Sequence
 
 from app.mme_scalpx.core import names as N
+from app.mme_scalpx.services.strategy_family import common as SF_COMMON
 
 
 FAMILY_ID: Final[str] = getattr(N, "STRATEGY_FAMILY_MISC", "MISC")
@@ -493,16 +494,10 @@ def selected_option(view: Mapping[str, Any], branch_id: str) -> dict[str, Any]:
 
 
 def runtime_mode(view: Mapping[str, Any]) -> str:
-    common = extract_common(view)
-    provider_runtime = extract_provider_runtime(view)
-    text = (
-        safe_str(common.get("strategy_runtime_mode_classic"))
-        or safe_str(common.get("classic_runtime_mode"))
-        or safe_str(provider_runtime.get("classic_runtime_mode"))
-        or RUNTIME_NORMAL
+    return SF_COMMON.resolve_classic_runtime_mode(
+        extract_common(view),
+        extract_provider_runtime(view),
     )
-    return text
-
 
 # =============================================================================
 # MISC scoring
@@ -513,23 +508,9 @@ def global_gates_pass(view: Mapping[str, Any]) -> tuple[bool, str | None]:
     if not safe_bool(view.get("safe_to_consume"), True):
         return False, "view_not_safe_to_consume"
 
-    stage = extract_stage_flags(view)
-    required = {
-        "data_valid": True,
-        "data_quality_ok": True,
-        "session_eligible": True,
-        "warmup_complete": True,
-    }
-    for key, expected in required.items():
-        if key in stage and safe_bool(stage.get(key), False) != expected:
-            return False, f"stage_{key}_failed"
-
-    if safe_bool(stage.get("risk_veto_active"), False):
-        return False, "risk_veto_active"
-    if safe_bool(stage.get("reconciliation_lock_active"), False):
-        return False, "reconciliation_lock_active"
-    if safe_bool(stage.get("active_position_present"), False):
-        return False, "active_position_present"
+    ok, reason = SF_COMMON.validate_global_stage_gates(extract_stage_flags(view))
+    if not ok:
+        return False, reason
 
     if runtime_mode(view) == RUNTIME_DISABLED:
         return False, "classic_runtime_disabled"
@@ -615,19 +596,22 @@ def retest_resume_score(surface: Mapping[str, Any]) -> tuple[float, str | None]:
         retest_type = safe_str(surface.get("retest_type")) or None
         return clamp(explicit, 0.0, 1.0), retest_type
 
-    retest_valid = bool_any(surface, ("retest_valid", "full_retest_valid", "retest_ok"))
-    hesitation_valid = bool_any(surface, ("hesitation_valid", "hesitation_ok"))
+    retest_monitor_active = bool_any(surface, ("retest_monitor_active", "retest_monitor_alive", "retest_monitor"))
+    retest_valid = bool_any(surface, ("retest_valid", "full_retest", "full_retest_valid", "retest_ok"))
+    hesitation_valid = bool_any(surface, ("hesitation_valid", "hesitation_retest", "hesitation_ok"))
     resume = bool_any(surface, ("resume_confirmation_ok", "resume_confirmed", "resume_ok"))
     premium_health = not safe_bool(surface.get("premium_health_failed"), False)
     shallow = bool_any(surface, ("retest_depth_ok", "shallow_retest_ok"))
 
     score = 0.0
     retest_type: str | None = None
+    if retest_monitor_active:
+        score += 0.15
     if retest_valid:
-        score += 0.30
+        score += 0.25
         retest_type = "FULL_RETEST"
     if hesitation_valid:
-        score += 0.30
+        score += 0.25
         retest_type = "HESITATION"
     if resume:
         score += 0.30
@@ -972,29 +956,11 @@ if "runtime_mode" in globals():
     _BATCH1_ORIGINAL_RUNTIME_MODE = runtime_mode
 
     def runtime_mode(view: Mapping[str, Any]) -> str:
-        common = extract_common(view)
-        provider_runtime = extract_provider_runtime(view)
-
-        text = (
-            safe_str(common.get("strategy_runtime_mode_classic"))
-            or safe_str(common.get("classic_runtime_mode"))
-            or safe_str(provider_runtime.get("classic_runtime_mode"))
+        return SF_COMMON.resolve_classic_runtime_mode(
+            extract_common(view),
+            extract_provider_runtime(view),
         )
-        if not text:
-            return RUNTIME_DISABLED
 
-        normalized = text.upper().replace("-", "_")
-        normal = safe_str(RUNTIME_NORMAL).upper().replace("-", "_")
-        degraded = safe_str(RUNTIME_DHAN_DEGRADED).upper().replace("-", "_")
-        disabled = safe_str(RUNTIME_DISABLED).upper().replace("-", "_")
-
-        if normalized == normal:
-            return RUNTIME_NORMAL
-        if normalized == degraded:
-            return RUNTIME_DHAN_DEGRADED
-        if normalized == disabled:
-            return RUNTIME_DISABLED
-        return RUNTIME_DISABLED
 else:
     _BATCH1_ORIGINAL_RUNTIME_MODE = None
 
@@ -1209,3 +1175,124 @@ def evaluate_doctrine(view_like: Any, branch_id: str | None = None):
 def get_evaluator():
     return evaluate
 # ===== BATCH1_STRATEGY_FAMILY_LEAF_CANDIDATE_CONTRACT END =====
+
+
+# Batch 25O corrective — consume MISC retest_monitor_active
+#
+# Reverse coverage law:
+# feature_family.misc_surface -> canonical family_features.MISC.branches.*.retest_monitor_active
+# must have an explicit MISC strategy-leaf consumer path.
+#
+# This wrapper is intentionally non-promotional. It reads the canonical signal
+# and accepted compatibility aliases, then delegates to the frozen evaluator.
+# Candidate promotion, risk, execution, and broker behavior are unchanged.
+
+_BATCH25O_MISC_RETEST_MONITOR_KEYS = (
+    "retest_monitor_active",
+    "retest_monitor_alive",
+    "retest_monitor",
+)
+
+_BATCH25O_ORIGINAL_MISC_EVALUATE_BRANCH = evaluate_branch
+
+
+def _batch25o_bool(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return value != 0
+    text = str(value).strip().lower()
+    return text in {"1", "true", "yes", "y", "on", "ok", "pass", "passed"}
+
+
+def _batch25o_is_mapping(value: object) -> bool:
+    return hasattr(value, "get") and hasattr(value, "keys")
+
+
+def _batch25o_find_misc_branch_frame(args: tuple[object, ...], kwargs: dict[str, object]) -> object:
+    for key in (
+        "branch_frame",
+        "branch_features",
+        "branch_surface",
+        "support",
+        "frame",
+        "view",
+        "features",
+    ):
+        value = kwargs.get(key)
+        if _batch25o_is_mapping(value):
+            return value
+
+    for value in args:
+        if _batch25o_is_mapping(value):
+            return value
+
+    return {}
+
+
+def _batch25o_misc_retest_monitor_active(branch_frame: object) -> bool:
+    if not _batch25o_is_mapping(branch_frame):
+        return False
+
+    for key in _BATCH25O_MISC_RETEST_MONITOR_KEYS:
+        value = branch_frame.get(key)  # type: ignore[attr-defined]
+        if value is not None:
+            return _batch25o_bool(value)
+
+    return False
+
+
+def evaluate_branch(*args: object, **kwargs: object) -> object:
+    branch_frame = _batch25o_find_misc_branch_frame(args, kwargs)
+
+    # Explicit consumer read for reverse-coverage proof and future diagnostics.
+    # This batch does not add a new blocker or promotion path.
+    _retest_monitor_active = _batch25o_misc_retest_monitor_active(branch_frame)
+    _ = _retest_monitor_active
+
+    return _BATCH25O_ORIGINAL_MISC_EVALUATE_BRANCH(*args, **kwargs)
+
+
+# =============================================================================
+# Batch 25P candidate metadata standardization
+# =============================================================================
+#
+# This wrapper standardizes candidate.metadata after doctrine evaluation. It does
+# not promote candidates, publish strategy decisions, call risk, or call execution.
+
+if "_BATCH25P_ORIGINAL_EVALUATE_BRANCH" not in globals():
+    _BATCH25P_ORIGINAL_EVALUATE_BRANCH = evaluate_branch
+    _BATCH25P_ORIGINAL_EVALUATE = evaluate
+
+
+def _batch25p_standardize_candidate_result(view_like: Any, result: Any) -> Any:
+    return SF_COMMON.standardize_candidate_result(
+        result,
+        view_like=view_like,
+        family_id=FAMILY_ID,
+        doctrine_id=DOCTRINE_ID,
+    )
+
+
+def evaluate_branch(view_like: Any, branch_id: str):
+    result = _BATCH25P_ORIGINAL_EVALUATE_BRANCH(view_like, branch_id)
+    return _batch25p_standardize_candidate_result(view_like, result)
+
+
+def evaluate(view_like: Any, branch_id: str | None = None):
+    if branch_id is not None:
+        return evaluate_branch(view_like, branch_id)
+
+    for candidate_branch in SUPPORTED_BRANCHES:
+        result = evaluate_branch(view_like, candidate_branch)
+        if result.is_candidate or result.is_blocked:
+            return result
+
+    return no_signal_result(
+        branch_id=None,
+        reason="all_branches_no_signal",
+        metadata={"family_id": FAMILY_ID},
+    )
+

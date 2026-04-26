@@ -229,11 +229,11 @@ def _derived_context_score(
 def _branch_ready(surface: Mapping[str, Any]) -> bool:
     return bool(
         _safe_bool(_pick(surface, "present"), False)
-        and _safe_bool(_pick(surface, "futures_bias_ok"), False)
+        and _safe_bool(_pick(surface, "trend_confirmed"), False)
         and _safe_bool(_pick(surface, "futures_impulse_ok"), False)
         and _safe_bool(_pick(surface, "pullback_detected"), False)
-        and _safe_bool(_pick(surface, "micro_trap_blocked"), False)
-        and _safe_bool(_pick(surface, "resume_support"), False)
+        and _safe_bool(_pick(surface, "micro_trap_resolved"), False)
+        and _safe_bool(_pick(surface, "resume_confirmed"), False)
         and _safe_bool(_pick(surface, "context_pass"), False)
         and _safe_bool(_pick(surface, "option_tradability_pass"), False)
         and not _safe_str(_pick(surface, "failed_stage"))
@@ -443,7 +443,7 @@ def build_mist_branch_surface(
     )
 
     return {
-        "surface_kind": "mist",
+        "surface_kind": "mist_branch",
         "present": surface_present,
         "branch_ready": branch_ready,
         "family_id": _safe_str(getattr(N, "STRATEGY_FAMILY_MIST", "MIST")),
@@ -465,6 +465,7 @@ def build_mist_branch_surface(
         "runtime_mode_surface": mode,
         "alignment_ok": alignment_ok,
         "option_confirmation": option_confirmation,
+        "trend_confirmed": futures_bias_ok,
         "futures_bias_ok": futures_bias_ok,
         "futures_impulse_ok": futures_impulse_ok,
         "trend_direction_ok": futures_bias_ok,
@@ -474,6 +475,8 @@ def build_mist_branch_surface(
         "pullback_detected": pullback_detected,
         "micro_trap_depth": micro_trap_depth,
         "micro_trap_flag": micro_trap_flag,
+        "micro_trap_resolved": micro_trap_blocked,
+        "micro_trap_clear": micro_trap_blocked,
         "micro_trap_blocked": micro_trap_blocked,
         "resume_support": resume_support,
         "resume_confirmed": resume_support,

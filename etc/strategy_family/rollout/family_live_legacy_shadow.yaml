@@ -1,0 +1,9 @@
+schema_version: 1
+rollout_mode: family_live_legacy_shadow
+default: false
+strategy_publish_mode: FAMILY_PREVIEW_ONLY_UNTIL_ARMING_PROOF
+family_order_intent_preview: true
+family_order_intent_publish: false
+requires_later_arming_proof: true
+execution_arming: false
+broker_orders_allowed: false
