@@ -1,0 +1,2193 @@
+{
+  "accepted_for": "PROOF_29AA_PASS_INTEGRITY_AUDIT_ONLY",
+  "audit_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/proof_29aa_pass_integrity_audit_29ab_r2",
+  "backup_dir": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122",
+  "backups": [
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/app/mme_scalpx/replay/offline_context_shim.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/offline_context_shim.py",
+      "present": true,
+      "sha256": "66e64cab9a3429c69cc33a904d8ed53bb2eac59b58b61dd44f1ba7e1ea266b6b",
+      "size_bytes": 15775
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/app/mme_scalpx/replay/engine.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/engine.py",
+      "present": true,
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8",
+      "size_bytes": 20518
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/app/mme_scalpx/replay/topology.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/topology.py",
+      "present": true,
+      "sha256": "448cf6bd7f34f13d02768684a0807dc8b5993f493e91bff503f0d1b34e589e0c",
+      "size_bytes": 12432
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "present": true,
+      "sha256": "9ad2b5b9cb48b0e323bdd733768b5dd10d430fd7529e73bf73f43300a92331c8",
+      "size_bytes": 27919
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/proofs/proof_reconcile_29aa_pass_outputs_29ab_r1_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_reconcile_29aa_pass_outputs_29ab_r1_latest.json",
+      "present": true,
+      "sha256": "dd10eaee57e560b87fc9084dbe3ceb96ee59a27364b1210e44ada2e6ff90f71e",
+      "size_bytes": 6225
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/proofs/proof_offline_stage_owns_runtime_decisioning_audit_29ab_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_offline_stage_owns_runtime_decisioning_audit_29ab_latest.json",
+      "present": true,
+      "sha256": "2f4d3929ed013072c69d0f8a190b1b3f6db5347eef8d2ac690a0e69cbba4ec4c",
+      "size_bytes": 6046
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/proofs/proof_offline_stage_description_alias_repair_29aa_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_offline_stage_description_alias_repair_29aa_latest.json",
+      "present": true,
+      "sha256": "a9e6a7a8e521945b68d6f92808e184a800bd056cdd1cc6e23b0f37fd1ea5963f",
+      "size_bytes": 10504
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/proofs/proof_offline_stage_description_runtime_gap_audit_29z_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_offline_stage_description_runtime_gap_audit_29z_latest.json",
+      "present": true,
+      "sha256": "c9062e2a200709382d9fa2abb5e614f8be43bc8c31f4f3186cb3a1acc835f9f9",
+      "size_bytes": 9485
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "etc/replay/parity/proof_29aa_pass_integrity_audit_29ab_r2.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/proof_29aa_pass_integrity_audit_29ab_r2.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/proof_29aa_pass_integrity_audit_29ab_r2_latest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122_driver_proof.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "docs/milestones/BATCH29AB_R2_29AA_PASS_INTEGRITY_AUDIT.md",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "d3a40e931ffbb91942d3b7275bac47e643c3b09c4a1543558b45bfde16170d09",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "9249dfda9e993c09b92cc73840a970d7025937facde22b9a82d978e51de0115e",
+      "size_bytes": 8950
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "1ebd4340ed1b4f285a2e585525ca2a68ddf4b16e3ab1acbd948422f3e9b61ef6",
+      "size_bytes": 1932
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "5d90eb5c734feaac15aae5c7a8dad0be0fdba316f1af8ba039bb0d8dd8c3e7f6",
+      "size_bytes": 328
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_description_alias_repair_29aa/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_description_alias_repair_29aa/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_description_alias_repair_29aa/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_description_alias_repair_29aa/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_description_alias_repair_29aa/04_no_broker_no_live_redis_boundary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_description_alias_repair_29aa/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/reconcile_29aa_pass_outputs_29ab_r1/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/reconcile_29aa_pass_outputs_29ab_r1/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/reconcile_29aa_pass_outputs_29ab_r1/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/reconcile_29aa_pass_outputs_29ab_r1/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/reconcile_29aa_pass_outputs_29ab_r1/04_no_broker_no_live_redis_boundary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/reconcile_29aa_pass_outputs_29ab_r1/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "7e214298f231bfce22e86ef12b22e9f4af6e5700577898b9fd2c858590974d4a",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "e2590fc5d56a1b8c4770cdea8a660155def42a9c0745c7ec4aa4fdbd549c05c4",
+      "size_bytes": 7704
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "e8c79123c8253fe1dc7be845014035ea227753be9276077eec909dfa8bf70702",
+      "size_bytes": 751
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "03d951c989d098e2953d5d0dbb5ad2b1070f6e0344b82b8aa12145f791c7b703",
+      "size_bytes": 391
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "80b33f4a546ebbb8fc57d2c88b233022b351445c2487055bbe87b8517cd76a3d",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "d451f2ca7994277e0a1d1eec50fabad4c0f0040d0afe8af4ee637ec74af4b473",
+      "size_bytes": 8954
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "350568a09c5d47c0e5b772790878dae6442da481d42cdbd49746d61f62a29c3c",
+      "size_bytes": 1919
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "a98471f62e6baa298c33cab12d93948caf49d1dc62cb89180ee0de4450af91b3",
+      "size_bytes": 315
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "a576b714a81a25a03de7f7b1b8e9d1123fc08c8049724c3c11f5db6f62e7f3ab",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "d2ec448c5f499e217f9045d242616c757d9009e240287e36744a20f8f552ccc5",
+      "size_bytes": 7704
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "e492350c1bcfdf91768741b3f02c398d439b66ac61e8960813b2494e9d40c118",
+      "size_bytes": 709
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "e9ba6c36420d7edaf927417a76f0ff20860902c99a516d16639f0117b08c63ae",
+      "size_bytes": 349
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "e8649c8a637767eeabe5fa7bbba31856fa0d7cee6abc56ecdaf034a885b0ef1d",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "7c99ed33096bb1564dfb22b37b16e9a49eac70e9b1f9341be04a1e8ac59b3386",
+      "size_bytes": 7710
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "e492350c1bcfdf91768741b3f02c398d439b66ac61e8960813b2494e9d40c118",
+      "size_bytes": 709
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "e9ba6c36420d7edaf927417a76f0ff20860902c99a516d16639f0117b08c63ae",
+      "size_bytes": 349
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "50da70597935dc7c527df7f5e1a66369d3f87c0f8de8aea29168b24799a46351",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "c51dcca6c19c5a4e5a7e0699805878286cbdbdebcf93a46fb52bc8b1a34b1f39",
+      "size_bytes": 7704
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "628006b251b8119e1575e1a3ed9813115b17e31a3e363c4948363f0c4b3518b1",
+      "size_bytes": 682
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "faddaf4f3d1134b1bf6bdff9f4c0365c506f02856964b78389200861777efe0b",
+      "size_bytes": 322
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "ac56857dc50ac9b6ef26f69cc6e76d31a086dfe06ca32f83cff6692c87561cd4",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "2635fe2396a7bc673380d90fbd03dc1d41fbf40bf7a39417f08d8d4552de28ad",
+      "size_bytes": 7704
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "910de6ba709cea99c106ab01addfe89592dd28fd414902095b80b516d97bd4b4",
+      "size_bytes": 673
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "aa50514fb188a3eb25b366bfa2f84b270efc8492e4c808b97e14c3d3508654e3",
+      "size_bytes": 313
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "efb71059f9b34b6669ade58793f205a2a61c709caddbe9ac0538baae233043b3",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "1bb324c0130b70d734a7c22ed0edaf3cb29d489cc7f79b3eed7aacaf1390cb0e",
+      "size_bytes": 8954
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "712802f4ea033a659f32a4308d2f6ae8aa13ad06752f1900e306e2cba0d383d5",
+      "size_bytes": 1920
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "7c74637bd60ebbf0c413c0766c9dc43cf0c4bd81dbe5c9a42461bd5da4b95edb",
+      "size_bytes": 316
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "0b3b1933398901fbbc77f754e8ccbb6e1ca00254de73686cb4e78017c6af0cd1",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "3533cf1eb1fcce800ef2019b9a06b74d03e9f825969503669f11a141ad400093",
+      "size_bytes": 7710
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "eda6723ebb3c176abd05661af69ed5dd0f424868f1cf0244d8993f7a3c847697",
+      "size_bytes": 674
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "e2402f38d4dbb2557fb9e3049bf334bdc9ad0132f20def4df6dd449727995b69",
+      "size_bytes": 314
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "ffb08e332b765f63e7ce9b0e1dbc7f57564ff2bf28b294dae0283ad01a0e9783",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "a0dafea0c0b60576cfc63d503779c696c3f1bfb9d8563d5b28b0d175f086cbb9",
+      "size_bytes": 7599
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "7934c2f01d2725be62f002c4a6e83b3a78160be802e3795083086b147ab77f13",
+      "size_bytes": 675
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "0dedb0a144770ed4b9afe882d81e060c5d9c1093fa54aac1b7bc474cb6891b60",
+      "size_bytes": 315
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "cc2bb2e54ad6508557e0425874adcccc935e7baa2a6803a8539038ee2a538fa5",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "4a97a52eb6b21818d5749d31b368875a43f850233d3da951eb64616c57a6a544",
+      "size_bytes": 7704
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "18732dbd19927d4e9cfe811ff9f0f1fb839f20d75b2f1ba4ca38ff02896f7130",
+      "size_bytes": 748
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "62658f2b4904439b2cdba775fd1d17452b6775c5bfa005a8dc1a4923b9135d1f",
+      "size_bytes": 388
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "5c1b59ea647994afc14bc4a5c2731e8a5a1751dbbca9f31457dd0ba3ae7eb8e5",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "f5e93b4c1ced71149ad9e539b9029fc5f5a01cd4bf797fb15b8a780832ad6359",
+      "size_bytes": 8954
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "1295b7b105d4160f2738055d80c8af1b47e20721fc92235374428b69c10edcb7",
+      "size_bytes": 1898
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "b5464d544b26116054d29357f9991a5b809167ddf7d73e085a99cfd9c3efdf1c",
+      "size_bytes": 294
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "4fa365603cc5e3283bdb57aff8ff2f49b4e7049b6a9f5a97826cb8474fd117a4",
+      "size_bytes": 729
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_terminal_stage_runtime_gap_audit_29r/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_terminal_stage_runtime_gap_audit_29r/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_terminal_stage_runtime_gap_audit_29r/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_terminal_stage_runtime_gap_audit_29r/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_terminal_stage_runtime_gap_audit_29r/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_terminal_stage_runtime_gap_audit_29r/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "65da70152eb8b76896379a8f985baac74e4c877c3be5f93a7c43234899841b1d",
+      "size_bytes": 755
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_terminal_stage_runtime_gap_audit_29r/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_runtime_gap_audit_29n/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_runtime_gap_audit_29n/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_runtime_gap_audit_29n/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_runtime_gap_audit_29n/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_runtime_gap_audit_29n/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_runtime_gap_audit_29n/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "70c63ad019340568fb3b004e5a2e223d58e0abf0dc0c3f688ebc17611a06d9c1",
+      "size_bytes": 752
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_runtime_gap_audit_29n/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "d4dc7af41b71913f976439e50537cb347c54cee88299db263c31a84bd67e1393",
+      "size_bytes": 768
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "9a8b84792c63fc1d80e08bcb4ae9092062ab2e02095045dc0047bccff710f112",
+      "size_bytes": 5601
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_alias_repair_29m/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_alias_repair_29m/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_alias_repair_29m/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_alias_repair_29m/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_alias_repair_29m/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_alias_repair_29m/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "c1498dcd9f866b2a79f572e909d76b9a618a072396767fde1eae389e9d11bd64",
+      "size_bytes": 657
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_alias_repair_29m/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "36f7f8a66d1d88bcc1682141e6430fa6ea591ef2bee90e8711f48d691944d88e",
+      "size_bytes": 728
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "e886f60823079e7f9be2e878e3ecdd30a135bd0ebf254de0289570fe51b2e7ca",
+      "size_bytes": 777
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/protocol_safe_replay_core_candidate_selection_29b/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/protocol_safe_replay_core_candidate_selection_29b/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/protocol_safe_replay_core_candidate_selection_29b/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/protocol_safe_replay_core_candidate_selection_29b/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/protocol_safe_replay_core_candidate_selection_29b/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/protocol_safe_replay_core_candidate_selection_29b/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "a2035f73d653dc21e930028367784e1c55e33d62bdd61150ec38eebef454c3dd",
+      "size_bytes": 732
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/protocol_safe_replay_core_candidate_selection_29b/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "2c4cce2602bc8d2471e1e29fede2d683e057f00b3f9c76ed562e33c58ab919bc",
+      "size_bytes": 756
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "55aa00de34c314730a3bea021eaac32739df29bf97f728384f238f4a64c61ab4",
+      "size_bytes": 699
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_runtime_gap_audit_29p/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_runtime_gap_audit_29p/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_runtime_gap_audit_29p/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_runtime_gap_audit_29p/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_runtime_gap_audit_29p/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_runtime_gap_audit_29p/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "d25357210e31f5376bb9cb9240ab46720fde9bfb08cce4dfb927322a7e261617",
+      "size_bytes": 752
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_runtime_gap_audit_29p/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_alias_repair_29o/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_alias_repair_29o/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_alias_repair_29o/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_alias_repair_29o/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_alias_repair_29o/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_alias_repair_29o/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "f3169ad77927e208cd681e12031f5728a61e202b874d580d9ffa6d61f542bae7",
+      "size_bytes": 658
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_alias_repair_29o/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_runtime_gap_audit_29h/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_runtime_gap_audit_29h/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_runtime_gap_audit_29h/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_runtime_gap_audit_29h/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_runtime_gap_audit_29h/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_runtime_gap_audit_29h/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "1f91298aaf85f08129ab17d9435fcd3b8811dd79a3d1e06c69439f47c61f963c",
+      "size_bytes": 1396
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_runtime_gap_audit_29h/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "9b4eb3476ca978dbc93b5a4911213a65dadce604050fb72f8d5a3647a3b5cbda",
+      "size_bytes": 723
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_argument_binding_audit_29a/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_argument_binding_audit_29a/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_argument_binding_audit_29a/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_argument_binding_audit_29a/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_argument_binding_audit_29a/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_argument_binding_audit_29a/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "4e96f6b52c35694a1f05b730d38449101cd79f1e718ef80e4dd597f9aa97eb0c",
+      "size_bytes": 753
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_argument_binding_audit_29a/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "2f832887275a12b7f1daeb70c68cc1b22c6c607af8c7c7712d2bb2387dcac43b",
+      "size_bytes": 754
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_runtime_gap_audit_29l/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_runtime_gap_audit_29l/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_runtime_gap_audit_29l/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_runtime_gap_audit_29l/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_runtime_gap_audit_29l/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_runtime_gap_audit_29l/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "1f087f182f5b0bb8cc76e5fc66b04a07e4a053ff62f79a93e18298868a82abae",
+      "size_bytes": 751
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_runtime_gap_audit_29l/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_engine_integration_preflight_28q/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_engine_integration_preflight_28q/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_engine_integration_preflight_28q/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_engine_integration_preflight_28q/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_engine_integration_preflight_28q/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_engine_integration_preflight_28q/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "8a849eea009268a5502fe29648e40b8e936de2002414dbdace1b78bad0910c4a",
+      "size_bytes": 3978
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_engine_integration_preflight_28q/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_run_id_repair_29i/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_run_id_repair_29i/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_run_id_repair_29i/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_run_id_repair_29i/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_run_id_repair_29i/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_run_id_repair_29i/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "b2be49238ace736ee39eae0023e745d04eef55e56f22b17e8fed0d336f839cc0",
+      "size_bytes": 647
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_run_id_repair_29i/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_alias_repair_29q/00_guarded_replay_engine_execute_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_alias_repair_29q/01_context_reconstruction_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_alias_repair_29q/02_engine_execution_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_alias_repair_29q/03_execution_output_summary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_alias_repair_29q/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_alias_repair_29q/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "f089de207e7160247dd3e25a92f8723784bcef768daf67f033767d31b1f92658",
+      "size_bytes": 658
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_alias_repair_29q/05_next_replay_output_parity_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    }
+  ],
+  "batch": "29AB-R2",
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": null,
+  "code_patch_applied": false,
+  "comparison_completed": false,
+  "compile_ok": true,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "execution_arming_created": false,
+  "files_changed": [],
+  "full_live_replay_parity": "NOT_PROVEN_IN_29AB_R2",
+  "generated_at_utc": "2026-05-02T06:31:22.693050+00:00",
+  "inspection_manifest": "run/proofs/batch29ab_r2_29aa_pass_integrity_audit_20260502_120122_inspection/inspection_manifest.json",
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 29AB-R3 \u2014 classify selected retry artifacts before any code patch.",
+  "outputs_ready_for_inspection": false,
+  "paper_armed_approved": false,
+  "prior_29ab_r1_verdict": "DEFERRED_29AB_R1_29AA_PASS_CHAIN_NOT_FULLY_RECONCILED",
+  "production_doctrine_changed": false,
+  "proof": "run/proofs/proof_29aa_pass_integrity_audit_29ab_r2.json",
+  "proof_29aa_pass_label": true,
+  "proof_29aa_retry_execute_root": null,
+  "proof_29aa_retry_returncode": null,
+  "proof_29aa_retry_runtime_error": null,
+  "proof_29aa_structurally_complete": false,
+  "proof_29aa_verdict": "PASS_OFFLINE_STAGE_DESCRIPTION_ALIAS_REPAIR_29AA",
+  "proof_latest": "run/proofs/proof_29aa_pass_integrity_audit_29ab_r2_latest.json",
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "repair_path": "CLASSIFY_SELECTED_RETRY_ARTIFACT_FAILURE",
+  "retry_artifact_root_found": true,
+  "retry_roots_discovered": [
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_description_alias_repair_29aa",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/reconcile_29aa_pass_outputs_29ab_r1",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29s_r1",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29m",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29w_r2",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_terminal_stage_runtime_gap_audit_29r",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_runtime_gap_audit_29n",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_alias_repair_29m",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/protocol_safe_replay_core_candidate_selection_29b",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_runtime_gap_audit_29p",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_alias_repair_29o",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_runtime_gap_audit_29h",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_argument_binding_audit_29a",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_name_runtime_gap_audit_29l",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_engine_integration_preflight_28q",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_run_id_repair_29i",
+    "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_alias_repair_29q"
+  ],
+  "schema_version": "proof_29aa_pass_integrity_audit_29ab_r2_v1",
+  "selected_retry_boundary_safety_ok": true,
+  "selected_retry_execution_ok": false,
+  "selected_retry_replay_run_completed": false,
+  "selected_retry_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa",
+  "selected_retry_runtime_error": "AttributeError: 'OfflineReplayStage' object has no attribute 'owns_runtime_decisioning'",
+  "starts_services": false,
+  "verdict": "DEFERRED_29AB_R2_RETRY_ARTIFACTS_FOUND_BUT_NOT_READY_FOR_PARITY_INSPECTION",
+  "writes_live_redis": false
+}

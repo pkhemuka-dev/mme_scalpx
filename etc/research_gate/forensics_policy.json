@@ -1,0 +1,35 @@
+{
+  "broker_io_allowed": false,
+  "forensics_computation_included": true,
+  "forensics_owner": "RAW_Blocker_Missed_False_Entry_Desk",
+  "never_infer_missing_outcomes": true,
+  "non_live": true,
+  "non_mutating": true,
+  "oi_wall_computation_included": false,
+  "order_sending_allowed": false,
+  "output_artifacts": [
+    "blocker_chain_report.json",
+    "missed_trade_report.json",
+    "false_entry_report.json",
+    "blocker_matrix.csv",
+    "forensics_source_breakdown.csv",
+    "RAW_H_FORENSICS_SUMMARY.md"
+  ],
+  "paper_live_enablement_allowed": false,
+  "pnl_computation_included": false,
+  "production_mutation_allowed": false,
+  "redis_live_write_allowed": false,
+  "required_for_high_confidence": [
+    "explicit false-entry label",
+    "explicit missed-trade label",
+    "explicit good-blocker label",
+    "explicit PnL / target / stop outcome field"
+  ],
+  "reserved_for_later_batches": [
+    "promotion decision",
+    "ML scoring",
+    "live strategy mutation"
+  ],
+  "schema_version": "RAW-H.1",
+  "strategy_ranking_included": false
+}

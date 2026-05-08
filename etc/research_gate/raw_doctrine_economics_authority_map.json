@@ -1,0 +1,169 @@
+{
+  "authority_warning": "This map is a RAW-only authority artifact based on uploaded doctrine documents. It is not a production strategy patch and does not enable paper/live.",
+  "batch": "RAW-AA13A-R3",
+  "created_at_utc": "2026-05-02T05:40:38.358455+00:00",
+  "family_authority": {
+    "MISB": {
+      "authority_source_class": "uploaded_doctrine_doc_manual_freeze",
+      "authority_status": "manual_authority_from_uploaded_doctrine_docs",
+      "family": "MISB",
+      "hard_stop_points": 4.0,
+      "oi_wall_distance_points_status": "unavailable_until_explicit_distance_field_or_oi_ladder_context_is_proven",
+      "oi_wall_strength_status": "unavailable_until_explicit_strength_field_or_formula_is_proven",
+      "paper_live_promotion": "rejected",
+      "pnl_cost_model_status": "unavailable",
+      "reward_cost_ratio_status": "unavailable_until_explicit_cost_model_is_proven",
+      "reward_ticks": 100,
+      "reward_ticks_policy": "reward_ticks_equals_target_ticks_for_first_target_raw_economics_only",
+      "stop_ticks": 80,
+      "target_points": 5.0,
+      "target_stop_unit": "option_premium_points",
+      "target_ticks": 100,
+      "tick_size": 0.05,
+      "tick_unit": "option_premium_tick"
+    },
+    "MISC": {
+      "authority_source_class": "uploaded_doctrine_doc_manual_freeze",
+      "authority_status": "manual_authority_from_uploaded_doctrine_docs",
+      "family": "MISC",
+      "hard_stop_points": 4.0,
+      "oi_wall_distance_points_status": "unavailable_until_explicit_distance_field_or_oi_ladder_context_is_proven",
+      "oi_wall_strength_status": "unavailable_until_explicit_strength_field_or_formula_is_proven",
+      "paper_live_promotion": "rejected",
+      "pnl_cost_model_status": "unavailable",
+      "reward_cost_ratio_status": "unavailable_until_explicit_cost_model_is_proven",
+      "reward_ticks": 100,
+      "reward_ticks_policy": "reward_ticks_equals_target_ticks_for_first_target_raw_economics_only",
+      "stop_ticks": 80,
+      "target_points": 5.0,
+      "target_stop_unit": "option_premium_points",
+      "target_ticks": 100,
+      "tick_size": 0.05,
+      "tick_unit": "option_premium_tick"
+    },
+    "MISO": {
+      "authority_source_class": "uploaded_doctrine_doc_manual_freeze",
+      "authority_status": "manual_authority_from_uploaded_doctrine_docs",
+      "family": "MISO",
+      "hard_stop_points": 4.0,
+      "oi_wall_distance_points_status": "unavailable_until_explicit_distance_field_or_oi_ladder_context_is_proven",
+      "oi_wall_strength_status": "unavailable_until_explicit_strength_field_or_formula_is_proven",
+      "paper_live_promotion": "rejected",
+      "pnl_cost_model_status": "unavailable",
+      "reward_cost_ratio_status": "unavailable_until_explicit_cost_model_is_proven",
+      "reward_ticks": 100,
+      "reward_ticks_policy": "reward_ticks_equals_target_ticks_for_first_target_raw_economics_only",
+      "stop_ticks": 80,
+      "target_points": 5.0,
+      "target_stop_unit": "option_premium_points",
+      "target_ticks": 100,
+      "tick_size": 0.05,
+      "tick_unit": "option_premium_tick"
+    },
+    "MISR": {
+      "authority_source_class": "uploaded_doctrine_doc_manual_freeze",
+      "authority_status": "manual_authority_from_uploaded_doctrine_docs",
+      "family": "MISR",
+      "hard_stop_points": 4.0,
+      "oi_wall_distance_points_status": "unavailable_until_explicit_distance_field_or_oi_ladder_context_is_proven",
+      "oi_wall_strength_status": "unavailable_until_explicit_strength_field_or_formula_is_proven",
+      "paper_live_promotion": "rejected",
+      "pnl_cost_model_status": "unavailable",
+      "reward_cost_ratio_status": "unavailable_until_explicit_cost_model_is_proven",
+      "reward_ticks": 100,
+      "reward_ticks_policy": "reward_ticks_equals_target_ticks_for_first_target_raw_economics_only",
+      "stop_ticks": 80,
+      "target_points": 5.0,
+      "target_stop_unit": "option_premium_points",
+      "target_ticks": 100,
+      "tick_size": 0.05,
+      "tick_unit": "option_premium_tick"
+    },
+    "MIST": {
+      "authority_source_class": "uploaded_doctrine_doc_manual_freeze",
+      "authority_status": "manual_authority_from_uploaded_doctrine_docs",
+      "family": "MIST",
+      "hard_stop_points": 4.0,
+      "oi_wall_distance_points_status": "unavailable_until_explicit_distance_field_or_oi_ladder_context_is_proven",
+      "oi_wall_strength_status": "unavailable_until_explicit_strength_field_or_formula_is_proven",
+      "paper_live_promotion": "rejected",
+      "pnl_cost_model_status": "unavailable",
+      "reward_cost_ratio_status": "unavailable_until_explicit_cost_model_is_proven",
+      "reward_ticks": 100,
+      "reward_ticks_policy": "reward_ticks_equals_target_ticks_for_first_target_raw_economics_only",
+      "stop_ticks": 80,
+      "target_points": 5.0,
+      "target_stop_unit": "option_premium_points",
+      "target_ticks": 100,
+      "tick_size": 0.05,
+      "tick_unit": "option_premium_tick"
+    }
+  },
+  "global_derivation_policy": {
+    "economics_reason": "RAW may write explicit derivation reason after field-level proof",
+    "entry_mode": "derive only from source row/payload if present and non-empty",
+    "oi_wall_distance_points": "unavailable unless explicit distance field or OI-ladder formula/context is proven",
+    "oi_wall_strength": "unavailable unless explicit strength field or OI-ladder formula/context is proven",
+    "reward_cost_ratio": "unavailable until explicit cost model/cost ticks authority is proven",
+    "reward_ticks_formula": "target_ticks for first-target RAW economics only",
+    "selected_leg": "derive only from source row/payload if present and non-empty",
+    "side": "use source side when present; branch mapping only if lineage is proven",
+    "stop_ticks_formula": "hard_stop_points / tick_size",
+    "target_ticks_formula": "target_points / tick_size"
+  },
+  "safety": {
+    "batch": "RAW-AA13A-R3",
+    "broker_io_performed": false,
+    "enrichment_or_backfill_performed": false,
+    "non_live": true,
+    "non_mutating_to_production": true,
+    "order_sending_performed": false,
+    "paper_live_enablement_performed": false,
+    "production_mutation_performed": false,
+    "production_strategy_code_patched": false,
+    "redis_live_write_performed": false,
+    "replay_execution_performed": false,
+    "research_gate_artifact_written": true
+  },
+  "schema_version": "raw_doctrine_economics_authority_map.v1",
+  "scope": "RAW research_gate only",
+  "source_provenance": {
+    "MISB": {
+      "evidence": [
+        "MISB v1.2 freeze states 5-point first-target strategy and ordered proof/exit logic",
+        "MISB hard target / hard stop surfaces are doctrine-level exit reasons",
+        "RAW-AA13A-R3 uses the MIS family common economics authority where local repo constants are absent"
+      ],
+      "source_file": "uploaded MISB.md"
+    },
+    "MISC": {
+      "evidence": [
+        "proof_trade_shell states TARGET_POINTS = 5 and HARD_STOP_POINTS = 4",
+        "exact exit formulas use entry_price +/- TARGET_POINTS/HARD_STOP_POINTS"
+      ],
+      "source_file": "uploaded MISC.md"
+    },
+    "MISO": {
+      "evidence": [
+        "Profit / Stop / Ratchet states TARGET_POINTS = 5.0 and HARD_STOP_POINTS = 4.0",
+        "Hard target and hard stop exits use entry_price +/- TARGET_POINTS/HARD_STOP_POINTS"
+      ],
+      "source_file": "uploaded MISO.md"
+    },
+    "MISR": {
+      "evidence": [
+        "Layer B states FUT_TICK_SIZE = 0.05",
+        "Target, Stop, and Cooldown states TARGET_POINTS = 5 and HARD_STOP_POINTS = 4",
+        "1R definition uses HARD_STOP_POINTS \u00d7 session_planned_entry_qty \u00d7 point_value_per_option_point"
+      ],
+      "source_file": "uploaded MISR.md"
+    },
+    "MIST": {
+      "evidence": [
+        "Layer B / Target, Stop, Cooldown states TARGET_POINTS = 5 and HARD_STOP_POINTS = 4",
+        "MIST position initialization and exits use entry_price +/- TARGET_POINTS/HARD_STOP_POINTS"
+      ],
+      "source_file": "uploaded MIST.md"
+    }
+  }
+}

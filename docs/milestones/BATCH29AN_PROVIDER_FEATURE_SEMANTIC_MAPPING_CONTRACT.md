@@ -1,0 +1,32 @@
+BATCH 29AN PROVIDER-FEATURE SEMANTIC MAPPING CONTRACT
+
+generated_at_utc: 2026-05-02T07:06:03.544209+00:00
+verdict: PASS_PROVIDER_FEATURE_SEMANTIC_MAPPING_CONTRACT_29AN
+provider_feature_contract: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_semantic_mapping_contract_29an/00_provider_feature_semantic_mapping_contract.json
+provider_feature_mapping_table_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_semantic_mapping_contract_29an/01_provider_feature_mapping_table.json
+provider_feature_mapping_table_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_semantic_mapping_contract_29an/02_provider_feature_mapping_table.csv
+provider_feature_field_count: 4
+provider_feature_soft_fail_count: 3
+hard_fail_count: 0
+required_unknown_count: 0
+provider_feature_contract_ready: True
+full_live_replay_parity: NOT_PROVEN_IN_29AN
+repair_path: PROVIDER_FEATURE_MAPPING_AVAILABILITY_AUDIT_READY
+next_batch: Batch 29AO — execute provider-feature mapping availability audit using frozen 29AN contract; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_provider_feature_semantic_mapping_contract_29an.json
+- run/proofs/proof_provider_feature_semantic_mapping_contract_29an_latest.json
+- run/proofs/batch29an_provider_feature_semantic_mapping_contract_20260502_123603_driver_proof.json
+- etc/replay/parity/provider_feature_semantic_mapping_contract_29an.json

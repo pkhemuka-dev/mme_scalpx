@@ -329,3 +329,30 @@ __all__ = [
     "fill_request_to_dict",
     "fill_result_to_dict",
 ]
+
+# BEGIN BATCH27I_REPLAY_FILL_MODEL_SHADOW_HELPERS
+
+def replay_fill_model_shadow_assumption_profiles():
+    """Return replay-only fill policies supported by execution_shadow."""
+    from app.mme_scalpx.replay.execution_shadow import REPLAY_SHADOW_FILL_POLICIES
+
+    return {
+        "schema_version": "replay_fill_model_shadow_assumption_profiles_v1",
+        "fill_policies": tuple(REPLAY_SHADOW_FILL_POLICIES),
+        "real_order_sent": False,
+        "broker_calls_executed": False,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_fill_model_shadow_assumption_profiles",
+)))
+
+# END BATCH27I_REPLAY_FILL_MODEL_SHADOW_HELPERS

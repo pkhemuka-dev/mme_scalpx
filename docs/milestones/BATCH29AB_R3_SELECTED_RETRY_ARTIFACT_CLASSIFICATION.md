@@ -1,0 +1,31 @@
+BATCH 29AB-R3 SELECTED RETRY ARTIFACT FAILURE CLASSIFICATION
+
+generated_at_utc: 2026-05-02T06:33:52.754886+00:00
+verdict: PASS_29AB_R3_SELECTED_RETRY_OWNS_RUNTIME_DECISIONING_GAP_CLASSIFIED
+selected_retry_root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa
+runtime_gap_kind: OFFLINE_REPLAY_STAGE_OWNS_RUNTIME_DECISIONING_ATTRIBUTE_GAP
+selected_retry_runtime_error: AttributeError: 'OfflineReplayStage' object has no attribute 'owns_runtime_decisioning'
+owns_runtime_decisioning_gap_confirmed: True
+engine_consumes_owns_runtime_decisioning: False
+canonical_stage_owns_runtime_decisioning_present: False
+offline_stage_owns_runtime_decisioning_present: False
+boundary_safety_ok: True
+repair_path: REPAIR_OFFLINE_STAGE_OWNS_RUNTIME_DECISIONING_ALIAS
+next_batch: Batch 29AC — repair OfflineReplayStage.owns_runtime_decisioning alias in offline_context_shim.py only, then retry guarded ReplayEngine dry-run; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_selected_retry_artifact_failure_classification_29ab_r3.json
+- run/proofs/proof_selected_retry_artifact_failure_classification_29ab_r3_latest.json
+- run/proofs/batch29ab_r3_selected_retry_artifact_classification_20260502_120352_driver_proof.json
+- etc/replay/parity/selected_retry_artifact_failure_classification_29ab_r3.json

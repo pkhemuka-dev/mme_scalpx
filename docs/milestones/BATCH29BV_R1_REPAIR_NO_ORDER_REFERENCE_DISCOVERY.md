@@ -1,0 +1,27 @@
+BATCH 29BV-R1 RISK/EXECUTION NO-ORDER REFERENCE DISCOVERY REPAIR
+
+verdict: PASS_29BV_R1_RISK_EXECUTION_NO_ORDER_REFERENCE_DISCOVERY_REPAIRED_MAPPING_READY
+risk_execution_shadow_no_order_parity: NOT_PROVEN_MAPPING_READY
+mapping_ready: True
+repair_result: reference_artifact_discovered
+approved_comparable_fields: ['broker_calls_executed', 'execution_arming_created', 'live_redis_writes_executed', 'live_trading_approved', 'paper_armed_approved', 'real_order_sent']
+same_file_exclusion_passed: True
+selected_replay_artifact: run/proofs/batch27n_replay_final_acceptance_gate_20260501_142734_inspection/source_snapshot/run/proofs/proof_replay_risk_adapter_execution_shadow.json
+selected_reference_artifact: run/replay/parity/live_evidence/batch28b_contract_only/06_no_order_sent.json
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29BV_R1
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/repair_no_order_reference_discovery_29bv_r1/00_reference_repair_candidate_inventory.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/repair_no_order_reference_discovery_29bv_r1/01_selected_no_order_artifacts.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/repair_no_order_reference_discovery_29bv_r1/02_mapping_readiness.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/repair_no_order_reference_discovery_29bv_r1/03_next_batch_29bw_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/repair_no_order_reference_discovery_29bv_r1/04_operator_summary.md
+- run/proofs/proof_repair_no_order_reference_discovery_29bv_r1.json
+- run/proofs/proof_repair_no_order_reference_discovery_29bv_r1_latest.json
+- etc/replay/parity/repair_no_order_reference_discovery_29bv_r1.json
+
+Next:
+Batch 29BW — build risk_execution_shadow_no_order_parity mapping contract; still no paper/live enablement.

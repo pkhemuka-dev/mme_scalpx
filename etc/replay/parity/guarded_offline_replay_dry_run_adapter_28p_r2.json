@@ -1,0 +1,435 @@
+{
+  "accepted_for": "GUARDED_REPLAY_CLI_ADAPTER_COMPATIBILITY_ONLY",
+  "adapter_artifact_states": {
+    "00_adapter_manifest.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_cli_adapter_28p_r2/00_adapter_manifest.json",
+      "present": true,
+      "sha256": "4ccc6eed61c0fa90786ca964b5dfdb49cf00d307ed8016e933345e335022ad03",
+      "size_bytes": 1358
+    },
+    "01_adapter_command_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_cli_adapter_28p_r2/01_adapter_command_contract.json",
+      "present": true,
+      "sha256": "583f530cc4089f7979aa7832d13851cbb8c53eb47495ec4a674edf684309c38c",
+      "size_bytes": 832
+    },
+    "02_dataset_candidate_validation.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_cli_adapter_28p_r2/02_dataset_candidate_validation.json",
+      "present": true,
+      "sha256": "210237ea46b355b11c9bdb828a0d9e5c3e0e206d714b8ffca4dbb6cc432c6173",
+      "size_bytes": 4451
+    },
+    "03_no_broker_no_live_redis_boundary.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_cli_adapter_28p_r2/03_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "42807cd1fe46a5f6a3102c4e43280e5118ebc32c2e41f234f32047e6ebe088e9",
+      "size_bytes": 605
+    },
+    "04_next_execution_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_cli_adapter_28p_r2/04_next_execution_contract.json",
+      "present": true,
+      "sha256": "94c8446d7ad10f63762e97ae0bb5ab6a302347550007dd64af733d21948606b5",
+      "size_bytes": 648
+    }
+  },
+  "adapter_command": [
+    "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/bin/guarded_offline_replay_dry_run_adapter_28p_r2.py",
+    "--offline",
+    "--dataset-candidate",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+    "--output-root",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_cli_adapter_28p_r2",
+    "--no-broker",
+    "--no-live-redis",
+    "--observe-only",
+    "--dry-run",
+    "--project-root",
+    "/home/Lenovo/scalpx/projects/mme_scalpx",
+    "--contract-only"
+  ],
+  "adapter_executed_replay_engine": false,
+  "adapter_ready": true,
+  "adapter_result": {
+    "accepted_for": "GUARDED_REPLAY_CLI_ADAPTER_COMPATIBILITY_ONLY",
+    "adapter_executed_replay_engine": false,
+    "adapter_ready": true,
+    "calls_broker_api": false,
+    "comparison_completed": false,
+    "execution_arming_created": false,
+    "full_live_replay_parity": "NOT_PROVEN_IN_28P_R2",
+    "input_surface_count": 12,
+    "live_trading_approved": false,
+    "missing_surfaces": [],
+    "next_batch": "Batch 28P-R3 \u2014 execute guarded offline replay dry-run through the 28P-R2 adapter, still not paper/live enablement.",
+    "output_root": "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_cli_adapter_28p_r2",
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_run_completed": false,
+    "schema_version": "guarded_offline_replay_dry_run_adapter_result_28p_r2_v1",
+    "starts_services": false,
+    "writes_live_redis": false,
+    "written_count": 5
+  },
+  "adapter_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_cli_adapter_28p_r2",
+  "adapter_root_replay_safe": true,
+  "adapter_script": "bin/guarded_offline_replay_dry_run_adapter_28p_r2.py",
+  "adapter_script_sha256": "49712efc6a21d32449dffcb2c5781ac48cd497e7361d17040cec2c1c582815a4",
+  "batch": "28P-R2",
+  "broker_call_reachable": false,
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "dataset_candidate_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "entrypoint_inventory": {
+    "app/mme_scalpx/replay/contracts.py": {
+      "argparse_flags": [],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "b50ef9e3a139b14c998eb13ac9d74bb9a975718a213b55f9298eb4b2ed6081b7",
+      "size_bytes": 97130
+    },
+    "app/mme_scalpx/replay/dataset.py": {
+      "argparse_flags": [],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "e4b32c93c44875b75297de99eb92de1a24cdbd93141c7bd53edd511545c42bd3",
+      "size_bytes": 54560
+    },
+    "app/mme_scalpx/replay/engine.py": {
+      "argparse_flags": [],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8",
+      "size_bytes": 20518
+    },
+    "app/mme_scalpx/replay/fill_model.py": {
+      "argparse_flags": [],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "eb4b12690bb05adfcc0dbf2effc6ec4504c3a81a0220b69fe8fb3ee3ea65e009",
+      "size_bytes": 10599
+    },
+    "app/mme_scalpx/replay/injector.py": {
+      "argparse_flags": [],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "d32ba362be759083c4b3bfe0cc4afcbbdfcfb502e1b84539cad9f15cf565ee54",
+      "size_bytes": 14523
+    },
+    "app/mme_scalpx/replay/integrity.py": {
+      "argparse_flags": [],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "36eebdc84fcef136e9a006046578dc8a24e15c4d47ede543f5d7934dacf03576",
+      "size_bytes": 20539
+    },
+    "app/mme_scalpx/replay/runner.py": {
+      "argparse_flags": [],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "de39439819e44abed86b218493658d9ea49e6d8ebf783c2ea756df5db1ce9f35",
+      "size_bytes": 25284
+    },
+    "app/mme_scalpx/replay/safety.py": {
+      "argparse_flags": [],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [
+        ".set("
+      ],
+      "sha256": "381644eb6e5424f9e37406af6b468145a8b272d506c0fb75eca25572b4bd49d3",
+      "size_bytes": 15171
+    },
+    "app/mme_scalpx/replay/topology.py": {
+      "argparse_flags": [],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "448cf6bd7f34f13d02768684a0807dc8b5993f493e91bff503f0d1b34e589e0c",
+      "size_bytes": 12432
+    },
+    "bin/replay_compare.py": {
+      "argparse_flags": [],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "b1f4b7cfae28ed1c21095939f2ce47a6a8bda5caf18e85df91a88cda9bc2fe92",
+      "size_bytes": 21413
+    },
+    "bin/replay_run.py": {
+      "argparse_flags": [
+        "--channel-prefix",
+        "--clock-start-time",
+        "--custom-dates",
+        "--dataset-id",
+        "--dataset-root",
+        "--doctrine-mode",
+        "--end-date",
+        "--experiment-profile",
+        "--fill-model",
+        "--months",
+        "--optional-file-stems",
+        "--override-pack-id",
+        "--recurse",
+        "--required-file-stems",
+        "--run-label",
+        "--run-root",
+        "--scope",
+        "--selection-mode",
+        "--session-segment",
+        "--single-day",
+        "--speed-mode",
+        "--start-date",
+        "--supported-suffixes",
+        "--weekdays",
+        "--window-end",
+        "--window-start"
+      ],
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only_not_executed_in_28p_r2",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "cbda5ec8be7b18dc31cc99ae2c1af67ceda10bf84997e5af4e0beb2a16dc628d",
+      "size_bytes": 97072
+    }
+  },
+  "execution_arming_created": false,
+  "full_live_replay_parity": "NOT_PROVEN_IN_28P_R2",
+  "future_command_executed": false,
+  "generated_at_utc": "2026-05-01T12:39:48.900983+00:00",
+  "live_redis_write_reachable": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 28P-R3 \u2014 execute guarded offline replay dry-run through the 28P-R2 adapter, still not paper/live enablement.",
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "replay_run_cli_surface": {
+    "flag_count": 26,
+    "flags": [
+      "--channel-prefix",
+      "--clock-start-time",
+      "--custom-dates",
+      "--dataset-id",
+      "--dataset-root",
+      "--doctrine-mode",
+      "--end-date",
+      "--experiment-profile",
+      "--fill-model",
+      "--months",
+      "--optional-file-stems",
+      "--override-pack-id",
+      "--recurse",
+      "--required-file-stems",
+      "--run-label",
+      "--run-root",
+      "--scope",
+      "--selection-mode",
+      "--session-segment",
+      "--single-day",
+      "--speed-mode",
+      "--start-date",
+      "--supported-suffixes",
+      "--weekdays",
+      "--window-end",
+      "--window-start"
+    ],
+    "parse_error": null,
+    "parser_calls": [
+      {
+        "flags": [
+          "--dataset-root"
+        ],
+        "lineno": 211
+      },
+      {
+        "flags": [
+          "--selection-mode"
+        ],
+        "lineno": 212
+      },
+      {
+        "flags": [
+          "--single-day"
+        ],
+        "lineno": 218
+      },
+      {
+        "flags": [
+          "--start-date"
+        ],
+        "lineno": 219
+      },
+      {
+        "flags": [
+          "--end-date"
+        ],
+        "lineno": 220
+      },
+      {
+        "flags": [
+          "--custom-dates"
+        ],
+        "lineno": 221
+      },
+      {
+        "flags": [
+          "--weekdays"
+        ],
+        "lineno": 222
+      },
+      {
+        "flags": [
+          "--months"
+        ],
+        "lineno": 223
+      },
+      {
+        "flags": [
+          "--window-start"
+        ],
+        "lineno": 224
+      },
+      {
+        "flags": [
+          "--window-end"
+        ],
+        "lineno": 225
+      },
+      {
+        "flags": [
+          "--session-segment"
+        ],
+        "lineno": 226
+      },
+      {
+        "flags": [
+          "--doctrine-mode"
+        ],
+        "lineno": 227
+      },
+      {
+        "flags": [
+          "--scope"
+        ],
+        "lineno": 233
+      },
+      {
+        "flags": [
+          "--speed-mode"
+        ],
+        "lineno": 239
+      },
+      {
+        "flags": [
+          "--run-label"
+        ],
+        "lineno": 245
+      },
+      {
+        "flags": [
+          "--experiment-profile"
+        ],
+        "lineno": 246
+      },
+      {
+        "flags": [
+          "--override-pack-id"
+        ],
+        "lineno": 247
+      },
+      {
+        "flags": [
+          "--dataset-id"
+        ],
+        "lineno": 248
+      },
+      {
+        "flags": [
+          "--fill-model"
+        ],
+        "lineno": 249
+      },
+      {
+        "flags": [
+          "--run-root"
+        ],
+        "lineno": 250
+      },
+      {
+        "flags": [
+          "--required-file-stems"
+        ],
+        "lineno": 251
+      },
+      {
+        "flags": [
+          "--optional-file-stems"
+        ],
+        "lineno": 252
+      },
+      {
+        "flags": [
+          "--supported-suffixes"
+        ],
+        "lineno": 253
+      },
+      {
+        "flags": [
+          "--recurse"
+        ],
+        "lineno": 254
+      },
+      {
+        "flags": [
+          "--clock-start-time"
+        ],
+        "lineno": 255
+      },
+      {
+        "flags": [
+          "--channel-prefix"
+        ],
+        "lineno": 260
+      }
+    ],
+    "path": "bin/replay_run.py"
+  },
+  "replay_run_completed": false,
+  "replay_run_missing_guarded_flags": [
+    "--offline",
+    "--dataset-candidate",
+    "--output-root",
+    "--no-broker",
+    "--no-live-redis",
+    "--observe-only",
+    "--dry-run"
+  ],
+  "runtime_promotion_reachable": false,
+  "schema_version": "guarded_offline_replay_dry_run_adapter_28p_r2_v1",
+  "starts_services": false,
+  "writes_live_redis": false
+}

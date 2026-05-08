@@ -530,3 +530,136 @@ def compute_integrity_verdict(
     return IntegrityVerdict.PASS
 
 # --- BATCH25R1_AUTHORITATIVE_PLACEHOLDER_GUARD_END ---
+
+# BEGIN BATCH27E_REPLAY_DETERMINISTIC_INTEGRITY_HELPERS
+
+import hashlib as _batch27e_hashlib
+import json as _batch27e_json
+from pathlib import Path as _Batch27EPath
+
+def replay_canonical_json(value):
+    """Return deterministic canonical JSON for replay hash inputs."""
+    return _batch27e_json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+
+def replay_sha256_text(value):
+    return _batch27e_hashlib.sha256(str(value).encode("utf-8")).hexdigest()
+
+def replay_sha256_file(path):
+    p = _Batch27EPath(path)
+    if not p.exists() or not p.is_file():
+        return None
+    h = _batch27e_hashlib.sha256()
+    with p.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+def replay_fingerprint(value):
+    return replay_sha256_text(replay_canonical_json(value))
+
+def replay_compute_deterministic_run_id(
+    *,
+    dataset_fingerprint,
+    profile_fingerprint,
+    experiment_fingerprint,
+    selected_window_fingerprint,
+    code_fingerprint,
+    prefix="replay",
+):
+    payload = {
+        "dataset_fingerprint": dataset_fingerprint,
+        "profile_fingerprint": profile_fingerprint,
+        "experiment_fingerprint": experiment_fingerprint,
+        "selected_window_fingerprint": selected_window_fingerprint,
+        "code_fingerprint": code_fingerprint,
+    }
+    digest = replay_fingerprint(payload)
+    return f"{prefix}_{digest[:24]}"
+
+def replay_event_order_integrity(events):
+    previous = None
+    violations = []
+    for index, event in enumerate(events):
+        if isinstance(event, dict):
+            ts = event.get("event_ts_ns", event.get("ts_ns", event.get("timestamp_ns")))
+            seq = event.get("sequence_id", index)
+        else:
+            ts = getattr(event, "event_ts_ns", getattr(event, "ts_ns", getattr(event, "timestamp_ns", None)))
+            seq = getattr(event, "sequence_id", index)
+        key = (int(ts or 0), int(seq or 0))
+        if previous is not None and key < previous:
+            violations.append({
+                "index": index,
+                "previous": previous,
+                "current": key,
+            })
+        previous = key
+    return {
+        "ok": not violations,
+        "event_count": len(list(events)) if not isinstance(events, list) else len(events),
+        "violation_count": len(violations),
+        "violations": violations,
+    }
+
+def replay_integrity_summary(
+    *,
+    run_id,
+    dataset_fingerprint,
+    profile_fingerprint,
+    experiment_fingerprint,
+    selected_window_fingerprint,
+    code_fingerprint,
+    events=None,
+):
+    expected_run_id = replay_compute_deterministic_run_id(
+        dataset_fingerprint=dataset_fingerprint,
+        profile_fingerprint=profile_fingerprint,
+        experiment_fingerprint=experiment_fingerprint,
+        selected_window_fingerprint=selected_window_fingerprint,
+        code_fingerprint=code_fingerprint,
+    )
+    order = replay_event_order_integrity(list(events or []))
+    ok = (
+        bool(run_id)
+        and run_id == expected_run_id
+        and bool(dataset_fingerprint)
+        and bool(profile_fingerprint)
+        and bool(experiment_fingerprint)
+        and bool(selected_window_fingerprint)
+        and bool(code_fingerprint)
+        and order["ok"]
+    )
+    return {
+        "schema_version": "replay_integrity_summary_v1",
+        "ok": ok,
+        "run_id": run_id,
+        "expected_run_id": expected_run_id,
+        "deterministic_run_id_ok": run_id == expected_run_id,
+        "dataset_hash_present": bool(dataset_fingerprint),
+        "profile_hash_present": bool(profile_fingerprint),
+        "experiment_hash_present": bool(experiment_fingerprint),
+        "selected_window_hash_present": bool(selected_window_fingerprint),
+        "code_hash_present": bool(code_fingerprint),
+        "event_order": order,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_canonical_json",
+    "replay_sha256_text",
+    "replay_sha256_file",
+    "replay_fingerprint",
+    "replay_compute_deterministic_run_id",
+    "replay_event_order_integrity",
+    "replay_integrity_summary",
+)))
+
+# END BATCH27E_REPLAY_DETERMINISTIC_INTEGRITY_HELPERS

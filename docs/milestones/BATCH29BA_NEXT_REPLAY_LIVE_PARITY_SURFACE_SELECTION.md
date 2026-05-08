@@ -1,0 +1,36 @@
+BATCH 29BA NEXT REPLAY/LIVE PARITY SURFACE SELECTION
+
+generated_at_utc: 2026-05-02T08:17:29.332964+00:00
+verdict: PASS_NEXT_REPLAY_LIVE_PARITY_SURFACE_SELECTION_29BA
+selected_surface: strategy_activation_report_only_parity
+selected_surface_status: READY_FOR_AUDIT_SELECTION
+selected_surface_score: 11483664
+candidate_surface_count: 7
+json_artifact_count: 82385
+full_live_replay_parity: NOT_PROVEN_IN_29BA
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+repair_path: NEXT_SURFACE_SELECTED_strategy_activation_report_only_parity
+next_batch: Batch 29BB — audit selected replay/live parity surface: strategy_activation_report_only_parity; no paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/next_replay_live_parity_surface_selection_29ba/00_candidate_artifact_inventory.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/next_replay_live_parity_surface_selection_29ba/01_surface_scoreboard.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/next_replay_live_parity_surface_selection_29ba/02_selected_surface_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/next_replay_live_parity_surface_selection_29ba/03_next_batch_29bb_contract.json
+
+Proofs:
+- run/proofs/proof_next_replay_live_parity_surface_selection_29ba.json
+- run/proofs/proof_next_replay_live_parity_surface_selection_29ba_latest.json
+- run/proofs/batch29ba_next_replay_live_parity_surface_selection_20260502_134307_driver_proof.json
+- etc/replay/parity/next_replay_live_parity_surface_selection_29ba.json

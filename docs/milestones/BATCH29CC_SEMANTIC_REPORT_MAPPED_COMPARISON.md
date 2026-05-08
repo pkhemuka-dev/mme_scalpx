@@ -1,0 +1,22 @@
+BATCH 29CC SEMANTIC COMPARISON REPORT MAPPED COMPARISON
+
+verdict: PASS_29CC_SEMANTIC_REPORT_MAPPED_COMPARISON_CONTEXT_MATCH
+semantic_comparison_report_surface: PROVEN_FOR_MAPPED_SEMANTIC_REPORT_CONTEXT_FIELDS_ONLY
+mapped_comparison_passed: True
+comparison_row_count: 3
+mismatch_count: 0
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29CC
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_mapped_comparison_29cc/00_semantic_report_mapped_comparison.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_mapped_comparison_29cc/01_semantic_report_mismatch_table.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_mapped_comparison_29cc/02_operator_summary.md
+- run/proofs/proof_semantic_report_mapped_comparison_29cc.json
+- run/proofs/proof_semantic_report_mapped_comparison_29cc_latest.json
+- etc/replay/parity/semantic_report_mapped_comparison_29cc.json
+
+Next:
+Batch 29CD — classify and consolidate semantic_comparison_report_surface mapped comparison; still no paper/live enablement.

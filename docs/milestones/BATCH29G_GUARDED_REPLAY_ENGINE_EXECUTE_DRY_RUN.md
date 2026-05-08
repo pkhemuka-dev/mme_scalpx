@@ -1,0 +1,48 @@
+Batch 29G Guarded ReplayEngine execute dry-run
+
+Date: 2026-05-01
+
+Verdict:
+DEFERRED_GUARDED_REPLAY_ENGINE_EXECUTE_RUNTIME_GAP_29G
+
+Accepted for:
+GUARDED_REPLAY_ENGINE_EXECUTE_DRY_RUN_ONLY
+
+Source:
+- 29F proof: run/proofs/proof_offline_run_context_shim_29f_latest.json
+- 29F shim root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f
+- 29E materialization root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_context_object_materialization_29e
+- 29C adapter root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c
+- dataset candidate root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate
+
+Generated:
+- bin/guarded_replay_engine_execute_dry_run_29g.py
+- etc/replay/parity/guarded_replay_engine_execute_dry_run_29g.json
+- run/proofs/proof_guarded_replay_engine_execute_dry_run_29g.json
+- run/proofs/proof_guarded_replay_engine_execute_dry_run_29g_latest.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g/
+
+Result:
+preflight_ok=true
+context_reconstruction_ready=true
+engine_instance_ready=true
+execution_attempted=true
+execution_ok=false
+replay_core_executed=false
+replay_run_completed=false
+comparison_completed=false
+
+Safety:
+starts_services=false
+reads_live_redis=false
+writes_live_redis=false
+calls_broker_api=false
+paper_armed_approved=false
+live_trading_approved=false
+execution_arming_created=false
+real_order_sent=false
+production_doctrine_changed=false
+full_live_replay_parity=NOT_PROVEN_IN_29G
+
+Next:
+Batch 29H — repair guarded ReplayEngine dry-run runtime gap before output comparison, still not paper/live enablement.

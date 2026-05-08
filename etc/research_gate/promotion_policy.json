@@ -1,0 +1,40 @@
+{
+  "broker_io_allowed": false,
+  "current_firewall_expected_result": "promotion blocked unless RAW-I is positive and manual governance follows",
+  "execution_override_allowed": false,
+  "forbidden_outputs": [
+    "ENABLE_LIVE",
+    "ENABLE_PAPER_ARMED",
+    "MUTATE_CONFIG_NOW",
+    "SEND_ORDER",
+    "OVERRIDE_RISK",
+    "OVERRIDE_EXECUTION"
+  ],
+  "input_proof": "proof_raw_i_freeze_final.json",
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "output_artifacts": [
+    "promotion_verdict.json",
+    "promotion_blockers.csv",
+    "promotion_action_plan.csv",
+    "RAW_J_PROMOTION_FIREWALL_SUMMARY.md"
+  ],
+  "paper_live_enablement_allowed": false,
+  "production_config_mutation_allowed": false,
+  "promotion_allowed_without_manual_governance": false,
+  "promotion_firewall_owner": "RAW_Promotion_Firewall",
+  "redis_live_write_allowed": false,
+  "required_before_any_future_promotion": [
+    "positive net PnL after costs",
+    "sufficient family labels",
+    "explicit closed-trade truth",
+    "explicit blocker outcome labels",
+    "positive or neutral OI-wall evidence",
+    "larger replay batch",
+    "separate manual patch/proof/freeze governance"
+  ],
+  "risk_override_allowed": false,
+  "schema_version": "RAW-J.1",
+  "strategy_mutation_allowed": false
+}

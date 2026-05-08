@@ -1,0 +1,85 @@
+{
+  "accepted_for": "CONCRETE_REPLAY_ENGINE_CORE_WIRING_CONTRACT_ONLY",
+  "batch": "28W",
+  "broker_call_reachable": false,
+  "broker_calls_executed": false,
+  "callable_output_all_present": true,
+  "calls_broker_api": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "core_candidate_count": 97,
+  "dataset_candidate_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "execution_arming_created": false,
+  "execution_root_28v": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/explicit_offline_replay_callable_execution_28v",
+  "full_live_replay_parity": "NOT_PROVEN_IN_28W",
+  "generated_at_utc": "2026-05-01T13:29:01.164445+00:00",
+  "live_redis_write_reachable": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 28X \u2014 build guarded core execution adapter around selected replay core candidate, still not paper/live enablement.",
+  "paper_armed_approved": false,
+  "preflight_ok": true,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "recommended_core_wiring_path": "SELECTED_CORE_CANDIDATE_REQUIRES_EXECUTION_ADAPTER",
+  "replay_compile_ok": true,
+  "replay_core_executed": false,
+  "replay_run_completed": false,
+  "runtime_promotion_reachable": false,
+  "schema_version": "concrete_replay_engine_core_wiring_contract_28w_v1",
+  "selected_core_candidate": {
+    "kind": "class",
+    "methods": [
+      "__call__"
+    ],
+    "module_file": "app/mme_scalpx/replay/engine.py",
+    "name": "ReplayEngineHook",
+    "score": 9
+  },
+  "starts_services": false,
+  "verdict": "PASS_CONCRETE_REPLAY_ENGINE_CORE_WIRING_CONTRACT_28W",
+  "wiring_artifact_states": {
+    "00_replay_core_wiring_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/00_replay_core_wiring_contract.json",
+      "present": true,
+      "sha256": "730097e5a55c8d5586d225b4f85b63ec7de15ca4e32db19b4c516a816a849913",
+      "size_bytes": 788
+    },
+    "01_explicit_callable_output_report.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/01_explicit_callable_output_report.json",
+      "present": true,
+      "sha256": "05e269792eff4c220dedb1f5559b53c6333740ebc1eb501d4abcdd8fc89b8a70",
+      "size_bytes": 11877
+    },
+    "02_replay_core_interface_inventory.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/02_replay_core_interface_inventory.json",
+      "present": true,
+      "sha256": "05fea390ed57d6fc33cdfcd1af91f6d671fb47a50ebd9ad5bc848ef614fe0588",
+      "size_bytes": 118040
+    },
+    "03_dataset_to_core_gap_report.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/03_dataset_to_core_gap_report.json",
+      "present": true,
+      "sha256": "cddfba6fdf0e6ac3b17bafc66417f816166f66962c9a902076a1ed4e771f8322",
+      "size_bytes": 3169
+    },
+    "04_no_broker_no_live_redis_boundary.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "9a8b84792c63fc1d80e08bcb4ae9092062ab2e02095045dc0047bccff710f112",
+      "size_bytes": 5601
+    },
+    "05_next_core_adapter_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w/05_next_core_adapter_contract.json",
+      "present": true,
+      "sha256": "0849955f0251b6ceca2184f5eca7f9cb0b9ee98a5c195e51eb5670241ee65ae0",
+      "size_bytes": 1022
+    }
+  },
+  "wiring_artifacts_ok": true,
+  "wiring_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/concrete_replay_engine_core_wiring_contract_28w",
+  "wiring_root_replay_safe": true,
+  "writes_live_redis": false
+}

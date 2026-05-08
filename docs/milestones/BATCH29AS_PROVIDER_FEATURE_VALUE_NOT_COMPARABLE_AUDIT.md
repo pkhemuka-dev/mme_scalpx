@@ -1,0 +1,32 @@
+BATCH 29AS PROVIDER-FEATURE VALUE NOT-COMPARABLE AUDIT
+
+generated_at_utc: 2026-05-02T07:17:19.463744+00:00
+verdict: PASS_PROVIDER_FEATURE_VALUE_NOT_COMPARABLE_AUDIT_29AS
+comparison_report_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_value_not_comparable_audit_29as/00_provider_feature_value_not_comparable_report.json
+comparison_table_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_value_not_comparable_audit_29as/01_provider_feature_value_comparison_table.csv
+provider_feature_field_count: 4
+not_comparable_replay_null_count: 4
+pass_count: 0
+fail_count: 0
+provider_feature_value_comparison_completed: True
+provider_feature_value_parity_pass: False
+full_live_replay_parity: NOT_PROVEN_IN_29AS
+repair_path: REAL_REPLAY_PROVIDER_FEATURE_SOURCE_DISCOVERY_READY
+next_batch: Batch 29AT — audit existing guarded replay outputs for real replay-side provider-feature boolean sources; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_provider_feature_value_not_comparable_audit_29as.json
+- run/proofs/proof_provider_feature_value_not_comparable_audit_29as_latest.json
+- run/proofs/batch29as_provider_feature_value_not_comparable_audit_20260502_124719_driver_proof.json
+- etc/replay/parity/provider_feature_value_not_comparable_audit_29as.json

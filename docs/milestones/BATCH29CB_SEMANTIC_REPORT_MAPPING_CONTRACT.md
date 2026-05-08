@@ -1,0 +1,29 @@
+BATCH 29CB SEMANTIC COMPARISON REPORT MAPPING CONTRACT
+
+verdict: PASS_29CB_SEMANTIC_REPORT_MAPPING_CONTRACT_READY
+semantic_comparison_report_surface: NOT_PROVEN_MAPPING_CONTRACT_READY
+mapping_contract_ready: True
+mapping_row_count: 3
+mapping_failure_count: 0
+approved_comparable_fields: ['full_live_replay_parity', 'paper_live_status', 'risk_execution_shadow_no_order_parity']
+strict_value_fields: ['paper_live_status']
+semantic_category_fields: ['full_live_replay_parity']
+lifecycle_context_fields: ['risk_execution_shadow_no_order_parity']
+same_file_exclusion_passed: True
+selected_replay_artifact: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/consolidate_no_order_select_next_29bz/01_replay_parity_readiness_index.json
+selected_reference_artifact: etc/replay/parity/repair_no_order_reference_discovery_29bv_r1.json
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29CB
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_mapping_contract_29cb/00_semantic_report_mapping_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_mapping_contract_29cb/01_mapping_summary.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_mapping_contract_29cb/02_operator_summary.md
+- run/proofs/proof_semantic_report_mapping_contract_29cb.json
+- run/proofs/proof_semantic_report_mapping_contract_29cb_latest.json
+- etc/replay/parity/semantic_report_mapping_contract_29cb.json
+
+Next:
+Batch 29CC — execute semantic_comparison_report_surface mapped comparison; still no paper/live enablement.

@@ -1,0 +1,153 @@
+{
+  "bundle_time_diff_policy_check": {
+    "command_result": {
+      "cmd": [
+        "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+        "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/check_policy.py",
+        "--command-file",
+        "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v032_policy_command_precision_20260508T165009Z/sandbox.diff",
+        "--json"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "{\n  \"command\": {\n    \"command_allowed\": true,\n    \"findings\": []\n  },\n  \"ok\": true,\n  \"paths\": [],\n  \"policy_path\": \"/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json\",\n  \"policy_version\": \"ai_patch_runner_policy_v0.2.2\",\n  \"self_test\": null\n}\n"
+    },
+    "payload": {
+      "command": {
+        "command_allowed": true,
+        "findings": []
+      },
+      "ok": true,
+      "paths": [],
+      "policy_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json",
+      "policy_version": "ai_patch_runner_policy_v0.2.2",
+      "self_test": null
+    }
+  },
+  "created_at_utc": "2026-05-08T16:52:06.482532+00:00",
+  "policy_check_sha256": "3dd87176f70f3c30099960ac78671b53b6565e86ebaf88860159b3cf4ad8c048",
+  "policy_json": {
+    "absolute_safety_laws": {
+      "ai_must_not_call_broker_login": true,
+      "ai_must_not_enable_paper_armed": true,
+      "ai_must_not_enable_real_live_trading": true,
+      "ai_must_not_modify_secrets_or_env_files": true,
+      "ai_must_not_modify_systemd_or_deployment_units": true,
+      "ai_must_not_patch_execution_risk_broker_main_without_human_review": true,
+      "ai_must_not_place_orders": true,
+      "ai_must_not_start_live_services": true,
+      "ai_must_not_write_live_redis_trading_truth": true
+    },
+    "allowed_auto_touch_file_patterns": [
+      "ai_patch_runner/**/*.py",
+      "ai_patch_runner/**/*.json",
+      "ai_patch_runner/**/*.md",
+      "run/proofs/*.json",
+      "run/audits/*.txt",
+      "docs/milestones/*.md",
+      "docs/runbooks/*.md"
+    ],
+    "allowed_auto_touch_prefixes": [
+      "ai_patch_runner/",
+      "run/proofs/",
+      "run/audits/",
+      "run/_code_backups/",
+      "docs/milestones/",
+      "docs/runbooks/"
+    ],
+    "blocked_auto_touch_globs": [
+      "**/*broker*",
+      "**/*execution*",
+      "**/*secret*",
+      "**/*credential*",
+      "**/*.env",
+      "**/systemd/*",
+      "**/*.service",
+      "etc/brokers/**",
+      "common/secrets/**"
+    ],
+    "blocked_auto_touch_paths": [
+      "app/mme_scalpx/main.py",
+      "app/mme_scalpx/services/execution.py",
+      "app/mme_scalpx/services/risk.py",
+      "app/mme_scalpx/integrations/broker_auth.py",
+      "app/mme_scalpx/integrations/broker_api.py",
+      "app/mme_scalpx/integrations/dhan_execution.py",
+      "app/mme_scalpx/integrations/login.py",
+      "app/mme_scalpx/integrations/provider_runtime.py",
+      "etc/brokers/",
+      "common/secrets/",
+      ".env",
+      ".env.local"
+    ],
+    "blocked_env_flags": [
+      "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME=1",
+      "SCALPX_CONTROLLED_PAPER_SCOPE_ACK=I_ACCEPT_MIST_CALL_1LOT_PAPER_ONLY",
+      "SCALPX_REAL_LIVE_ALLOWED=1",
+      "SCALPX_ALLOW_REAL_LIVE=1",
+      "SCALPX_OBSERVE_ONLY=0"
+    ],
+    "blocked_runtime_commands": [
+      "nohup",
+      "systemctl",
+      "service",
+      "python -m app.mme_scalpx.main",
+      ".venv/bin/python -m app.mme_scalpx.main",
+      "redis-cli SET",
+      "redis-cli HSET",
+      "redis-cli XADD",
+      "redis-cli DEL"
+    ],
+    "current_allowed_capabilities": {
+      "call_broker": false,
+      "classify_manual_run_output": true,
+      "enable_paper_or_live": false,
+      "execute_generated_script": false,
+      "generate_command_package": true,
+      "patch_real_project": false,
+      "run_health_check": true,
+      "save_generated_script": true,
+      "start_services": false,
+      "static_validate_generated_script": true,
+      "write_live_redis": false
+    },
+    "default_mode": "generate_and_classify_only",
+    "future_sandbox_capabilities_only_after_v0_3": {
+      "apply_diff_to_real_project": false,
+      "copy_selected_files_to_sandbox": true,
+      "create_sandbox_workspace": true,
+      "patch_sandbox_only": true,
+      "produce_diff_for_human_review": true,
+      "run_compile_tests_in_sandbox": true
+    },
+    "human_review_required_prefixes": [
+      "app/",
+      "etc/",
+      "bin/",
+      "scripts/",
+      "systemd/",
+      "deployment/",
+      "common/secrets/"
+    ],
+    "policy_version": "ai_patch_runner_policy_v0.2.2",
+    "promotion_ladder": [
+      "v0.1_generate_only",
+      "v0.2_classify_manual_output",
+      "v0.2.1_health_hardening",
+      "v0.2.2_policy_registry",
+      "v0.3_sandbox_patch_only",
+      "v0.4_diff_and_proof_bundle",
+      "v0.5_human_approved_apply",
+      "v1.0_low_risk_auto_apply_only"
+    ],
+    "purpose": "Freeze AI Patch Runner safety boundary before sandbox patching. The AI runner may generate, inspect, classify, and later sandbox-patch, but must not directly mutate live trading-control surfaces.",
+    "required_proof_flags_for_every_runner_batch": {
+      "broker_calls_executed": false,
+      "generated_scripts_executed_by_runner": false,
+      "live_redis_writes_executed": false,
+      "paper_or_live_enabled": false,
+      "service_starts_executed": false
+    }
+  },
+  "policy_json_sha256": "58b84cc604c5884cc2f6d234503e26dd3d5feaac068432d4918dd5425c4d28a6"
+}

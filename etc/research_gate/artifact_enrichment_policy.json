@@ -1,0 +1,80 @@
+{
+  "artifact_enrichment_owner": "RAW_Artifact_Enrichment_Contract",
+  "broker_io_allowed": false,
+  "next_patch_allowed_after_this_contract": [
+    "patch replay export/writer surfaces to emit required fields",
+    "patch replay candidate audit output",
+    "patch replay trade log output",
+    "patch comparison/report surfaces"
+  ],
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "paper_live_enablement_allowed": false,
+  "purpose": "Freeze required replay/trade/candidate artifact fields before later replay writer patching.",
+  "redis_live_write_allowed": false,
+  "replay_module_mutation_allowed_in_this_batch": false,
+  "required_field_groups": {
+    "audit_lineage": [
+      "source_artifact",
+      "source_row_index",
+      "schema_version",
+      "created_by",
+      "remarks"
+    ],
+    "candidate_truth": [
+      "candidate_id",
+      "candidate_state",
+      "candidate_vs_executed",
+      "decision_action",
+      "blocker",
+      "blocker_chain"
+    ],
+    "identity": [
+      "run_id",
+      "source_run_id",
+      "artifact_kind",
+      "row_kind",
+      "event_id",
+      "event_ts"
+    ],
+    "oi_wall_context": [
+      "oi_wall_state",
+      "oi_wall_distance_points",
+      "oi_wall_strength",
+      "strike_score",
+      "selected_strike",
+      "selected_strike_source"
+    ],
+    "outcome_labels": [
+      "false_entry",
+      "missed_trade",
+      "good_blocker",
+      "target_hit_after_block",
+      "stop_hit_after_block",
+      "hypothetical_pnl_after_block"
+    ],
+    "strategy_context": [
+      "family",
+      "strategy_id",
+      "side",
+      "regime",
+      "provider_mode"
+    ],
+    "trade_truth": [
+      "trade_id",
+      "closed_trade_truth",
+      "entry_ts",
+      "exit_ts",
+      "entry_price",
+      "exit_price",
+      "qty",
+      "gross_pnl",
+      "net_pnl_after_costs",
+      "costs",
+      "exit_reason"
+    ]
+  },
+  "research_capture_mutation_allowed_in_this_batch": false,
+  "schema_version": "RAW-K.1"
+}

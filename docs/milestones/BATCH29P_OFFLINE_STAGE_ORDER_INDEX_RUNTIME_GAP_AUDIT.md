@@ -1,0 +1,44 @@
+Batch 29P OfflineReplayStage order_index runtime-gap audit
+
+Date: 2026-05-02
+
+Verdict:
+PASS_OFFLINE_STAGE_ORDER_INDEX_RUNTIME_GAP_AUDIT_29P
+
+Accepted for:
+OFFLINE_STAGE_ORDER_INDEX_RUNTIME_GAP_AUDIT_ONLY
+
+Source:
+- 29O proof: run/proofs/proof_offline_topology_stage_names_alias_repair_29o_latest.json
+- 29O repair root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stage_names_alias_repair_29o
+- 29O retry execute root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29o
+
+Result:
+stage_names_gap_resolved=True
+stage_name_gap_resolved=True
+topology_stages_gap_resolved=True
+offline_stage_order_index_gap_confirmed=true
+stage_order_shape_gap_confirmed=true
+engine_consumes_order_index=true
+runtime_gap_kind=OFFLINE_REPLAY_STAGE_ORDER_INDEX_ATTRIBUTE_GAP
+repair_path=REPAIR_OFFLINE_REPLAY_STAGE_ORDER_INDEX_ALIAS
+retry_runtime_error=ReplayEngineStageError: replay engine failed for run_id=offline_replay_a96ef007910c5d56: 'OfflineReplayStage' object has no attribute 'order_index'
+candidate_executed=false
+replay_core_executed=false
+replay_run_completed=false
+comparison_completed=false
+
+Safety:
+starts_services=false
+reads_live_redis=false
+writes_live_redis=false
+calls_broker_api=false
+paper_armed_approved=false
+live_trading_approved=false
+execution_arming_created=false
+real_order_sent=false
+production_doctrine_changed=false
+full_live_replay_parity=NOT_PROVEN_IN_29P
+
+Next:
+Batch 29Q — repair OfflineReplayStage order_index alias for guarded ReplayEngine dry-run, still not paper/live enablement.

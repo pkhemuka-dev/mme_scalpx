@@ -1,0 +1,33 @@
+BATCH 29AO PROVIDER-FEATURE MAPPING AVAILABILITY AUDIT
+
+generated_at_utc: 2026-05-02T07:07:46.427411+00:00
+verdict: PASS_PROVIDER_FEATURE_MAPPING_AVAILABILITY_AUDIT_WITH_MISSING_REPLAY_SOURCES_29AO
+provider_feature_contract: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_semantic_mapping_contract_29an/00_provider_feature_semantic_mapping_contract.json
+availability_report_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_mapping_availability_audit_29ao/00_provider_feature_mapping_availability_report.json
+availability_table_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_mapping_availability_audit_29ao/01_provider_feature_mapping_availability_table.csv
+provider_feature_field_count: 4
+available_mapping_count: 0
+missing_replay_reference_count: 4
+missing_live_reference_count: 0
+provider_feature_availability_audit_complete: True
+provider_feature_value_comparison_ready: False
+full_live_replay_parity: NOT_PROVEN_IN_29AO
+repair_path: PROVIDER_FEATURE_REPLAY_SOURCE_MATERIALIZATION_CONTRACT_READY
+next_batch: Batch 29AP — freeze provider-feature replay-source materialization contract for guarded replay summaries; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_provider_feature_mapping_availability_audit_29ao.json
+- run/proofs/proof_provider_feature_mapping_availability_audit_29ao_latest.json
+- run/proofs/batch29ao_provider_feature_mapping_availability_audit_20260502_123746_driver_proof.json
+- etc/replay/parity/provider_feature_mapping_availability_audit_29ao.json

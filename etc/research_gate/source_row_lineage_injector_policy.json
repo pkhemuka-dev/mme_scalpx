@@ -1,0 +1,12 @@
+{
+  "broker_io_allowed": false,
+  "non_live": true,
+  "non_mutating_live_runtime": true,
+  "order_sending_allowed": false,
+  "owner": "source-row lineage field injector",
+  "paper_live_enablement_allowed": false,
+  "promotion_allowed_by_raw_x": false,
+  "purpose": "Inject research-only lineage into replay/RAW enrichment rows before ranking/backfill.",
+  "redis_live_write_allowed": false,
+  "schema_version": "RAW-X.2"
+}

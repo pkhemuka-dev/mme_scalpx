@@ -1,0 +1,35 @@
+BATCH 30B OFFLINE REAL SAME-SESSION COLLECTION PLANNING VALIDATOR
+
+verdict: PASS_30B_OFFLINE_REAL_SAME_SESSION_COLLECTION_PLANNING_VALIDATOR_FROZEN_SMOKE_PASS
+collection_planning_validator_status: FROZEN_OFFLINE_REAL_SAME_SESSION_COLLECTION_PLANNING_VALIDATOR_CONTRACT_AND_HARNESS_SMOKE_PASS
+smoke_ok: True
+required_artifact_count: 16
+artifact_slot_count: 16
+planning_step_count: 10
+collection_started: false
+collection_completed: false
+full_live_replay_parity: NOT_PROVEN_AFTER_30B_VALIDATOR_CONTRACT_ONLY
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+paper_armed_approved: false
+live_trading_approved: false
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/collection_planning_validator_30b/00_collection_planning_validator_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/collection_planning_validator_30b/01_collection_planning_validator_package.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/collection_planning_validator_30b/collection_planning_validator.py
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/collection_planning_validator_30b/valid_collection_planning_fixture.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/collection_planning_validator_30b/invalid_collection_planning_fixture.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/collection_planning_validator_30b/02_validator_smoke_report.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/collection_planning_validator_30b/03_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/collection_planning_validator_30b/04_operator_summary.md
+- run/proofs/proof_collection_planning_validator_30b.json
+- run/proofs/proof_collection_planning_validator_30b_latest.json
+- etc/replay/parity/collection_planning_validator_30b.json
+
+Conclusion:
+30B freezes the offline planning validator only. It does not approve paper_armed or live trading.
+
+Next:
+Batch 30C — freeze real same-session collection planning precheck rollup and transition decision; still no paper/live enablement.

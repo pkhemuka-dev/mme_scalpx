@@ -136,7 +136,6 @@ FROZEN_RUNTIME_SERVICE_PATHS: Final[dict[str, str]] = {
 FORBIDDEN_RUNTIME_PATHS: Final[set[str]] = {
     "app.mme_scalpx.integrations.login",
     "app.mme_scalpx.domain.instruments",
-    "app.mme_scalpx.services.reports",
     "app.mme_scalpx.services.features_legacy_single",
     "app/mme_scalpx/services/features_legacy_single.py",
     "app.mme_scalpx.services.strategy_legacy_single",

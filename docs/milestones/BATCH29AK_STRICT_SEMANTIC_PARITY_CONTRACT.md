@@ -1,0 +1,33 @@
+BATCH 29AK STRICT SEMANTIC PARITY CONTRACT
+
+generated_at_utc: 2026-05-02T06:59:55.107837+00:00
+verdict: PASS_STRICT_SEMANTIC_PARITY_CONTRACT_29AK
+semantic_report: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_replay_live_parity_review_29aj/00_semantic_replay_live_parity_review_report.json
+strict_contract: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strict_semantic_parity_contract_29ak/00_strict_semantic_parity_contract.json
+mismatch_table_schema: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strict_semantic_parity_contract_29ak/01_mismatch_table_schema.json
+field_spec_count: 12
+strict_contract_written: True
+mismatch_schema_written: True
+strict_contract_ready: True
+strict_preview_hard_fail_count: 0
+strict_preview_unknown_count: 0
+full_live_replay_parity: NOT_PROVEN_IN_29AK
+repair_path: STRICT_MISMATCH_TABLE_EXECUTION_READY
+next_batch: Batch 29AL — execute strict semantic mismatch-table comparison using the frozen 29AK contract; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_strict_semantic_parity_contract_29ak.json
+- run/proofs/proof_strict_semantic_parity_contract_29ak_latest.json
+- run/proofs/batch29ak_strict_semantic_parity_contract_20260502_122954_driver_proof.json
+- etc/replay/parity/strict_semantic_parity_contract_29ak.json

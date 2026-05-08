@@ -1,0 +1,8 @@
+--- real/ai_patch_runner/SANDBOX_AI_PATCH_NOTE.md
++++ sandbox/ai_patch_runner/SANDBOX_AI_PATCH_NOTE.md
+@@ -0,0 +1,5 @@
++# Sandbox AI Patch Note
++
++v0.3.1 can generate an AI patch plan and apply it only inside the sandbox.
++
++This note is for sandbox validation only. It does not affect the real project, start services, contact external systems, or enable any trading mode.

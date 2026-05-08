@@ -1,0 +1,51 @@
+{
+  "schema_version": "replay_batch_runner_contract_v1",
+  "purpose": "Replay-only batch/date-range/window/scenario runner and artifact materialization contract.",
+  "replay_only": true,
+  "paper_armed_approved": false,
+  "live_trading_approved": false,
+  "execution_arming_created": false,
+  "broker_calls_allowed": false,
+  "live_redis_writes_allowed": false,
+  "real_order_intent_allowed": false,
+  "production_doctrine_changed": false,
+  "supported_run_scopes": [
+    "single_day",
+    "date_range",
+    "date_list",
+    "intraday_window",
+    "scenario_matrix"
+  ],
+  "required_run_request_fields": [
+    "schema_version",
+    "run_id",
+    "scope",
+    "date",
+    "dates",
+    "start_time",
+    "end_time",
+    "scenario_id",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed"
+  ],
+  "required_artifacts": [
+    "00_manifest.json",
+    "01_dataset_summary.json",
+    "02_scenario_summary.json",
+    "03_feature_summary.json",
+    "04_strategy_summary.json",
+    "05_risk_summary.json",
+    "06_execution_shadow_summary.json",
+    "07_reproducibility.json",
+    "08_batch_summary.json"
+  ],
+  "artifact_root": "run/replay/",
+  "proof_boundary": {
+    "batch_runner_shape": "PROVEN_BY_27K",
+    "artifact_materialization": "PROVEN_BY_27K",
+    "reproducibility_hash": "PROVEN_BY_27K",
+    "full_live_replay_parity": "NOT_PROVEN_IN_27K",
+    "broker_order_path": "FORBIDDEN"
+  }
+}

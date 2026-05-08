@@ -1,0 +1,38 @@
+BATCH 29CH OFFLINE SAME-SESSION MANIFEST VALIDATOR CONTRACT/HARNESS
+
+verdict: PASS_29CH_OFFLINE_SAME_SESSION_MANIFEST_VALIDATOR_CONTRACT_FROZEN_SMOKE_PASS
+manifest_validator_status: FROZEN_OFFLINE_SAME_SESSION_MANIFEST_VALIDATOR_CONTRACT_AND_HARNESS_SMOKE_PASS
+smoke_ok: True
+required_top_level_field_count: 14
+required_artifact_family_count: 7
+comparison_phase_count: 8
+contract_only: true
+offline_harness_only: true
+live_collection_started: false
+replay_run_started: false
+comparison_started: false
+full_live_replay_parity: NOT_PROVEN_AFTER_29CH_VALIDATOR_CONTRACT_ONLY
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+paper_armed_approved: false
+live_trading_approved: false
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_manifest_validator_contract_29ch/00_manifest_validator_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_manifest_validator_contract_29ch/01_manifest_validator_package.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_manifest_validator_contract_29ch/same_session_manifest_validator.py
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_manifest_validator_contract_29ch/valid_manifest_smoke_fixture.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_manifest_validator_contract_29ch/invalid_manifest_smoke_fixture.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_manifest_validator_contract_29ch/02_validator_smoke_report.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_manifest_validator_contract_29ch/03_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_manifest_validator_contract_29ch/04_operator_summary.md
+- run/proofs/proof_same_session_manifest_validator_contract_29ch.json
+- run/proofs/proof_same_session_manifest_validator_contract_29ch_latest.json
+- etc/replay/parity/same_session_manifest_validator_contract_29ch.json
+
+Conclusion:
+29CH freezes an offline validator contract/harness for future same-session manifests. It does not approve paper_armed or live trading.
+
+Next:
+Batch 29CI — define same-session artifact index and comparison matrix contract; still no paper/live enablement.

@@ -1,0 +1,21 @@
+# 26-O23-P-R7 — read-only payload publication verify
+
+- generated_at_utc: `2026-05-08T09:41:55.099735+00:00`
+- final_verdict: `FAIL_O23_P_R7_READONLY_PAYLOAD_PUBLICATION_NOT_PROVEN`
+- false_keys: `['family_features_json_seen', 'family_payload_json_valid', 'family_surfaces_json_seen', 'manifest_written', 'milestone_written', 'patch_marker_stream_seen', 'proof_written', 'runbook_written', 'summary_written']`
+- latest_r6b_r3: `run/proofs/proof_batch26o23_p_r6b_r3_fieldvar_patch_latest.json`
+- services_started: `['feeds', 'features', 'strategy']`
+- service_liveness_observed: `True`
+- features_growth: `4`
+- decisions_growth: `42`
+- orders_growth: `0`
+- family_features_json_seen: `False`
+- family_surfaces_json_seen: `False`
+- patch_marker_stream_seen: `False`
+- family_payload_json_valid: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids_after_stop: `True`
+- risk_execution_not_running: `True`
+- no paper / no real-live / no order write: `True`
+- next_recommended_batch: `Inspect R7 false_keys/service logs/payload audit; do not advance to opportunity ranking.`

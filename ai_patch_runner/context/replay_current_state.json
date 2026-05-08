@@ -1,0 +1,23 @@
+{
+  "calls_broker_api": false,
+  "canonical_root": null,
+  "code_patch_applied": false,
+  "contract_shape_ok": null,
+  "engine_execution_performed": false,
+  "engine_ready": false,
+  "engine_ready_candidate": false,
+  "full_live_replay_parity": "NOT_PROVEN",
+  "latest_candidate_path": null,
+  "latest_passed_or_latest_replay_batch": "REPLAY-DATA-A26",
+  "latest_replay_proof": "run/proofs/proof_replay_data_a26_guarded_selector_execution_decision_20260508T193530Z.json",
+  "latest_row_count": null,
+  "live_trading_approved": false,
+  "next_expected_batch": "REPLAY-DATA-A27",
+  "paper_armed_approved": false,
+  "paper_live_status": "BLOCKED_NOT_IN_SCOPE",
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "source_date": null,
+  "starts_services": false,
+  "writes_live_redis": false
+}

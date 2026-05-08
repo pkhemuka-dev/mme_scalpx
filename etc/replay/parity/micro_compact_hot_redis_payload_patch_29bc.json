@@ -1,0 +1,58 @@
+{
+  "batch": "29BC",
+  "compact_keep_fields": [
+    "frame_ts_ns",
+    "ts",
+    "service",
+    "runtime_mode",
+    "data_valid",
+    "provider_current",
+    "feed_fresh",
+    "warmup_complete",
+    "session_eligible",
+    "selected_option_ready",
+    "candidate_count",
+    "blocker_count",
+    "activation_action",
+    "activation_family",
+    "activation_side",
+    "action",
+    "reason"
+  ],
+  "generated_at_utc": "2026-05-05T08:36:20.849473+00:00",
+  "heavy_fields": [
+    "family_surfaces_json",
+    "consumer_view_json",
+    "family_features_json",
+    "payload_json",
+    "decision_json",
+    "features_json",
+    "surface_json",
+    "snapshot_json",
+    "frame_json"
+  ],
+  "mode": "micro_patch_if_exact_authority_proven",
+  "safety": {
+    "batch": "29BC",
+    "broker_execution_path_used": false,
+    "features_restarted": false,
+    "live_redis_write_performed_by_batch": false,
+    "micro_patch_attempted": true,
+    "order_sending_performed": false,
+    "paper_live_enablement_performed": false,
+    "production_code_patched": false,
+    "raw_patch_performed": false,
+    "redis_read_only_sampling": true,
+    "replay_patch_performed": false,
+    "strategy_restarted": false
+  },
+  "schema_version": "batch29bc_config_v1",
+  "support_files": [
+    "app/mme_scalpx/core/redisx.py",
+    "app/mme_scalpx/core/names.py"
+  ],
+  "target_files": [
+    "app/mme_scalpx/services/features.py",
+    "app/mme_scalpx/services/strategy.py"
+  ]
+}

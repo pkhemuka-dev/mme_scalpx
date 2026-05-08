@@ -1,0 +1,33 @@
+BATCH 29AV REPLAY PROVIDER-FEATURE PRODUCER/CONSUMER SEAM AUDIT
+
+generated_at_utc: 2026-05-02T07:23:10.787271+00:00
+verdict: PASS_REPLAY_PROVIDER_FEATURE_PRODUCER_CONSUMER_SEAM_AUDIT_29AV
+seam_audit_report_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_producer_consumer_seam_audit_29av/00_replay_provider_feature_producer_consumer_seam_audit_report.json
+producer_consumer_matrix_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_producer_consumer_seam_audit_29av/01_producer_consumer_matrix.json
+recommended_patch_seam: bin/guarded_replay_engine_execute_dry_run_29g.py
+recommended_patch_kind: REPLAY_ONLY_ARTIFACT_WRITER_ENRICHMENT
+target_surface_already_native: False
+guarded_script_is_artifact_writer: True
+producer_consumer_seam_audit_complete: True
+patch_ready_next: True
+provider_feature_value_comparison_ready: False
+full_live_replay_parity: NOT_PROVEN_IN_29AV
+repair_path: REPLAY_ONLY_ARTIFACT_WRITER_PATCH_READY
+next_batch: Batch 29AW — patch replay-only guarded artifact writer to emit guarded_replay_provider_feature_summary with provenance; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_replay_provider_feature_producer_consumer_seam_audit_29av.json
+- run/proofs/proof_replay_provider_feature_producer_consumer_seam_audit_29av_latest.json
+- run/proofs/batch29av_replay_provider_feature_producer_consumer_seam_audit_20260502_125309_driver_proof.json
+- etc/replay/parity/replay_provider_feature_producer_consumer_seam_audit_29av.json

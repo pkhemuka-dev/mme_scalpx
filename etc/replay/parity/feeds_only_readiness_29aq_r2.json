@@ -1,0 +1,26 @@
+{
+  "batch": "29AQ-R2-FEEDS-ONLY",
+  "generated_at_utc": "2026-05-05T08:45:00.927607+00:00",
+  "mode": "feeds_only_readiness_no_features_no_strategy",
+  "required_tick_streams": [
+    "fut_zerodha",
+    "fut_dhan",
+    "opt_selected_zerodha",
+    "opt_selected_dhan",
+    "opt_context_dhan"
+  ],
+  "safety": {
+    "batch": "29AQ-R2-FEEDS-ONLY",
+    "broker_execution_path_used": false,
+    "features_restarted": false,
+    "feeds_only_readiness": true,
+    "live_redis_write_performed_by_batch": false,
+    "order_sending_performed": false,
+    "paper_live_enablement_performed": false,
+    "production_code_patched": false,
+    "raw_patch_performed": false,
+    "replay_patch_performed": false,
+    "strategy_restarted": false
+  },
+  "schema_version": "batch29aq_r2_feeds_only_config_v1"
+}

@@ -1,0 +1,35 @@
+BATCH 29AW-R9 FORCE PROVIDER-FEATURE OUTPUT ROOT
+
+generated_at_utc: 2026-05-02T08:05:32.525490+00:00
+verdict: PASS_FORCE_PROVIDER_FEATURE_OUTPUT_ROOT_29AW_R9
+patched_file: bin/guarded_replay_engine_execute_dry_run_29g.py
+force_output_root_patch_applied: True
+guarded_retry_returncode: 0
+stdout_provider_feature_summary_path: /home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aw_r9_20260502_133235/06_guarded_replay_provider_feature_summary.json
+provider_feature_summary_found: True
+provider_feature_summary_path: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aw_r9_20260502_133235/06_guarded_replay_provider_feature_summary.json
+provider_feature_field_count: 4
+known_boolean_count: 0
+null_value_count: 4
+provider_summary_valid_shape: True
+provider_feature_value_comparison_ready: False
+full_live_replay_parity: NOT_PROVEN_IN_29AW_R9
+repair_path: PROVIDER_FEATURE_SUMMARY_VALIDATION_READY
+next_batch: Batch 29AX — validate emitted guarded_replay_provider_feature_summary and rerun provider-feature value comparison if value-ready; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- bin/guarded_replay_engine_execute_dry_run_29g.py
+
+Proofs:
+- run/proofs/proof_force_provider_feature_output_root_29aw_r9.json
+- run/proofs/proof_force_provider_feature_output_root_29aw_r9_latest.json
+- run/proofs/batch29aw_r9_force_provider_feature_output_root_20260502_133235_driver_proof.json
+- etc/replay/parity/force_provider_feature_output_root_29aw_r9.json

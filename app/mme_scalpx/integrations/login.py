@@ -947,7 +947,10 @@ def authenticate_dhan(
         session_payload=session_payload,
         verification_payload=verification_payload,
     )
-    save_token_state(state)
+    # Dhan must not write the shared compatibility token store.
+    # shared/tokens.json is Zerodha-owned because Zerodha bootstrap_quote,
+    # instrument sync, and Zerodha feed adapter validate it as broker="zerodha".
+    # Persist Dhan only to its broker-specific session.env.
     _save_dhan_broker_session(access_token)
 
     detail_parts: list[str] = []

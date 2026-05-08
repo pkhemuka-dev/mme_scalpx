@@ -1,0 +1,35 @@
+BATCH 29AQ REPLAY PROVIDER-FEATURE SOURCE MATERIALIZATION AUDIT/PLAN
+
+generated_at_utc: 2026-05-02T07:11:25.449540+00:00
+verdict: DEFERRED_MISSING_REQUIRED_FILES_29AQ
+materialization_contract: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_replay_source_materialization_contract_29ap/00_provider_feature_replay_source_materialization_contract.json
+materializer_plan_json: None
+materializer_plan_csv: None
+preview_summary_json: None
+provider_feature_field_count: 0
+real_value_source_count: None
+scope_hint_source_count: None
+missing_source_count: None
+null_safe_preview_field_count: None
+provider_feature_summary_materializer_plan_ready: False
+provider_feature_value_comparison_ready: False
+full_live_replay_parity: NOT_PROVEN_IN_29AQ
+repair_path: RESTORE_REQUIRED_29AP_INPUTS
+next_batch: Restore 29AP materialization contract inputs before replay provider-feature source audit.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_replay_provider_feature_source_materialization_audit_plan_29aq.json
+- run/proofs/proof_replay_provider_feature_source_materialization_audit_plan_29aq_latest.json
+- run/proofs/batch29aq_replay_provider_feature_source_materialization_audit_plan_20260502_124125_driver_proof.json
+- etc/replay/parity/replay_provider_feature_source_materialization_audit_plan_29aq.json

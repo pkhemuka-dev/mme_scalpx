@@ -1,0 +1,20 @@
+BATCH 29BS FAMILY SURFACE VALUE COMPARISON
+
+verdict: DEFERRED_29BS_FAMILY_SURFACE_MAPPED_VALUE_COMPARISON_STRICT_MISMATCH
+family_surface_payload_parity: NOT_PROVEN_STRICT_FIELD_MISMATCH
+strict_match: False
+strict_mismatch_count: 5
+comparison_completed: true
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29BS
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_value_comparison_29bs/00_family_surface_value_comparison.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_value_comparison_29bs/01_strict_mismatch_table.json
+- run/proofs/proof_family_surface_value_comparison_29bs.json
+- run/proofs/proof_family_surface_value_comparison_29bs_latest.json
+
+Next:
+Batch 29BT — classify and consolidate family surface mapped value comparison result; still no paper/live enablement.

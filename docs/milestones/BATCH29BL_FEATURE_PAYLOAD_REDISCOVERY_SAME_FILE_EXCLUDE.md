@@ -1,0 +1,33 @@
+BATCH 29BL FEATURE PAYLOAD REDISCOVERY WITH HARD SAME-FILE EXCLUSION
+
+generated_at_utc: 2026-05-02T10:12:55.167240+00:00
+verdict: PASS_29BL_FEATURE_PAYLOAD_SEPARATE_ARTIFACT_MAPPING_READY
+proof_29bk_valid: True
+compile_ok: True
+safety_ok: True
+rediscovery_status: SEPARATE_REPLAY_REFERENCE_ARTIFACTS_FOUND_MAPPING_READY
+feature_payload_parity: NOT_PROVEN_SEPARATE_ARTIFACT_CONTRACT_READY
+replay_candidate_count: 80
+reference_candidate_count: 29
+ambiguous_candidate_count: 7
+selected_replay_artifact: run/proofs/batch27b_replay_gap_confirmation_20260501_123626.json
+selected_reference_artifact: etc/replay/parity/observe_only_replay_live_parity_manifest_28i.json
+common_field_count: 3
+concrete_comparable_field_count: 3
+comparison_mapping_ready: True
+approved_comparable_fields: ['family_surfaces', 'provider', 'timestamp']
+same_file_hard_exclusion: true
+full_live_replay_parity: NOT_PROVEN_IN_29BL
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BM — execute feature payload value comparison using separate-artifact mapping contract; still no paper/live enablement.
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_rediscovery_same_file_exclude_29bl/00_feature_payload_rediscovery_candidate_inventory.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_rediscovery_same_file_exclude_29bl/01_feature_payload_separate_pair_selection.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_rediscovery_same_file_exclude_29bl/02_feature_payload_separate_artifact_mapping_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_rediscovery_same_file_exclude_29bl/03_feature_payload_rediscovery_decision.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_rediscovery_same_file_exclude_29bl/04_next_batch_29bm_contract.json
+- run/proofs/proof_feature_payload_rediscovery_same_file_exclude_29bl.json
+- run/proofs/proof_feature_payload_rediscovery_same_file_exclude_29bl_latest.json
+
+Files changed: none

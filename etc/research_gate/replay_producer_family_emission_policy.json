@@ -1,0 +1,26 @@
+{
+  "broker_io_allowed": false,
+  "execution_override_allowed": false,
+  "law": [
+    "Patch replay producer surfaces only.",
+    "Use safe dict wrapper; non-dict returns pass through unchanged.",
+    "Do not touch live services, brokers, Redis, risk, execution, strategy, or paper/live settings.",
+    "Unresolved labels remain UNKNOWN."
+  ],
+  "non_live": true,
+  "non_mutating_live_runtime": true,
+  "order_sending_allowed": false,
+  "owner": "replay trade/candidate producer family emission",
+  "paper_live_enablement_allowed": false,
+  "patched_targets": [
+    "app/mme_scalpx/replay/reports.py",
+    "app/mme_scalpx/replay/artifacts.py",
+    "app/mme_scalpx/replay/raw_producer_family_emission.py"
+  ],
+  "promotion_allowed_by_raw_s": false,
+  "purpose": "Patch replay reports/artifacts producer surfaces so emitted dict rows carry family, side, and strategy_id where source evidence exists.",
+  "redis_live_write_allowed": false,
+  "risk_override_allowed": false,
+  "schema_version": "RAW-S.1",
+  "strategy_mutation_allowed": false
+}

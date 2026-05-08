@@ -1,0 +1,18 @@
+{
+  "broker_io_allowed": false,
+  "law": [
+    "Review only; do not patch producers in RAW-R.",
+    "Do not promote paper/live.",
+    "Do not overwrite earlier RAW-D/J/Q proofs.",
+    "Use RAW-Q output as evidence input."
+  ],
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "owner": "RAW family PnL and source-gap review",
+  "paper_live_enablement_allowed": false,
+  "promotion_allowed_by_raw_r": false,
+  "purpose": "Review RAW-Q family-level PnL and map UNKNOWN trade rows to likely replay producers.",
+  "redis_live_write_allowed": false,
+  "schema_version": "RAW-R.1"
+}

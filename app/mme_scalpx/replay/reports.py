@@ -32,6 +32,29 @@ Design rules
 
 from __future__ import annotations
 
+# RAW-S producer family emission hook — replay-only, non-live.
+try:
+    from app.mme_scalpx.replay.raw_producer_family_emission import emit_family_context as _raw_s_emit_family_context
+except Exception:  # defensive replay-only fallback
+    def _raw_s_emit_family_context(value, *, source_artifact=""):
+        return value
+
+
+def _raw_s_emit(value):
+    source_artifact = __file__
+    if isinstance(value, dict):
+        source_artifact = str(
+            value.get("source_artifact")
+            or value.get("raw_source_artifact")
+            or value.get("source_path")
+            or value.get("artifact_path")
+            or value.get("input_file")
+            or value.get("input_path")
+            or __file__
+        )
+    return _raw_s_emit_family_context(value, source_artifact=source_artifact)
+# END RAW-S producer family emission hook.
+
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Sequence
 
@@ -324,3 +347,40 @@ __all__ = [
     "scope_report_to_dict",
     "report_bundle_to_dict",
 ]
+
+# BEGIN BATCH27L_REPLAY_REPORT_EXPORT_HELPERS
+
+def replay_report_export_required_files():
+    """Return frozen replay report/export artifact names."""
+    from app.mme_scalpx.replay.report_exporter import REPLAY_REQUIRED_REPORT_EXPORTS
+
+    return tuple(REPLAY_REQUIRED_REPORT_EXPORTS)
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_report_export_required_files",
+)))
+
+# END BATCH27L_REPLAY_REPORT_EXPORT_HELPERS
+
+# BEGIN BATCH28A_REPLAY_LIVE_PARITY_REPORT_HELPERS
+
+def replay_live_parity_report_sections():
+    from app.mme_scalpx.replay.live_parity import REPLAY_LIVE_PARITY_SECTIONS
+    return tuple(REPLAY_LIVE_PARITY_SECTIONS)
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_live_parity_report_sections",
+)))
+
+# END BATCH28A_REPLAY_LIVE_PARITY_REPORT_HELPERS
+

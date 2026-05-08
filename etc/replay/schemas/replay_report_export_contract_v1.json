@@ -1,0 +1,40 @@
+{
+  "schema_version": "replay_report_export_contract_v1",
+  "purpose": "Replay-only report/export workstation contract.",
+  "replay_only": true,
+  "paper_armed_approved": false,
+  "live_trading_approved": false,
+  "execution_arming_created": false,
+  "broker_calls_allowed": false,
+  "live_redis_writes_allowed": false,
+  "real_order_intent_allowed": false,
+  "production_doctrine_changed": false,
+  "export_root": "run/replay/<run_id>/exports/",
+  "required_exports": [
+    "00_export_manifest.json",
+    "01_trade_log.csv",
+    "01_trade_log.json",
+    "02_candidate_log.csv",
+    "02_candidate_log.json",
+    "03_blocker_chain.csv",
+    "03_blocker_chain.json",
+    "04_side_split_summary.csv",
+    "04_side_split_summary.json",
+    "05_family_split_summary.csv",
+    "05_family_split_summary.json",
+    "06_scenario_summary.csv",
+    "06_scenario_summary.json",
+    "07_pnl_execution_shadow_summary.csv",
+    "07_pnl_execution_shadow_summary.json",
+    "08_baseline_vs_shadow_comparison.json",
+    "09_export_reproducibility.json"
+  ],
+  "proof_boundary": {
+    "report_export_shape": "PROVEN_BY_27L",
+    "baseline_shadow_comparison_shape": "PROVEN_BY_27L",
+    "export_reproducibility_hash": "PROVEN_BY_27L",
+    "full_report_semantic_accuracy": "NOT_PROVEN_IN_27L",
+    "full_live_replay_parity": "NOT_PROVEN_IN_27L",
+    "broker_order_path": "FORBIDDEN"
+  }
+}

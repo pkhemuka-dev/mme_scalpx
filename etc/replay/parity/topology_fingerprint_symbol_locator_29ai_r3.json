@@ -1,0 +1,21 @@
+{
+  "accepted_for": "TOPOLOGY_FINGERPRINT_SYMBOL_AND_CALLSITE_LOCATION_ONLY",
+  "batch": "29AI-R3",
+  "generated_at_utc": "2026-05-02T06:41:22.870510+00:00",
+  "safety": {
+    "audit_only": true,
+    "batch": "29AI-R3",
+    "broker_calls_executed": false,
+    "code_patch_applied": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "topology_fingerprint_symbol_locator_29ai_r3_v1"
+}

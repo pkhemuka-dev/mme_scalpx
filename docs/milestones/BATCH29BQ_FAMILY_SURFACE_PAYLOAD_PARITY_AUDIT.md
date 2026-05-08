@@ -1,0 +1,32 @@
+BATCH 29BQ FAMILY SURFACE PAYLOAD PARITY AUDIT
+
+generated_at_utc: 2026-05-02T12:08:15.565669+00:00
+verdict: PASS_29BQ_FAMILY_SURFACE_PAYLOAD_PARITY_AUDIT_MAPPING_READY
+proof_29bp_valid: True
+compile_ok: True
+safety_ok: True
+audit_status: FAMILY_SURFACE_REPLAY_REFERENCE_MAPPING_READY
+family_surface_payload_parity: NOT_PROVEN_MAPPING_READY
+replay_candidate_count: 100
+reference_candidate_count: 92
+ambiguous_candidate_count: 14
+selected_replay_artifact: run/proofs/batch27n_replay_final_acceptance_gate_20260501_142734_inspection/source_snapshot/run/proofs/batch_raw_a_b_freeze_final_v2_20260501_123952_inspection/extracted_bundle/run/proofs/proof_family_surface_service_path.json
+selected_reference_artifact: run/proofs/batch27n_replay_final_acceptance_gate_20260501_142734_inspection/source_snapshot/run/proofs/batch_raw_a_b_freeze_final_v2_20260501_123952_inspection/extracted_bundle/run/proofs/proof_market_session_family_surfaces.json
+common_field_count: 8
+concrete_comparable_field_count: 8
+strict_comparable_field_count: 8
+comparison_mapping_ready: True
+approved_comparable_fields: ['branch', 'family', 'misb', 'misc', 'miso', 'misr', 'mist', 'surface_kind']
+full_live_replay_parity: NOT_PROVEN_IN_29BQ
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BR — map family surface replay/reference comparable fields and define comparison contract; still no paper/live enablement.
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_payload_parity_audit_29bq/00_family_surface_candidate_inventory.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_payload_parity_audit_29bq/01_selected_family_surface_artifacts.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_payload_parity_audit_29bq/02_family_surface_mapping_readiness.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_payload_parity_audit_29bq/03_next_batch_29br_contract.json
+- run/proofs/proof_family_surface_payload_parity_audit_29bq.json
+- run/proofs/proof_family_surface_payload_parity_audit_29bq_latest.json
+
+Files changed: none

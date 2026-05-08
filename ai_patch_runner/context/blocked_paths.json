@@ -1,0 +1,34 @@
+{
+  "blocked_path_patterns": [
+    "common/secrets/",
+    "etc/brokers/",
+    "app/mme_scalpx/main.py",
+    "app/mme_scalpx/services/execution.py",
+    "app/mme_scalpx/services/risk.py",
+    "app/mme_scalpx/integrations/"
+  ],
+  "blocked_runtime_patterns": [
+    "nohup",
+    "systemctl",
+    "python -m app.mme_scalpx.main",
+    "redis-cli SET/HSET/XADD/DEL",
+    "broker login/API call",
+    "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME=1",
+    "SCALPX_REAL_LIVE_ALLOWED=1",
+    "SCALPX_ALLOW_REAL_LIVE=1"
+  ],
+  "blocked_write_roots": {
+    "broker_login_allowed": false,
+    "calls_broker_api": false,
+    "full_live_replay_parity": "NOT_PROVEN",
+    "live_trading_approved": false,
+    "paper_armed_approved": false,
+    "paper_live_status": "BLOCKED_NOT_IN_SCOPE",
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "redis_mutation_allowed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "version": "mme_ai_blocked_paths_v1"
+}

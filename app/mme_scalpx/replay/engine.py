@@ -35,6 +35,24 @@ Design rules
 
 from __future__ import annotations
 
+# BEGIN BATCH27C_REPLAY_SAFETY_FIREWALL
+try:
+    from app.mme_scalpx.replay.safety import assert_replay_module_static_safety
+except ModuleNotFoundError:
+    import pathlib as _batch27c_pathlib
+    import sys as _batch27c_sys
+
+    _batch27c_here = _batch27c_pathlib.Path(__file__).resolve()
+    for _batch27c_parent in [_batch27c_here.parent, *_batch27c_here.parents]:
+        if (_batch27c_parent / "app" / "mme_scalpx").exists():
+            if str(_batch27c_parent) not in _batch27c_sys.path:
+                _batch27c_sys.path.insert(0, str(_batch27c_parent))
+            break
+    from app.mme_scalpx.replay.safety import assert_replay_module_static_safety
+
+assert_replay_module_static_safety(__file__)
+# END BATCH27C_REPLAY_SAFETY_FIREWALL
+
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Mapping, Protocol, Sequence
@@ -461,3 +479,164 @@ def _batch16_execute_stage(
 
 ReplayEngine._execute_stage = _batch16_execute_stage
 # ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====
+
+# BEGIN BATCH27F_REPLAY_ENGINE_TRANSPORT_HELPERS
+
+def replay_engine_transport_plan(*, run_id):
+    """Return replay-only transport plan for future engine integration."""
+    from app.mme_scalpx.replay.transport import REPLAY_LIVE_SHAPE_SURFACES, replay_key_for
+    from app.mme_scalpx.replay.live_adapter import replay_live_contract_name
+
+    return {
+        "schema_version": "replay_engine_transport_plan_v1",
+        "run_id": str(run_id),
+        "surfaces": tuple(REPLAY_LIVE_SHAPE_SURFACES),
+        "replay_keys": {
+            surface: replay_key_for(
+                replay_live_contract_name(surface),
+                kind="stream" if surface in {"futures_tick", "selected_option_tick", "feature_payload", "strategy_decision"} else "state",
+                run_id=str(run_id),
+            )
+            for surface in REPLAY_LIVE_SHAPE_SURFACES
+        },
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_engine_transport_plan",
+)))
+
+# END BATCH27F_REPLAY_ENGINE_TRANSPORT_HELPERS
+
+# BEGIN BATCH27G_REPLAY_ENGINE_FEATURE_ADAPTER_HELPERS
+
+def replay_engine_feature_adapter_plan(*, run_id):
+    """Return replay-only feature adapter plan for future engine wiring."""
+    from app.mme_scalpx.replay.feature_adapter import REPLAY_FEATURE_FAMILIES, REPLAY_FEATURE_SIDES
+
+    return {
+        "schema_version": "replay_engine_feature_adapter_plan_v1",
+        "run_id": str(run_id),
+        "families": tuple(REPLAY_FEATURE_FAMILIES),
+        "sides": tuple(REPLAY_FEATURE_SIDES),
+        "strategy_decision_generated": False,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_engine_feature_adapter_plan",
+)))
+
+# END BATCH27G_REPLAY_ENGINE_FEATURE_ADAPTER_HELPERS
+
+# BEGIN BATCH27H_REPLAY_ENGINE_STRATEGY_ADAPTER_HELPERS
+
+def replay_engine_strategy_adapter_plan(*, run_id):
+    """Return replay-only strategy adapter plan for future engine wiring."""
+    from app.mme_scalpx.replay.strategy_adapter import (
+        REPLAY_STRATEGY_ALLOWED_FINAL_ACTIONS,
+        REPLAY_STRATEGY_FAMILIES,
+        REPLAY_STRATEGY_SIDES,
+    )
+
+    return {
+        "schema_version": "replay_engine_strategy_adapter_plan_v1",
+        "run_id": str(run_id),
+        "families": tuple(REPLAY_STRATEGY_FAMILIES),
+        "sides": tuple(REPLAY_STRATEGY_SIDES),
+        "allowed_final_actions": tuple(REPLAY_STRATEGY_ALLOWED_FINAL_ACTIONS),
+        "final_action": "HOLD_REPORT_ONLY",
+        "order_allowed": False,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_engine_strategy_adapter_plan",
+)))
+
+# END BATCH27H_REPLAY_ENGINE_STRATEGY_ADAPTER_HELPERS
+
+# BEGIN BATCH27I_REPLAY_ENGINE_RISK_EXECUTION_HELPERS
+
+def replay_engine_risk_execution_shadow_plan(*, run_id):
+    """Return replay-only risk/execution-shadow plan for future engine wiring."""
+    from app.mme_scalpx.replay.execution_shadow import REPLAY_SHADOW_FILL_POLICIES
+
+    return {
+        "schema_version": "replay_engine_risk_execution_shadow_plan_v1",
+        "run_id": str(run_id),
+        "fill_policies": tuple(REPLAY_SHADOW_FILL_POLICIES),
+        "risk_shadow_surface": "risk_shadow",
+        "execution_shadow_surface": "execution_shadow",
+        "order_allowed": False,
+        "real_order_sent": False,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_engine_risk_execution_shadow_plan",
+)))
+
+# END BATCH27I_REPLAY_ENGINE_RISK_EXECUTION_HELPERS
+
+# BEGIN BATCH27J_REPLAY_ENGINE_SCENARIO_HELPERS
+
+def replay_engine_scenario_profile_plan(*, run_id):
+    """Return replay-only scenario profile plan for future engine wiring."""
+    from app.mme_scalpx.replay.scenarios import REPLAY_REQUIRED_SCENARIOS
+
+    return {
+        "schema_version": "replay_engine_scenario_profile_plan_v1",
+        "run_id": str(run_id),
+        "scenario_count": len(REPLAY_REQUIRED_SCENARIOS),
+        "scenarios": tuple(REPLAY_REQUIRED_SCENARIOS),
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_engine_scenario_profile_plan",
+)))
+
+# END BATCH27J_REPLAY_ENGINE_SCENARIO_HELPERS

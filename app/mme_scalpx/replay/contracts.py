@@ -1894,3 +1894,1128 @@ def replay_mme_payload_contract_to_dict() -> dict[str, Any]:
         "required_family_feature_fields": list(MME_REPLAY_REQUIRED_FAMILY_FEATURE_FIELDS),
     }
 # ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====
+
+# BEGIN BATCH27D_REPLAY_DATASET_CONTRACT_EXPANSION
+
+REPLAY_DATASET_CONTRACT_VERSION = "replay_dataset_contract_v1"
+
+REPLAY_REQUIRED_FUTURES_FIELDS = (
+    "event_ts_ns",
+    "local_ts_ns",
+    "exchange_ts_ns",
+    "sequence_id",
+    "provider_id",
+    "instrument_role",
+    "instrument_token",
+    "security_id",
+    "tradingsymbol",
+    "exchange",
+    "segment",
+    "expiry",
+    "fut_ltp",
+    "fut_best_bid",
+    "fut_best_ask",
+    "fut_bid_qty_1",
+    "fut_bid_qty_2",
+    "fut_bid_qty_3",
+    "fut_bid_qty_4",
+    "fut_bid_qty_5",
+    "fut_ask_qty_1",
+    "fut_ask_qty_2",
+    "fut_ask_qty_3",
+    "fut_ask_qty_4",
+    "fut_ask_qty_5",
+    "fut_volume",
+    "fut_oi",
+    "fut_tick_size",
+    "fut_lot_size",
+    "fut_local_ts",
+    "fut_vwap",
+    "fut_ema_9",
+    "fut_ema_21",
+)
+
+REPLAY_REQUIRED_SELECTED_OPTION_FIELDS = (
+    "event_ts_ns",
+    "local_ts_ns",
+    "exchange_ts_ns",
+    "sequence_id",
+    "provider_id",
+    "selected_option_provider",
+    "branch_side",
+    "side",
+    "option_type",
+    "instrument_token",
+    "security_id",
+    "tradingsymbol",
+    "exchange",
+    "segment",
+    "expiry",
+    "strike",
+    "atm_strike",
+    "moneyness_rank",
+    "opt_ltp",
+    "opt_best_bid",
+    "opt_best_ask",
+    "opt_bid_qty_1",
+    "opt_bid_qty_2",
+    "opt_bid_qty_3",
+    "opt_bid_qty_4",
+    "opt_bid_qty_5",
+    "opt_ask_qty_1",
+    "opt_ask_qty_2",
+    "opt_ask_qty_3",
+    "opt_ask_qty_4",
+    "opt_ask_qty_5",
+    "opt_volume",
+    "opt_oi",
+    "opt_tick_size",
+    "opt_lot_size",
+    "opt_local_ts",
+    "ce_ltp",
+    "ce_best_bid",
+    "ce_best_ask",
+    "ce_bid_qty_1",
+    "ce_bid_qty_2",
+    "ce_bid_qty_3",
+    "ce_bid_qty_4",
+    "ce_bid_qty_5",
+    "ce_ask_qty_1",
+    "ce_ask_qty_2",
+    "ce_ask_qty_3",
+    "ce_ask_qty_4",
+    "ce_ask_qty_5",
+    "ce_volume",
+    "ce_oi",
+    "ce_local_ts",
+    "ce_tick_size",
+    "ce_lot_size",
+    "ce_strike",
+    "pe_ltp",
+    "pe_best_bid",
+    "pe_best_ask",
+    "pe_bid_qty_1",
+    "pe_bid_qty_2",
+    "pe_bid_qty_3",
+    "pe_bid_qty_4",
+    "pe_bid_qty_5",
+    "pe_ask_qty_1",
+    "pe_ask_qty_2",
+    "pe_ask_qty_3",
+    "pe_ask_qty_4",
+    "pe_ask_qty_5",
+    "pe_volume",
+    "pe_oi",
+    "pe_local_ts",
+    "pe_tick_size",
+    "pe_lot_size",
+    "pe_strike",
+)
+
+REPLAY_REQUIRED_DHAN_CONTEXT_FIELDS = (
+    "dhan_context_ts_ns",
+    "dhan_context_age_ms",
+    "chain_context_fresh",
+    "dhan_context_provider",
+    "dhan_context_status",
+    "dhan_context_stale_reason",
+    "selected_security_id",
+    "selected_tradingsymbol",
+    "selected_expiry",
+    "selected_strike",
+    "selected_option_type",
+    "strike_score",
+    "iv",
+    "iv_change",
+    "oi",
+    "oi_change",
+    "volume",
+    "delta",
+    "gamma",
+    "theta",
+    "vega",
+    "cross_strike_spread_rank",
+    "cross_strike_volume_rank",
+    "cross_strike_depth_rank",
+    "chain_best_bid",
+    "chain_best_ask",
+    "chain_spread",
+)
+
+REPLAY_REQUIRED_OI_LADDER_FIELDS = (
+    "oi_context_ts_ns",
+    "oi_context_age_ms",
+    "oi_context_fresh",
+    "call_oi_ladder_json",
+    "put_oi_ladder_json",
+    "call_oi_change_ladder_json",
+    "put_oi_change_ladder_json",
+    "nearest_call_wall",
+    "nearest_put_wall",
+    "nearest_call_wall_strength",
+    "nearest_put_wall_strength",
+    "oi_wall_distance_points",
+    "oi_wall_distance_pct",
+    "oi_wall_strength",
+    "oi_support_level",
+    "oi_resistance_level",
+    "oi_support_resistance_bias",
+    "oi_wall_blocking_side",
+    "oi_wall_supporting_side",
+    "oi_wall_breakout_context",
+    "oi_wall_rejection_context",
+    "oi_wall_context_used_for_entry",
+    "production_doctrine_changed",
+)
+
+REPLAY_REQUIRED_PROVIDER_RUNTIME_FIELDS = (
+    "provider_runtime_ts_ns",
+    "provider_runtime_age_ms",
+    "futures_provider",
+    "selected_option_provider",
+    "option_context_provider",
+    "execution_provider",
+    "fallback_execution_provider",
+    "zerodha_ready",
+    "dhan_ready",
+    "dhan_context_ready",
+    "provider_ready_miso",
+    "provider_mode",
+    "provider_degraded_reason",
+    "provider_switch_blocked",
+    "pre_position_provider_change_invalidates_setup",
+    "mid_position_provider_migration_blocked",
+)
+
+REPLAY_REQUIRED_CALL_PUT_SEPARATION_FIELDS = (
+    "branch_side",
+    "side",
+    "option_type",
+    "ce_ltp",
+    "pe_ltp",
+    "ce_best_bid",
+    "pe_best_bid",
+    "ce_best_ask",
+    "pe_best_ask",
+    "ce_strike",
+    "pe_strike",
+    "ce_local_ts",
+    "pe_local_ts",
+)
+
+REPLAY_REQUIRED_MISO_READINESS_FIELDS = (
+    "provider_ready_miso",
+    "dhan_context_ts_ns",
+    "chain_context_fresh",
+    "selected_security_id",
+    "burst_event_id",
+    "oi_context_fresh",
+    "call_oi_ladder_json",
+    "put_oi_ladder_json",
+    "nearest_call_wall",
+    "nearest_put_wall",
+    "oi_wall_strength",
+)
+
+REPLAY_DATASET_CONTRACT_SURFACES = {
+    "futures": REPLAY_REQUIRED_FUTURES_FIELDS,
+    "selected_option": REPLAY_REQUIRED_SELECTED_OPTION_FIELDS,
+    "dhan_context": REPLAY_REQUIRED_DHAN_CONTEXT_FIELDS,
+    "oi_ladder": REPLAY_REQUIRED_OI_LADDER_FIELDS,
+    "provider_runtime": REPLAY_REQUIRED_PROVIDER_RUNTIME_FIELDS,
+    "call_put_separation": REPLAY_REQUIRED_CALL_PUT_SEPARATION_FIELDS,
+    "miso_readiness": REPLAY_REQUIRED_MISO_READINESS_FIELDS,
+}
+
+REPLAY_DATASET_CONTRACT_FILES = (
+    "etc/replay/datasets/replay_live_surface_contract_v2.json",
+    "etc/replay/datasets/replay_dhan_context_contract_v1.json",
+    "etc/replay/datasets/replay_oi_ladder_contract_v1.json",
+    "etc/replay/datasets/replay_provider_runtime_contract_v1.json",
+    "etc/replay/datasets/replay_dataset_contract_manifest_v1.json",
+)
+
+def replay_required_dataset_fields(surface=None):
+    """Return frozen replay dataset required fields.
+
+    If surface is None, returns a surface -> tuple mapping.
+    """
+    if surface is None:
+        return dict(REPLAY_DATASET_CONTRACT_SURFACES)
+    return tuple(REPLAY_DATASET_CONTRACT_SURFACES[str(surface)])
+
+def replay_all_required_dataset_fields():
+    fields = []
+    for surface_fields in REPLAY_DATASET_CONTRACT_SURFACES.values():
+        for field in surface_fields:
+            if field not in fields:
+                fields.append(field)
+    return tuple(fields)
+
+def validate_replay_dataset_row_contract(row, surface=None):
+    """Validate that a replay input row carries the required frozen fields.
+
+    This is a shape validator only. It does not compute features, run strategy,
+    mutate Redis, or change production doctrine.
+    """
+    if not hasattr(row, "__contains__"):
+        raise TypeError("row must support membership checks")
+    required = (
+        replay_all_required_dataset_fields()
+        if surface is None
+        else replay_required_dataset_fields(surface)
+    )
+    missing = tuple(field for field in required if field not in row)
+    return {
+        "ok": not missing,
+        "surface": surface,
+        "missing": missing,
+        "required_count": len(required),
+    }
+
+def replay_dataset_contract_summary():
+    return {
+        "schema_version": REPLAY_DATASET_CONTRACT_VERSION,
+        "surfaces": tuple(REPLAY_DATASET_CONTRACT_SURFACES.keys()),
+        "surface_field_counts": {
+            name: len(fields)
+            for name, fields in REPLAY_DATASET_CONTRACT_SURFACES.items()
+        },
+        "contract_files": REPLAY_DATASET_CONTRACT_FILES,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_DATASET_CONTRACT_VERSION",
+    "REPLAY_REQUIRED_FUTURES_FIELDS",
+    "REPLAY_REQUIRED_SELECTED_OPTION_FIELDS",
+    "REPLAY_REQUIRED_DHAN_CONTEXT_FIELDS",
+    "REPLAY_REQUIRED_OI_LADDER_FIELDS",
+    "REPLAY_REQUIRED_PROVIDER_RUNTIME_FIELDS",
+    "REPLAY_REQUIRED_CALL_PUT_SEPARATION_FIELDS",
+    "REPLAY_REQUIRED_MISO_READINESS_FIELDS",
+    "REPLAY_DATASET_CONTRACT_SURFACES",
+    "REPLAY_DATASET_CONTRACT_FILES",
+    "replay_required_dataset_fields",
+    "replay_all_required_dataset_fields",
+    "validate_replay_dataset_row_contract",
+    "replay_dataset_contract_summary",
+)))
+
+# END BATCH27D_REPLAY_DATASET_CONTRACT_EXPANSION
+
+# BEGIN BATCH27E_REPLAY_DETERMINISTIC_INTEGRITY_CONTRACT
+
+REPLAY_DETERMINISTIC_INTEGRITY_CONTRACT_VERSION = "replay_deterministic_integrity_v1"
+
+REPLAY_RUN_ID_HASH_INPUTS = (
+    "dataset_fingerprint",
+    "profile_fingerprint",
+    "experiment_fingerprint",
+    "selected_window_fingerprint",
+    "code_fingerprint",
+)
+
+REPLAY_RESET_REQUIRED_COMPONENTS = (
+    "replay_clock",
+    "local_replay_transport",
+    "feature_state",
+    "strategy_state",
+    "risk_state",
+    "execution_shadow_state",
+    "misr_consumed_trap_event_registry",
+    "miso_consumed_burst_event_registry",
+    "cooldown_state",
+    "position_state",
+    "artifact_state",
+)
+
+REPLAY_INTEGRITY_REQUIRED_CHECKS = (
+    "deterministic_run_id",
+    "dataset_hash_present",
+    "profile_hash_present",
+    "experiment_hash_present",
+    "selected_window_hash_present",
+    "code_hash_present",
+    "event_order_monotonic",
+    "reset_cleanliness",
+    "artifact_root_is_run_replay",
+    "config_root_is_etc_replay",
+    "no_broker_call",
+    "no_live_redis_write",
+    "no_runtime_promotion",
+)
+
+REPLAY_INTEGRITY_POLICY_FILE = "etc/replay/integrity/replay_integrity_policy.yaml"
+
+def replay_deterministic_integrity_contract_summary():
+    return {
+        "schema_version": REPLAY_DETERMINISTIC_INTEGRITY_CONTRACT_VERSION,
+        "run_id_hash_inputs": REPLAY_RUN_ID_HASH_INPUTS,
+        "reset_required_components": REPLAY_RESET_REQUIRED_COMPONENTS,
+        "integrity_required_checks": REPLAY_INTEGRITY_REQUIRED_CHECKS,
+        "policy_file": REPLAY_INTEGRITY_POLICY_FILE,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_DETERMINISTIC_INTEGRITY_CONTRACT_VERSION",
+    "REPLAY_RUN_ID_HASH_INPUTS",
+    "REPLAY_RESET_REQUIRED_COMPONENTS",
+    "REPLAY_INTEGRITY_REQUIRED_CHECKS",
+    "REPLAY_INTEGRITY_POLICY_FILE",
+    "replay_deterministic_integrity_contract_summary",
+)))
+
+# END BATCH27E_REPLAY_DETERMINISTIC_INTEGRITY_CONTRACT
+
+# BEGIN BATCH27F_REPLAY_LIVE_SHAPE_TRANSPORT_CONTRACT
+
+REPLAY_LIVE_SHAPE_TRANSPORT_CONTRACT_VERSION = "replay_live_shape_transport_contract_v1"
+
+REPLAY_LIVE_SHAPE_REQUIRED_SURFACES = (
+    "futures_tick",
+    "selected_option_tick",
+    "dhan_context",
+    "oi_ladder",
+    "provider_runtime",
+    "feature_payload",
+    "strategy_decision",
+    "risk_shadow",
+    "execution_shadow",
+)
+
+REPLAY_LIVE_SHAPE_EVENT_REQUIRED_FIELDS = (
+    "schema_version",
+    "run_id",
+    "replay_key",
+    "live_contract_name",
+    "surface",
+    "payload",
+    "event_ts_ns",
+    "sequence_id",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed",
+)
+
+REPLAY_LIVE_SHAPE_STATE_REQUIRED_FIELDS = (
+    "schema_version",
+    "run_id",
+    "replay_key",
+    "live_contract_name",
+    "surface",
+    "payload",
+    "updated_ts_ns",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed",
+)
+
+REPLAY_LIVE_SHAPE_TRANSPORT_CONTRACT_FILE = "etc/replay/schemas/replay_live_shape_transport_contract_v1.json"
+
+def replay_live_shape_transport_contract_summary():
+    return {
+        "schema_version": REPLAY_LIVE_SHAPE_TRANSPORT_CONTRACT_VERSION,
+        "required_surfaces": REPLAY_LIVE_SHAPE_REQUIRED_SURFACES,
+        "event_required_fields": REPLAY_LIVE_SHAPE_EVENT_REQUIRED_FIELDS,
+        "state_required_fields": REPLAY_LIVE_SHAPE_STATE_REQUIRED_FIELDS,
+        "contract_file": REPLAY_LIVE_SHAPE_TRANSPORT_CONTRACT_FILE,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_LIVE_SHAPE_TRANSPORT_CONTRACT_VERSION",
+    "REPLAY_LIVE_SHAPE_REQUIRED_SURFACES",
+    "REPLAY_LIVE_SHAPE_EVENT_REQUIRED_FIELDS",
+    "REPLAY_LIVE_SHAPE_STATE_REQUIRED_FIELDS",
+    "REPLAY_LIVE_SHAPE_TRANSPORT_CONTRACT_FILE",
+    "replay_live_shape_transport_contract_summary",
+)))
+
+# END BATCH27F_REPLAY_LIVE_SHAPE_TRANSPORT_CONTRACT
+
+# BEGIN BATCH27G_FEATURE_FAMILY_REPLAY_ADAPTER_CONTRACT
+
+REPLAY_FEATURE_FAMILY_ADAPTER_CONTRACT_VERSION = "replay_feature_family_adapter_contract_v1"
+
+REPLAY_FEATURE_FAMILIES = (
+    "MIST",
+    "MISB",
+    "MISC",
+    "MISR",
+    "MISO",
+)
+
+REPLAY_FEATURE_SIDES = (
+    "CALL",
+    "PUT",
+)
+
+REPLAY_FEATURE_PAYLOAD_REQUIRED_FIELDS = (
+    "schema_version",
+    "run_id",
+    "family_features",
+    "family_surfaces",
+    "family_features_json",
+    "family_surfaces_json",
+    "family_frames_json",
+    "provider_ready_miso",
+    "dhan_context_fresh",
+    "oi_context_fresh",
+    "branch_side",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed",
+)
+
+REPLAY_FEATURE_FAMILY_SURFACE_TERMS = {
+    "MIST": (
+        "trend_confirmed",
+        "pullback_detected",
+        "resume_confirmed",
+        "micro_trap_flag",
+        "futures_impulse_ok",
+    ),
+    "MISB": (
+        "shelf_confirmed",
+        "breakout_triggered",
+        "breakout_accepted",
+        "shelf_high",
+        "shelf_low",
+    ),
+    "MISC": (
+        "compression_detected",
+        "directional_breakout_triggered",
+        "expansion_accepted",
+        "retest_monitor_active",
+        "hesitation_retest",
+    ),
+    "MISR": (
+        "active_zone_valid",
+        "active_zone",
+        "fake_break",
+        "range_reentry",
+        "flow_flip",
+        "trap_event_id",
+    ),
+    "MISO": (
+        "burst_detected",
+        "burst_event_id",
+        "aggression_ok",
+        "tape_speed_ok",
+        "imbalance_persistence_ok",
+        "queue_reload_veto",
+        "provider_ready_miso",
+        "oi_wall_context",
+    ),
+}
+
+REPLAY_FEATURE_FAMILY_ADAPTER_CONTRACT_FILE = "etc/replay/schemas/replay_feature_family_adapter_contract_v1.json"
+
+def replay_feature_family_adapter_contract_summary():
+    return {
+        "schema_version": REPLAY_FEATURE_FAMILY_ADAPTER_CONTRACT_VERSION,
+        "families": REPLAY_FEATURE_FAMILIES,
+        "sides": REPLAY_FEATURE_SIDES,
+        "payload_required_fields": REPLAY_FEATURE_PAYLOAD_REQUIRED_FIELDS,
+        "family_surface_terms": REPLAY_FEATURE_FAMILY_SURFACE_TERMS,
+        "contract_file": REPLAY_FEATURE_FAMILY_ADAPTER_CONTRACT_FILE,
+        "full_live_feature_computation_parity": "NOT_PROVEN_IN_27G",
+        "strategy_family_decision_parity": "NOT_PROVEN_IN_27G",
+        "safe_payload_shape_parity": "PROVEN_BY_27G",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_FEATURE_FAMILY_ADAPTER_CONTRACT_VERSION",
+    "REPLAY_FEATURE_FAMILIES",
+    "REPLAY_FEATURE_SIDES",
+    "REPLAY_FEATURE_PAYLOAD_REQUIRED_FIELDS",
+    "REPLAY_FEATURE_FAMILY_SURFACE_TERMS",
+    "REPLAY_FEATURE_FAMILY_ADAPTER_CONTRACT_FILE",
+    "replay_feature_family_adapter_contract_summary",
+)))
+
+# END BATCH27G_FEATURE_FAMILY_REPLAY_ADAPTER_CONTRACT
+
+# BEGIN BATCH27H_STRATEGY_FAMILY_REPLAY_ADAPTER_CONTRACT
+
+REPLAY_STRATEGY_FAMILY_ADAPTER_CONTRACT_VERSION = "replay_strategy_family_adapter_contract_v1"
+
+REPLAY_STRATEGY_FAMILIES = (
+    "MIST",
+    "MISB",
+    "MISC",
+    "MISR",
+    "MISO",
+)
+
+REPLAY_STRATEGY_SIDES = (
+    "CALL",
+    "PUT",
+)
+
+REPLAY_STRATEGY_ALLOWED_FINAL_ACTIONS = (
+    "HOLD_REPORT_ONLY",
+)
+
+REPLAY_STRATEGY_CANDIDATE_REQUIRED_FIELDS = (
+    "schema_version",
+    "run_id",
+    "family",
+    "side",
+    "candidate_id",
+    "candidate_present",
+    "eligible",
+    "score",
+    "blockers",
+    "metadata",
+    "order_allowed",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed",
+)
+
+REPLAY_STRATEGY_ARBITRATION_REQUIRED_FIELDS = (
+    "schema_version",
+    "run_id",
+    "candidate_count",
+    "eligible_candidate_count",
+    "winner",
+    "winning_family",
+    "winning_side",
+    "final_action",
+    "order_allowed",
+    "arbitration_reason",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed",
+)
+
+REPLAY_STRATEGY_FAMILY_ADAPTER_CONTRACT_FILE = "etc/replay/schemas/replay_strategy_family_adapter_contract_v1.json"
+
+def replay_strategy_family_adapter_contract_summary():
+    return {
+        "schema_version": REPLAY_STRATEGY_FAMILY_ADAPTER_CONTRACT_VERSION,
+        "families": REPLAY_STRATEGY_FAMILIES,
+        "sides": REPLAY_STRATEGY_SIDES,
+        "allowed_final_actions": REPLAY_STRATEGY_ALLOWED_FINAL_ACTIONS,
+        "candidate_required_fields": REPLAY_STRATEGY_CANDIDATE_REQUIRED_FIELDS,
+        "arbitration_required_fields": REPLAY_STRATEGY_ARBITRATION_REQUIRED_FIELDS,
+        "contract_file": REPLAY_STRATEGY_FAMILY_ADAPTER_CONTRACT_FILE,
+        "safe_decision_shape_parity": "PROVEN_BY_27H",
+        "family_side_coverage": "PROVEN_BY_27H",
+        "arbitration_surface": "PROVEN_BY_27H",
+        "full_live_strategy_decision_parity": "NOT_PROVEN_IN_27H",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_STRATEGY_FAMILY_ADAPTER_CONTRACT_VERSION",
+    "REPLAY_STRATEGY_FAMILIES",
+    "REPLAY_STRATEGY_SIDES",
+    "REPLAY_STRATEGY_ALLOWED_FINAL_ACTIONS",
+    "REPLAY_STRATEGY_CANDIDATE_REQUIRED_FIELDS",
+    "REPLAY_STRATEGY_ARBITRATION_REQUIRED_FIELDS",
+    "REPLAY_STRATEGY_FAMILY_ADAPTER_CONTRACT_FILE",
+    "replay_strategy_family_adapter_contract_summary",
+)))
+
+# END BATCH27H_STRATEGY_FAMILY_REPLAY_ADAPTER_CONTRACT
+
+# BEGIN BATCH27I_RISK_EXECUTION_SHADOW_CONTRACT
+
+REPLAY_RISK_EXECUTION_SHADOW_CONTRACT_VERSION = "replay_risk_execution_shadow_contract_v1"
+
+REPLAY_RISK_REQUIRED_FIELDS = (
+    "schema_version",
+    "run_id",
+    "risk_evaluated",
+    "research_trade_allowed",
+    "entry_vetoed",
+    "veto_reasons",
+    "risk_score",
+    "max_loss_points",
+    "max_slippage_points",
+    "order_allowed",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed",
+)
+
+REPLAY_EXECUTION_SHADOW_REQUIRED_FIELDS = (
+    "schema_version",
+    "run_id",
+    "assumption_profile",
+    "fill_policy",
+    "fill_status",
+    "requested_qty",
+    "filled_qty",
+    "entry_price",
+    "exit_price",
+    "slippage_points",
+    "shadow_position_state",
+    "shadow_trade_log",
+    "shadow_pnl_summary",
+    "real_order_sent",
+    "broker_calls_executed",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed",
+)
+
+REPLAY_SHADOW_FILL_POLICIES = (
+    "FULL_FILL",
+    "PARTIAL_FILL",
+    "NO_FILL",
+    "REJECTED",
+)
+
+REPLAY_RISK_EXECUTION_SHADOW_CONTRACT_FILE = "etc/replay/schemas/replay_risk_execution_shadow_contract_v1.json"
+
+def replay_risk_execution_shadow_contract_summary():
+    return {
+        "schema_version": REPLAY_RISK_EXECUTION_SHADOW_CONTRACT_VERSION,
+        "risk_required_fields": REPLAY_RISK_REQUIRED_FIELDS,
+        "execution_shadow_required_fields": REPLAY_EXECUTION_SHADOW_REQUIRED_FIELDS,
+        "fill_policies": REPLAY_SHADOW_FILL_POLICIES,
+        "contract_file": REPLAY_RISK_EXECUTION_SHADOW_CONTRACT_FILE,
+        "risk_shape_parity": "PROVEN_BY_27I",
+        "execution_shadow_shape": "PROVEN_BY_27I",
+        "pnl_shadow_math": "PROVEN_BY_27I",
+        "real_execution_parity": "NOT_PROVEN_IN_27I",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "real_order_sent": False,
+        "broker_calls_executed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_RISK_EXECUTION_SHADOW_CONTRACT_VERSION",
+    "REPLAY_RISK_REQUIRED_FIELDS",
+    "REPLAY_EXECUTION_SHADOW_REQUIRED_FIELDS",
+    "REPLAY_SHADOW_FILL_POLICIES",
+    "REPLAY_RISK_EXECUTION_SHADOW_CONTRACT_FILE",
+    "replay_risk_execution_shadow_contract_summary",
+)))
+
+# END BATCH27I_RISK_EXECUTION_SHADOW_CONTRACT
+
+# BEGIN BATCH27J_SCENARIO_PROFILE_ENGINE_CONTRACT
+
+REPLAY_SCENARIO_PROFILE_ENGINE_CONTRACT_VERSION = "replay_scenario_profile_contract_v1"
+
+REPLAY_REQUIRED_SCENARIOS = (
+    "missing_futures_feed",
+    "missing_selected_option_feed",
+    "stale_futures_feed",
+    "stale_selected_option_feed",
+    "dhan_context_unavailable",
+    "dhan_context_stale",
+    "oi_ladder_missing",
+    "oi_wall_shock",
+    "wide_spread",
+    "low_depth",
+    "high_slippage",
+    "packet_gaps",
+    "timestamp_skew",
+    "event_burst",
+    "liquidity_shock",
+    "forced_risk_veto",
+    "full_fill",
+    "partial_fill",
+    "no_fill",
+    "rejected",
+    "forced_flatten",
+    "session_close",
+)
+
+REPLAY_SCENARIO_PROFILE_REQUIRED_FIELDS = (
+    "scenario_id",
+    "family",
+    "description",
+    "row_effects",
+    "risk_effects",
+    "execution_effects",
+    "manifest_tags",
+    "explicit_assumption",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed",
+)
+
+REPLAY_SCENARIO_PROFILE_CONTRACT_FILE = "etc/replay/schemas/replay_scenario_profile_contract_v1.json"
+REPLAY_SCENARIO_PROFILE_MANIFEST_FILE = "etc/replay/scenarios/replay_scenario_profile_manifest_v1.json"
+
+def replay_scenario_profile_engine_contract_summary():
+    return {
+        "schema_version": REPLAY_SCENARIO_PROFILE_ENGINE_CONTRACT_VERSION,
+        "required_scenarios": REPLAY_REQUIRED_SCENARIOS,
+        "required_profile_fields": REPLAY_SCENARIO_PROFILE_REQUIRED_FIELDS,
+        "contract_file": REPLAY_SCENARIO_PROFILE_CONTRACT_FILE,
+        "manifest_file": REPLAY_SCENARIO_PROFILE_MANIFEST_FILE,
+        "scenario_profile_shape": "PROVEN_BY_27J",
+        "scenario_application_shape": "PROVEN_BY_27J",
+        "full_replay_scenario_outcome_parity": "NOT_PROVEN_IN_27J",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_SCENARIO_PROFILE_ENGINE_CONTRACT_VERSION",
+    "REPLAY_REQUIRED_SCENARIOS",
+    "REPLAY_SCENARIO_PROFILE_REQUIRED_FIELDS",
+    "REPLAY_SCENARIO_PROFILE_CONTRACT_FILE",
+    "REPLAY_SCENARIO_PROFILE_MANIFEST_FILE",
+    "replay_scenario_profile_engine_contract_summary",
+)))
+
+# END BATCH27J_SCENARIO_PROFILE_ENGINE_CONTRACT
+
+# BEGIN BATCH27K_BATCH_RUNNER_ARTIFACT_CONTRACT
+
+REPLAY_BATCH_RUNNER_CONTRACT_VERSION = "replay_batch_runner_contract_v1"
+
+REPLAY_BATCH_SUPPORTED_RUN_SCOPES = (
+    "single_day",
+    "date_range",
+    "date_list",
+    "intraday_window",
+    "scenario_matrix",
+)
+
+REPLAY_BATCH_REQUIRED_REQUEST_FIELDS = (
+    "schema_version",
+    "run_id",
+    "scope",
+    "date",
+    "dates",
+    "start_time",
+    "end_time",
+    "scenario_id",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed",
+)
+
+REPLAY_BATCH_REQUIRED_ARTIFACTS = (
+    "00_manifest.json",
+    "01_dataset_summary.json",
+    "02_scenario_summary.json",
+    "03_feature_summary.json",
+    "04_strategy_summary.json",
+    "05_risk_summary.json",
+    "06_execution_shadow_summary.json",
+    "07_reproducibility.json",
+    "08_batch_summary.json",
+)
+
+REPLAY_BATCH_RUNNER_CONTRACT_FILE = "etc/replay/schemas/replay_batch_runner_contract_v1.json"
+REPLAY_BATCH_PROFILE_MANIFEST_FILE = "etc/replay/batches/replay_batch_profile_manifest_v1.json"
+
+def replay_batch_runner_artifact_contract_summary():
+    return {
+        "schema_version": REPLAY_BATCH_RUNNER_CONTRACT_VERSION,
+        "supported_run_scopes": REPLAY_BATCH_SUPPORTED_RUN_SCOPES,
+        "required_request_fields": REPLAY_BATCH_REQUIRED_REQUEST_FIELDS,
+        "required_artifacts": REPLAY_BATCH_REQUIRED_ARTIFACTS,
+        "contract_file": REPLAY_BATCH_RUNNER_CONTRACT_FILE,
+        "profile_manifest_file": REPLAY_BATCH_PROFILE_MANIFEST_FILE,
+        "artifact_root": "run/replay/",
+        "batch_runner_shape": "PROVEN_BY_27K",
+        "artifact_materialization": "PROVEN_BY_27K",
+        "reproducibility_hash": "PROVEN_BY_27K",
+        "full_live_replay_parity": "NOT_PROVEN_IN_27K",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_BATCH_RUNNER_CONTRACT_VERSION",
+    "REPLAY_BATCH_SUPPORTED_RUN_SCOPES",
+    "REPLAY_BATCH_REQUIRED_REQUEST_FIELDS",
+    "REPLAY_BATCH_REQUIRED_ARTIFACTS",
+    "REPLAY_BATCH_RUNNER_CONTRACT_FILE",
+    "REPLAY_BATCH_PROFILE_MANIFEST_FILE",
+    "replay_batch_runner_artifact_contract_summary",
+)))
+
+# END BATCH27K_BATCH_RUNNER_ARTIFACT_CONTRACT
+
+# BEGIN BATCH27L_REPORT_EXPORT_CONTRACT
+
+REPLAY_REPORT_EXPORT_CONTRACT_VERSION = "replay_report_export_contract_v1"
+
+REPLAY_REQUIRED_REPORT_EXPORTS = (
+    "00_export_manifest.json",
+    "01_trade_log.csv",
+    "01_trade_log.json",
+    "02_candidate_log.csv",
+    "02_candidate_log.json",
+    "03_blocker_chain.csv",
+    "03_blocker_chain.json",
+    "04_side_split_summary.csv",
+    "04_side_split_summary.json",
+    "05_family_split_summary.csv",
+    "05_family_split_summary.json",
+    "06_scenario_summary.csv",
+    "06_scenario_summary.json",
+    "07_pnl_execution_shadow_summary.csv",
+    "07_pnl_execution_shadow_summary.json",
+    "08_baseline_vs_shadow_comparison.json",
+    "09_export_reproducibility.json",
+)
+
+REPLAY_REPORT_EXPORT_CONTRACT_FILE = "etc/replay/schemas/replay_report_export_contract_v1.json"
+REPLAY_REPORT_EXPORT_MANIFEST_FILE = "etc/replay/forensics/replay_report_export_manifest_v1.json"
+
+def replay_report_export_contract_summary():
+    return {
+        "schema_version": REPLAY_REPORT_EXPORT_CONTRACT_VERSION,
+        "required_exports": REPLAY_REQUIRED_REPORT_EXPORTS,
+        "contract_file": REPLAY_REPORT_EXPORT_CONTRACT_FILE,
+        "manifest_file": REPLAY_REPORT_EXPORT_MANIFEST_FILE,
+        "export_root": "run/replay/<run_id>/exports/",
+        "report_export_shape": "PROVEN_BY_27L",
+        "baseline_shadow_comparison_shape": "PROVEN_BY_27L",
+        "export_reproducibility_hash": "PROVEN_BY_27L",
+        "full_report_semantic_accuracy": "NOT_PROVEN_IN_27L",
+        "full_live_replay_parity": "NOT_PROVEN_IN_27L",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_REPORT_EXPORT_CONTRACT_VERSION",
+    "REPLAY_REQUIRED_REPORT_EXPORTS",
+    "REPLAY_REPORT_EXPORT_CONTRACT_FILE",
+    "REPLAY_REPORT_EXPORT_MANIFEST_FILE",
+    "replay_report_export_contract_summary",
+)))
+
+# END BATCH27L_REPORT_EXPORT_CONTRACT
+
+# BEGIN BATCH27M_EXPERIMENT_WORKSTATION_CONTRACT
+
+REPLAY_EXPERIMENT_WORKSTATION_CONTRACT_VERSION = "replay_experiment_workstation_contract_v1"
+
+REPLAY_EXPERIMENT_TYPES = (
+    "baseline_vs_shadow",
+    "parameter_sweep",
+    "threshold_sweep",
+    "family_enable_disable",
+    "side_only",
+    "scenario_matrix_comparison",
+)
+
+REPLAY_EXPERIMENT_REQUIRED_EXPORTS = (
+    "00_experiment_manifest.json",
+    "01_experiment_summary.json",
+    "02_variant_results.json",
+    "03_differential_summary.json",
+    "04_parameter_sweep_summary.json",
+    "05_threshold_sweep_summary.json",
+    "06_family_side_summary.json",
+    "07_experiment_reproducibility.json",
+    "08_experiment_comparison_export.json",
+)
+
+REPLAY_EXPERIMENT_WORKSTATION_CONTRACT_FILE = "etc/replay/schemas/replay_experiment_workstation_contract_v1.json"
+REPLAY_EXPERIMENT_PROFILE_MANIFEST_FILE = "etc/replay/experiments/replay_experiment_profile_manifest_v1.json"
+
+def replay_experiment_workstation_contract_summary():
+    return {
+        "schema_version": REPLAY_EXPERIMENT_WORKSTATION_CONTRACT_VERSION,
+        "experiment_types": REPLAY_EXPERIMENT_TYPES,
+        "required_exports": REPLAY_EXPERIMENT_REQUIRED_EXPORTS,
+        "contract_file": REPLAY_EXPERIMENT_WORKSTATION_CONTRACT_FILE,
+        "profile_manifest_file": REPLAY_EXPERIMENT_PROFILE_MANIFEST_FILE,
+        "experiment_profile_shape": "PROVEN_BY_27M",
+        "differential_summary_shape": "PROVEN_BY_27M",
+        "parameter_sweep_shape": "PROVEN_BY_27M",
+        "threshold_sweep_shape": "PROVEN_BY_27M",
+        "family_side_filter_shape": "PROVEN_BY_27M",
+        "experiment_reproducibility_hash": "PROVEN_BY_27M",
+        "strategy_improvement_claim": "NOT_PROVEN_IN_27M",
+        "full_live_replay_parity": "NOT_PROVEN_IN_27M",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_EXPERIMENT_WORKSTATION_CONTRACT_VERSION",
+    "REPLAY_EXPERIMENT_TYPES",
+    "REPLAY_EXPERIMENT_REQUIRED_EXPORTS",
+    "REPLAY_EXPERIMENT_WORKSTATION_CONTRACT_FILE",
+    "REPLAY_EXPERIMENT_PROFILE_MANIFEST_FILE",
+    "replay_experiment_workstation_contract_summary",
+)))
+
+# END BATCH27M_EXPERIMENT_WORKSTATION_CONTRACT
+
+# BEGIN BATCH28A_REPLAY_LIVE_PARITY_AUDIT_PLAN_CONTRACT
+
+REPLAY_LIVE_PARITY_AUDIT_PLAN_CONTRACT_VERSION = "replay_live_parity_audit_plan_contract_v1"
+REPLAY_LIVE_PARITY_AUDIT_PLAN_CONTRACT_FILE = "etc/replay/schemas/replay_live_parity_audit_plan_contract_v1.json"
+REPLAY_LIVE_PARITY_AUDIT_PLAN_FILE = "etc/replay/parity/live_parity_audit_plan_v1.json"
+
+def replay_live_parity_audit_plan_contract_summary():
+    return {
+        "schema_version": REPLAY_LIVE_PARITY_AUDIT_PLAN_CONTRACT_VERSION,
+        "contract_file": REPLAY_LIVE_PARITY_AUDIT_PLAN_CONTRACT_FILE,
+        "plan_file": REPLAY_LIVE_PARITY_AUDIT_PLAN_FILE,
+        "accepted_for": "PARITY_AUDIT_PLAN_ONLY",
+        "full_live_replay_parity": "NOT_PROVEN_IN_28A",
+        "paper_armed_readiness": "NOT_APPROVED_IN_28A",
+        "live_trading_readiness": "NOT_APPROVED_IN_28A",
+        "production_strategy_improvement_claim": "NOT_PROVEN_IN_28A",
+        "production_doctrine_revision": "NOT_APPROVED_IN_28A",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "REPLAY_LIVE_PARITY_AUDIT_PLAN_CONTRACT_VERSION",
+    "REPLAY_LIVE_PARITY_AUDIT_PLAN_CONTRACT_FILE",
+    "REPLAY_LIVE_PARITY_AUDIT_PLAN_FILE",
+    "replay_live_parity_audit_plan_contract_summary",
+)))
+
+# END BATCH28A_REPLAY_LIVE_PARITY_AUDIT_PLAN_CONTRACT
+
+# BEGIN BATCH28B_OBSERVE_ONLY_LIVE_EVIDENCE_CONTRACT
+
+OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_CONTRACT_VERSION = "observe_only_live_evidence_capture_contract_v1"
+OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_SCHEMA_FILE = "etc/replay/schemas/observe_only_live_evidence_capture_contract_v1.json"
+OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_PLAN_FILE = "etc/replay/parity/observe_only_live_evidence_capture_contract_v1.json"
+
+def observe_only_live_evidence_capture_contract_summary():
+    return {
+        "schema_version": OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_CONTRACT_VERSION,
+        "schema_file": OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_SCHEMA_FILE,
+        "plan_file": OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_PLAN_FILE,
+        "accepted_for": "OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_CONTRACT_ONLY",
+        "starts_services": False,
+        "reads_live_redis": False,
+        "writes_live_redis": False,
+        "calls_broker_api": False,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+        "full_live_replay_parity": "NOT_PROVEN_IN_28B",
+        "paper_armed_readiness": "NOT_APPROVED_IN_28B",
+        "live_trading_readiness": "NOT_APPROVED_IN_28B",
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_CONTRACT_VERSION",
+    "OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_SCHEMA_FILE",
+    "OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_PLAN_FILE",
+    "observe_only_live_evidence_capture_contract_summary",
+)))
+
+# END BATCH28B_OBSERVE_ONLY_LIVE_EVIDENCE_CONTRACT
+
+
+# BEGIN BATCH28D_OBSERVE_ONLY_MARKET_SESSION_RUNBOOK_CONTRACT
+OBSERVE_ONLY_MARKET_SESSION_CAPTURE_RUNBOOK_CONTRACT_VERSION = "observe_only_market_session_capture_runbook_contract_v1"
+# END BATCH28D_OBSERVE_ONLY_MARKET_SESSION_RUNBOOK_CONTRACT

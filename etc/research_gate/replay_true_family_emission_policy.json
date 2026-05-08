@@ -1,0 +1,10 @@
+{
+  "broker_io_allowed": false,
+  "non_live": true,
+  "order_sending_allowed": false,
+  "owner": "replay true-family field emission repair",
+  "paper_live_enablement_allowed": false,
+  "purpose": "Repair helper import and complete replay true-family field emission proof.",
+  "redis_live_write_allowed": false,
+  "schema_version": "RAW-P.2"
+}

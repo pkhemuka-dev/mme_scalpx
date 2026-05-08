@@ -1,0 +1,78 @@
+{
+  "broker_calls_allowed": false,
+  "example_scopes": {
+    "date_list": {
+      "dates": [
+        "2026-05-01",
+        "2026-05-03"
+      ]
+    },
+    "date_range": {
+      "end_date": "2026-05-03",
+      "start_date": "2026-05-01"
+    },
+    "intraday_window": {
+      "day": "2026-05-01",
+      "end_time": "10:30:00",
+      "start_time": "09:30:00"
+    },
+    "scenario_matrix": {
+      "dates": [
+        "2026-05-01"
+      ],
+      "scenarios": [
+        "missing_futures_feed",
+        "missing_selected_option_feed",
+        "stale_futures_feed",
+        "stale_selected_option_feed",
+        "dhan_context_unavailable",
+        "dhan_context_stale",
+        "oi_ladder_missing",
+        "oi_wall_shock",
+        "wide_spread",
+        "low_depth",
+        "high_slippage",
+        "packet_gaps",
+        "timestamp_skew",
+        "event_burst",
+        "liquidity_shock",
+        "forced_risk_veto",
+        "full_fill",
+        "partial_fill",
+        "no_fill",
+        "rejected",
+        "forced_flatten",
+        "session_close"
+      ]
+    },
+    "single_day": {
+      "day": "2026-05-01"
+    }
+  },
+  "execution_arming_created": false,
+  "live_redis_writes_allowed": false,
+  "live_trading_approved": false,
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "required_request_fields": [
+    "schema_version",
+    "run_id",
+    "scope",
+    "date",
+    "dates",
+    "start_time",
+    "end_time",
+    "scenario_id",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed"
+  ],
+  "schema_version": "replay_batch_profile_manifest_v1",
+  "supported_run_scopes": [
+    "single_day",
+    "date_range",
+    "date_list",
+    "intraday_window",
+    "scenario_matrix"
+  ]
+}

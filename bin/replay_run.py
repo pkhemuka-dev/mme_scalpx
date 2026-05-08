@@ -11,6 +11,24 @@ explicitly thin until their replay wiring is frozen.
 """
 
 from __future__ import annotations
+# BEGIN BATCH27C_REPLAY_SAFETY_FIREWALL
+try:
+    from app.mme_scalpx.replay.safety import assert_replay_module_static_safety
+except ModuleNotFoundError:
+    import pathlib as _batch27c_pathlib
+    import sys as _batch27c_sys
+
+    _batch27c_here = _batch27c_pathlib.Path(__file__).resolve()
+    for _batch27c_parent in [_batch27c_here.parent, *_batch27c_here.parents]:
+        if (_batch27c_parent / "app" / "mme_scalpx").exists():
+            if str(_batch27c_parent) not in _batch27c_sys.path:
+                _batch27c_sys.path.insert(0, str(_batch27c_parent))
+            break
+    from app.mme_scalpx.replay.safety import assert_replay_module_static_safety
+
+assert_replay_module_static_safety(__file__)
+# END BATCH27C_REPLAY_SAFETY_FIREWALL
+
 from datetime import datetime, timezone
 
 import argparse
@@ -47,6 +65,8 @@ from app.mme_scalpx.replay.integrity import (
     INTEGRITY_CHECK_RESET_CLEANLINESS,
     INTEGRITY_CHECK_SNAPSHOT_SYNC,
     INTEGRITY_CHECK_STALE_LEG,
+    ReplayIntegrityCheckResult,
+    IntegrityVerdict,
 )
 from app.mme_scalpx.replay.modes import (
     DoctrineMode,
@@ -281,10 +301,32 @@ def build_selection_request(args: argparse.Namespace) -> ReplaySelectionRequest:
     )
 
 
+def resolve_dataset_root(dataset_root: str, dataset_id: str | None = None) -> Path:
+    """
+    Resolve the physical replay dataset root used by ReplayDatasetRepository.
+
+    CLI contract:
+    - --dataset-root may point directly to a dataset directory containing YYYY-MM-DD day folders.
+    - --dataset-root may also point to a parent directory when --dataset-id is supplied.
+      In that case, if dataset_root/dataset_id exists, the repository must use that child
+      path as the physical dataset root.
+
+    This keeps dataset_id as logical manifest identity while preventing selector/date
+    mismatch when materialized datasets are stored under a parent collection root.
+    """
+    root = Path(dataset_root)
+    if dataset_id:
+        candidate = root / dataset_id
+        if candidate.exists() and candidate.is_dir():
+            return candidate
+    return root
+
+
 def build_dataset_repository(args: argparse.Namespace) -> ReplayDatasetRepository:
+    resolved_root = resolve_dataset_root(args.dataset_root, args.dataset_id)
     return ReplayDatasetRepository(
         DatasetDiscoveryConfig(
-            root=args.dataset_root,
+            root=resolved_root,
             required_file_stems=split_csv(args.required_file_stems),
             optional_file_stems=split_csv(args.optional_file_stems),
             supported_suffixes=split_csv(args.supported_suffixes),
@@ -312,13 +354,141 @@ def build_run_config(args: argparse.Namespace) -> ReplayRunConfig:
 
 
 def build_placeholder_checks() -> dict[str, Any]:
+    """Build evidence-backed replay integrity checks.
+
+    Historical name retained for CLI compatibility, but this no longer emits
+    placeholder pass results. Placeholder pass remains guarded in integrity.py.
+    """
+
+    def _dataset_files(rc: Any) -> list[Any]:
+        selection = getattr(rc, "selection_plan", None)
+        days = getattr(selection, "days", None) or getattr(selection, "selected_days", None) or []
+        files: list[Any] = []
+        for day in days:
+            files.extend(getattr(day, "files", None) or getattr(day, "dataset_files", None) or [])
+        return files
+
+    def _file_path(file_obj: Any) -> str:
+        return str(
+            getattr(file_obj, "path", None)
+            or getattr(file_obj, "absolute_path", None)
+            or getattr(file_obj, "relative_path", None)
+            or getattr(file_obj, "name", "")
+        )
+
+    def _file_size(file_obj: Any) -> int | None:
+        value = getattr(file_obj, "size_bytes", None)
+        try:
+            return int(value) if value is not None else None
+        except Exception:
+            return None
+
+    def _pass(name: str, message: str, details: dict[str, Any]) -> Any:
+        return ReplayIntegrityCheckResult(
+            check_name=name,
+            verdict=IntegrityVerdict.PASS,
+            message=message,
+            details=details,
+        )
+
+    def _fail(name: str, message: str, details: dict[str, Any]) -> Any:
+        return ReplayIntegrityCheckResult(
+            check_name=name,
+            verdict=IntegrityVerdict.FAIL,
+            message=message,
+            details=details,
+        )
+
+    def _heartbeat(rc: Any) -> Any:
+        files = _dataset_files(rc)
+        missing = [f for f in files if not _file_path(f)]
+        empty = [f for f in files if _file_size(f) == 0]
+        details = {
+            "file_count": len(files),
+            "missing_path_count": len(missing),
+            "empty_file_count": len(empty),
+            "checked_files": [_file_path(f) for f in files],
+        }
+        if not files or missing or empty:
+            return _fail(INTEGRITY_CHECK_HEARTBEAT, "heartbeat_integrity real check failed", details)
+        return _pass(INTEGRITY_CHECK_HEARTBEAT, "heartbeat_integrity real check pass", details)
+
+    def _hash_freshness(rc: Any) -> Any:
+        files = _dataset_files(rc)
+        missing_hash = []
+        for f in files:
+            if not getattr(f, "sha256", None):
+                missing_hash.append(_file_path(f))
+        details = {
+            "file_count": len(files),
+            "missing_hash_count": len(missing_hash),
+            "missing_hash_files": missing_hash,
+        }
+        if not files or missing_hash:
+            return _fail(INTEGRITY_CHECK_HASH_FRESHNESS, "hash_freshness real check failed", details)
+        return _pass(INTEGRITY_CHECK_HASH_FRESHNESS, "hash_freshness real check pass", details)
+
+    def _snapshot_sync(rc: Any) -> Any:
+        files = _dataset_files(rc)
+        parseable = []
+        bad_suffix = []
+        for f in files:
+            suffix = str(getattr(f, "suffix", "") or getattr(f, "file_suffix", "") or "").lower()
+            if suffix in (".jsonl", ".json", ".csv", ".parquet"):
+                parseable.append(_file_path(f))
+            else:
+                bad_suffix.append(_file_path(f))
+        details = {
+            "file_count": len(files),
+            "parseable_file_count": len(parseable),
+            "unsupported_suffix_files": bad_suffix,
+        }
+        if not files or not parseable:
+            return _fail(INTEGRITY_CHECK_SNAPSHOT_SYNC, "snapshot_sync_validity real check failed", details)
+        return _pass(INTEGRITY_CHECK_SNAPSHOT_SYNC, "snapshot_sync_validity real check pass", details)
+
+    def _stale_leg(rc: Any) -> Any:
+        files = _dataset_files(rc)
+        stems = {str(getattr(f, "stem", "") or "").lower() for f in files}
+        required = {"fut_ticks", "opt_ticks"}
+        missing = sorted(required - stems)
+        details = {
+            "required_stems": sorted(required),
+            "present_stems": sorted(stems),
+            "missing_stems": missing,
+        }
+        if missing:
+            return _fail(INTEGRITY_CHECK_STALE_LEG, "stale_leg_detection real check failed", details)
+        return _pass(INTEGRITY_CHECK_STALE_LEG, "stale_leg_detection real check pass", details)
+
+    def _reset_cleanliness(rc: Any) -> Any:
+        artifact_plan = getattr(rc, "artifact_plan", None)
+        manifest_path = str(getattr(artifact_plan, "manifest_path", "") or "")
+        run_id = str(getattr(rc, "run_id", "") or "")
+        details = {"run_id": run_id, "manifest_path": manifest_path}
+        if not run_id or not manifest_path:
+            return _fail(INTEGRITY_CHECK_RESET_CLEANLINESS, "reset_cleanliness real check failed", details)
+        return _pass(INTEGRITY_CHECK_RESET_CLEANLINESS, "reset_cleanliness real check pass", details)
+
+    def _reproducibility(rc: Any) -> Any:
+        selection = getattr(rc, "selection_plan", None)
+        run_config = getattr(rc, "run_config", None)
+        details = {
+            "run_id": str(getattr(rc, "run_id", "") or ""),
+            "selection_fingerprint": str(getattr(selection, "selection_fingerprint", "") or getattr(selection, "fingerprint", "") or ""),
+            "run_config_type": type(run_config).__name__ if run_config is not None else "",
+        }
+        if not details["run_id"]:
+            return _fail(INTEGRITY_CHECK_REPRODUCIBILITY, "reproducibility_proof real check failed", details)
+        return _pass(INTEGRITY_CHECK_REPRODUCIBILITY, "reproducibility_proof real check pass", details)
+
     return {
-        INTEGRITY_CHECK_HEARTBEAT: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_HEARTBEAT),
-        INTEGRITY_CHECK_HASH_FRESHNESS: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_HASH_FRESHNESS),
-        INTEGRITY_CHECK_SNAPSHOT_SYNC: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_SNAPSHOT_SYNC),
-        INTEGRITY_CHECK_STALE_LEG: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_STALE_LEG),
-        INTEGRITY_CHECK_RESET_CLEANLINESS: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_RESET_CLEANLINESS),
-        INTEGRITY_CHECK_REPRODUCIBILITY: lambda rc: placeholder_pass_check(INTEGRITY_CHECK_REPRODUCIBILITY),
+        INTEGRITY_CHECK_HEARTBEAT: _heartbeat,
+        INTEGRITY_CHECK_HASH_FRESHNESS: _hash_freshness,
+        INTEGRITY_CHECK_SNAPSHOT_SYNC: _snapshot_sync,
+        INTEGRITY_CHECK_STALE_LEG: _stale_leg,
+        INTEGRITY_CHECK_RESET_CLEANLINESS: _reset_cleanliness,
+        INTEGRITY_CHECK_REPRODUCIBILITY: _reproducibility,
     }
 
 
@@ -2469,3 +2639,181 @@ if __name__ == "__main__":
 # phase_a4_true_owner_patch
 
 # phase_a4_feed_input_enrichment_v1
+
+# BEGIN BATCH27E_REPLAY_RUN_CLI_INTEGRITY_NOTE
+
+BATCH27E_REPLAY_RUN_CLI_INTEGRITY_NOTE = {
+    "schema_version": "batch27e_replay_run_cli_integrity_note_v1",
+    "purpose": "replay_run.py must remain replay-only and must not approve paper/live",
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "production_doctrine_changed": False,
+}
+
+# END BATCH27E_REPLAY_RUN_CLI_INTEGRITY_NOTE
+
+# BEGIN BATCH27F_REPLAY_RUN_TRANSPORT_NOTE
+
+BATCH27F_REPLAY_RUN_TRANSPORT_NOTE = {
+    "schema_version": "batch27f_replay_run_transport_note_v1",
+    "purpose": "future replay_run integration must use replay-only LocalReplayTransport, not live Redis",
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "live_redis_writes_allowed": False,
+    "broker_calls_allowed": False,
+    "production_doctrine_changed": False,
+}
+
+# END BATCH27F_REPLAY_RUN_TRANSPORT_NOTE
+
+# BEGIN BATCH27G_REPLAY_RUN_FEATURE_ADAPTER_NOTE
+
+BATCH27G_REPLAY_RUN_FEATURE_ADAPTER_NOTE = {
+    "schema_version": "batch27g_replay_run_feature_adapter_note_v1",
+    "purpose": "future replay_run integration may use replay.feature_adapter for feature payload shape only",
+    "strategy_decision_generated": False,
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "broker_calls_allowed": False,
+    "live_redis_writes_allowed": False,
+    "production_doctrine_changed": False,
+}
+
+# END BATCH27G_REPLAY_RUN_FEATURE_ADAPTER_NOTE
+
+# BEGIN BATCH27H_REPLAY_RUN_STRATEGY_ADAPTER_NOTE
+
+BATCH27H_REPLAY_RUN_STRATEGY_ADAPTER_NOTE = {
+    "schema_version": "batch27h_replay_run_strategy_adapter_note_v1",
+    "purpose": "future replay_run integration may use replay.strategy_adapter for replay-only decision shape and arbitration",
+    "final_action": "HOLD_REPORT_ONLY",
+    "order_allowed": False,
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "broker_calls_allowed": False,
+    "live_redis_writes_allowed": False,
+    "production_doctrine_changed": False,
+}
+
+# END BATCH27H_REPLAY_RUN_STRATEGY_ADAPTER_NOTE
+
+# BEGIN BATCH27I_REPLAY_RUN_RISK_EXECUTION_SHADOW_NOTE
+
+BATCH27I_REPLAY_RUN_RISK_EXECUTION_SHADOW_NOTE = {
+    "schema_version": "batch27i_replay_run_risk_execution_shadow_note_v1",
+    "purpose": "future replay_run integration may use replay-only risk_adapter and execution_shadow",
+    "order_allowed": False,
+    "real_order_sent": False,
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "broker_calls_allowed": False,
+    "live_redis_writes_allowed": False,
+    "production_doctrine_changed": False,
+}
+
+# END BATCH27I_REPLAY_RUN_RISK_EXECUTION_SHADOW_NOTE
+
+# BEGIN BATCH27J_REPLAY_RUN_SCENARIO_PROFILE_NOTE
+
+BATCH27J_REPLAY_RUN_SCENARIO_PROFILE_NOTE = {
+    "schema_version": "batch27j_replay_run_scenario_profile_note_v1",
+    "purpose": "future replay_run integration may use replay.scenarios for explicit replay-only assumptions",
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "broker_calls_allowed": False,
+    "live_redis_writes_allowed": False,
+    "production_doctrine_changed": False,
+}
+
+# END BATCH27J_REPLAY_RUN_SCENARIO_PROFILE_NOTE
+
+# BEGIN BATCH27K_REPLAY_RUN_BATCH_ARTIFACT_NOTE
+
+BATCH27K_REPLAY_RUN_BATCH_ARTIFACT_NOTE = {
+    "schema_version": "batch27k_replay_run_batch_artifact_note_v1",
+    "purpose": "future replay_run integration may use replay.batch_runner and replay.artifact_materializer",
+    "artifact_root": "run/replay/",
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "broker_calls_allowed": False,
+    "live_redis_writes_allowed": False,
+    "production_doctrine_changed": False,
+}
+
+# END BATCH27K_REPLAY_RUN_BATCH_ARTIFACT_NOTE
+
+# BEGIN BATCH27L_REPLAY_RUN_REPORT_EXPORT_NOTE
+
+BATCH27L_REPLAY_RUN_REPORT_EXPORT_NOTE = {
+    "schema_version": "batch27l_replay_run_report_export_note_v1",
+    "purpose": "future replay_run integration may use replay.report_exporter for replay-only CSV/JSON reports",
+    "export_root": "run/replay/<run_id>/exports/",
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "broker_calls_allowed": False,
+    "live_redis_writes_allowed": False,
+    "production_doctrine_changed": False,
+}
+
+# END BATCH27L_REPLAY_RUN_REPORT_EXPORT_NOTE
+
+# BEGIN BATCH27M_REPLAY_RUN_EXPERIMENT_WORKSTATION_NOTE
+
+BATCH27M_REPLAY_RUN_EXPERIMENT_WORKSTATION_NOTE = {
+    "schema_version": "batch27m_replay_run_experiment_workstation_note_v1",
+    "purpose": "future replay_run integration may use replay.experiment_workstation for replay-only differential experiments",
+    "export_root": "run/replay/<experiment_id>/experiments/",
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "broker_calls_allowed": False,
+    "live_redis_writes_allowed": False,
+    "production_doctrine_changed": False,
+}
+
+# END BATCH27M_REPLAY_RUN_EXPERIMENT_WORKSTATION_NOTE
+
+# BEGIN BATCH28A_REPLAY_RUN_PARITY_PLAN_NOTE
+
+BATCH28A_REPLAY_RUN_PARITY_PLAN_NOTE = {
+    "schema_version": "batch28a_replay_run_parity_plan_note_v1",
+    "purpose": "Future replay_run integration may use replay.live_parity after observe_only live session capture.",
+    "accepted_for": "PARITY_AUDIT_PLAN_ONLY",
+    "full_live_replay_parity": "NOT_PROVEN_IN_28A",
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "broker_calls_allowed": False,
+    "live_redis_writes_allowed": False,
+    "production_doctrine_changed": False,
+}
+
+# END BATCH28A_REPLAY_RUN_PARITY_PLAN_NOTE
+
+# BEGIN BATCH28B_OBSERVE_ONLY_LIVE_EVIDENCE_NOTE
+
+BATCH28B_OBSERVE_ONLY_LIVE_EVIDENCE_NOTE = {
+    "schema_version": "batch28b_observe_only_live_evidence_note_v1",
+    "purpose": "Future replay/live parity audit may use observe_only live evidence capture artifacts.",
+    "accepted_for": "OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_CONTRACT_ONLY",
+    "starts_services": False,
+    "reads_live_redis": False,
+    "writes_live_redis": False,
+    "calls_broker_api": False,
+    "paper_armed_approved": False,
+    "live_trading_approved": False,
+    "execution_arming_created": False,
+    "production_doctrine_changed": False,
+    "full_live_replay_parity": "NOT_PROVEN_IN_28B",
+}
+
+# END BATCH28B_OBSERVE_ONLY_LIVE_EVIDENCE_NOTE
+

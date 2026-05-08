@@ -1,0 +1,45 @@
+{
+  "allowed_verdicts": [
+    "REJECT_NEGATIVE_EXPECTANCY_DIAGNOSTIC",
+    "INCONCLUSIVE_FOR_PROMOTION",
+    "NOT_READY_MISSING_LABELS",
+    "RESEARCH_ONLY_DIAGNOSTIC",
+    "READY_FOR_LARGER_REPLAY_ONLY"
+  ],
+  "broker_io_allowed": false,
+  "forbidden_outputs": [
+    "ENABLE_LIVE",
+    "ENABLE_PAPER_ARMED",
+    "MUTATE_CONFIG_NOW",
+    "SEND_ORDER",
+    "OVERRIDE_RISK",
+    "OVERRIDE_EXECUTION"
+  ],
+  "input_proofs": [
+    "proof_raw_d_freeze_final.json",
+    "proof_raw_e_freeze_final.json",
+    "proof_raw_f_freeze_final.json",
+    "proof_raw_g_freeze_final.json",
+    "proof_raw_h_freeze_final.json"
+  ],
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "output_artifacts": [
+    "replay_backtest_verdict.json",
+    "replay_evidence_scorecard.csv",
+    "RAW_I_REPLAY_BACKTEST_VERDICT_SUMMARY.md"
+  ],
+  "paper_live_enablement_allowed": false,
+  "production_mutation_allowed": false,
+  "promotion_blockers": [
+    "negative PnL",
+    "insufficient family labels",
+    "insufficient outcome labels",
+    "insufficient OI/PnL linkage"
+  ],
+  "redis_live_write_allowed": false,
+  "replay_engine_execution_allowed": false,
+  "replay_verdict_owner": "RAW_Replay_Backtest_Verdict_Desk",
+  "schema_version": "RAW-I.1"
+}

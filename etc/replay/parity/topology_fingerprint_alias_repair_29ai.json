@@ -1,0 +1,23 @@
+{
+  "accepted_for": "OFFLINE_REPLAY_TOPOLOGY_PLAN_FINGERPRINT_ALIAS_REPAIR_ONLY",
+  "allowed_file_change": "app/mme_scalpx/replay/topology.py",
+  "batch": "29AI",
+  "generated_at_utc": "2026-05-02T06:38:46.277335+00:00",
+  "repair_scope": "app/mme_scalpx/replay/topology.py",
+  "runtime_gap_kind": "OFFLINE_REPLAY_TOPOLOGY_PLAN_TOPOLOGY_FINGERPRINT_ATTRIBUTE_GAP",
+  "safety": {
+    "batch": "29AI",
+    "broker_calls_executed": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "patch_scope": "app/mme_scalpx/replay/topology.py only",
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "topology_fingerprint_alias_repair_29ai_v1"
+}

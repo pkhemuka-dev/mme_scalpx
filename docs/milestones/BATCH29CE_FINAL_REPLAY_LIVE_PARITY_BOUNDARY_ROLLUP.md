@@ -1,0 +1,28 @@
+BATCH 29CE FINAL REPLAY/LIVE PARITY BOUNDARY ROLLUP
+
+verdict: PASS_29CE_FINAL_REPLAY_LIVE_PARITY_BOUNDARY_ROLLUP_FULL_PARITY_NOT_PROVEN
+boundary_rollup_status: COMPLETE_LIMITED_SCOPE_SURFACES_CLOSED_FULL_PARITY_NOT_PROVEN
+closed_surfaces: ['strategy_activation_report_only_parity', 'feature_payload_parity', 'family_surface_payload_parity', 'risk_execution_shadow_no_order_parity', 'semantic_comparison_report_surface']
+full_live_replay_parity: NOT_PROVEN_FINAL_BOUNDARY_ROLLUP
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+paper_armed_approved: false
+live_trading_approved: false
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29ce/00_final_replay_live_parity_boundary_rollup.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29ce/01_final_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29ce/02_remaining_full_parity_gap_register.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29ce/03_continuation_decision.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29ce/04_audit_chain_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29ce/05_operator_summary.md
+- run/proofs/proof_final_replay_live_parity_boundary_rollup_29ce.json
+- run/proofs/proof_final_replay_live_parity_boundary_rollup_29ce_latest.json
+- etc/replay/parity/final_replay_live_parity_boundary_rollup_29ce.json
+
+Conclusion:
+This batch is a boundary rollup only. It does not approve paper_armed or live trading. Full live replay parity remains NOT_PROVEN.
+
+Next:
+Batch 29CF — freeze remaining full-live-replay-parity gap register and evidence requirements; still no paper/live enablement.

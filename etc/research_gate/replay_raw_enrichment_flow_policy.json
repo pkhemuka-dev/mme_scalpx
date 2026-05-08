@@ -1,0 +1,31 @@
+{
+  "broker_io_allowed": false,
+  "default_enabled": false,
+  "enable_env": "MME_REPLAY_RAW_ENRICH",
+  "execution_override_allowed": false,
+  "law": [
+    "Existing replay behavior is unchanged unless the opt-in flow is invoked.",
+    "No live runtime path is touched.",
+    "No broker, Redis, risk, execution, order, paper, or live capability is introduced.",
+    "RAW-L remains the enrichment engine; RAW-M is the optional replay/export flow wrapper."
+  ],
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "outputs": [
+    "raw_enrichment_flow_summary.json",
+    "raw_enrichment_flow_manifest.json",
+    "enriched_replay_records.jsonl",
+    "enrichment_summary.json",
+    "enrichment_manifest.json"
+  ],
+  "owner": "optional_replay_raw_enrichment_flow",
+  "paper_live_enablement_allowed": false,
+  "purpose": "Wire RAW-L enrichment into replay/export flow as explicit opt-in post-export step.",
+  "redis_live_write_allowed": false,
+  "replay_engine_mutation_allowed": false,
+  "replay_post_export_hook_allowed": true,
+  "risk_override_allowed": false,
+  "schema_version": "RAW-M.1",
+  "strategy_mutation_allowed": false
+}

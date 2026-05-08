@@ -1,0 +1,28 @@
+BATCH 29BI STRATEGY ACTIVATION SURFACE CONSOLIDATION
+
+generated_at_utc: 2026-05-02T10:04:27.203920+00:00
+verdict: PASS_29BI_STRATEGY_ACTIVATION_SURFACE_CONSOLIDATED_NEXT_SURFACE_SELECTED
+proof_29bh_valid: True
+compile_ok: True
+safety_ok: True
+readiness_status: STRATEGY_ACTIVATION_CLOSED_NEXT_SURFACE_SELECTED
+strategy_activation_surface_closed: True
+strategy_activation_value_parity: PROVEN_FOR_CORRECTED_COMPARABLE_FIELDS_ONLY
+approved_comparable_fields: ['replay_run_completed']
+excluded_fields: ['activation', 'family']
+matched_fields: ['replay_run_completed']
+mismatched_fields: []
+next_surface: feature_payload_parity
+full_live_replay_parity: NOT_PROVEN_IN_29BI
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BJ — audit next replay/live parity surface: feature_payload_parity; still no paper/live enablement.
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_surface_consolidation_29bi/00_strategy_activation_surface_consolidation.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_surface_consolidation_29bi/01_replay_parity_readiness_index_after_strategy_activation.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_surface_consolidation_29bi/02_surface_matrix_after_strategy_activation.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_surface_consolidation_29bi/03_next_surface_29bj_contract.json
+- run/proofs/proof_strategy_activation_surface_consolidation_29bi.json
+- run/proofs/proof_strategy_activation_surface_consolidation_29bi_latest.json
+
+Files changed: none

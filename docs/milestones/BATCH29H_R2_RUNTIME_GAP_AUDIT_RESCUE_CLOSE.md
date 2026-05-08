@@ -1,0 +1,42 @@
+Batch 29H-R2 Guarded ReplayEngine runtime-gap audit rescue close
+
+Date: 2026-05-01
+
+Verdict:
+PASS_GUARDED_REPLAY_ENGINE_RUNTIME_GAP_AUDIT_RESCUE_CLOSE_29H_R2
+
+Accepted for:
+RUNTIME_GAP_AUDIT_RESCUE_CLOSE_ONLY
+
+Source:
+- 29H proof: run/proofs/proof_guarded_replay_engine_runtime_gap_audit_29h_latest.json
+- 29H-R1 proof: run/proofs/proof_guarded_replay_engine_runtime_gap_audit_29h_r1_latest.json
+- 29G proof: run/proofs/proof_guarded_replay_engine_execute_dry_run_29g_latest.json
+
+Result:
+prior_29h_verdict=FAIL_GUARDED_REPLAY_ENGINE_RUNTIME_GAP_AUDIT_29H
+prior_29h_r1_verdict=FAIL_GUARDED_REPLAY_ENGINE_RUNTIME_GAP_AUDIT_RESCUE_29H_R1
+prior_rescue_failure_is_schema_only=true
+runtime_gap_confirmed=true
+runtime_gap_kind=OFFLINE_CONTEXT_ATTRIBUTE_SHAPE_GAP
+repair_path=REPAIR_OFFLINE_CONTEXT_OBJECT_ATTRIBUTE_SHAPE
+error_text=AttributeError: 'OfflineReplayRunContext' object has no attribute 'run_id'
+candidate_executed=false
+replay_core_executed=false
+replay_run_completed=false
+comparison_completed=false
+
+Safety:
+starts_services=false
+reads_live_redis=false
+writes_live_redis=false
+calls_broker_api=false
+paper_armed_approved=false
+live_trading_approved=false
+execution_arming_created=false
+real_order_sent=false
+production_doctrine_changed=false
+full_live_replay_parity=NOT_PROVEN_IN_29H_R2
+
+Next:
+Batch 29I — repair OfflineReplayRunContext attribute shape by adding offline run_id support, still not paper/live enablement.

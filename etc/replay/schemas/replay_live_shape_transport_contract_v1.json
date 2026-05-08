@@ -1,0 +1,63 @@
+{
+  "schema_version": "replay_live_shape_transport_contract_v1",
+  "purpose": "Replay-only live-compatible event/state transport contract without live Redis writes.",
+  "replay_only": true,
+  "paper_armed_approved": false,
+  "live_trading_approved": false,
+  "execution_arming_created": false,
+  "broker_calls_allowed": false,
+  "live_redis_writes_allowed": false,
+  "production_doctrine_changed": false,
+  "required_transport_methods": [
+    "publish",
+    "write_state",
+    "read_stream",
+    "read_state",
+    "snapshot",
+    "reset"
+  ],
+  "required_event_fields": [
+    "schema_version",
+    "run_id",
+    "replay_key",
+    "live_contract_name",
+    "surface",
+    "payload",
+    "event_ts_ns",
+    "sequence_id",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed"
+  ],
+  "required_state_fields": [
+    "schema_version",
+    "run_id",
+    "replay_key",
+    "live_contract_name",
+    "surface",
+    "payload",
+    "updated_ts_ns",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed"
+  ],
+  "required_surfaces": [
+    "futures_tick",
+    "selected_option_tick",
+    "dhan_context",
+    "oi_ladder",
+    "provider_runtime",
+    "feature_payload",
+    "strategy_decision",
+    "risk_shadow",
+    "execution_shadow"
+  ],
+  "required_replay_key_prefix": "replay:",
+  "forbidden": [
+    "live Redis key mutation",
+    "broker API call",
+    "runtime promotion",
+    "paper/live approval",
+    "production doctrine mutation"
+  ]
+}

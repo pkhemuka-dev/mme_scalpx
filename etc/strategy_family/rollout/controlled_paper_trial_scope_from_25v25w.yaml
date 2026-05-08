@@ -1,0 +1,64 @@
+schema_version: 1
+gate_id: controlled_paper_trial_scope_from_existing_25v25w
+contract_revision: 26L-revised.2
+
+source_basis:
+  batch25v_market_session_observation: PASS_FREEZE_FINAL
+  batch25w_paper_armed_readiness_gate: PASS_READY_FOR_CONTROLLED_PAPER_PREP
+
+purpose: controlled_paper_trial_preparation_only
+preparation_only: true
+
+paper_armed_enabled_by_this_file: false
+paper_armed_should_be_enabled_now: false
+auto_enable_paper_armed: false
+real_live_allowed: false
+real_live_enabled: false
+execution_arming_allowed_by_this_file: false
+strategy_promotion_allowed_by_this_file: false
+
+selection_policy:
+  selected_family: PENDING_OPERATOR_SELECTION_FROM_25V_REVIEW
+  selected_side: PENDING_OPERATOR_SELECTION_FROM_25V_REVIEW
+  allowed_family_count_max: 1
+  allowed_side_count_max: 1
+  selection_must_not_be_inferred_by_preparation_batch: true
+
+trial_limits:
+  quantity_lots_max: 1
+  max_open_positions: 1
+  max_active_family_count: 1
+  max_active_side_count: 1
+  max_trial_orders_before_forced_stop: 1
+  real_live_allowed: false
+
+provider_safety:
+  providers_current_required_at_enablement: true
+  selected_option_provider_required: DHAN
+  option_context_provider_required: DHAN
+  execution_primary_expected: ZERODHA
+  broker_path_required: PAPER_OR_SANDBOX_ONLY
+  automatic_broker_failover_allowed: false
+  fallback_execution_allowed_in_first_trial: false
+  mid_position_provider_migration_allowed: false
+
+runtime_safety:
+  observe_only_until_manual_enablement: true
+  forced_flatten_required: true
+  kill_switch_required: true
+  no_order_without_manual_operator_arm: true
+  no_auto_rearm_after_trial_order: true
+  no_auto_retry_after_reject_timeout_or_cancel: true
+  no_mid_position_config_reload: true
+  no_same_event_reentry: true
+  no_real_live: true
+
+reporting:
+  trial_report_mandatory: true
+  required_trial_report_dir: reports/paper_trials
+
+final_status:
+  preparation_expected: true
+  paper_armed_enabled: false
+  real_live_enabled: false
+  next_script: bin/batch26m_enable_controlled_paper_from_25v25w.sh

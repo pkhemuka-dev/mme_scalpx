@@ -1,0 +1,19 @@
+BATCH 29BU FAMILY SURFACE CONSOLIDATION
+
+verdict: DEFERRED_29BU_FAMILY_SURFACE_PARITY_NOT_CLOSED_REPAIR_REVIEW_REQUIRED
+family_surface_payload_parity: NOT_PROVEN_STRICT_FIELD_MISMATCH_CLASSIFIED
+family_surface_closed: False
+selected_next_surface: family_surface_payload_parity_repair_review
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29BU
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_consolidation_select_next_29bu/00_family_surface_consolidation.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_consolidation_select_next_29bu/01_replay_parity_readiness_index.json
+- run/proofs/proof_family_surface_consolidation_select_next_29bu.json
+- run/proofs/proof_family_surface_consolidation_select_next_29bu_latest.json
+
+Next:
+Batch 29BU-R1 — review classified family surface mismatches before selecting next surface; still no paper/live enablement.

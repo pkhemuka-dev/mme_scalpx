@@ -1,0 +1,27 @@
+{
+  "accepted_for": "BOUNDED_OFFLINE_LIVE_OBSERVE_COMPARISON_ONLY",
+  "batch": "29AM",
+  "comparison_csv": "run/replay/parity/batch29am_live_observe_bundle_compare_executor_20260502_122116/offline_live_observe_comparison_29am.csv",
+  "comparison_json": "run/replay/parity/batch29am_live_observe_bundle_compare_executor_20260502_122116/offline_live_observe_comparison_29am.json",
+  "executor": "bin/offline_live_observe_parity_compare_29am.py",
+  "generated_at_utc": "2026-05-02T06:51:16.782625+00:00",
+  "safety": {
+    "batch": "29AM",
+    "bounded_comparison_only": true,
+    "bounded_tool_written": true,
+    "broker_calls_executed": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "production_code_patched": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "replay_rerun_performed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "offline_live_observe_parity_compare_29am_v1",
+  "selected_live_observe_bundle": "run/replay/parity/batch29am_live_observe_bundle_compare_executor_20260502_122116/selected_live_observe_bundle_29am.json"
+}

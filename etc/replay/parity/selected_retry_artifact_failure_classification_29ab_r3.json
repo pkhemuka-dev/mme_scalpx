@@ -1,0 +1,291 @@
+{
+  "accepted_for": "SELECTED_RETRY_ARTIFACT_FAILURE_CLASSIFICATION_ONLY",
+  "audit_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/selected_retry_artifact_failure_classification_29ab_r3",
+  "backup_dir": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352",
+  "backups": [
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/app/mme_scalpx/replay/offline_context_shim.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/offline_context_shim.py",
+      "present": true,
+      "sha256": "66e64cab9a3429c69cc33a904d8ed53bb2eac59b58b61dd44f1ba7e1ea266b6b",
+      "size_bytes": 15775
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/app/mme_scalpx/replay/engine.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/engine.py",
+      "present": true,
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8",
+      "size_bytes": 20518
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/app/mme_scalpx/replay/topology.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/topology.py",
+      "present": true,
+      "sha256": "448cf6bd7f34f13d02768684a0807dc8b5993f493e91bff503f0d1b34e589e0c",
+      "size_bytes": 12432
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "present": true,
+      "sha256": "9ad2b5b9cb48b0e323bdd733768b5dd10d430fd7529e73bf73f43300a92331c8",
+      "size_bytes": 27919
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/run/proofs/proof_29aa_pass_integrity_audit_29ab_r2_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_29aa_pass_integrity_audit_29ab_r2_latest.json",
+      "present": true,
+      "sha256": "f8edc8be7bf82fa224694ec73eae8ee896c15b6118f9ec64864754bed7c64ee6",
+      "size_bytes": 112751
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/run/proofs/proof_reconcile_29aa_pass_outputs_29ab_r1_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_reconcile_29aa_pass_outputs_29ab_r1_latest.json",
+      "present": true,
+      "sha256": "dd10eaee57e560b87fc9084dbe3ceb96ee59a27364b1210e44ada2e6ff90f71e",
+      "size_bytes": 6225
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/run/proofs/proof_offline_stage_description_alias_repair_29aa_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_offline_stage_description_alias_repair_29aa_latest.json",
+      "present": true,
+      "sha256": "a9e6a7a8e521945b68d6f92808e184a800bd056cdd1cc6e23b0f37fd1ea5963f",
+      "size_bytes": 10504
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/run/proofs/proof_offline_stage_description_runtime_gap_audit_29z_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_offline_stage_description_runtime_gap_audit_29z_latest.json",
+      "present": true,
+      "sha256": "c9062e2a200709382d9fa2abb5e614f8be43bc8c31f4f3186cb3a1acc835f9f9",
+      "size_bytes": 9485
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "etc/replay/parity/selected_retry_artifact_failure_classification_29ab_r3.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/proof_selected_retry_artifact_failure_classification_29ab_r3.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/proof_selected_retry_artifact_failure_classification_29ab_r3_latest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/batch29ab_r3_selected_retry_artifact_classification_20260502_120352_driver_proof.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "docs/milestones/BATCH29AB_R3_SELECTED_RETRY_ARTIFACT_CLASSIFICATION.md",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/00_guarded_replay_engine_execute_manifest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/00_guarded_replay_engine_execute_manifest.json",
+      "present": true,
+      "sha256": "d3a40e931ffbb91942d3b7275bac47e643c3b09c4a1543558b45bfde16170d09",
+      "size_bytes": 4127
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/01_context_reconstruction_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/01_context_reconstruction_report.json",
+      "present": true,
+      "sha256": "9249dfda9e993c09b92cc73840a970d7025937facde22b9a82d978e51de0115e",
+      "size_bytes": 8950
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/02_engine_execution_report.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/02_engine_execution_report.json",
+      "present": true,
+      "sha256": "1ebd4340ed1b4f285a2e585525ca2a68ddf4b16e3ab1acbd948422f3e9b61ef6",
+      "size_bytes": 1932
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/03_execution_output_summary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/03_execution_output_summary.json",
+      "present": true,
+      "sha256": "5d90eb5c734feaac15aae5c7a8dad0be0fdba316f1af8ba039bb0d8dd8c3e7f6",
+      "size_bytes": 328
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/04_no_broker_no_live_redis_boundary.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+      "size_bytes": 617
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ab_r3_selected_retry_artifact_classification_20260502_120352/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/05_next_replay_output_parity_contract.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/05_next_replay_output_parity_contract.json",
+      "present": true,
+      "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+      "size_bytes": 851
+    }
+  ],
+  "batch": "29AB-R3",
+  "boundary_safety_ok": true,
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "canonical_stage_owns_runtime_decisioning_present": false,
+  "capture_id": null,
+  "code_patch_applied": false,
+  "comparison_completed": false,
+  "compile_ok": true,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "engine_consumes_owns_runtime_decisioning": false,
+  "execution_arming_created": false,
+  "execution_ok": false,
+  "files_changed": [],
+  "full_live_replay_parity": "NOT_PROVEN_IN_29AB_R3",
+  "generated_at_utc": "2026-05-02T06:33:52.754886+00:00",
+  "inspection_manifest": "run/proofs/batch29ab_r3_selected_retry_artifact_classification_20260502_120352_inspection/inspection_manifest.json",
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 29AC \u2014 repair OfflineReplayStage.owns_runtime_decisioning alias in offline_context_shim.py only, then retry guarded ReplayEngine dry-run; still not paper/live enablement.",
+  "offline_stage_owns_runtime_decisioning_present": false,
+  "owns_runtime_decisioning_gap_confirmed": true,
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "proof": "run/proofs/proof_selected_retry_artifact_failure_classification_29ab_r3.json",
+  "proof_29aa_verdict": "PASS_OFFLINE_STAGE_DESCRIPTION_ALIAS_REPAIR_29AA",
+  "proof_29ab_r1_verdict": "DEFERRED_29AB_R1_29AA_PASS_CHAIN_NOT_FULLY_RECONCILED",
+  "proof_29ab_r2_valid": true,
+  "proof_29ab_r2_verdict": "DEFERRED_29AB_R2_RETRY_ARTIFACTS_FOUND_BUT_NOT_READY_FOR_PARITY_INSPECTION",
+  "proof_latest": "run/proofs/proof_selected_retry_artifact_failure_classification_29ab_r3_latest.json",
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "repair_path": "REPAIR_OFFLINE_STAGE_OWNS_RUNTIME_DECISIONING_ALIAS",
+  "replay_core_executed": false,
+  "replay_run_completed": false,
+  "retry_presence": {
+    "all_present": true,
+    "files": {
+      "00_guarded_replay_engine_execute_manifest.json": {
+        "is_dir": false,
+        "is_file": true,
+        "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/00_guarded_replay_engine_execute_manifest.json",
+        "present": true,
+        "sha256": "d3a40e931ffbb91942d3b7275bac47e643c3b09c4a1543558b45bfde16170d09",
+        "size_bytes": 4127
+      },
+      "01_context_reconstruction_report.json": {
+        "is_dir": false,
+        "is_file": true,
+        "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/01_context_reconstruction_report.json",
+        "present": true,
+        "sha256": "9249dfda9e993c09b92cc73840a970d7025937facde22b9a82d978e51de0115e",
+        "size_bytes": 8950
+      },
+      "02_engine_execution_report.json": {
+        "is_dir": false,
+        "is_file": true,
+        "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/02_engine_execution_report.json",
+        "present": true,
+        "sha256": "1ebd4340ed1b4f285a2e585525ca2a68ddf4b16e3ab1acbd948422f3e9b61ef6",
+        "size_bytes": 1932
+      },
+      "03_execution_output_summary.json": {
+        "is_dir": false,
+        "is_file": true,
+        "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/03_execution_output_summary.json",
+        "present": true,
+        "sha256": "5d90eb5c734feaac15aae5c7a8dad0be0fdba316f1af8ba039bb0d8dd8c3e7f6",
+        "size_bytes": 328
+      },
+      "04_no_broker_no_live_redis_boundary.json": {
+        "is_dir": false,
+        "is_file": true,
+        "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/04_no_broker_no_live_redis_boundary.json",
+        "present": true,
+        "sha256": "90f79b7e20e9d0fb688ecde93d99b32a4a5667bb86b071f92f76345289e2e5ea",
+        "size_bytes": 617
+      },
+      "05_next_replay_output_parity_contract.json": {
+        "is_dir": false,
+        "is_file": true,
+        "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa/05_next_replay_output_parity_contract.json",
+        "present": true,
+        "sha256": "87010cc366e1a9fa67d13b4d755654c7c32de8c948d130e88d0fb3d7b25e9e98",
+        "size_bytes": 851
+      }
+    },
+    "root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa",
+    "root_present": true
+  },
+  "retry_returncode": null,
+  "runtime_gap_kind": "OFFLINE_REPLAY_STAGE_OWNS_RUNTIME_DECISIONING_ATTRIBUTE_GAP",
+  "schema_version": "selected_retry_artifact_failure_classification_29ab_r3_v1",
+  "selected_retry_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aa",
+  "selected_retry_root_safe": true,
+  "selected_retry_runtime_error": "AttributeError: 'OfflineReplayStage' object has no attribute 'owns_runtime_decisioning'",
+  "starts_services": false,
+  "verdict": "PASS_29AB_R3_SELECTED_RETRY_OWNS_RUNTIME_DECISIONING_GAP_CLASSIFIED",
+  "writes_live_redis": false
+}

@@ -1,0 +1,42 @@
+{
+  "batch": "29BA",
+  "generated_at_utc": "2026-05-05T07:39:31.526329+00:00",
+  "heavy_field_patterns": [
+    "family_surfaces_json",
+    "consumer_view_json",
+    "family_features_json",
+    "payload_json",
+    "decision_json",
+    "features_json",
+    "surface_json",
+    "snapshot_json",
+    "frame_json"
+  ],
+  "mode": "audit_plan_only_no_patch",
+  "safety": {
+    "broker_execution_path_used": false,
+    "features_restarted": false,
+    "order_sending_performed": false,
+    "paper_live_enablement_performed": false,
+    "production_code_patched": false,
+    "raw_patch_performed": false,
+    "replay_patch_performed": false,
+    "strategy_restarted": false
+  },
+  "schema_version": "batch29ba_compact_payload_hardening_config_v1",
+  "source_candidates": [
+    "app/mme_scalpx/services/features.py",
+    "app/mme_scalpx/services/strategy.py",
+    "app/mme_scalpx/services/report.py",
+    "app/mme_scalpx/services/monitor.py",
+    "app/mme_scalpx/core/redisx.py",
+    "app/mme_scalpx/core/names.py",
+    "app/mme_scalpx/main.py"
+  ],
+  "stream_names": [
+    "features:mme:stream",
+    "decisions:mme:stream",
+    "system:errors:stream",
+    "orders:mme:stream"
+  ]
+}

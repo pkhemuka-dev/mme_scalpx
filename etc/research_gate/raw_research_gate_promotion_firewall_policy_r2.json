@@ -1,0 +1,22 @@
+{
+  "allowed_next_actions": [
+    "RAW research report generation using explicitly available fields",
+    "manual cost model declaration review",
+    "manual OI wall formula declaration review",
+    "manual trade lifecycle/PnL declaration review"
+  ],
+  "created_at_utc": "2026-05-02T07:30:00.225665+00:00",
+  "disallowed_actions": [
+    "paper/live enablement",
+    "production strategy mutation",
+    "row backfill of gated fields",
+    "reward_cost_ratio derivation",
+    "OI wall strength/distance derivation",
+    "PnL lifecycle reconstruction"
+  ],
+  "paper_live_enablement_allowed": false,
+  "production_patch_allowed_from_raw": false,
+  "raw_promotion_allowed": false,
+  "reason": "RAW is research/evidence only. Cost, OI wall, and PnL lifecycle lanes remain gated by declarations.",
+  "schema_version": "raw_research_gate_promotion_firewall_policy_r2_v1"
+}

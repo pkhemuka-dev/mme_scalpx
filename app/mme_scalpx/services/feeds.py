@@ -1,5 +1,31 @@
 from __future__ import annotations
 
+# BEGIN BATCH29AW_R6 FEED NORMALIZER VOLUME GUARD
+def _mme_nonnegative_int_29aw_r6(value, field_name="volume"):
+    """Guard provider/broker anomaly: FeedTick integer fields such as volume must be non-negative."""
+    try:
+        ivalue = int(value)
+    except Exception:
+        return 0
+    if ivalue < 0:
+        return 0
+    return ivalue
+# END BATCH29AW_R6 FEED NORMALIZER VOLUME GUARD
+
+
+# BEGIN BATCH29AW_R5 FEED NORMALIZER VOLUME GUARD
+def _mme_nonnegative_int_29aw_r5(value, field_name="volume"):
+    """Guard provider/broker anomaly: FeedTick volume must be non-negative."""
+    try:
+        ivalue = int(value)
+    except Exception:
+        return 0
+    if ivalue < 0:
+        return 0
+    return ivalue
+# END BATCH29AW_R5 FEED NORMALIZER VOLUME GUARD
+
+
 """
 app/mme_scalpx/services/feeds.py
 
@@ -455,6 +481,37 @@ class FeedConfig:
             raise FeedConfigError("snapshot_sync_max_ms must be positive")
 
 
+# Batch 25V corrective — normalize family_runtime_mode for ProviderRuntimeConfig
+def _batch25v_normalize_family_runtime_mode(value: object) -> str:
+    """
+    Normalize operator/runtime family rollout mode into ProviderRuntimeConfig's
+    frozen uppercase literal contract.
+
+    Known frozen rollout modes only:
+    - observe_only / OBSERVE_ONLY
+    - legacy_live_family_shadow / LEGACY_LIVE_FAMILY_SHADOW
+    - family_live_legacy_shadow / FAMILY_LIVE_LEGACY_SHADOW
+    - family_live_only / FAMILY_LIVE_ONLY
+    """
+    raw = str(value or "").strip()
+    if not raw:
+        return "OBSERVE_ONLY"
+
+    normalized = raw.upper().replace("-", "_")
+
+    allowed = {
+        "OBSERVE_ONLY",
+        "LEGACY_LIVE_FAMILY_SHADOW",
+        "FAMILY_LIVE_LEGACY_SHADOW",
+        "FAMILY_LIVE_ONLY",
+    }
+
+    if normalized not in allowed:
+        raise ValueError(f"unsupported family_runtime_mode: {raw!r}")
+
+    return normalized
+
+
 @dataclass(slots=True, frozen=True)
 class BrokerProviderSurfaces:
     runtime_yaml: Mapping[str, Any]
@@ -465,7 +522,7 @@ class BrokerProviderSurfaces:
     def provider_runtime_config(self) -> PR.ProviderRuntimeConfig:
         runtime = self.runtime_yaml.get("provider_runtime") or {}
         return PR.ProviderRuntimeConfig(
-            family_runtime_mode=str(
+            family_runtime_mode=_batch25v_normalize_family_runtime_mode(
                 runtime.get("family_runtime_mode", N.FAMILY_RUNTIME_MODE_OBSERVE_ONLY)
             ),
             failover_mode=str(
@@ -573,7 +630,7 @@ class ApprovedInstrument:
                 option_side = N.SIDE_PUT
             return ApprovedInstrument(
                 role=role,
-                instrument_key=instrument_key,
+                instrument_key=(locals().get("instrument_key") or locals().get("symbol") or locals().get("instrument_token") or "unknown"),
                 instrument_token=str(getattr(contract, "instrument_token")),
                 trading_symbol=trading_symbol,
                 tick_size=tick_size,
@@ -772,6 +829,50 @@ class TickNormalizer:
         self._cfg = config
         self._log = logger or LOGGER.getChild("TickNormalizer")
 
+
+    def _coerce_non_negative_int_field(
+        self,
+        value,
+        *,
+        field_name: str,
+        provider_id: str = "unknown",
+        instrument_key: str = "unknown",
+    ) -> int:
+        """Normalize provider integer fields that must be non-negative.
+
+        Some live providers can emit corrupted/signed-overflow values for cumulative
+        counters such as volume. The canonical FeedTick model must remain strict
+        and non-negative; the feed normalizer absorbs the provider anomaly here
+        instead of crashing the service loop.
+        """
+        try:
+            parsed = int(value or 0)
+        except Exception:
+            parsed = 0
+
+        if parsed < 0:
+            try:
+                self._metrics["negative_int_field_clamped"] = (
+                    int(self._metrics.get("negative_int_field_clamped", 0)) + 1
+                )
+            except Exception:
+                pass
+
+            try:
+                self._logger.warning(
+                    "feed_negative_int_field_clamped provider_id=%s instrument_key=%s field=%s value=%s",
+                    provider_id,
+                    instrument_key,
+                    field_name,
+                    parsed,
+                )
+            except Exception:
+                pass
+
+            return 0
+
+        return parsed
+
     def normalize_tick(
         self,
         *,
@@ -870,7 +971,12 @@ class TickNormalizer:
             seq_no=seq_no,
             ltp=None if math.isnan(ltp) else ltp,
             last_qty=last_qty,
-            volume=volume,
+            volume=self._coerce_non_negative_int_field(
+                _mme_nonnegative_int_29aw_r6(volume, "volume"),
+                field_name="volume",
+                provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"),
+                instrument_key=(locals().get("instrument_key") or locals().get("symbol") or locals().get("instrument_token") or "unknown"),
+            ),
             oi=oi,
             bid=None if math.isnan(bid) else bid,
             ask=None if math.isnan(ask) else ask,
@@ -899,7 +1005,12 @@ class TickNormalizer:
                 ts_provider_ns=provider_ns,
                 ts_recv_ns=raw.recv_ts_ns,
                 last_qty=last_qty,
-                volume=volume,
+                volume=self._coerce_non_negative_int_field(
+                volume,
+                field_name="volume",
+                provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"),
+                instrument_key=(locals().get("instrument_key") or locals().get("symbol") or locals().get("instrument_token") or "unknown"),
+            ),
                 oi=oi,
                 bid=None if math.isnan(bid) else bid,
                 ask=None if math.isnan(ask) else ask,
@@ -925,7 +1036,12 @@ class TickNormalizer:
                 ts_provider_ns=provider_ns,
                 ts_recv_ns=raw.recv_ts_ns,
                 last_qty=last_qty,
-                volume=volume,
+                volume=self._coerce_non_negative_int_field(
+                    volume,
+                    field_name="volume",
+                    provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"),
+                    instrument_key=(locals().get("instrument_key") or locals().get("symbol") or locals().get("instrument_token") or "unknown"),
+                ),
                 oi=oi,
                 bid=None if math.isnan(bid) else bid,
                 ask=None if math.isnan(ask) else ask,
@@ -1162,62 +1278,51 @@ class TickNormalizer:
             strikes = [float(row["strike"]) for row in normalized if row.get("strike") is not None]
             reference = sorted(strikes)[len(strikes) // 2] if strikes else None
 
-        def _wall(rows: list[dict[str, Any]], side: str) -> dict[str, Any]:
-            if not rows:
-                return {}
-            directional = rows
-            if reference is not None:
-                if side == N.SIDE_CALL:
-                    directional = [row for row in rows if float(row["strike"]) >= float(reference)] or rows
-                else:
-                    directional = [row for row in rows if float(row["strike"]) <= float(reference)] or rows
-            max_oi = max((_safe_int(row.get("oi"), 0) for row in rows), default=0)
-            wall = max(
-                directional,
-                key=lambda row: (
-                    _safe_int(row.get("oi"), 0),
-                    -abs(float(row["strike"]) - float(reference or row["strike"])),
-                ),
-            )
-            distance = None if reference is None else abs(float(wall["strike"]) - float(reference))
-            strength = 0.0 if max_oi <= 0 else min(max(_safe_int(wall.get("oi"), 0) / max_oi, 0.0), 1.0)
-            return {
-                **dict(wall),
-                "wall_kind": "CALL_OI_RESISTANCE" if side == N.SIDE_CALL else "PUT_OI_SUPPORT",
-                "wall_distance_points": distance,
-                "wall_strength_score": strength,
-                "near_wall": bool(distance is not None and distance <= 50.0),
-            }
-
-        call_wall = _wall(call_rows, N.SIDE_CALL)
-        put_wall = _wall(put_rows, N.SIDE_PUT)
-
         total_call_oi = sum(_safe_int(row.get("oi"), 0) for row in call_rows)
         total_put_oi = sum(_safe_int(row.get("oi"), 0) for row in put_rows)
+        total_call_oi_change = sum(_safe_int(row.get("oi_change"), 0) for row in call_rows)
+        total_put_oi_change = sum(_safe_int(row.get("oi_change"), 0) for row in put_rows)
+
         bias_score = 0.0
         if (total_call_oi + total_put_oi) > 0:
             bias_score = (total_put_oi - total_call_oi) / max(total_put_oi + total_call_oi, 1)
         bias_label = "PUT_SUPPORTIVE" if bias_score >= 0.15 else "CALL_SUPPORTIVE" if bias_score <= -0.15 else "NEUTRAL"
 
+        # Batch 26-OI-B canonicalization:
+        # feeds.py owns raw Dhan ladder normalization only.
+        # It no longer calculates nearest OI support/resistance walls.
+        # Canonical OI wall calculation belongs to:
+        # app.mme_scalpx.services.feature_family.strike_selection.build_oi_wall_summary
         wall_summary = {
             "present": bool(normalized),
             "provider_id": N.PROVIDER_DHAN,
+            "source": "feeds_raw_ladder_context_non_authoritative",
+            "canonical_wall_authority": (
+                "app.mme_scalpx.services.feature_family."
+                "strike_selection.build_oi_wall_summary"
+            ),
+            "wall_calculation_delegated": True,
             "ts_event_ns": provider_ns,
             "atm_reference_strike": reference,
             "ladder_size": len(normalized),
             "has_call_rows": bool(call_rows),
             "has_put_rows": bool(put_rows),
-            "nearest_call_oi_resistance_strike": call_wall.get("strike"),
-            "nearest_put_oi_support_strike": put_wall.get("strike"),
-            "call_wall_distance_pts": call_wall.get("wall_distance_points"),
-            "put_wall_distance_pts": put_wall.get("wall_distance_points"),
-            "call_wall_strength_score": call_wall.get("wall_strength_score", 0.0),
-            "put_wall_strength_score": put_wall.get("wall_strength_score", 0.0),
-            "call_wall": call_wall or None,
-            "put_wall": put_wall or None,
+            "nearest_call_oi_resistance_strike": None,
+            "nearest_put_oi_support_strike": None,
+            "call_wall_distance_pts": None,
+            "put_wall_distance_pts": None,
+            "call_wall_strength_score": 0.0,
+            "put_wall_strength_score": 0.0,
+            "call_wall": None,
+            "put_wall": None,
+            "total_call_oi": total_call_oi,
+            "total_put_oi": total_put_oi,
+            "total_call_oi_change": total_call_oi_change,
+            "total_put_oi_change": total_put_oi_change,
             "oi_bias": bias_label,
             "oi_bias_score": bias_score,
-            "oi_wall_ready": bool(call_wall or put_wall),
+            "oi_wall_ready": False,
+            "law": "raw_context_not_trigger_wall_delegated",
         }
 
         return {
@@ -1534,7 +1639,7 @@ class FeedService:
             provider_id: {
                 token: QuoteCacheEntry(
                     approved=approved,
-                    provider_id=provider_id,
+                    provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"),
                     anomaly_window=deque(maxlen=self._cfg.anomaly_window),
                 )
                 for token, approved in self._token_to_approved.items()
@@ -1542,7 +1647,7 @@ class FeedService:
             for provider_id in PROVIDER_IDS
         }
         self._role_watermarks: dict[tuple[str, str], ProviderRoleWatermark] = {
-            (provider_id, role): ProviderRoleWatermark(provider_id=provider_id, role=role)
+            (provider_id, role): ProviderRoleWatermark(provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"), role=role)
             for provider_id in PROVIDER_IDS
             for role in (
                 N.PROVIDER_ROLE_FUTURES_MARKETDATA,
@@ -1600,7 +1705,7 @@ class FeedService:
         for item in adapter_items:
             if not isinstance(item, Mapping):
                 continue
-            self._ingest_polled_item(provider_id=provider_id, item=item)
+            self._ingest_polled_item(provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"), item=item)
 
     def _ingest_polled_item(self, *, provider_id: str, item: Mapping[str, Any]) -> None:
         record_type = _safe_str(_first_value(item, "record_type", "type", "kind")).lower()
@@ -1611,7 +1716,7 @@ class FeedService:
 
         if provider_id == N.PROVIDER_DHAN and record_type in {"context", "dhan_context", "option_context", "chain_context"}:
             self.handle_dhan_context(
-                RawDhanContext(provider_id=provider_id, payload=dict(payload), recv_ts_ns=recv_ts_ns)
+                RawDhanContext(provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"), payload=dict(payload), recv_ts_ns=recv_ts_ns)
             )
             return
 
@@ -1621,7 +1726,7 @@ class FeedService:
             or record_type == "chain"
         ) and "instrument_token" not in item and "instrument_token" not in payload:
             self.handle_dhan_context(
-                RawDhanContext(provider_id=provider_id, payload=dict(payload), recv_ts_ns=recv_ts_ns)
+                RawDhanContext(provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"), payload=dict(payload), recv_ts_ns=recv_ts_ns)
             )
             return
 
@@ -1633,7 +1738,7 @@ class FeedService:
         self.handle_raw_tick(
             BrokerRawTick(
                 instrument_token=instrument_token,
-                provider_id=provider_id,
+                provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"),
                 payload=dict(payload),
                 recv_ts_ns=recv_ts_ns,
             )
@@ -1800,7 +1905,7 @@ class FeedService:
         )
         if approved.role == M.InstrumentRole.FUTURES:
             fut_payload = self._build_futures_snapshot_payload(
-                provider_id=provider_id,
+                provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"),
                 frame=frame,
                 active_provider=(self._last_provider_runtime.futures_marketdata_provider_id if self._last_provider_runtime else None),
             )
@@ -1808,7 +1913,7 @@ class FeedService:
             RX.write_hash_fields(fut_hash, fut_payload, client=self._redis)
         else:
             opt_payload = self._build_option_snapshot_payload(
-                provider_id=provider_id,
+                provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"),
                 frame=frame,
                 active_provider=(self._last_provider_runtime.selected_option_marketdata_provider_id if self._last_provider_runtime else None),
                 dhan_context_state=self._dhan_context_state,
@@ -1890,7 +1995,7 @@ class FeedService:
         state = M.FuturesSnapshotState(
             instrument_key=approved.instrument_key,
             ts_event_ns=future.ts_event_ns,
-            provider_id=provider_id,
+            provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"),
             provider_role=N.PROVIDER_ROLE_FUTURES_MARKETDATA,
             instrument_token=future.instrument_token,
             trading_symbol=future.trading_symbol,
@@ -1954,14 +2059,70 @@ class FeedService:
         return payload
 
     def _selected_option_member(self, frame: M.SnapshotFrame, instrument_key: str | None) -> Any:
+        # Batch 25V corrective — selected option member fallback
+        #
+        # Dhan context selected keys use normalized NFO:NIFTY<strike><CE/PE>
+        # strings, while the selected option frame members are selected live
+        # market-data members and may not resolve through _token_to_approved
+        # after broker/provider migration. Keep the original approved-map match,
+        # then fall back to deterministic side/strike/trading-symbol matching.
         if not instrument_key:
             return None
+
+        key = str(instrument_key or "").strip().upper()
+
         for member in (frame.ce_atm, frame.ce_atm1, frame.pe_atm, frame.pe_atm1):
             if member is None:
                 continue
             approved = self._token_to_approved.get(member.instrument_token)
-            if approved is not None and approved.instrument_key == instrument_key:
+            if approved is not None and str(approved.instrument_key).upper() == key:
                 return self._snapshot_member_to_dict(member)
+
+        want_side = None
+        if key.endswith("CE") or ":CE" in key:
+            want_side = "CE"
+        elif key.endswith("PE") or ":PE" in key:
+            want_side = "PE"
+
+        want_strike = None
+        digits = ""
+        for ch in reversed(key):
+            if ch.isdigit():
+                digits = ch + digits
+            elif digits:
+                break
+        if digits:
+            try:
+                # Handles NFO:NIFTY24050CE / NFO:NIFTY24050PE style keys.
+                want_strike = float(digits)
+            except Exception:
+                want_strike = None
+
+        for member in (frame.ce_atm, frame.ce_atm1, frame.pe_atm, frame.pe_atm1):
+            if member is None:
+                continue
+
+            symbol = str(getattr(member, "trading_symbol", "") or "").upper()
+            member_role = str(getattr(member, "role", "") or "").upper()
+            member_side = "CE" if ("CE" in member_role or symbol.endswith("CE")) else ("PE" if ("PE" in member_role or symbol.endswith("PE")) else None)
+
+            if want_side and member_side != want_side:
+                continue
+
+            if want_strike is not None:
+                try:
+                    member_strike = float(getattr(member, "strike", 0.0) or 0.0)
+                except Exception:
+                    member_strike = 0.0
+                if abs(member_strike - want_strike) <= 0.001:
+                    return self._snapshot_member_to_dict(member)
+
+            # Last deterministic fallback: selected normalized key embeds strike
+            # and side, while Dhan/Zerodha trading symbols embed the same values
+            # with expiry characters between NIFTY and strike.
+            if want_side and digits and digits in symbol and symbol.endswith(want_side):
+                return self._snapshot_member_to_dict(member)
+
         return None
 
     @staticmethod
@@ -2013,13 +2174,13 @@ class FeedService:
     def _derive_provider_health_states(self, *, now_ns: int) -> dict[str, M.ProviderHealthState]:
         out: dict[str, M.ProviderHealthState] = {}
         for provider_id in PROVIDER_IDS:
-            marketdata_status = self._derive_provider_marketdata_status(provider_id=provider_id, now_ns=now_ns)
+            marketdata_status = self._derive_provider_marketdata_status(provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"), now_ns=now_ns)
             adapter_hint = dict(self._adapter_health_hints.get(provider_id, {}))
             authenticated = _safe_bool(_first_value(adapter_hint, "authenticated", "auth_ok"), True)
             execution_healthy = _safe_bool(_first_value(adapter_hint, "execution_healthy", "execution_ok"), True)
-            lag_ms = self._derive_provider_lag_ms(provider_id=provider_id, now_ns=now_ns)
+            lag_ms = self._derive_provider_lag_ms(provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"), now_ns=now_ns)
             out[provider_id] = M.ProviderHealthState(
-                provider_id=provider_id,
+                provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"),
                 status=marketdata_status,
                 authenticated=authenticated,
                 stale=(marketdata_status == N.PROVIDER_STATUS_STALE),
@@ -2027,7 +2188,7 @@ class FeedService:
                 execution_healthy=execution_healthy,
                 lag_ms=lag_ms,
                 last_update_ns=now_ns,
-                message=self._provider_health_message(provider_id=provider_id, status=marketdata_status, lag_ms=lag_ms),
+                message=self._provider_health_message(provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"), status=marketdata_status, lag_ms=lag_ms),
             )
         return out
 
@@ -2438,13 +2599,21 @@ def run(context: Any) -> int:
     try:
         while not shutdown.is_set():
             try:
+                # Batch 25V corrective — refresh feeds lock before adapter polling
+                #
+                # Adapter polling can block longer than expected during provider
+                # reconnects/rate limits. Refreshing the singleton lock before
+                # external adapter calls prevents losing ownership while the
+                # service is legitimately alive.
+                service.refresh_lock_if_due()
+
                 for provider_id, surface in adapters.items():
                     adapter = surface.adapter
                     polled = adapter.poll() if hasattr(adapter, "poll") and callable(adapter.poll) else []
                     if polled is None:
                         polled = []
                     service.ingest_adapter_poll(
-                        provider_id=provider_id,
+                        provider_id=(locals().get("provider_id") or locals().get("provider") or "unknown"),
                         adapter_items=polled,
                         adapter_health=_adapter_health_hint(adapter),
                     )
@@ -2466,7 +2635,6 @@ def run(context: Any) -> int:
 
                 position_state = getattr(context, "position_state", None)
                 strategy_state = getattr(context, "strategy_state", None)
-                service.refresh_lock_if_due()
                 service.run_housekeeping_once(
                     position_state=position_state,
                     strategy_state=strategy_state,

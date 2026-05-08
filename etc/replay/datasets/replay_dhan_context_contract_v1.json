@@ -1,0 +1,40 @@
+{
+  "generated_at_utc": "2026-05-01T07:29:26.422097+00:00",
+  "laws": {
+    "dhan_context_may_be_missing_or_stale_in_scenarios": true,
+    "missing_or_stale_context_must_be_explicit_in_manifest": true,
+    "oi_iv_delta_context_is_not_silent_production_doctrine": true,
+    "production_doctrine_changed": false
+  },
+  "purpose": "Frozen Dhan option-chain/context fields for replay and research.",
+  "required_fields": [
+    "dhan_context_ts_ns",
+    "dhan_context_age_ms",
+    "chain_context_fresh",
+    "dhan_context_provider",
+    "dhan_context_status",
+    "dhan_context_stale_reason",
+    "selected_security_id",
+    "selected_tradingsymbol",
+    "selected_expiry",
+    "selected_strike",
+    "selected_option_type",
+    "strike_score",
+    "iv",
+    "iv_change",
+    "oi",
+    "oi_change",
+    "volume",
+    "delta",
+    "gamma",
+    "theta",
+    "vega",
+    "cross_strike_spread_rank",
+    "cross_strike_volume_rank",
+    "cross_strike_depth_rank",
+    "chain_best_bid",
+    "chain_best_ask",
+    "chain_spread"
+  ],
+  "schema_version": "replay_dhan_context_contract_v1"
+}

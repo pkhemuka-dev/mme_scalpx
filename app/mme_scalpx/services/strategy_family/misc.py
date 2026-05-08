@@ -217,6 +217,58 @@ def float_any(mapping: Mapping[str, Any], keys: Sequence[str], default: float = 
 # =============================================================================
 
 
+
+# BEGIN BATCH26D_STRATEGY_LEAF_REQUIRED_COMMON_SURFACE
+def _batch26d_required_common_surface(container, key, *, family="MISC", source="unknown"):
+    """
+    Batch 26D fail-closed common-surface accessor.
+
+    Required surfaces must not silently collapse to empty mappings:
+    - view.provider_runtime
+    - common.selected_option
+
+    Missing/None/empty required surfaces become explicit blockers by raising
+    RuntimeError before family eligibility can interpret absent data as safe.
+    """
+    sentinel = object()
+    value = sentinel
+
+    if container is None:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:container_none")
+
+    if isinstance(container, dict):
+        value = container.get(key, sentinel)
+    else:
+        getter = getattr(container, "get", None)
+        if callable(getter):
+            try:
+                value = getter(key, sentinel)
+            except TypeError:
+                try:
+                    value = getter(key)
+                except Exception:
+                    value = sentinel
+            except Exception:
+                value = sentinel
+
+        if value is sentinel:
+            try:
+                value = getattr(container, key)
+            except Exception:
+                value = sentinel
+
+    if value is sentinel:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:absent")
+
+    if value is None:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:none")
+
+    if isinstance(value, dict) and not value:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:empty")
+
+    return value
+# END BATCH26D_STRATEGY_LEAF_REQUIRED_COMMON_SURFACE
+
 @dataclass(frozen=True, slots=True)
 class MiscBlocker:
     code: str
@@ -472,7 +524,7 @@ def extract_stage_flags(view: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def extract_provider_runtime(view: Mapping[str, Any]) -> dict[str, Any]:
-    return as_mapping(view.get("provider_runtime"))
+    return as_mapping(_batch26d_required_common_surface(view, "provider_runtime", family="MISC", source="view"))
 
 
 def futures_block(view: Mapping[str, Any]) -> dict[str, Any]:
@@ -482,7 +534,7 @@ def futures_block(view: Mapping[str, Any]) -> dict[str, Any]:
 
 def selected_option(view: Mapping[str, Any], branch_id: str) -> dict[str, Any]:
     common = extract_common(view)
-    selected = as_mapping(common.get("selected_option"))
+    selected = as_mapping(_batch26d_required_common_surface(common, "selected_option", family="MISC", source="common"))
     branch_side = side_for_branch(branch_id)
 
     if safe_str(selected.get("side")).upper() == branch_side:
@@ -1295,4 +1347,117 @@ def evaluate(view_like: Any, branch_id: str | None = None):
         reason="all_branches_no_signal",
         metadata={"family_id": FAMILY_ID},
     )
+
+
+
+# ===== BATCH26_OI_C_FAMILY_SOFT_SCORING_ONLY START =====
+# Batch 26-OI-C freeze-final law:
+# - OI / Dhan option-ladder context is score context only in this strategy leaf.
+# - OI wall context may reduce or improve context_score.
+# - OI wall context may NOT create a hard entry blocker.
+# - No live-order promotion is introduced here.
+# - No risk/execution/Redis side effect is introduced here.
+# - Canonical OI wall calculation remains owned by strike_selection.py.
+
+_BATCH26_OI_C_FAMILY_ID = "MISC"
+_BATCH26_OI_C_SOFT_POLICY = "compression_retest_wall_context_only"
+_BATCH26_OI_C_SOFT_POLICY_DESCRIPTION = "MISC uses OI wall only as compression/retest room-quality context."
+_BATCH26_OI_C_ORIGINAL_CONTEXT_SCORE = context_score
+
+_BATCH26_OI_C_BLOCKER_TOKENS = (
+    "oi_wall",
+    "near_strong_oi_wall",
+    "hostile_near_strong_oi_wall",
+    "extreme_near_hostile_oi_wall",
+)
+
+def _batch26_oi_c_side_key(branch_id):
+    try:
+        return "call" if branch_id == BRANCH_CALL else "put"
+    except Exception:
+        text = str(branch_id or "").upper()
+        return "call" if "CALL" in text else "put"
+
+def _batch26_oi_c_as_mapping(value):
+    try:
+        return as_mapping(value)
+    except Exception:
+        return value if isinstance(value, dict) else {}
+
+def _batch26_oi_c_nested(mapping, *path):
+    try:
+        return nested(mapping, *path, default={})
+    except Exception:
+        return {}
+
+def _batch26_oi_c_has_oi_context(view, branch_id, surface):
+    side_key = _batch26_oi_c_side_key(branch_id)
+    probes = []
+
+    try:
+        probes.append(surface.get("oi_wall_context"))
+    except Exception:
+        pass
+
+    probes.append(_batch26_oi_c_nested(view, "oi_wall_context", side_key))
+    probes.append(_batch26_oi_c_nested(view, "shared_core", "oi_wall_context", side_key))
+    probes.append(_batch26_oi_c_nested(view, "shared_core", "strike_selection", "oi_wall_context", side_key))
+    probes.append(_batch26_oi_c_nested(view, "common", "cross_option", f"{side_key}_oi_wall_context"))
+
+    try:
+        if "branch_frame_key" in globals():
+            branch_key = branch_frame_key(branch_id)
+            probes.append(_batch26_oi_c_nested(view, "family_surfaces", "surfaces_by_branch", branch_key, "oi_wall_context"))
+    except Exception:
+        pass
+
+    try:
+        probes.append(_batch26_oi_c_nested(view, "family_surfaces", "families", FAMILY_ID, "branches", branch_id, "oi_wall_context"))
+    except Exception:
+        pass
+
+    for probe in probes:
+        item = _batch26_oi_c_as_mapping(probe)
+        if item:
+            return True
+
+    return False
+
+def _batch26_oi_c_reason_text(reason):
+    try:
+        return safe_str(reason, "").lower()
+    except Exception:
+        return str(reason or "").lower()
+
+def _batch26_oi_c_min_context_score():
+    try:
+        return float(MIN_CONTEXT_SCORE)
+    except Exception:
+        return 0.0
+
+def context_score(view, branch_id, surface):
+    score, passed, reason = _BATCH26_OI_C_ORIGINAL_CONTEXT_SCORE(view, branch_id, surface)
+
+    reason_text = _batch26_oi_c_reason_text(reason)
+    reason_is_oi = any(token in reason_text for token in _BATCH26_OI_C_BLOCKER_TOKENS)
+    has_oi_context = _batch26_oi_c_has_oi_context(view, branch_id, surface) or reason_is_oi
+
+    if not has_oi_context:
+        return score, passed, reason
+
+    soft_floor = _batch26_oi_c_min_context_score()
+
+    # OI-specific blockers become soft metadata and score shaping only.
+    if not passed and reason_is_oi:
+        return max(float(score), soft_floor), True, f"soft_only_{reason or 'oi_context'}"
+
+    # If canonical OI context dragged context_score below the later MIN_CONTEXT_SCORE
+    # gate, floor it to the minimum passing context so OI remains soft. The aggregate
+    # family score can still fail normally through score_below_threshold.
+    if float(score) < soft_floor:
+        return soft_floor, True, "soft_only_oi_context_floor"
+
+    return score, passed, reason
+
+# ===== BATCH26_OI_C_FAMILY_SOFT_SCORING_ONLY END =====
 

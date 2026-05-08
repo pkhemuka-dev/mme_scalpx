@@ -1,0 +1,24 @@
+BATCH 29BU-R1 FAMILY SURFACE MISMATCH REVIEW
+
+verdict: PASS_29BU_R1_FAMILY_SURFACE_MISMATCH_REVIEW_OVERSTRICT_MAPPING_CONTRACT_IDENTIFIED
+review_status: MAPPING_CONTRACT_OVERSTRICT_RICH_SURFACE_STATUS_ONLY
+family_surface_payload_parity: NOT_PROVEN_MAPPING_CONTRACT_OVERSTRICT_RICH_SURFACE_STATUS_ONLY
+family_surface_closed: false
+strict_mismatch_count: 5
+review_counts: {'mapping_contract_overstrict_rich_surface_status_gap': 5}
+all_rich_surface_gap: True
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29BU_R1
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_mismatch_review_29bu_r1/00_family_surface_mismatch_review.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_mismatch_review_29bu_r1/01_corrected_contract_plan.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_mismatch_review_29bu_r1/02_operator_summary.md
+- run/proofs/proof_family_surface_mismatch_review_29bu_r1.json
+- run/proofs/proof_family_surface_mismatch_review_29bu_r1_latest.json
+- etc/replay/parity/family_surface_mismatch_review_29bu_r1.json
+
+Next:
+Batch 29BU-R2 — build corrected family surface comparison contract excluding non-comparable rich_surface status; still no paper/live enablement.

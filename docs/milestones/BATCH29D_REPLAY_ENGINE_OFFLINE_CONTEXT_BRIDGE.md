@@ -1,0 +1,47 @@
+Batch 29D ReplayEngine offline context bridge
+
+Date: 2026-05-01
+
+Verdict:
+PASS_REPLAY_ENGINE_OFFLINE_CONTEXT_BRIDGE_READY_29D
+
+Accepted for:
+REPLAY_ENGINE_OFFLINE_CONTEXT_BRIDGE_CONTRACT_ONLY
+
+Source:
+- 29C proof: run/proofs/proof_guarded_replay_engine_adapter_29c_latest.json
+- 29C adapter root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c
+- dataset candidate root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate
+- callable output root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/explicit_offline_replay_callable_execution_28v
+
+Generated:
+- bin/replay_engine_offline_context_bridge_29d.py
+- etc/replay/parity/replay_engine_offline_context_bridge_29d.json
+- run/proofs/proof_replay_engine_offline_context_bridge_29d.json
+- run/proofs/proof_replay_engine_offline_context_bridge_29d_latest.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_offline_context_bridge_29d/
+
+Result:
+context_bridge_ready=true
+run_context_bridge_ready=true
+topology_plan_bridge_ready=true
+stage_executor_bridge_ready=true
+candidate_executed=false
+replay_core_executed=false
+replay_run_completed=false
+comparison_completed=false
+
+Safety:
+starts_services=false
+reads_live_redis=false
+writes_live_redis=false
+calls_broker_api=false
+paper_armed_approved=false
+live_trading_approved=false
+execution_arming_created=false
+real_order_sent=false
+production_doctrine_changed=false
+full_live_replay_parity=NOT_PROVEN_IN_29D
+
+Next:
+Batch 29E — materialize guarded offline ReplayEngine context objects, still not paper/live enablement.

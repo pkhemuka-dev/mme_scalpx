@@ -1,0 +1,94 @@
+{
+  "created_at_utc": "2026-05-08T17:41:41.499571+00:00",
+  "latest_proof": "/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/proof_replay_data_a7_sandbox_canonical_day_dataset_20260508T173739Z.json",
+  "local_classification": {
+    "next_batch": "REPLAY-DATA-A8",
+    "next_goal": "Audit raw tick CSV columns and map them to replay quote_only_recorded required fields.",
+    "reason": "Selector reached canonical dataset but feed-input row schema is missing ts_event/symbol/bid/ask.",
+    "verdict": "BLOCKED_SCHEMA_MAPPING_REQUIRED"
+  },
+  "mode": "ai_replay_next_batch_generate_only_no_execute",
+  "model": "gpt-5.5",
+  "proof_summary": {
+    "batch": "REPLAY-DATA-A7",
+    "canonical_root": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+    "findings": [
+      {
+        "area": "selector_probe",
+        "message": "Selector could not build a plan for canonical raw tick candidate",
+        "severity": "FAIL"
+      },
+      {
+        "area": "selector_probe",
+        "message": "Selector plan did not select source date",
+        "severity": "FAIL"
+      },
+      {
+        "area": "engine_readiness",
+        "message": "Canonical candidate is selector-ready/raw-tick-only, not engine-ready until features/strategy/risk/execution surfaces are reconstructed.",
+        "severity": "UNCLEAR"
+      }
+    ],
+    "safety": {
+      "broker_calls_executed": false,
+      "engine_execution_performed": false,
+      "live_redis_writes_executed": false,
+      "orders_sent": false,
+      "paper_or_live_enabled": false,
+      "real_live_data_mutated": false,
+      "services_started": false
+    },
+    "selector_probe": {
+      "argv": [
+        "--dataset-root",
+        "run/replay/parity/offline_materialization",
+        "--dataset-id",
+        "session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+        "--selection-mode",
+        "single_day",
+        "--single-day",
+        "2026-04-17",
+        "--doctrine-mode",
+        "locked",
+        "--scope",
+        "feeds_only",
+        "--required-file-stems",
+        "ticks_mme_fut_stream,ticks_mme_opt_stream",
+        "--optional-file-stems",
+        "health_features,source_manifest,reconstruction_todo,features_rows,strategy_decisions,risk_outputs,execution_shadow",
+        "--supported-suffixes",
+        ".csv,.json,.jsonl"
+      ],
+      "dataset_id": "session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+      "repo_root": "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+      "repo_root_exists": true,
+      "selector_error": "ValueError(\"replay feed-input row missing required fields for source_mode='quote_only_recorded': ('ts_event', 'symbol', 'bid', 'ask')\")",
+      "selector_plan_ok": false,
+      "source_date": "2026-04-17"
+    },
+    "source_date": "2026-04-17",
+    "summary": {
+      "available_dates": [],
+      "canonical_root": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+      "engine_ready": false,
+      "fail_count": 2,
+      "overall_verdict": "FAIL",
+      "recommended_next_batches": [
+        "REPLAY-DATA-A8 schema-map raw ticks/health_features into features_rows reconstruction candidate",
+        "Do not run full replay engine until features_rows, strategy_decisions, risk_outputs, and execution_shadow are reconstructed or consciously stubbed for a selector-only test."
+      ],
+      "selected_dates": [],
+      "selector_plan_ok": false,
+      "unclear_count": 1
+    },
+    "title": "Sandbox canonical day dataset from real session export ticks"
+  },
+  "safety": {
+    "calls_broker": false,
+    "enables_paper_or_live": false,
+    "executes_generated_script": false,
+    "patches_real_project": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  }
+}

@@ -1,0 +1,34 @@
+BATCH 29CG SAME-SESSION REPLAY/LIVE EVIDENCE COLLECTION CONTRACT
+
+verdict: PASS_29CG_SAME_SESSION_EVIDENCE_COLLECTION_CONTRACT_FROZEN_FULL_PARITY_NOT_PROVEN
+same_session_contract_status: FROZEN_SAME_SESSION_EVIDENCE_COLLECTION_CONTRACT_FULL_PARITY_NOT_PROVEN
+required_artifact_family_count: 7
+comparison_phase_count: 8
+contract_only: true
+live_collection_started: false
+replay_run_started: false
+comparison_started: false
+full_live_replay_parity: NOT_PROVEN_AFTER_29CG_CONTRACT_ONLY
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+paper_armed_approved: false
+live_trading_approved: false
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_evidence_contract_29cg/00_same_session_evidence_collection_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_evidence_contract_29cg/01_session_identity_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_evidence_contract_29cg/02_artifact_family_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_evidence_contract_29cg/03_comparison_phase_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_evidence_contract_29cg/04_future_same_session_manifest_template.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_evidence_contract_29cg/05_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_evidence_contract_29cg/06_operator_summary.md
+- run/proofs/proof_same_session_evidence_contract_29cg.json
+- run/proofs/proof_same_session_evidence_contract_29cg_latest.json
+- etc/replay/parity/same_session_evidence_contract_29cg.json
+
+Conclusion:
+29CG freezes the contract for future same-session replay/live evidence. It does not approve paper_armed or live trading.
+
+Next:
+Batch 29CH — build offline same-session manifest validator contract/harness; still no paper/live enablement.

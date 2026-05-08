@@ -1,0 +1,45 @@
+BATCH 29CW OFFLINE RISK OUTPUT SEMANTIC TRACE VALIDATOR CONTRACT/HARNESS
+
+verdict: PASS_29CW_OFFLINE_RISK_OUTPUT_SEMANTIC_TRACE_VALIDATOR_CONTRACT_FROZEN_SMOKE_PASS
+risk_output_semantic_trace_validator_status: FROZEN_OFFLINE_RISK_OUTPUT_SEMANTIC_TRACE_VALIDATOR_CONTRACT_AND_HARNESS_SMOKE_PASS
+smoke_ok: True
+required_artifact_count: 4
+field_family_count: 8
+comparison_mode_count: 6
+mismatch_class_count: 13
+comparison_output_required_field_count: 18
+comparison_row_required_field_count: 10
+comparison_status_value_count: 8
+risk_doctrine_law_count: 5
+contract_only: true
+offline_harness_only: true
+real_live_risk_trace_collected: false
+real_replay_risk_trace_collected: false
+risk_mapping_executed: false
+risk_semantic_comparison_started: false
+risk_semantic_comparison_completed: false
+full_live_replay_parity: NOT_PROVEN_AFTER_29CW_VALIDATOR_CONTRACT_ONLY
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+paper_armed_approved: false
+live_trading_approved: false
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_output_semantic_trace_validator_29cw/00_risk_output_semantic_trace_validator_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_output_semantic_trace_validator_29cw/01_risk_output_semantic_trace_validator_package.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_output_semantic_trace_validator_29cw/risk_output_semantic_trace_validator.py
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_output_semantic_trace_validator_29cw/valid_risk_output_semantic_report_fixture.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_output_semantic_trace_validator_29cw/invalid_risk_output_semantic_report_fixture.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_output_semantic_trace_validator_29cw/02_validator_smoke_report.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_output_semantic_trace_validator_29cw/03_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_output_semantic_trace_validator_29cw/04_operator_summary.md
+- run/proofs/proof_risk_output_semantic_trace_validator_29cw.json
+- run/proofs/proof_risk_output_semantic_trace_validator_29cw_latest.json
+- etc/replay/parity/risk_output_semantic_trace_validator_contract_29cw.json
+
+Conclusion:
+29CW freezes an offline validator contract/harness for future risk output semantic trace comparison reports. It does not approve paper_armed or live trading.
+
+Next:
+Batch 29CX — freeze risk output semantic trace precheck rollup and transition decision; still no paper/live enablement.

@@ -1,0 +1,68 @@
+{
+  "api_calls_used_estimate": 1,
+  "cycles_requested": 5,
+  "events": [
+    {
+      "cycle": 1,
+      "rc": 0,
+      "step": "mremember_before"
+    },
+    {
+      "cycle": 1,
+      "meta": {
+        "classification": "UNCLEAR_AUDIT_REQUIRED",
+        "expected_batch": "REPLAY-DATA-NEXT-AUDIT",
+        "output_script": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/outputs/20260508_191405_replay_data_next_audit_unclear_audit_required.sh",
+        "path": "ai_patch_runner/reports/20260508_191405_replay_data_next_audit_unclear_audit_required_meta.json",
+        "policy_validation_ok": true,
+        "static_validation_ok": false
+      },
+      "rc": 2,
+      "step": "mok"
+    },
+    {
+      "cycle": 1,
+      "ok": true,
+      "reason": "annotated missing safety terms: ['broker_calls_executed', 'live_redis_writes_executed', 'paper_or_live_enabled', 'engine_execution_performed', 'orders_sent']",
+      "step": "local_repair_validation_terms"
+    }
+  ],
+  "latest_meta": {
+    "classification": "UNCLEAR_AUDIT_REQUIRED",
+    "expected_batch": "REPLAY-DATA-NEXT-AUDIT",
+    "output_script": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/outputs/20260508_191405_replay_data_next_audit_unclear_audit_required.sh",
+    "path": "ai_patch_runner/reports/20260508_191405_replay_data_next_audit_unclear_audit_required_meta.json",
+    "policy_validation_ok": true,
+    "static_validation_ok": false
+  },
+  "latest_replay_proof": {
+    "all_required_surfaces_present": null,
+    "batch": "REPLAY-DATA-A18",
+    "blocker_count": 0,
+    "candidate_path": null,
+    "contract_shape_ok": null,
+    "engine_execution_performed": false,
+    "engine_ready": null,
+    "engine_ready_candidate": false,
+    "execution_shadow_semantic_ok": true,
+    "next_batch": "REPLAY-DATA-A19",
+    "path": "run/proofs/proof_replay_data_a18_execution_shadow_semantic_normalization_20260508T191103Z.json",
+    "row_count": null,
+    "row_count_parity": true,
+    "semantic_rows_nonblank": true,
+    "surface_probe_ok": null,
+    "verdict": null
+  },
+  "max_api_calls": 3,
+  "mode": "mauto_r2_bounded_offline_replay_supervisor",
+  "model": "gpt-5-mini",
+  "safety": {
+    "broker_calls_executed": false,
+    "live_redis_writes_executed": false,
+    "paper_or_live_enabled": false,
+    "real_orders_sent": false,
+    "services_started": false
+  },
+  "session_finished_utc": "2026-05-08T19:14:54.599150+00:00",
+  "session_started_utc": "2026-05-08T19:14:04.089568+00:00"
+}

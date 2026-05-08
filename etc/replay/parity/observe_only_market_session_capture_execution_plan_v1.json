@@ -1,0 +1,77 @@
+{
+  "accepted_for": "OBSERVE_ONLY_MARKET_SESSION_CAPTURE_EXECUTION_WRAPPER_ONLY",
+  "actual_live_market_capture_in_28e": false,
+  "created_at_utc": "2026-05-01T10:17:01.699149+00:00",
+  "execute_in_28e": false,
+  "execution_plan_hash": "0ff09de2985febd93cfa6c1414794f98334075959636c8108ac34ada7f1691dd",
+  "future_execution_calls_broker_api": false,
+  "future_execution_only_packages_existing_evidence_files": true,
+  "future_execution_reads_live_redis": false,
+  "future_execution_requires_confirm_observe_only": true,
+  "future_execution_requires_explicit_execute_flag": true,
+  "future_execution_requires_market_session": true,
+  "future_execution_starts_services": false,
+  "future_execution_writes_live_redis": false,
+  "market_session_status": {
+    "holiday_calendar_verified": false,
+    "market_session_open_by_time_rule": false,
+    "market_session_rule": "weekday and 09:15-15:30 IST only; holiday calendar is not verified by this local proof",
+    "now_ist": "2026-05-01T15:47:01.699062+05:30",
+    "now_utc": "2026-05-01T10:17:01.699062+00:00",
+    "schema_version": "observe_only_market_session_status_v1",
+    "time_open": false,
+    "weekday_open": true
+  },
+  "not_approved_or_not_proven_boundary": {
+    "full_live_replay_parity": "NOT_PROVEN_IN_28E",
+    "live_trading_readiness": "NOT_APPROVED_IN_28E",
+    "paper_armed_readiness": "NOT_APPROVED_IN_28E",
+    "production_doctrine_revision": "NOT_APPROVED_IN_28E",
+    "production_strategy_improvement_claim": "NOT_PROVEN_IN_28E"
+  },
+  "purpose": "Market-session-gated observe_only evidence package execution wrapper.",
+  "required_capture_evidence_items": [
+    "provider_runtime",
+    "feed_snapshot",
+    "feature_payload",
+    "family_surfaces",
+    "strategy_activation",
+    "no_order_sent",
+    "live_capture_log",
+    "live_stream_inventory",
+    "live_hash_inventory",
+    "provider_health_snapshot",
+    "selected_option_context",
+    "dhan_oi_ladder_context_if_available"
+  ],
+  "required_execution_artifacts": [
+    "00_execution_manifest.json",
+    "01_market_session_gate.json",
+    "02_execution_request.json",
+    "03_evidence_map_validation.json",
+    "04_no_enablement_boundary.json",
+    "05_operator_command_result.json",
+    "06_reproducibility.json"
+  ],
+  "required_execution_flags": [
+    "execute",
+    "confirm_observe_only",
+    "evidence_map",
+    "session_id",
+    "output_root"
+  ],
+  "safety_boundary": {
+    "broker_calls_executed": false,
+    "calls_broker_api": false,
+    "execution_arming_created": false,
+    "live_redis_writes_executed": false,
+    "live_trading_approved": false,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "observe_only_market_session_capture_execution_v1"
+}

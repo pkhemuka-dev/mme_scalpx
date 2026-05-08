@@ -1,0 +1,36 @@
+Batch 29K-R1-R2 Topology stages repair gate audit rescue close
+
+Date: 2026-05-01
+
+Verdict:
+PASS_TOPOLOGY_STAGES_REPAIR_GATE_AUDIT_RESCUE_CLOSE_29K_R1_R2
+
+Accepted for:
+TOPOLOGY_STAGES_REPAIR_GATE_AUDIT_RESCUE_CLOSE_ONLY
+
+Result:
+failure_kind=PATCH_NOT_APPLIED_PREFLIGHT_OR_NEEDLE_GATE
+repair_path=REWRITE_29K_PATCHER_WITH_DIRECT_APPEND_AND_DIRECT_EXEC_WRAPPER
+shape_confirms_no_patch=true
+shim_has_run_id=true
+shim_has_offline_topology_plan=false
+exec_has_topology_wrap_report=false
+candidate_executed=false
+replay_core_executed=false
+replay_run_completed=false
+comparison_completed=false
+
+Safety:
+starts_services=false
+reads_live_redis=false
+writes_live_redis=false
+calls_broker_api=false
+paper_armed_approved=false
+live_trading_approved=false
+execution_arming_created=false
+real_order_sent=false
+production_doctrine_changed=false
+full_live_replay_parity=NOT_PROVEN_IN_29K_R1_R2
+
+Next:
+Batch 29K-R2 — repair 29K patch gate with direct offline topology shim and guarded execute wrapper, still not paper/live enablement.

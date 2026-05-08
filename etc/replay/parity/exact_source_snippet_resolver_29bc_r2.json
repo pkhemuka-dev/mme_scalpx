@@ -1,0 +1,40 @@
+{
+  "batch": "29BC-R2",
+  "generated_at_utc": "2026-05-05T08:39:57.722968+00:00",
+  "mode": "exact_source_snippet_resolver_no_patch",
+  "safety": {
+    "batch": "29BC-R2",
+    "broker_execution_path_used": false,
+    "features_restarted": false,
+    "live_redis_write_performed_by_batch": false,
+    "order_sending_performed": false,
+    "paper_live_enablement_performed": false,
+    "production_code_patched": false,
+    "raw_patch_performed": false,
+    "redis_read_only_sampling": true,
+    "replay_patch_performed": false,
+    "snippet_resolver_only": true,
+    "strategy_restarted": false
+  },
+  "schema_version": "batch29bc_r2_config_v1",
+  "targets": [
+    "app/mme_scalpx/services/features.py",
+    "app/mme_scalpx/services/strategy.py",
+    "app/mme_scalpx/core/redisx.py",
+    "app/mme_scalpx/core/names.py"
+  ],
+  "terms": [
+    "features:mme:stream",
+    "decisions:mme:stream",
+    "family_surfaces_json",
+    "consumer_view_json",
+    "family_features_json",
+    "payload_json",
+    "decision_json",
+    "xadd",
+    "XADD",
+    "publish",
+    "append",
+    "write"
+  ]
+}

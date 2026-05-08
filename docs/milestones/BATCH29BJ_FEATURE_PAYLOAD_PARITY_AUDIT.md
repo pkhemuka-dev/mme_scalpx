@@ -1,0 +1,30 @@
+BATCH 29BJ FEATURE PAYLOAD PARITY AUDIT
+
+generated_at_utc: 2026-05-02T10:06:31.328823+00:00
+verdict: PASS_29BJ_FEATURE_PAYLOAD_PARITY_AUDIT_MAPPING_READY
+proof_29bi_valid: True
+compile_ok: True
+safety_ok: True
+audit_status: FEATURE_PAYLOAD_REPLAY_REFERENCE_MAPPING_READY
+feature_payload_parity: NOT_PROVEN_MAPPING_READY
+candidate_count: 80
+replay_candidate_count: 74
+reference_candidate_count: 80
+selected_replay_artifact: etc/replay/parity/observe_only_replay_live_parity_manifest_28i.json
+selected_reference_artifact: etc/replay/parity/observe_only_replay_live_parity_manifest_28i.json
+common_field_count: 6
+concrete_comparable_field_count: 6
+comparison_mapping_ready: True
+full_live_replay_parity: NOT_PROVEN_IN_29BJ
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BK — map feature payload replay/reference comparable fields and define comparison contract; still no paper/live enablement.
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_parity_audit_29bj/00_feature_payload_candidate_inventory.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_parity_audit_29bj/01_selected_feature_payload_artifacts.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_parity_audit_29bj/02_feature_payload_mapping_readiness.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_parity_audit_29bj/03_next_batch_29bk_contract.json
+- run/proofs/proof_feature_payload_parity_audit_29bj.json
+- run/proofs/proof_feature_payload_parity_audit_29bj_latest.json
+
+Files changed: none

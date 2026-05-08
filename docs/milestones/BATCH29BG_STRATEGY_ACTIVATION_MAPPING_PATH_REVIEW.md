@@ -1,0 +1,26 @@
+BATCH 29BG STRATEGY ACTIVATION MAPPING PATH REVIEW
+
+generated_at_utc: 2026-05-02T10:00:45.046374+00:00
+verdict: PASS_29BG_CORRECTED_COMPARISON_CONTRACT_SUPPORTED_EXCLUDE_METADATA_LABELS
+review_status: CORRECTED_CONTRACT_SUPPORTED
+proof_29bf_valid: True
+compile_ok: True
+safety_ok: True
+selected_reference_artifact: etc/replay/parity/observe_only_replay_live_parity_manifest_28i.json
+approved_comparable_fields: ['replay_run_completed']
+excluded_fields: ['activation', 'family']
+corrected_contract_status: SUPPORTED_EXCLUDE_METADATA_LABEL_MISMATCHES
+strategy_activation_value_parity: NOT_PROVEN_CORRECTED_CONTRACT_READY
+full_live_replay_parity: NOT_PROVEN_IN_29BG
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BH — execute corrected strategy activation comparison excluding metadata-label fields; still no production patch.
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_mapping_path_review_29bg/00_activation_family_mapping_path_review.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_mapping_path_review_29bg/01_corrected_strategy_activation_comparison_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_mapping_path_review_29bg/02_corrected_contract_decision.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_mapping_path_review_29bg/03_next_batch_29bh_contract.json
+- run/proofs/proof_strategy_activation_mapping_path_review_29bg.json
+- run/proofs/proof_strategy_activation_mapping_path_review_29bg_latest.json
+
+Files changed: none

@@ -1,0 +1,24 @@
+# 26-O23-P-R6B-R3 — R6B-R2 null-reason correction / field-variable publisher patch
+
+- generated_at_utc: `2026-05-08T09:40:06.242115+00:00`
+- final_verdict: `FAIL_O23_P_R6B_R3_FIELDVAR_FEATURE_PUBLISHER_PATCH_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written', 'summary_written']`
+- latest_r6b_r2: `run/proofs/proof_batch26o23_p_r6b_r2_feature_publisher_patch_latest.json`
+- r6b_r2_expected_failure: `True`
+- latest_r6a_r3: `run/proofs/proof_batch26o23_p_r6a_r3_null_reason_artifact_correction_latest.json`
+- r6a_r3_pass: `True`
+- patch_allowed: `True`
+- patch_applied: `True`
+- already_present: `False`
+- patch_blocked: `False`
+- patch_reason: `inserted field-variable-aware family payload mirror before active xadd`
+- patched_file: `app/mme_scalpx/services/features.py`
+- patch_marker_present_after: `True`
+- compile_ok: `True`
+- import_ok: `True`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- no service start / no paper / no real-live / no broker call / no order write: `True`
+- next_recommended_batch: `Inspect R6B-R3 false_keys/source inspection; do not run services until patch is proven.`

@@ -1,0 +1,35 @@
+BATCH 29AM STRICT SEMANTIC SOFT MISMATCH REVIEW
+
+generated_at_utc: 2026-05-02T07:03:22.418021+00:00
+verdict: PASS_STRICT_SEMANTIC_SOFT_MISMATCH_REVIEW_29AM
+mismatch_table_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strict_semantic_mismatch_table_execution_29al/00_strict_semantic_mismatch_rows.json
+soft_review_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strict_semantic_soft_mismatch_review_29am/00_soft_mismatch_review.json
+soft_review_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strict_semantic_soft_mismatch_review_29am/01_soft_mismatch_review.csv
+soft_mismatch_count: 3
+provider_feature_soft_fail_count: 3
+hard_fail_count: 0
+required_unknown_count: 0
+strict_safety_parity_pass: True
+strict_strategy_hold_parity_pass: True
+strict_provider_feature_parity_pass: False
+soft_review_completed: True
+full_live_replay_parity: NOT_PROVEN_IN_29AM
+repair_path: PROVIDER_FEATURE_MAPPING_CONTRACT_READY
+next_batch: Batch 29AN — freeze provider-feature semantic mapping contract for optional SOFT rows; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_strict_semantic_soft_mismatch_review_29am.json
+- run/proofs/proof_strict_semantic_soft_mismatch_review_29am_latest.json
+- run/proofs/batch29am_strict_semantic_soft_mismatch_review_20260502_123322_driver_proof.json
+- etc/replay/parity/strict_semantic_soft_mismatch_review_29am.json

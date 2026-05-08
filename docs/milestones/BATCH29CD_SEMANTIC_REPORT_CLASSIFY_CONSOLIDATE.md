@@ -1,0 +1,25 @@
+BATCH 29CD SEMANTIC COMPARISON REPORT CLASSIFICATION AND CONSOLIDATION
+
+verdict: PASS_29CD_SEMANTIC_REPORT_SURFACE_CONSOLIDATED_NEXT_ROLLUP_SELECTED
+classification_status: NO_MAPPED_CONTEXT_MISMATCH
+semantic_comparison_report_surface: PROVEN_FOR_MAPPED_SEMANTIC_REPORT_CONTEXT_FIELDS_ONLY
+semantic_report_surface_closed: True
+closed_scope: mapped semantic/report readiness-context fields only
+selected_next_surface: final_replay_live_parity_boundary_rollup
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29CD
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_classify_consolidate_29cd/00_semantic_report_classification.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_classify_consolidate_29cd/01_semantic_report_consolidation.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_classify_consolidate_29cd/02_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_classify_consolidate_29cd/03_next_surface_29ce_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_classify_consolidate_29cd/04_operator_summary.md
+- run/proofs/proof_semantic_report_classify_consolidate_29cd.json
+- run/proofs/proof_semantic_report_classify_consolidate_29cd_latest.json
+- etc/replay/parity/semantic_report_classify_consolidate_29cd.json
+
+Next:
+Batch 29CE — final replay/live parity boundary rollup and continuation decision; still no paper/live enablement.

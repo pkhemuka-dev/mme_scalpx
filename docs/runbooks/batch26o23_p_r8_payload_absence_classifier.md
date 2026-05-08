@@ -1,0 +1,22 @@
+# 26-O23-P-R8 — R7 payload absence classifier / hash-source trace
+
+- generated_at_utc: `2026-05-08T09:44:50.401433+00:00`
+- final_verdict: `FAIL_O23_P_R8_PAYLOAD_ABSENCE_CLASSIFIER_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written', 'summary_written']`
+- latest_r7: `run/proofs/proof_batch26o23_p_r7_readonly_payload_verify_latest.json`
+- r7_verdict: `FAIL_O23_P_R7_READONLY_PAYLOAD_PUBLICATION_NOT_PROVEN`
+- r7_false_keys: `['family_features_json_seen', 'family_payload_json_valid', 'family_surfaces_json_seen', 'patch_marker_stream_seen']`
+- r7_expected_failure: `True`
+- classification: `FEATURE_STREAM_SOURCE_LACKS_FAMILY_JSON_AT_PUBLICATION_TIME_DECISION_STREAM_HAS_ACTIVATION_REPORT`
+- hash_has_family_payload: `False`
+- hash_has_valid_family_payload: `False`
+- feature_stream_has_family_like: `False`
+- decision_stream_has_activation_report: `True`
+- decision_stream_has_family_json: `False`
+- source_patch_applied: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- no service start / no paper / no real-live / no broker call / no order write: `True`
+- next_recommended_batch: `26-O23-P-R9 patch feature publisher to derive canonical family JSON from activation_report_json / decision-side family evidence or move canonical payload publication to strategy decision stream; exact audit first, no paper/live.`

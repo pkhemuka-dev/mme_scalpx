@@ -1,0 +1,23 @@
+{
+  "batch": "27D",
+  "broker_calls_allowed": false,
+  "created_at_utc": "2026-05-01T09:06:29.793690+00:00",
+  "created_by": "Batch 27N-R2C acceptance inventory backfill",
+  "execution_arming_created": false,
+  "full_live_replay_parity": "NOT_PROVEN_IN_27N",
+  "inventory_backfill": true,
+  "live_redis_writes_allowed": false,
+  "live_trading_approved": false,
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "real_order_intent_allowed": false,
+  "replay_only": true,
+  "schema_version": "replay_dataset_contract_v1",
+  "source_proof": {
+    "exists": true,
+    "ok_field": "dataset_contract_ok",
+    "ok_field_value": true,
+    "path": "run/proofs/proof_replay_dataset_contract_expansion_latest.json",
+    "verdict": "PASS_REPLAY_DATASET_CONTRACT_EXPANSION"
+  }
+}

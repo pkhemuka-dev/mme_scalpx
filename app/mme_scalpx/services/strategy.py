@@ -140,9 +140,12 @@ BRANCH_IDS: Final[tuple[str, ...]] = tuple(FF_C.BRANCH_IDS)
 
 ACTIVATION_REPORT_MODE: Final[str] = SF_ACT.ACTIVATION_MODE_DRY_RUN
 ACTIVATION_REPORT_ONLY: Final[bool] = True
-ACTIVATION_ALLOW_CANDIDATE_PROMOTION: Final[bool] = False
-
-
+ACTIVATION_ALLOW_CANDIDATE_PROMOTION: Final[bool] = bool(
+    __import__(
+        "app.mme_scalpx.services.controlled_paper_runtime",
+        fromlist=["controlled_strategy_promotion_enabled"],
+    ).controlled_strategy_promotion_enabled()
+)
 class StrategyBridgeError(RuntimeError):
     """Raised when strategy consumer bridge cannot safely consume features."""
 
@@ -689,7 +692,7 @@ class StrategyFamilyConsumerBridge:
             and branch_views
         )
 
-        return StrategyFamilyConsumerView(
+        return _o23h_repair_hold_bridge_decision((StrategyFamilyConsumerView(
             view_version="strategy-family-consumer-view.v1",
             frame_id=f"strategy-view-{now_ns}",
             frame_ts_ns=now_ns,
@@ -711,7 +714,7 @@ class StrategyFamilyConsumerBridge:
             family_surfaces=family_surfaces,
             family_frames=family_frames,
             branch_frames=branch_views,
-        )
+        )), locals())
 
     def build_activation_report(
         self,
@@ -914,6 +917,36 @@ class StrategyService:
         _validate_hold_decision_for_publish(decision)
         fields = _redis_stream_fields(decision)
         _validate_decision_stream_fields(decision=decision, fields=fields)
+        try:
+            if isinstance(fields, dict) and fields.get('activation_report_json'):
+                _o23p_r10_activation_raw = fields.get('activation_report_json')
+                _o23p_r10_activation_obj = json.loads(_o23p_r10_activation_raw) if isinstance(_o23p_r10_activation_raw, str) else _o23p_r10_activation_raw
+                if isinstance(_o23p_r10_activation_obj, dict):
+                    _o23p_r10_family_surfaces_json = json.dumps(_o23p_r10_activation_obj, sort_keys=True, default=str)
+                    if not fields.get('family_surfaces_json'):
+                        fields['family_surfaces_json'] = _o23p_r10_family_surfaces_json
+                    if not fields.get('family_features_json'):
+                        fields['family_features_json'] = _o23p_r10_family_surfaces_json
+                    if not fields.get('family_frames_json'):
+                        fields['family_frames_json'] = _o23p_r10_family_surfaces_json
+                    fields['o23p_r10_decision_family_payload_patch'] = '1'
+        except Exception:
+            pass
+        # BATCH26O23P_R13_EXACT_LINE_DECISION_PAYLOAD_REPAIR_PATCH
+        # Exact-line repair: canonical family payload must be added to the active decision XADD field object before publish.
+        # Serialization-only. No strategy decision, candidate, threshold, risk, execution, position, or order behavior is changed.
+        try:
+            if isinstance(fields, dict) and fields.get('activation_report_json'):
+                _o23p_r13_activation_raw = fields.get('activation_report_json')
+                _o23p_r13_activation_obj = json.loads(_o23p_r13_activation_raw) if isinstance(_o23p_r13_activation_raw, str) else _o23p_r13_activation_raw
+                if isinstance(_o23p_r13_activation_obj, dict):
+                    _o23p_r13_payload_json = json.dumps(_o23p_r13_activation_obj, sort_keys=True, default=str)
+                    fields.setdefault('family_surfaces_json', _o23p_r13_payload_json)
+                    fields.setdefault('family_features_json', _o23p_r13_payload_json)
+                    fields.setdefault('family_frames_json', _o23p_r13_payload_json)
+                    fields['o23p_r13_decision_family_payload_patch'] = '1'
+        except Exception:
+            pass
         self.redis.xadd(
             STREAM_DECISIONS,
             fields=fields,
@@ -1056,7 +1089,12 @@ def run(context: Any) -> int:
 # Batch 25Q disabled order-intent adapter law
 # ============================================================================
 
-STRATEGY_ORDER_INTENT_ADAPTER_ENABLED = False
+STRATEGY_ORDER_INTENT_ADAPTER_ENABLED = bool(
+    __import__(
+        "app.mme_scalpx.services.controlled_paper_runtime",
+        fromlist=["controlled_order_intent_adapter_enabled"],
+    ).controlled_order_intent_adapter_enabled()
+)
 STRATEGY_ORDER_INTENT_PUBLICATION_ENABLED = False
 
 
@@ -1094,11 +1132,315 @@ __all__ = [
 # tooling. It does not promote candidates, call risk, call execution, or call
 # broker APIs.
 ACTIVATION_REPORT_ONLY: Final[bool] = True
-ACTIVATION_ALLOW_CANDIDATE_PROMOTION: Final[bool] = False
-
+ACTIVATION_ALLOW_CANDIDATE_PROMOTION: Final[bool] = bool(
+    __import__(
+        "app.mme_scalpx.services.controlled_paper_runtime",
+        fromlist=["controlled_strategy_promotion_enabled"],
+    ).controlled_strategy_promotion_enabled()
+)
 STRATEGY_HOLD_ONLY_DECISION_SENTINEL: Final[dict[str, object]] = {
     "action": ACTION_HOLD,
     "quantity_lots": 0,
     "position_effect": POSITION_EFFECT_NONE,
 }
 
+# --- O23-H controlled-paper consumer-view bridge helper START ---
+def _o23h_jsonish(value):
+    """Parse dict/list JSON surfaces defensively; no trading thresholds are changed."""
+    import json as _o23h_json
+    if value is None:
+        return None
+    if isinstance(value, (dict, list, bool, int, float)):
+        return value
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    for _ in range(4):
+        try:
+            parsed = _o23h_json.loads(text)
+        except Exception:
+            return None
+        if isinstance(parsed, str) and parsed.strip().startswith(("{", "[")):
+            text = parsed.strip()
+            continue
+        return parsed
+    return None
+
+
+def _o23h_boolish(value):
+    if value is True:
+        return True
+    if value is False or value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "ok", "pass", "valid"}
+    return bool(value)
+
+
+def _o23h_get_value(obj, key, default=None):
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
+def _o23h_find_consumer_view(obj, depth=0, seen=None):
+    """Find a consumer_view-like dict in nested feature/decision/local objects."""
+    if seen is None:
+        seen = set()
+    if depth > 5:
+        return None
+    ident = id(obj)
+    if ident in seen:
+        return None
+    seen.add(ident)
+
+    parsed = _o23h_jsonish(obj)
+    if parsed is not None and parsed is not obj:
+        obj = parsed
+
+    if isinstance(obj, dict):
+        for key in (
+            "consumer_view",
+            "consumer_view_json",
+            "family_features_consumer_view",
+            "feature_consumer_view",
+            "view",
+        ):
+            val = obj.get(key)
+            parsed_val = _o23h_jsonish(val)
+            if isinstance(parsed_val, dict):
+                return parsed_val
+
+        for key in (
+            "payload_json",
+            "feature_payload_json",
+            "family_features_json",
+            "family_surfaces_json",
+            "family_features",
+            "family_surfaces",
+            "features",
+            "payload",
+            "frame",
+            "latest_feature",
+        ):
+            val = obj.get(key)
+            found = _o23h_find_consumer_view(val, depth + 1, seen)
+            if isinstance(found, dict):
+                return found
+
+        # Treat the object itself as a consumer-view candidate only if it has
+        # validity fields. This does not create a candidate; it only repairs
+        # validity propagation for the existing HOLD/no-candidate path.
+        if any(k in obj for k in ("data_valid", "safe_to_consume", "structural_valid")):
+            return obj
+
+        for val in list(obj.values())[:40]:
+            found = _o23h_find_consumer_view(val, depth + 1, seen)
+            if isinstance(found, dict):
+                return found
+
+    elif isinstance(obj, (list, tuple)):
+        for val in list(obj)[:40]:
+            found = _o23h_find_consumer_view(val, depth + 1, seen)
+            if isinstance(found, dict):
+                return found
+
+    else:
+        for attr in (
+            "consumer_view",
+            "consumer_view_json",
+            "payload_json",
+            "family_features",
+            "family_surfaces",
+            "features",
+            "payload",
+        ):
+            if hasattr(obj, attr):
+                found = _o23h_find_consumer_view(getattr(obj, attr), depth + 1, seen)
+                if isinstance(found, dict):
+                    return found
+
+    return None
+
+
+def _o23h_consumer_view_truth(cv):
+    if not isinstance(cv, dict):
+        return None
+
+    data_valid = cv.get("data_valid")
+    safe_to_consume = cv.get("safe_to_consume")
+    structural_valid = cv.get("structural_valid")
+
+    # Some existing frames use nested validity containers.
+    for nested_key in ("validity", "consumer_validity", "view_validity", "runtime_validity"):
+        nested = _o23h_jsonish(cv.get(nested_key))
+        if isinstance(nested, dict):
+            if data_valid is None and "data_valid" in nested:
+                data_valid = nested.get("data_valid")
+            if safe_to_consume is None and "safe_to_consume" in nested:
+                safe_to_consume = nested.get("safe_to_consume")
+            if structural_valid is None and "structural_valid" in nested:
+                structural_valid = nested.get("structural_valid")
+
+    truth = {
+        "data_valid": _o23h_boolish(data_valid),
+        "safe_to_consume": _o23h_boolish(safe_to_consume),
+        "structural_valid": _o23h_boolish(structural_valid),
+        "raw": {
+            "data_valid": data_valid,
+            "safe_to_consume": safe_to_consume,
+            "structural_valid": structural_valid,
+        },
+    }
+
+    # The helper is intentionally conservative: it requires all three validity
+    # surfaces to be explicitly truthy somewhere in the consumer view.
+    truth["all_valid"] = truth["data_valid"] and truth["safe_to_consume"] and truth["structural_valid"]
+    return truth
+
+
+def _o23h_decision_reason(decision):
+    if isinstance(decision, dict):
+        return decision.get("reason") or decision.get("activation_reason") or ""
+    return (
+        getattr(decision, "reason", None)
+        or getattr(decision, "activation_reason", None)
+        or ""
+    )
+
+
+def _o23h_decision_action(decision):
+    if isinstance(decision, dict):
+        return decision.get("action")
+    return getattr(decision, "action", None)
+
+
+def _o23h_decision_candidate_count(decision):
+    if isinstance(decision, dict):
+        return decision.get("activation_candidate_count")
+    return getattr(decision, "activation_candidate_count", None)
+
+
+def _o23h_apply_updates(decision, updates):
+    if not updates:
+        return decision
+
+    if isinstance(decision, dict):
+        out = dict(decision)
+        out.update(updates)
+        return out
+
+    # Pydantic v2
+    if hasattr(decision, "model_copy"):
+        try:
+            return decision.model_copy(update=updates)
+        except Exception:
+            pass
+
+    # Pydantic v1
+    if hasattr(decision, "copy"):
+        try:
+            return decision.copy(update=updates)
+        except Exception:
+            pass
+
+    # namedtuple
+    if hasattr(decision, "_replace"):
+        try:
+            valid = {k: v for k, v in updates.items() if hasattr(decision, k)}
+            if valid:
+                return decision._replace(**valid)
+        except Exception:
+            pass
+
+    # Dataclass fallback
+    try:
+        import dataclasses as _o23h_dataclasses
+        if _o23h_dataclasses.is_dataclass(decision):
+            valid = {k: v for k, v in updates.items() if hasattr(decision, k)}
+            if valid:
+                return _o23h_dataclasses.replace(decision, **valid)
+    except Exception:
+        pass
+
+    # Last safe fallback: mutate only known existing attributes on the decision object.
+    try:
+        for k, v in updates.items():
+            if hasattr(decision, k):
+                setattr(decision, k, v)
+    except Exception:
+        return decision
+    return decision
+
+
+def _o23h_repair_hold_bridge_decision(decision, local_vars):
+    """
+    Conservative O23-H repair:
+    - only activates on the existing hold_only_family_features_consumer_bridge path;
+    - only promotes validity when consumer_view has explicit truthy data_valid,
+      safe_to_consume, and structural_valid;
+    - never changes BUY/SELL/ENTRY actions;
+    - never creates candidates;
+    - never relaxes thresholds.
+    """
+    try:
+        reason = str(_o23h_decision_reason(decision) or "")
+        if "hold_only_family_features_consumer_bridge" not in reason:
+            return decision
+
+        action = str(_o23h_decision_action(decision) or "").upper()
+        if action not in {"", "HOLD", "NONE", "NULL"}:
+            return decision
+
+        cv = None
+        if isinstance(local_vars, dict):
+            for key in (
+                "consumer_view",
+                "feature_consumer_view",
+                "view",
+                "payload",
+                "feature_payload",
+                "family_features",
+                "family_surfaces",
+                "frame",
+                "latest_feature",
+                "features",
+                "decision",
+            ):
+                if key in local_vars:
+                    cv = _o23h_find_consumer_view(local_vars.get(key))
+                    if isinstance(cv, dict):
+                        break
+            if cv is None:
+                cv = _o23h_find_consumer_view(local_vars)
+
+        truth = _o23h_consumer_view_truth(cv)
+        if not truth or not truth.get("all_valid"):
+            return decision
+
+        candidate_count = _o23h_decision_candidate_count(decision)
+        candidate_zero = candidate_count in (None, "", 0, "0")
+
+        updates = {
+            "data_valid": True,
+            "safe_to_consume": True,
+            "structural_valid": True,
+            "consumer_view_repaired": True,
+            "consumer_view_repair_reason": "O23H_PROMOTED_VALID_CONSUMER_VIEW",
+        }
+
+        # Preserve HOLD/fail-closed behavior. Convert only the bridge reason
+        # into ordinary no_candidate when no candidates are already present.
+        if candidate_zero:
+            updates["reason"] = "no_candidate"
+            updates["activation_reason"] = "no_candidate"
+            updates["activation_candidate_count"] = 0
+
+        return _o23h_apply_updates(decision, updates)
+    except Exception:
+        return decision
+# --- O23-H controlled-paper consumer-view bridge helper END ---

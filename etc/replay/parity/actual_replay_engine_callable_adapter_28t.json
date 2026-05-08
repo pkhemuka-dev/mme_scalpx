@@ -1,0 +1,2660 @@
+{
+  "accepted_for": "ACTUAL_REPLAY_ENGINE_CALLABLE_DISCOVERY_AND_ADAPTER_CONTRACT_ONLY",
+  "adapter_result": {
+    "accepted_for": "ACTUAL_REPLAY_ENGINE_CALLABLE_DISCOVERY_AND_ADAPTER_CONTRACT_ONLY",
+    "callable_adapter_ready": false,
+    "calls_broker_api": false,
+    "candidate_count": 0,
+    "comparison_completed": false,
+    "execution_arming_created": false,
+    "full_live_replay_parity": "NOT_PROVEN_IN_28T",
+    "live_trading_approved": false,
+    "missing_surfaces": [],
+    "next_batch": "Batch 28U \u2014 repair replay callable surface or add explicit offline replay callable, still not paper/live enablement.",
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_engine_invoked": false,
+    "replay_run_completed": false,
+    "schema_version": "actual_replay_engine_callable_adapter_result_28t_v1",
+    "selected_callable": null,
+    "starts_services": false,
+    "writes_live_redis": false,
+    "written_count": 6
+  },
+  "batch": "28T",
+  "broker_call_reachable": false,
+  "broker_calls_executed": false,
+  "callable_adapter_ready": false,
+  "callable_adapter_script": "bin/actual_replay_engine_callable_adapter_28t.py",
+  "callable_adapter_script_sha256": "6565123db47b8fdb4edb9bd9a7839c3c67d96858c489265175c0cf099e52bebf",
+  "callable_adapter_static": {
+    "broker_or_enablement_hits": [],
+    "ok": true,
+    "path": "bin/actual_replay_engine_callable_adapter_28t.py",
+    "redis_surface_hits": [],
+    "sha256": "6565123db47b8fdb4edb9bd9a7839c3c67d96858c489265175c0cf099e52bebf"
+  },
+  "callable_artifact_states": {
+    "00_callable_adapter_manifest.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/00_callable_adapter_manifest.json",
+      "present": true,
+      "sha256": "853344a6f413336bfe9bb3fe241284c8e3b121e6d59f369290c49590e6420a39",
+      "size_bytes": 1155
+    },
+    "01_replay_callable_inventory.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/01_replay_callable_inventory.json",
+      "present": true,
+      "sha256": "4adb828db03845b9f04d816b6f29a2f249cd2c6414b9c3337f1239ab99cc5516",
+      "size_bytes": 1970
+    },
+    "02_callable_selection_report.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/02_callable_selection_report.json",
+      "present": true,
+      "sha256": "5b09b4f714f049818ae47f078af2e8c2a3e6f05f60fd1bdee9f1f567783007a5",
+      "size_bytes": 231
+    },
+    "03_dataset_bridge_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/03_dataset_bridge_contract.json",
+      "present": true,
+      "sha256": "f08ec74c5511bf3147dc4563c2053e92be4c8aa0c05b7ab53967af726d7e387e",
+      "size_bytes": 4097
+    },
+    "04_no_broker_no_live_redis_boundary.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "55aa00de34c314730a3bea021eaac32739df29bf97f728384f238f4a64c61ab4",
+      "size_bytes": 699
+    },
+    "05_next_callable_execution_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t/05_next_callable_execution_contract.json",
+      "present": true,
+      "sha256": "cf54c5ad0389969a267c380c04b4182d1a6b1e197a0926b77bba466fffccc471",
+      "size_bytes": 745
+    }
+  },
+  "callable_artifacts_ok": true,
+  "callable_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t",
+  "callable_root_replay_safe": true,
+  "calls_broker_api": false,
+  "candidate_count": 0,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "compile_callable_adapter": {
+    "args": [
+      "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+      "-m",
+      "py_compile",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/bin/actual_replay_engine_callable_adapter_28t.py"
+    ],
+    "ok": true,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "",
+    "timeout": false
+  },
+  "dataset_candidate_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "execution_arming_created": false,
+  "full_live_replay_parity": "NOT_PROVEN_IN_28T",
+  "generated_at_utc": "2026-05-01T13:21:20.127378+00:00",
+  "live_redis_write_reachable": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 28U \u2014 repair replay callable surface or add explicit offline replay callable, still not paper/live enablement.",
+  "observed_no_enablement": {
+    "exec_28s": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28m": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28n": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28q": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28r": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28s": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    }
+  },
+  "paper_armed_approved": false,
+  "preflight_ok": true,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "replay_compile_ok": true,
+  "replay_engine_invoked": false,
+  "replay_run_completed": false,
+  "run_result": {
+    "args": [
+      "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/bin/actual_replay_engine_callable_adapter_28t.py",
+      "--project-root",
+      "/home/Lenovo/scalpx/projects/mme_scalpx",
+      "--dataset-candidate-root",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+      "--output-root",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/actual_replay_callable_adapter_28t",
+      "--no-broker",
+      "--no-live-redis",
+      "--observe-only",
+      "--dry-run",
+      "--discover-only"
+    ],
+    "ok": false,
+    "returncode": 2,
+    "stderr": "",
+    "stdout": "{\n  \"accepted_for\": \"ACTUAL_REPLAY_ENGINE_CALLABLE_DISCOVERY_AND_ADAPTER_CONTRACT_ONLY\",\n  \"callable_adapter_ready\": false,\n  \"calls_broker_api\": false,\n  \"candidate_count\": 0,\n  \"comparison_completed\": false,\n  \"execution_arming_created\": false,\n  \"full_live_replay_parity\": \"NOT_PROVEN_IN_28T\",\n  \"live_trading_approved\": false,\n  \"missing_surfaces\": [],\n  \"next_batch\": \"Batch 28U \\u2014 repair replay callable surface or add explicit offline replay callable, still not paper/live enablement.\",\n  \"paper_armed_approved\": false,\n  \"production_doctrine_changed\": false,\n  \"reads_live_redis\": false,\n  \"real_order_sent\": false,\n  \"replay_engine_invoked\": false,\n  \"replay_run_completed\": false,\n  \"schema_version\": \"actual_replay_engine_callable_adapter_result_28t_v1\",\n  \"selected_callable\": null,\n  \"starts_services\": false,\n  \"writes_live_redis\": false,\n  \"written_count\": 6\n}\n",
+    "timeout": false
+  },
+  "runtime_promotion_reachable": false,
+  "schema_version": "actual_replay_engine_callable_adapter_28t_v1",
+  "selected_callable": null,
+  "starts_services": false,
+  "static_inventory": {
+    "app/mme_scalpx/replay/dataset.py": {
+      "broker_or_enablement_tokens": [],
+      "classes": [
+        {
+          "lineno": 52,
+          "name": "ReplayDatasetError"
+        },
+        {
+          "lineno": 56,
+          "name": "ReplayDatasetNotFoundError"
+        },
+        {
+          "lineno": 60,
+          "name": "ReplayDatasetValidationError"
+        },
+        {
+          "lineno": 64,
+          "name": "ReplayDatasetFormatError"
+        },
+        {
+          "lineno": 69,
+          "name": "DatasetDiscoveryConfig"
+        },
+        {
+          "lineno": 83,
+          "name": "ReplayFileSummary"
+        },
+        {
+          "lineno": 98,
+          "name": "ReplayDayCoverage"
+        },
+        {
+          "lineno": 111,
+          "name": "ReplayTradingDay"
+        },
+        {
+          "lineno": 122,
+          "name": "ReplayDatasetSummary"
+        },
+        {
+          "lineno": 142,
+          "name": "ReplayDatasetRepository"
+        }
+      ],
+      "functions": [
+        {
+          "args": [
+            "config"
+          ],
+          "lineno": 424,
+          "name": "discover_replay_dataset"
+        },
+        {
+          "args": [
+            "dataset_summary"
+          ],
+          "lineno": 435,
+          "name": "load_replay_dataset_declaration_for_summary"
+        },
+        {
+          "args": [
+            "dataset_summary"
+          ],
+          "lineno": 487,
+          "name": "attach_replay_dataset_declaration_to_dataset_summary"
+        },
+        {
+          "args": [
+            "dataset_summary"
+          ],
+          "lineno": 516,
+          "name": "load_replay_dataset_capability_profile_for_summary"
+        },
+        {
+          "args": [
+            "dataset_summary"
+          ],
+          "lineno": 548,
+          "name": "attach_replay_dataset_readiness_verdict_to_dataset_summary"
+        },
+        {
+          "args": [
+            "dataset_summary"
+          ],
+          "lineno": 611,
+          "name": "attach_replay_dataset_declaration_admissibility_to_dataset_summary"
+        },
+        {
+          "args": [
+            "dataset_summary"
+          ],
+          "lineno": 664,
+          "name": "attach_replay_declared_profile_field_coverage_to_dataset_summary"
+        },
+        {
+          "args": [
+            "dataset_summary"
+          ],
+          "lineno": 698,
+          "name": "attach_replay_dataset_capability_consistency_to_dataset_summary"
+        },
+        {
+          "args": [
+            "summary"
+          ],
+          "lineno": 756,
+          "name": "dataset_summary_to_dict"
+        },
+        {
+          "args": [
+            "day"
+          ],
+          "lineno": 787,
+          "name": "trading_day_to_dict"
+        },
+        {
+          "args": [
+            "summary"
+          ],
+          "lineno": 797,
+          "name": "file_summary_to_dict"
+        },
+        {
+          "args": [
+            "coverage"
+          ],
+          "lineno": 811,
+          "name": "coverage_to_dict"
+        },
+        {
+          "args": [
+            "repository",
+            "date_str"
+          ],
+          "lineno": 832,
+          "name": "_collect_observed_source_fields_for_day"
+        },
+        {
+          "args": [
+            "repository",
+            "trading_dates"
+          ],
+          "lineno": 875,
+          "name": "_collect_observed_source_fields_for_dataset"
+        },
+        {
+          "args": [
+            "config"
+          ],
+          "lineno": 891,
+          "name": "_normalize_config"
+        },
+        {
+          "args": [
+            "date_str"
+          ],
+          "lineno": 916,
+          "name": "_validate_date_str"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 929,
+          "name": "_validate_supported_suffix"
+        },
+        {
+          "args": [
+            "path",
+            "suffix"
+          ],
+          "lineno": 938,
+          "name": "_derive_counts"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 950,
+          "name": "_count_lines"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 955,
+          "name": "_count_non_empty_lines"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 960,
+          "name": "_count_csv_rows"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 966,
+          "name": "_sha256_file"
+        },
+        {
+          "args": [
+            "text"
+          ],
+          "lineno": 974,
+          "name": "_fingerprint_text"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 978,
+          "name": "_stable_json_dumps"
+        },
+        {
+          "args": [
+            "timestamp"
+          ],
+          "lineno": 982,
+          "name": "_timestamp_to_utc_iso"
+        },
+        {
+          "args": [],
+          "lineno": 986,
+          "name": "_utc_now_iso"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 1014,
+          "name": "_economics_dataset_value_present"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 1024,
+          "name": "_economics_dataset_as_mapping"
+        },
+        {
+          "args": [
+            "source",
+            "required_fields"
+          ],
+          "lineno": 1039,
+          "name": "_economics_dataset_collect_present_fields"
+        },
+        {
+          "args": [
+            "required_fields",
+            "present_fields"
+          ],
+          "lineno": 1048,
+          "name": "_economics_dataset_missing_fields"
+        },
+        {
+          "args": [
+            "recorded_policy_present",
+            "effective_policy_present",
+            "recorded_policy_required",
+            "effective_policy_required"
+          ],
+          "lineno": 1053,
+          "name": "_economics_dataset_choose_policy_path"
+        },
+        {
+          "args": [],
+          "lineno": 1080,
+          "name": "_economics_dataset_choose_source_mode"
+        },
+        {
+          "args": [
+            "recorded_surface",
+            "effective_inputs"
+          ],
+          "lineno": 1138,
+          "name": "classify_economics_source_coverage_for_dataset"
+        },
+        {
+          "args": [
+            "recorded_surface",
+            "effective_inputs"
+          ],
+          "lineno": 1215,
+          "name": "build_economics_source_summary_for_dataset"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 1246,
+          "name": "_economics_summary_collect_declared_field_names"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 1268,
+          "name": "_phase_a5_present"
+        },
+        {
+          "args": [
+            "observed_fields"
+          ],
+          "lineno": 1279,
+          "name": "_phase_a5_normalize_observed_feed_input_fields"
+        },
+        {
+          "args": [
+            "dataset_summary"
+          ],
+          "lineno": 1297,
+          "name": "classify_replay_feed_input_source_mode_for_dataset"
+        },
+        {
+          "args": [
+            "dataset_summary"
+          ],
+          "lineno": 1354,
+          "name": "attach_replay_feed_input_contract_summary_to_dataset_summary"
+        },
+        {
+          "args": [
+            "dataset_summary"
+          ],
+          "lineno": 1360,
+          "name": "build_dataset_economics_recorded_surface"
+        },
+        {
+          "args": [
+            "dataset_summary",
+            "recorded_surface",
+            "effective_inputs"
+          ],
+          "lineno": 1402,
+          "name": "attach_economics_source_summary_to_dataset_summary"
+        },
+        {
+          "args": [
+            "record"
+          ],
+          "lineno": 1444,
+          "name": "validate_mme_feature_frame_record"
+        },
+        {
+          "args": [
+            "surface"
+          ],
+          "lineno": 1452,
+          "name": "replay_dataset_required_fields"
+        },
+        {
+          "args": [],
+          "lineno": 1458,
+          "name": "replay_dataset_all_required_fields"
+        },
+        {
+          "args": [
+            "row",
+            "surface"
+          ],
+          "lineno": 1464,
+          "name": "validate_replay_dataset_row"
+        },
+        {
+          "args": [
+            "row",
+            "scenario_id"
+          ],
+          "lineno": 1489,
+          "name": "apply_replay_dataset_scenario"
+        },
+        {
+          "args": [
+            "self",
+            "config"
+          ],
+          "lineno": 147,
+          "name": "__init__"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 152,
+          "name": "root"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 156,
+          "name": "config"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 159,
+          "name": "ensure_root_exists"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 167,
+          "name": "list_trading_dates"
+        },
+        {
+          "args": [
+            "self",
+            "date_str"
+          ],
+          "lineno": 181,
+          "name": "has_trading_day"
+        },
+        {
+          "args": [
+            "self",
+            "date_str"
+          ],
+          "lineno": 185,
+          "name": "get_trading_day_path"
+        },
+        {
+          "args": [
+            "self",
+            "date_str"
+          ],
+          "lineno": 192,
+          "name": "load_trading_day"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 214,
+          "name": "load_all_trading_days"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 217,
+          "name": "build_dataset_summary"
+        },
+        {
+          "args": [
+            "self",
+            "path"
+          ],
+          "lineno": 266,
+          "name": "read_jsonl"
+        },
+        {
+          "args": [
+            "self",
+            "path"
+          ],
+          "lineno": 290,
+          "name": "iter_jsonl"
+        },
+        {
+          "args": [
+            "self",
+            "path"
+          ],
+          "lineno": 311,
+          "name": "read_json"
+        },
+        {
+          "args": [
+            "self",
+            "path"
+          ],
+          "lineno": 321,
+          "name": "read_csv_rows"
+        },
+        {
+          "args": [
+            "self",
+            "path"
+          ],
+          "lineno": 330,
+          "name": "iter_csv_rows"
+        },
+        {
+          "args": [
+            "self",
+            "path"
+          ],
+          "lineno": 339,
+          "name": "_resolve_file_path"
+        },
+        {
+          "args": [
+            "self",
+            "day_path"
+          ],
+          "lineno": 349,
+          "name": "_discover_day_files"
+        },
+        {
+          "args": [
+            "self",
+            "day_path",
+            "path"
+          ],
+          "lineno": 368,
+          "name": "_build_file_summary"
+        },
+        {
+          "args": [
+            "self",
+            "file_summaries"
+          ],
+          "lineno": 386,
+          "name": "_build_day_coverage"
+        },
+        {
+          "args": [
+            "self",
+            "path"
+          ],
+          "lineno": 418,
+          "name": "_should_ignore_path"
+        }
+      ],
+      "parse_error": null,
+      "parse_ok": true,
+      "path": "app/mme_scalpx/replay/dataset.py",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "e4b32c93c44875b75297de99eb92de1a24cdbd93141c7bd53edd511545c42bd3"
+    },
+    "app/mme_scalpx/replay/engine.py": {
+      "broker_or_enablement_tokens": [],
+      "classes": [
+        {
+          "lineno": 65,
+          "name": "ReplayEngineError"
+        },
+        {
+          "lineno": 69,
+          "name": "ReplayEngineValidationError"
+        },
+        {
+          "lineno": 73,
+          "name": "ReplayEngineStageError"
+        },
+        {
+          "lineno": 77,
+          "name": "ReplayEngineHook"
+        },
+        {
+          "lineno": 82,
+          "name": "ReplayStageExecutor"
+        },
+        {
+          "lineno": 92,
+          "name": "ReplayStageExecutionRecord"
+        },
+        {
+          "lineno": 107,
+          "name": "ReplayEngineResult"
+        },
+        {
+          "lineno": 126,
+          "name": "ReplayEngineContext"
+        },
+        {
+          "lineno": 147,
+          "name": "ReplayEngine"
+        }
+      ],
+      "functions": [
+        {
+          "args": [
+            "run_context",
+            "topology_plan"
+          ],
+          "lineno": 296,
+          "name": "execute_replay_engine"
+        },
+        {
+          "args": [
+            "result"
+          ],
+          "lineno": 319,
+          "name": "engine_result_to_dict"
+        },
+        {
+          "args": [
+            "record"
+          ],
+          "lineno": 332,
+          "name": "stage_execution_record_to_dict"
+        },
+        {
+          "args": [
+            "run_context"
+          ],
+          "lineno": 346,
+          "name": "_validate_run_context"
+        },
+        {
+          "args": [
+            "plan"
+          ],
+          "lineno": 351,
+          "name": "_validate_topology_plan"
+        },
+        {
+          "args": [
+            "current",
+            "new_state"
+          ],
+          "lineno": 362,
+          "name": "_is_valid_transition"
+        },
+        {
+          "args": [],
+          "lineno": 401,
+          "name": "_utc_now_iso"
+        },
+        {
+          "args": [
+            "summary"
+          ],
+          "lineno": 442,
+          "name": "validate_replay_stage_output_summary"
+        },
+        {
+          "args": [
+            "self",
+            "context",
+            "stage",
+            "stage_executor"
+          ],
+          "lineno": 461,
+          "name": "_batch16_execute_stage"
+        },
+        {
+          "args": [],
+          "lineno": 485,
+          "name": "replay_engine_transport_plan"
+        },
+        {
+          "args": [],
+          "lineno": 521,
+          "name": "replay_engine_feature_adapter_plan"
+        },
+        {
+          "args": [],
+          "lineno": 550,
+          "name": "replay_engine_strategy_adapter_plan"
+        },
+        {
+          "args": [],
+          "lineno": 585,
+          "name": "replay_engine_risk_execution_shadow_plan"
+        },
+        {
+          "args": [],
+          "lineno": 616,
+          "name": "replay_engine_scenario_profile_plan"
+        },
+        {
+          "args": [
+            "self",
+            "context"
+          ],
+          "lineno": 78,
+          "name": "__call__"
+        },
+        {
+          "args": [
+            "self",
+            "context",
+            "stage"
+          ],
+          "lineno": 83,
+          "name": "__call__"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 121,
+          "name": "stage_count"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 139,
+          "name": "run_id"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 143,
+          "name": "doctrine_mode"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 152,
+          "name": "__init__"
+        },
+        {
+          "args": [
+            "self",
+            "run_context",
+            "topology_plan"
+          ],
+          "lineno": 165,
+          "name": "build_context"
+        },
+        {
+          "args": [
+            "self",
+            "run_context",
+            "topology_plan"
+          ],
+          "lineno": 178,
+          "name": "execute"
+        },
+        {
+          "args": [
+            "self",
+            "context",
+            "stage",
+            "stage_executor"
+          ],
+          "lineno": 227,
+          "name": "_execute_stage"
+        },
+        {
+          "args": [
+            "self",
+            "hooks",
+            "context"
+          ],
+          "lineno": 275,
+          "name": "_run_hooks"
+        },
+        {
+          "args": [
+            "self",
+            "context",
+            "new_state"
+          ],
+          "lineno": 283,
+          "name": "_transition"
+        },
+        {
+          "args": [
+            "ctx",
+            "st"
+          ],
+          "lineno": 467,
+          "name": "guarded_executor"
+        }
+      ],
+      "parse_error": null,
+      "parse_ok": true,
+      "path": "app/mme_scalpx/replay/engine.py",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8"
+    },
+    "app/mme_scalpx/replay/injector.py": {
+      "broker_or_enablement_tokens": [],
+      "classes": [
+        {
+          "lineno": 61,
+          "name": "ReplayInjectorError"
+        },
+        {
+          "lineno": 65,
+          "name": "ReplayInjectorValidationError"
+        },
+        {
+          "lineno": 69,
+          "name": "ReplayInjectorTransportError"
+        },
+        {
+          "lineno": 73,
+          "name": "ReplayTransport"
+        },
+        {
+          "lineno": 86,
+          "name": "ReplayInjectionEvent"
+        },
+        {
+          "lineno": 99,
+          "name": "ReplayInjectionRequest"
+        },
+        {
+          "lineno": 113,
+          "name": "ReplayInjectionResult"
+        },
+        {
+          "lineno": 129,
+          "name": "ReplayInjectionBatchResult"
+        },
+        {
+          "lineno": 144,
+          "name": "ReplayInjector"
+        }
+      ],
+      "functions": [
+        {
+          "args": [
+            "event"
+          ],
+          "lineno": 234,
+          "name": "injection_event_to_dict"
+        },
+        {
+          "args": [
+            "request"
+          ],
+          "lineno": 244,
+          "name": "injection_request_to_dict"
+        },
+        {
+          "args": [
+            "result"
+          ],
+          "lineno": 255,
+          "name": "injection_result_to_dict"
+        },
+        {
+          "args": [
+            "result"
+          ],
+          "lineno": 268,
+          "name": "injection_batch_result_to_dict"
+        },
+        {
+          "args": [
+            "run_id"
+          ],
+          "lineno": 283,
+          "name": "_validate_run_id"
+        },
+        {
+          "args": [
+            "event"
+          ],
+          "lineno": 288,
+          "name": "_validate_event"
+        },
+        {
+          "args": [
+            "events"
+          ],
+          "lineno": 311,
+          "name": "_validate_event_batch"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 364,
+          "name": "_batch16_parse_event_time"
+        },
+        {
+          "args": [
+            "channel"
+          ],
+          "lineno": 381,
+          "name": "_batch16_validate_replay_channel"
+        },
+        {
+          "args": [
+            "event"
+          ],
+          "lineno": 389,
+          "name": "_validate_event"
+        },
+        {
+          "args": [
+            "events"
+          ],
+          "lineno": 395,
+          "name": "_validate_event_batch"
+        },
+        {
+          "args": [
+            "run_id"
+          ],
+          "lineno": 424,
+          "name": "replay_injector_local_transport"
+        },
+        {
+          "args": [
+            "transport"
+          ],
+          "lineno": 433,
+          "name": "replay_injector_publish_live_shape"
+        },
+        {
+          "args": [
+            "self",
+            "request"
+          ],
+          "lineno": 78,
+          "name": "publish"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 149,
+          "name": "inject_event"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 192,
+          "name": "inject_batch"
+        }
+      ],
+      "parse_error": null,
+      "parse_ok": true,
+      "path": "app/mme_scalpx/replay/injector.py",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "d32ba362be759083c4b3bfe0cc4afcbbdfcfb502e1b84539cad9f15cf565ee54"
+    },
+    "app/mme_scalpx/replay/integrity.py": {
+      "broker_or_enablement_tokens": [],
+      "classes": [
+        {
+          "lineno": 54,
+          "name": "ReplayIntegrityError"
+        },
+        {
+          "lineno": 58,
+          "name": "ReplayIntegrityValidationError"
+        },
+        {
+          "lineno": 62,
+          "name": "ReplayIntegrityCheck"
+        },
+        {
+          "lineno": 74,
+          "name": "ReplayIntegrityCheckResult"
+        },
+        {
+          "lineno": 88,
+          "name": "ReplayIntegrityBundle"
+        },
+        {
+          "lineno": 117,
+          "name": "ReplayIntegrityEvaluator"
+        }
+      ],
+      "functions": [
+        {
+          "args": [
+            "results"
+          ],
+          "lineno": 171,
+          "name": "compute_integrity_verdict"
+        },
+        {
+          "args": [
+            "run_context"
+          ],
+          "lineno": 191,
+          "name": "evaluate_integrity"
+        },
+        {
+          "args": [
+            "result"
+          ],
+          "lineno": 211,
+          "name": "integrity_check_result_to_dict"
+        },
+        {
+          "args": [
+            "bundle"
+          ],
+          "lineno": 224,
+          "name": "integrity_bundle_to_dict"
+        },
+        {
+          "args": [
+            "check_name"
+          ],
+          "lineno": 241,
+          "name": "placeholder_pass_check"
+        },
+        {
+          "args": [
+            "check_name"
+          ],
+          "lineno": 256,
+          "name": "placeholder_warn_check"
+        },
+        {
+          "args": [
+            "check_name"
+          ],
+          "lineno": 271,
+          "name": "placeholder_fail_check"
+        },
+        {
+          "args": [
+            "required_checks"
+          ],
+          "lineno": 286,
+          "name": "_normalize_required_checks"
+        },
+        {
+          "args": [
+            "check_name"
+          ],
+          "lineno": 307,
+          "name": "_validate_check_name"
+        },
+        {
+          "args": [
+            "checks",
+            "required_checks"
+          ],
+          "lineno": 314,
+          "name": "_validate_check_mapping"
+        },
+        {
+          "args": [
+            "run_context"
+          ],
+          "lineno": 331,
+          "name": "_validate_run_context"
+        },
+        {
+          "args": [
+            "results"
+          ],
+          "lineno": 336,
+          "name": "_validate_check_results"
+        },
+        {
+          "args": [
+            "result"
+          ],
+          "lineno": 352,
+          "name": "_normalize_check_result"
+        },
+        {
+          "args": [],
+          "lineno": 380,
+          "name": "_utc_now_iso"
+        },
+        {
+          "args": [
+            "result"
+          ],
+          "lineno": 419,
+          "name": "_batch16_is_placeholder_pass"
+        },
+        {
+          "args": [
+            "results"
+          ],
+          "lineno": 431,
+          "name": "compute_integrity_verdict"
+        },
+        {
+          "args": [
+            "result"
+          ],
+          "lineno": 476,
+          "name": "_batch25r1_is_placeholder_pass_result"
+        },
+        {
+          "args": [
+            "results"
+          ],
+          "lineno": 503,
+          "name": "compute_integrity_verdict"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 540,
+          "name": "replay_canonical_json"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 544,
+          "name": "replay_sha256_text"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 547,
+          "name": "replay_sha256_file"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 557,
+          "name": "replay_fingerprint"
+        },
+        {
+          "args": [],
+          "lineno": 560,
+          "name": "replay_compute_deterministic_run_id"
+        },
+        {
+          "args": [
+            "events"
+          ],
+          "lineno": 579,
+          "name": "replay_event_order_integrity"
+        },
+        {
+          "args": [],
+          "lineno": 604,
+          "name": "replay_integrity_summary"
+        },
+        {
+          "args": [
+            "self",
+            "run_context"
+          ],
+          "lineno": 69,
+          "name": "__call__"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 101,
+          "name": "check_count"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 105,
+          "name": "passed_checks"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 109,
+          "name": "warned_checks"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 113,
+          "name": "failed_checks"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 122,
+          "name": "__init__"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 130,
+          "name": "required_checks"
+        },
+        {
+          "args": [
+            "self",
+            "run_context"
+          ],
+          "lineno": 133,
+          "name": "evaluate"
+        }
+      ],
+      "parse_error": null,
+      "parse_ok": true,
+      "path": "app/mme_scalpx/replay/integrity.py",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "36eebdc84fcef136e9a006046578dc8a24e15c4d47ede543f5d7934dacf03576"
+    },
+    "app/mme_scalpx/replay/runner.py": {
+      "broker_or_enablement_tokens": [],
+      "classes": [
+        {
+          "lineno": 109,
+          "name": "ReplayRunnerError"
+        },
+        {
+          "lineno": 113,
+          "name": "ReplayRunnerValidationError"
+        },
+        {
+          "lineno": 118,
+          "name": "ReplayRunConfig"
+        },
+        {
+          "lineno": 147,
+          "name": "ReplayArtifactPlan"
+        },
+        {
+          "lineno": 180,
+          "name": "ReplayRunContext"
+        },
+        {
+          "lineno": 204,
+          "name": "ReplayRunner"
+        }
+      ],
+      "functions": [
+        {
+          "args": [],
+          "lineno": 359,
+          "name": "generate_run_id"
+        },
+        {
+          "args": [
+            "run_id"
+          ],
+          "lineno": 381,
+          "name": "validate_run_id_string"
+        },
+        {
+          "args": [],
+          "lineno": 390,
+          "name": "plan_artifacts"
+        },
+        {
+          "args": [
+            "plan"
+          ],
+          "lineno": 418,
+          "name": "artifact_plan_to_dict"
+        },
+        {
+          "args": [
+            "selection_plan",
+            "run_config"
+          ],
+          "lineno": 438,
+          "name": "build_run_context"
+        },
+        {
+          "args": [
+            "run_context"
+          ],
+          "lineno": 450,
+          "name": "build_effective_inputs_snapshot"
+        },
+        {
+          "args": [
+            "run_context"
+          ],
+          "lineno": 510,
+          "name": "build_flattened_override_payload"
+        },
+        {
+          "args": [
+            "snapshot"
+          ],
+          "lineno": 526,
+          "name": "effective_inputs_snapshot_to_dict"
+        },
+        {
+          "args": [
+            "payload"
+          ],
+          "lineno": 532,
+          "name": "flattened_override_payload_to_dict"
+        },
+        {
+          "args": [
+            "config"
+          ],
+          "lineno": 538,
+          "name": "_validate_run_config"
+        },
+        {
+          "args": [],
+          "lineno": 582,
+          "name": "_report_paths_for_mode"
+        },
+        {
+          "args": [],
+          "lineno": 603,
+          "name": "_verdict_tags_for_mode"
+        },
+        {
+          "args": [],
+          "lineno": 627,
+          "name": "_default_speed_mode"
+        },
+        {
+          "args": [],
+          "lineno": 631,
+          "name": "_default_side_mode"
+        },
+        {
+          "args": [],
+          "lineno": 635,
+          "name": "_utc_now_iso"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 644,
+          "name": "_parse_created_at"
+        },
+        {
+          "args": [
+            "created_at"
+          ],
+          "lineno": 654,
+          "name": "_run_timestamp"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 659,
+          "name": "_slug"
+        },
+        {
+          "args": [],
+          "lineno": 697,
+          "name": "replay_runner_deterministic_reset_plan"
+        },
+        {
+          "args": [],
+          "lineno": 727,
+          "name": "replay_runner_batch_artifact_plan"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 168,
+          "name": "report_paths_minimum"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 193,
+          "name": "to_dict"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 209,
+          "name": "__init__"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 213,
+          "name": "run_root"
+        },
+        {
+          "args": [
+            "self",
+            "selection_plan",
+            "run_config"
+          ],
+          "lineno": 216,
+          "name": "build_run_context"
+        },
+        {
+          "args": [
+            "self",
+            "context"
+          ],
+          "lineno": 256,
+          "name": "ensure_run_directories"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 261,
+          "name": "_build_manifest"
+        }
+      ],
+      "parse_error": null,
+      "parse_ok": true,
+      "path": "app/mme_scalpx/replay/runner.py",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "de39439819e44abed86b218493658d9ea49e6d8ebf783c2ea756df5db1ce9f35"
+    },
+    "app/mme_scalpx/replay/safety.py": {
+      "broker_or_enablement_tokens": [],
+      "classes": [
+        {
+          "lineno": 9,
+          "name": "ReplaySafetyViolation"
+        }
+      ],
+      "functions": [
+        {
+          "args": [],
+          "lineno": 104,
+          "name": "project_root"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 117,
+          "name": "_as_path"
+        },
+        {
+          "args": [
+            "path",
+            "root"
+          ],
+          "lineno": 124,
+          "name": "_is_under"
+        },
+        {
+          "args": [
+            "path",
+            "root"
+          ],
+          "lineno": 132,
+          "name": "assert_under_root"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 147,
+          "name": "assert_replay_artifact_path"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 151,
+          "name": "assert_replay_config_path"
+        },
+        {
+          "args": [
+            "key"
+          ],
+          "lineno": 155,
+          "name": "assert_replay_key"
+        },
+        {
+          "args": [
+            "runtime_mode"
+          ],
+          "lineno": 165,
+          "name": "assert_runtime_mode_not_promoted"
+        },
+        {
+          "args": [],
+          "lineno": 176,
+          "name": "assert_replay_runtime_safety"
+        },
+        {
+          "args": [],
+          "lineno": 194,
+          "name": "replay_python_paths"
+        },
+        {
+          "args": [
+            "name",
+            "prefixes"
+          ],
+          "lineno": 212,
+          "name": "_import_name_matches"
+        },
+        {
+          "args": [
+            "node"
+          ],
+          "lineno": 216,
+          "name": "_target_name"
+        },
+        {
+          "args": [
+            "node"
+          ],
+          "lineno": 224,
+          "name": "_constant_text"
+        },
+        {
+          "args": [
+            "node"
+          ],
+          "lineno": 230,
+          "name": "_receiver_text"
+        },
+        {
+          "args": [
+            "receiver"
+          ],
+          "lineno": 243,
+          "name": "_receiver_looks_like_redis"
+        },
+        {
+          "args": [
+            "paths"
+          ],
+          "lineno": 253,
+          "name": "scan_python_static_violations"
+        },
+        {
+          "args": [
+            "paths"
+          ],
+          "lineno": 430,
+          "name": "assert_no_static_violations"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 441,
+          "name": "assert_replay_module_static_safety"
+        }
+      ],
+      "parse_error": null,
+      "parse_ok": true,
+      "path": "app/mme_scalpx/replay/safety.py",
+      "present": true,
+      "redis_surface_tokens": [
+        ".set("
+      ],
+      "sha256": "381644eb6e5424f9e37406af6b468145a8b272d506c0fb75eca25572b4bd49d3"
+    },
+    "app/mme_scalpx/replay/topology.py": {
+      "broker_or_enablement_tokens": [],
+      "classes": [
+        {
+          "lineno": 44,
+          "name": "ReplayTopologyError"
+        },
+        {
+          "lineno": 48,
+          "name": "ReplayTopologyValidationError"
+        },
+        {
+          "lineno": 103,
+          "name": "ReplayStageDefinition"
+        },
+        {
+          "lineno": 116,
+          "name": "ReplayTopologyPlan"
+        },
+        {
+          "lineno": 128,
+          "name": "ReplayTopologyBuilder"
+        }
+      ],
+      "functions": [
+        {
+          "args": [
+            "scope"
+          ],
+          "lineno": 217,
+          "name": "build_topology_plan"
+        },
+        {
+          "args": [
+            "plan"
+          ],
+          "lineno": 231,
+          "name": "topology_plan_to_dict"
+        },
+        {
+          "args": [
+            "stage"
+          ],
+          "lineno": 241,
+          "name": "stage_definition_to_dict"
+        },
+        {
+          "args": [
+            "stage_order"
+          ],
+          "lineno": 251,
+          "name": "_normalize_stage_order"
+        },
+        {
+          "args": [],
+          "lineno": 272,
+          "name": "_normalize_scope_stage_map"
+        },
+        {
+          "args": [
+            "stage_name"
+          ],
+          "lineno": 328,
+          "name": "_stage_description"
+        },
+        {
+          "args": [
+            "stage_name"
+          ],
+          "lineno": 344,
+          "name": "_owns_runtime_decisioning"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 353,
+          "name": "_stable_sha256_json"
+        },
+        {
+          "args": [
+            "plan"
+          ],
+          "lineno": 383,
+          "name": "topology_replay_safety_report"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 133,
+          "name": "__init__"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 146,
+          "name": "canonical_stage_order"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 150,
+          "name": "scope_stage_map"
+        },
+        {
+          "args": [
+            "self",
+            "scope"
+          ],
+          "lineno": 153,
+          "name": "build_plan"
+        },
+        {
+          "args": [
+            "self",
+            "scope"
+          ],
+          "lineno": 180,
+          "name": "stages_for_scope"
+        },
+        {
+          "args": [
+            "self",
+            "scope",
+            "stage_name"
+          ],
+          "lineno": 185,
+          "name": "has_stage"
+        },
+        {
+          "args": [
+            "self",
+            "scope"
+          ],
+          "lineno": 188,
+          "name": "terminal_stage_for_scope"
+        },
+        {
+          "args": [
+            "self",
+            "stage_names"
+          ],
+          "lineno": 196,
+          "name": "_build_stage_definitions"
+        }
+      ],
+      "parse_error": null,
+      "parse_ok": true,
+      "path": "app/mme_scalpx/replay/topology.py",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "448cf6bd7f34f13d02768684a0807dc8b5993f493e91bff503f0d1b34e589e0c"
+    },
+    "bin/replay_compare.py": {
+      "broker_or_enablement_tokens": [],
+      "classes": [
+        {
+          "lineno": 53,
+          "name": "ReplayCompareCliError"
+        }
+      ],
+      "functions": [
+        {
+          "args": [],
+          "lineno": 57,
+          "name": "_parse_args"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 72,
+          "name": "_load_yaml_mapping"
+        },
+        {
+          "args": [
+            "path"
+          ],
+          "lineno": 85,
+          "name": "_load_json_list"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 101,
+          "name": "_bool_or_false"
+        },
+        {
+          "args": [
+            "frames"
+          ],
+          "lineno": 105,
+          "name": "_normalize_metric_frames"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 127,
+          "name": "_json_safe_value"
+        },
+        {
+          "args": [
+            "path",
+            "payload"
+          ],
+          "lineno": 149,
+          "name": "_write_json"
+        },
+        {
+          "args": [
+            "frames"
+          ],
+          "lineno": 157,
+          "name": "_index_by_frame_id"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 167,
+          "name": "_as_bool"
+        },
+        {
+          "args": [
+            "frame"
+          ],
+          "lineno": 171,
+          "name": "_normalized_side"
+        },
+        {
+          "args": [
+            "frame"
+          ],
+          "lineno": 178,
+          "name": "_normalized_leg"
+        },
+        {
+          "args": [
+            "frame"
+          ],
+          "lineno": 185,
+          "name": "_is_put_candidate"
+        },
+        {
+          "args": [
+            "frame",
+            "leg_name"
+          ],
+          "lineno": 189,
+          "name": "_is_put_leg_candidate"
+        },
+        {
+          "args": [
+            "frames"
+          ],
+          "lineno": 193,
+          "name": "_candidate_side_counts"
+        },
+        {
+          "args": [
+            "frames"
+          ],
+          "lineno": 205,
+          "name": "_put_leg_counts"
+        },
+        {
+          "args": [
+            "frame"
+          ],
+          "lineno": 217,
+          "name": "_is_reward_cost_fail"
+        },
+        {
+          "args": [],
+          "lineno": 222,
+          "name": "_build_candidate_diff"
+        },
+        {
+          "args": [],
+          "lineno": 248,
+          "name": "_build_blocker_diff"
+        },
+        {
+          "args": [],
+          "lineno": 272,
+          "name": "_build_economics_diff"
+        },
+        {
+          "args": [],
+          "lineno": 304,
+          "name": "_build_side_split"
+        },
+        {
+          "args": [],
+          "lineno": 319,
+          "name": "_build_put_leg_focus"
+        },
+        {
+          "args": [],
+          "lineno": 339,
+          "name": "_build_differential_report"
+        },
+        {
+          "args": [],
+          "lineno": 401,
+          "name": "_build_operator_verdict"
+        },
+        {
+          "args": [
+            "verdict_text"
+          ],
+          "lineno": 445,
+          "name": "_extract_decision_label"
+        },
+        {
+          "args": [],
+          "lineno": 452,
+          "name": "_write_comparison_summary_artifacts"
+        },
+        {
+          "args": [],
+          "lineno": 491,
+          "name": "main"
+        }
+      ],
+      "parse_error": null,
+      "parse_ok": true,
+      "path": "bin/replay_compare.py",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "b1f4b7cfae28ed1c21095939f2ce47a6a8bda5caf18e85df91a88cda9bc2fe92"
+    },
+    "bin/replay_run.py": {
+      "broker_or_enablement_tokens": [],
+      "classes": [
+        {
+          "lineno": 97,
+          "name": "ReplayRunCliError"
+        },
+        {
+          "lineno": 105,
+          "name": "LocalReplayTransport"
+        }
+      ],
+      "functions": [
+        {
+          "args": [],
+          "lineno": 205,
+          "name": "build_parser"
+        },
+        {
+          "args": [
+            "argv"
+          ],
+          "lineno": 268,
+          "name": "parse_args"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 272,
+          "name": "split_csv"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 278,
+          "name": "split_int_csv"
+        },
+        {
+          "args": [
+            "args"
+          ],
+          "lineno": 284,
+          "name": "build_selection_request"
+        },
+        {
+          "args": [
+            "args"
+          ],
+          "lineno": 302,
+          "name": "build_dataset_repository"
+        },
+        {
+          "args": [
+            "args"
+          ],
+          "lineno": 314,
+          "name": "build_run_config"
+        },
+        {
+          "args": [],
+          "lineno": 332,
+          "name": "build_placeholder_checks"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 344,
+          "name": "_normalize_replay_event_time"
+        },
+        {
+          "args": [
+            "record"
+          ],
+          "lineno": 391,
+          "name": "resolve_event_timestamp"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 399,
+          "name": "_phase_a4_present"
+        },
+        {
+          "args": [],
+          "lineno": 407,
+          "name": "_phase_a4_first_present"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 414,
+          "name": "_phase_a4_mapping"
+        },
+        {
+          "args": [],
+          "lineno": 420,
+          "name": "_build_replay_event_payload"
+        },
+        {
+          "args": [],
+          "lineno": 534,
+          "name": "_build_replay_event_metadata"
+        },
+        {
+          "args": [],
+          "lineno": 568,
+          "name": "build_feed_events_for_day"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 636,
+          "name": "_to_float_or_none"
+        },
+        {
+          "args": [],
+          "lineno": 647,
+          "name": "build_feature_frames_from_feed_requests"
+        },
+        {
+          "args": [
+            "frame"
+          ],
+          "lineno": 1220,
+          "name": "_resolve_strategy_action"
+        },
+        {
+          "args": [],
+          "lineno": 1271,
+          "name": "build_strategy_decisions_from_feature_frames"
+        },
+        {
+          "args": [
+            "decision"
+          ],
+          "lineno": 1308,
+          "name": "_resolve_risk_verdict"
+        },
+        {
+          "args": [],
+          "lineno": 1332,
+          "name": "build_risk_outputs_from_strategy_decisions"
+        },
+        {
+          "args": [
+            "fill_model_name"
+          ],
+          "lineno": 1371,
+          "name": "_resolve_fill_model_name"
+        },
+        {
+          "args": [
+            "risk_action"
+          ],
+          "lineno": 1377,
+          "name": "_risk_action_to_fill_side"
+        },
+        {
+          "args": [],
+          "lineno": 1383,
+          "name": "build_execution_shadow_results_from_risk_outputs"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 1467,
+          "name": "_artifact_mapping"
+        },
+        {
+          "args": [],
+          "lineno": 1473,
+          "name": "_artifact_first_present"
+        },
+        {
+          "args": [
+            "row"
+          ],
+          "lineno": 1488,
+          "name": "_artifact_extract_from_paths"
+        },
+        {
+          "args": [
+            "strategy_decisions",
+            "persisted_feature_rows"
+          ],
+          "lineno": 1512,
+          "name": "build_persisted_strategy_decisions"
+        },
+        {
+          "args": [
+            "risk_outputs",
+            "persisted_strategy_decisions"
+          ],
+          "lineno": 1642,
+          "name": "build_persisted_risk_outputs"
+        },
+        {
+          "args": [
+            "rows",
+            "key"
+          ],
+          "lineno": 1766,
+          "name": "_count_true"
+        },
+        {
+          "args": [
+            "rows",
+            "key"
+          ],
+          "lineno": 1770,
+          "name": "_count_non_null"
+        },
+        {
+          "args": [
+            "rows",
+            "key"
+          ],
+          "lineno": 1774,
+          "name": "_value_breakdown"
+        },
+        {
+          "args": [],
+          "lineno": 1789,
+          "name": "build_run_summary_payload"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 1885,
+          "name": "_run_summary_csv_scalar"
+        },
+        {
+          "args": [
+            "csv_path",
+            "payload"
+          ],
+          "lineno": 1893,
+          "name": "write_run_summary_csv"
+        },
+        {
+          "args": [
+            "feature_frames"
+          ],
+          "lineno": 1920,
+          "name": "build_persisted_feature_rows"
+        },
+        {
+          "args": [],
+          "lineno": 2139,
+          "name": "make_stage_executor"
+        },
+        {
+          "args": [
+            "argv"
+          ],
+          "lineno": 2313,
+          "name": "main"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 114,
+          "name": "__init__"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 122,
+          "name": "published_requests"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 126,
+          "name": "feature_frames"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 130,
+          "name": "strategy_decisions"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 134,
+          "name": "risk_outputs"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 138,
+          "name": "execution_shadow_results"
+        },
+        {
+          "args": [
+            "self",
+            "request"
+          ],
+          "lineno": 141,
+          "name": "publish"
+        },
+        {
+          "args": [
+            "self"
+          ],
+          "lineno": 150,
+          "name": "feed_requests"
+        },
+        {
+          "args": [
+            "self",
+            "frame"
+          ],
+          "lineno": 157,
+          "name": "publish_feature_frame"
+        },
+        {
+          "args": [
+            "self",
+            "decision"
+          ],
+          "lineno": 167,
+          "name": "publish_strategy_decision"
+        },
+        {
+          "args": [
+            "self",
+            "risk_output"
+          ],
+          "lineno": 178,
+          "name": "publish_risk_output"
+        },
+        {
+          "args": [
+            "self",
+            "execution_result"
+          ],
+          "lineno": 190,
+          "name": "publish_execution_shadow_result"
+        },
+        {
+          "args": [],
+          "lineno": 661,
+          "name": "_coalesce"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 670,
+          "name": "_mapping_keys"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 673,
+          "name": "_object_dict_keys"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 679,
+          "name": "_public_attr_names"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 693,
+          "name": "_to_mapping"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 711,
+          "name": "_json_safe_probe"
+        },
+        {
+          "args": [
+            "source",
+            "names"
+          ],
+          "lineno": 730,
+          "name": "_probe_attrs"
+        },
+        {
+          "args": [
+            "source"
+          ],
+          "lineno": 743,
+          "name": "_read"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 753,
+          "name": "_to_float"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 766,
+          "name": "_to_bool"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 780,
+          "name": "_norm_symbol"
+        },
+        {
+          "args": [
+            "symbol"
+          ],
+          "lineno": 783,
+          "name": "_classify_side_leg"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 1229,
+          "name": "_as_bool"
+        },
+        {
+          "args": [
+            "row",
+            "index"
+          ],
+          "lineno": 1532,
+          "name": "_lookup_feature_row"
+        },
+        {
+          "args": [
+            "row",
+            "index"
+          ],
+          "lineno": 1666,
+          "name": "_lookup_strategy_row"
+        },
+        {
+          "args": [],
+          "lineno": 1921,
+          "name": "_coalesce"
+        },
+        {
+          "args": [
+            "mapping"
+          ],
+          "lineno": 1927,
+          "name": "_nested"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 1935,
+          "name": "_as_bool_or_none"
+        },
+        {
+          "args": [
+            "value"
+          ],
+          "lineno": 1950,
+          "name": "_as_float_or_none"
+        },
+        {
+          "args": [
+            "context",
+            "stage"
+          ],
+          "lineno": 2150,
+          "name": "stage_executor"
+        },
+        {
+          "args": [],
+          "lineno": 1552,
+          "name": "_extract"
+        },
+        {
+          "args": [],
+          "lineno": 1558,
+          "name": "_feature"
+        },
+        {
+          "args": [],
+          "lineno": 1694,
+          "name": "_extract"
+        },
+        {
+          "args": [],
+          "lineno": 1700,
+          "name": "_strategy"
+        }
+      ],
+      "parse_error": null,
+      "parse_ok": true,
+      "path": "bin/replay_run.py",
+      "present": true,
+      "redis_surface_tokens": [],
+      "sha256": "cbda5ec8be7b18dc31cc99ae2c1af67ceda10bf84997e5af4e0beb2a16dc628d"
+    }
+  },
+  "verdict": "DEFERRED_PROVEN_REPLAY_ENGINE_CALLABLE_REQUIRED_28T",
+  "writes_live_redis": false
+}

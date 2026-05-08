@@ -1,0 +1,384 @@
+{
+  "compile_results": {
+    "ai_patch_runner/classify_run_output.py": {
+      "cmd": [
+        "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+        "-m",
+        "py_compile",
+        "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/classify_run_output.py"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    "ai_patch_runner/generate_command_package.py": {
+      "cmd": [
+        "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+        "-m",
+        "py_compile",
+        "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/generate_command_package.py"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    "ai_patch_runner/policy/check_policy.py": {
+      "cmd": [
+        "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+        "-m",
+        "py_compile",
+        "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/policy/check_policy.py"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    "ai_patch_runner/runner_health_check.py": {
+      "cmd": [
+        "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+        "-m",
+        "py_compile",
+        "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/runner_health_check.py"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": ""
+    }
+  },
+  "copied": {
+    "ai_patch_runner/classify_run_output.py": {
+      "sandbox": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/classify_run_output.py",
+      "sha256_before": "80e44d4c721c88b599276a5bde89ad5b3a3eb1a96e1a9d788e59a89d0e3a83c7",
+      "sha256_sandbox_initial": "80e44d4c721c88b599276a5bde89ad5b3a3eb1a96e1a9d788e59a89d0e3a83c7",
+      "source": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/classify_run_output.py"
+    },
+    "ai_patch_runner/generate_command_package.py": {
+      "sandbox": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/generate_command_package.py",
+      "sha256_before": "120c92eea579438ba0e3bba62ac2898061345fd5157c66640150c41e2fa4a87d",
+      "sha256_sandbox_initial": "120c92eea579438ba0e3bba62ac2898061345fd5157c66640150c41e2fa4a87d",
+      "source": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/generate_command_package.py"
+    },
+    "ai_patch_runner/policy/ai_patch_policy.json": {
+      "sandbox": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/policy/ai_patch_policy.json",
+      "sha256_before": "58b84cc604c5884cc2f6d234503e26dd3d5feaac068432d4918dd5425c4d28a6",
+      "sha256_sandbox_initial": "58b84cc604c5884cc2f6d234503e26dd3d5feaac068432d4918dd5425c4d28a6",
+      "source": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json"
+    },
+    "ai_patch_runner/policy/ai_patch_policy.md": {
+      "sandbox": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/policy/ai_patch_policy.md",
+      "sha256_before": "6d5f2bf0f582783cb3716786e3688e9cb15894390c46ddbb227468dc02796d1f",
+      "sha256_sandbox_initial": "6d5f2bf0f582783cb3716786e3688e9cb15894390c46ddbb227468dc02796d1f",
+      "source": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.md"
+    },
+    "ai_patch_runner/policy/check_policy.py": {
+      "sandbox": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/policy/check_policy.py",
+      "sha256_before": "4387f2551570a6ce6788f420ade3d59cbe8d3340e5f92fee4b6c36c16049578e",
+      "sha256_sandbox_initial": "4387f2551570a6ce6788f420ade3d59cbe8d3340e5f92fee4b6c36c16049578e",
+      "source": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/check_policy.py"
+    },
+    "ai_patch_runner/runner_health_check.py": {
+      "sandbox": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/runner_health_check.py",
+      "sha256_before": "d296de43eb0909812c4808ea22efe48ca7ed5c148e16e776eb6dd7d49b658f16",
+      "sha256_sandbox_initial": "d296de43eb0909812c4808ea22efe48ca7ed5c148e16e776eb6dd7d49b658f16",
+      "source": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/runner_health_check.py"
+    }
+  },
+  "created_at_utc": "2026-05-08T16:46:10.874845+00:00",
+  "diff": {
+    "compared": {
+      "ai_patch_runner/SANDBOX_ONLY_MARKER.md": {
+        "different": true,
+        "root_exists": false,
+        "sandbox_exists": true
+      },
+      "ai_patch_runner/classify_run_output.py": {
+        "different": false,
+        "root_exists": true,
+        "sandbox_exists": true
+      },
+      "ai_patch_runner/generate_command_package.py": {
+        "different": false,
+        "root_exists": true,
+        "sandbox_exists": true
+      },
+      "ai_patch_runner/policy/ai_patch_policy.json": {
+        "different": false,
+        "root_exists": true,
+        "sandbox_exists": true
+      },
+      "ai_patch_runner/policy/ai_patch_policy.md": {
+        "different": false,
+        "root_exists": true,
+        "sandbox_exists": true
+      },
+      "ai_patch_runner/policy/check_policy.py": {
+        "different": false,
+        "root_exists": true,
+        "sandbox_exists": true
+      },
+      "ai_patch_runner/runner_health_check.py": {
+        "different": false,
+        "root_exists": true,
+        "sandbox_exists": true
+      }
+    },
+    "diff_nonempty": true,
+    "diff_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/sandbox.diff"
+  },
+  "mode": "smoke",
+  "policy_checks": [
+    {
+      "allowed": true,
+      "command_result": {
+        "cmd": [
+          "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+          "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/check_policy.py",
+          "--path",
+          "ai_patch_runner/generate_command_package.py",
+          "--json"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\n  \"command\": null,\n  \"ok\": true,\n  \"paths\": [\n    {\n      \"allowed_auto_touch\": true,\n      \"blocked_auto_touch\": false,\n      \"human_review_required\": false,\n      \"matched_allowed_prefixes\": [\n        \"ai_patch_runner/\"\n      ],\n      \"matched_blocked_globs\": [],\n      \"matched_blocked_paths\": [],\n      \"matched_human_review_prefixes\": [],\n      \"path\": \"ai_patch_runner/generate_command_package.py\",\n      \"relative_path\": \"ai_patch_runner/generate_command_package.py\"\n    }\n  ],\n  \"policy_path\": \"/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json\",\n  \"policy_version\": \"ai_patch_runner_policy_v0.2.2\",\n  \"self_test\": null\n}\n"
+      },
+      "path": "ai_patch_runner/generate_command_package.py",
+      "payload": {
+        "command": null,
+        "ok": true,
+        "paths": [
+          {
+            "allowed_auto_touch": true,
+            "blocked_auto_touch": false,
+            "human_review_required": false,
+            "matched_allowed_prefixes": [
+              "ai_patch_runner/"
+            ],
+            "matched_blocked_globs": [],
+            "matched_blocked_paths": [],
+            "matched_human_review_prefixes": [],
+            "path": "ai_patch_runner/generate_command_package.py",
+            "relative_path": "ai_patch_runner/generate_command_package.py"
+          }
+        ],
+        "policy_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json",
+        "policy_version": "ai_patch_runner_policy_v0.2.2",
+        "self_test": null
+      }
+    },
+    {
+      "allowed": true,
+      "command_result": {
+        "cmd": [
+          "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+          "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/check_policy.py",
+          "--path",
+          "ai_patch_runner/classify_run_output.py",
+          "--json"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\n  \"command\": null,\n  \"ok\": true,\n  \"paths\": [\n    {\n      \"allowed_auto_touch\": true,\n      \"blocked_auto_touch\": false,\n      \"human_review_required\": false,\n      \"matched_allowed_prefixes\": [\n        \"ai_patch_runner/\"\n      ],\n      \"matched_blocked_globs\": [],\n      \"matched_blocked_paths\": [],\n      \"matched_human_review_prefixes\": [],\n      \"path\": \"ai_patch_runner/classify_run_output.py\",\n      \"relative_path\": \"ai_patch_runner/classify_run_output.py\"\n    }\n  ],\n  \"policy_path\": \"/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json\",\n  \"policy_version\": \"ai_patch_runner_policy_v0.2.2\",\n  \"self_test\": null\n}\n"
+      },
+      "path": "ai_patch_runner/classify_run_output.py",
+      "payload": {
+        "command": null,
+        "ok": true,
+        "paths": [
+          {
+            "allowed_auto_touch": true,
+            "blocked_auto_touch": false,
+            "human_review_required": false,
+            "matched_allowed_prefixes": [
+              "ai_patch_runner/"
+            ],
+            "matched_blocked_globs": [],
+            "matched_blocked_paths": [],
+            "matched_human_review_prefixes": [],
+            "path": "ai_patch_runner/classify_run_output.py",
+            "relative_path": "ai_patch_runner/classify_run_output.py"
+          }
+        ],
+        "policy_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json",
+        "policy_version": "ai_patch_runner_policy_v0.2.2",
+        "self_test": null
+      }
+    },
+    {
+      "allowed": true,
+      "command_result": {
+        "cmd": [
+          "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+          "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/check_policy.py",
+          "--path",
+          "ai_patch_runner/runner_health_check.py",
+          "--json"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\n  \"command\": null,\n  \"ok\": true,\n  \"paths\": [\n    {\n      \"allowed_auto_touch\": true,\n      \"blocked_auto_touch\": false,\n      \"human_review_required\": false,\n      \"matched_allowed_prefixes\": [\n        \"ai_patch_runner/\"\n      ],\n      \"matched_blocked_globs\": [],\n      \"matched_blocked_paths\": [],\n      \"matched_human_review_prefixes\": [],\n      \"path\": \"ai_patch_runner/runner_health_check.py\",\n      \"relative_path\": \"ai_patch_runner/runner_health_check.py\"\n    }\n  ],\n  \"policy_path\": \"/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json\",\n  \"policy_version\": \"ai_patch_runner_policy_v0.2.2\",\n  \"self_test\": null\n}\n"
+      },
+      "path": "ai_patch_runner/runner_health_check.py",
+      "payload": {
+        "command": null,
+        "ok": true,
+        "paths": [
+          {
+            "allowed_auto_touch": true,
+            "blocked_auto_touch": false,
+            "human_review_required": false,
+            "matched_allowed_prefixes": [
+              "ai_patch_runner/"
+            ],
+            "matched_blocked_globs": [],
+            "matched_blocked_paths": [],
+            "matched_human_review_prefixes": [],
+            "path": "ai_patch_runner/runner_health_check.py",
+            "relative_path": "ai_patch_runner/runner_health_check.py"
+          }
+        ],
+        "policy_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json",
+        "policy_version": "ai_patch_runner_policy_v0.2.2",
+        "self_test": null
+      }
+    },
+    {
+      "allowed": true,
+      "command_result": {
+        "cmd": [
+          "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+          "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/check_policy.py",
+          "--path",
+          "ai_patch_runner/policy/check_policy.py",
+          "--json"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\n  \"command\": null,\n  \"ok\": true,\n  \"paths\": [\n    {\n      \"allowed_auto_touch\": true,\n      \"blocked_auto_touch\": false,\n      \"human_review_required\": false,\n      \"matched_allowed_prefixes\": [\n        \"ai_patch_runner/\"\n      ],\n      \"matched_blocked_globs\": [],\n      \"matched_blocked_paths\": [],\n      \"matched_human_review_prefixes\": [],\n      \"path\": \"ai_patch_runner/policy/check_policy.py\",\n      \"relative_path\": \"ai_patch_runner/policy/check_policy.py\"\n    }\n  ],\n  \"policy_path\": \"/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json\",\n  \"policy_version\": \"ai_patch_runner_policy_v0.2.2\",\n  \"self_test\": null\n}\n"
+      },
+      "path": "ai_patch_runner/policy/check_policy.py",
+      "payload": {
+        "command": null,
+        "ok": true,
+        "paths": [
+          {
+            "allowed_auto_touch": true,
+            "blocked_auto_touch": false,
+            "human_review_required": false,
+            "matched_allowed_prefixes": [
+              "ai_patch_runner/"
+            ],
+            "matched_blocked_globs": [],
+            "matched_blocked_paths": [],
+            "matched_human_review_prefixes": [],
+            "path": "ai_patch_runner/policy/check_policy.py",
+            "relative_path": "ai_patch_runner/policy/check_policy.py"
+          }
+        ],
+        "policy_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json",
+        "policy_version": "ai_patch_runner_policy_v0.2.2",
+        "self_test": null
+      }
+    },
+    {
+      "allowed": true,
+      "command_result": {
+        "cmd": [
+          "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+          "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/check_policy.py",
+          "--path",
+          "ai_patch_runner/policy/ai_patch_policy.json",
+          "--json"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\n  \"command\": null,\n  \"ok\": true,\n  \"paths\": [\n    {\n      \"allowed_auto_touch\": true,\n      \"blocked_auto_touch\": false,\n      \"human_review_required\": false,\n      \"matched_allowed_prefixes\": [\n        \"ai_patch_runner/\"\n      ],\n      \"matched_blocked_globs\": [],\n      \"matched_blocked_paths\": [],\n      \"matched_human_review_prefixes\": [],\n      \"path\": \"ai_patch_runner/policy/ai_patch_policy.json\",\n      \"relative_path\": \"ai_patch_runner/policy/ai_patch_policy.json\"\n    }\n  ],\n  \"policy_path\": \"/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json\",\n  \"policy_version\": \"ai_patch_runner_policy_v0.2.2\",\n  \"self_test\": null\n}\n"
+      },
+      "path": "ai_patch_runner/policy/ai_patch_policy.json",
+      "payload": {
+        "command": null,
+        "ok": true,
+        "paths": [
+          {
+            "allowed_auto_touch": true,
+            "blocked_auto_touch": false,
+            "human_review_required": false,
+            "matched_allowed_prefixes": [
+              "ai_patch_runner/"
+            ],
+            "matched_blocked_globs": [],
+            "matched_blocked_paths": [],
+            "matched_human_review_prefixes": [],
+            "path": "ai_patch_runner/policy/ai_patch_policy.json",
+            "relative_path": "ai_patch_runner/policy/ai_patch_policy.json"
+          }
+        ],
+        "policy_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json",
+        "policy_version": "ai_patch_runner_policy_v0.2.2",
+        "self_test": null
+      }
+    },
+    {
+      "allowed": true,
+      "command_result": {
+        "cmd": [
+          "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+          "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/check_policy.py",
+          "--path",
+          "ai_patch_runner/policy/ai_patch_policy.md",
+          "--json"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "{\n  \"command\": null,\n  \"ok\": true,\n  \"paths\": [\n    {\n      \"allowed_auto_touch\": true,\n      \"blocked_auto_touch\": false,\n      \"human_review_required\": false,\n      \"matched_allowed_prefixes\": [\n        \"ai_patch_runner/\"\n      ],\n      \"matched_blocked_globs\": [],\n      \"matched_blocked_paths\": [],\n      \"matched_human_review_prefixes\": [],\n      \"path\": \"ai_patch_runner/policy/ai_patch_policy.md\",\n      \"relative_path\": \"ai_patch_runner/policy/ai_patch_policy.md\"\n    }\n  ],\n  \"policy_path\": \"/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json\",\n  \"policy_version\": \"ai_patch_runner_policy_v0.2.2\",\n  \"self_test\": null\n}\n"
+      },
+      "path": "ai_patch_runner/policy/ai_patch_policy.md",
+      "payload": {
+        "command": null,
+        "ok": true,
+        "paths": [
+          {
+            "allowed_auto_touch": true,
+            "blocked_auto_touch": false,
+            "human_review_required": false,
+            "matched_allowed_prefixes": [
+              "ai_patch_runner/"
+            ],
+            "matched_blocked_globs": [],
+            "matched_blocked_paths": [],
+            "matched_human_review_prefixes": [],
+            "path": "ai_patch_runner/policy/ai_patch_policy.md",
+            "relative_path": "ai_patch_runner/policy/ai_patch_policy.md"
+          }
+        ],
+        "policy_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json",
+        "policy_version": "ai_patch_runner_policy_v0.2.2",
+        "self_test": null
+      }
+    }
+  ],
+  "real_project_integrity": {
+    "real_marker_exists": false,
+    "real_marker_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/SANDBOX_ONLY_MARKER.md",
+    "real_project_patched": false
+  },
+  "root": "/home/Lenovo/scalpx/projects/mme_scalpx",
+  "safety": {
+    "applied_to_real_project": false,
+    "called_broker": false,
+    "enabled_paper_or_live": false,
+    "executed_generated_scripts": false,
+    "sandbox_only": true,
+    "started_services": false,
+    "wrote_live_redis": false
+  },
+  "sandbox_patch": {
+    "before_exists": false,
+    "created_or_updated": true,
+    "sha256_after": "e4f77758d88c625aa43855fa39f32e5184024a782838cf39e789ec67947dc196",
+    "target_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project/ai_patch_runner/SANDBOX_ONLY_MARKER.md",
+    "target_rel": "ai_patch_runner/SANDBOX_ONLY_MARKER.md"
+  },
+  "sandbox_patcher_version": "v0.3",
+  "sandbox_project": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/sandbox/ai_patch_runner_v03_sandbox_patcher_20260508T164610Z/project",
+  "verdict": "PASS"
+}

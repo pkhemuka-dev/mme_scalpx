@@ -1,0 +1,18 @@
+{
+  "batch": "29AT-R4",
+  "created_at_utc": "2026-05-02T07:17:10.587327+00:00",
+  "gate_state": "run/replay/parity/batch29at_r4_after_market_live_gate_consolidation_20260502_124710/after_market_live_gate_state_29at_r4.json",
+  "runbook": "docs/runbooks/BATCH29_NEXT_LIVE_SESSION_29AQ_R2_RUNBOOK.md",
+  "safety": {
+    "after_market_only": true,
+    "broker_calls_executed": false,
+    "code_patch_applied": false,
+    "comparison_execution_performed": false,
+    "consolidation_only": true,
+    "live_redis_writes_executed": false,
+    "live_trading_approved": false,
+    "paper_armed_approved": false,
+    "proof_scripts_rerun": false,
+    "replay_core_executed": false
+  }
+}

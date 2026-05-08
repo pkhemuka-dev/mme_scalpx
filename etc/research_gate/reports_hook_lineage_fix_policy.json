@@ -1,0 +1,18 @@
+{
+  "broker_io_allowed": false,
+  "important_boundary": [
+    "RAW-W labels are research lineage labels, not doctrine truth.",
+    "RAW-W does not mutate strategy, risk, execution, broker IO, Redis, or paper/live settings.",
+    "Unresolved family/side/strategy_id remain UNKNOWN.",
+    "candidate_id may be synthetic and marked raw_w_candidate_id_source=synthetic_lineage_hash."
+  ],
+  "non_live": true,
+  "non_mutating_live_runtime": true,
+  "order_sending_allowed": false,
+  "owner": "reports hook lineage fix",
+  "paper_live_enablement_allowed": false,
+  "promotion_allowed_by_raw_w": false,
+  "purpose": "Strengthen RAW-S reports hook lineage so family, side, strategy_id, and candidate_id are derived from row/source lineage where possible.",
+  "redis_live_write_allowed": false,
+  "schema_version": "RAW-W.1"
+}

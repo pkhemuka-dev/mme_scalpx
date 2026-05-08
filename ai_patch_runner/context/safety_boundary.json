@@ -1,0 +1,34 @@
+{
+  "allowed_ai_runner_actions": [
+    "read latest proof JSON",
+    "generate next replay/offline command package",
+    "write proof JSON",
+    "write milestone markdown",
+    "write compact context memory",
+    "write sandbox/candidate replay data under run/replay/parity/offline_materialization",
+    "run guarded offline replay-data command only after static and policy validation"
+  ],
+  "blocked_paths": [
+    "common/secrets/",
+    "etc/brokers/",
+    "app/mme_scalpx/main.py",
+    "app/mme_scalpx/services/execution.py",
+    "app/mme_scalpx/services/risk.py",
+    "app/mme_scalpx/integrations/"
+  ],
+  "hard_blocks": {
+    "broker_login_allowed": false,
+    "calls_broker_api": false,
+    "full_live_replay_parity": "NOT_PROVEN",
+    "live_trading_approved": false,
+    "paper_armed_approved": false,
+    "paper_live_status": "BLOCKED_NOT_IN_SCOPE",
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "redis_mutation_allowed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "updated_at_utc": "2026-05-08T19:38:47.584401+00:00",
+  "version": "mme_ai_safety_boundary_v1"
+}

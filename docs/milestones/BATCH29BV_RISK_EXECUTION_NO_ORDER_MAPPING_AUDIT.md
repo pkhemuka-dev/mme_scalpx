@@ -1,0 +1,27 @@
+BATCH 29BV RISK/EXECUTION SHADOW NO-ORDER MAPPING AUDIT
+
+verdict: DEFERRED_29BV_RISK_EXECUTION_NO_ORDER_MAPPING_NOT_READY
+risk_execution_shadow_no_order_parity: NOT_PROVEN_MAPPING_NOT_READY
+mapping_ready: False
+approved_comparable_fields: []
+approved_comparable_field_count: 0
+same_file_exclusion_passed: False
+selected_replay_artifact: run/proofs/batch27n_replay_final_acceptance_gate_20260501_142734_inspection/source_snapshot/run/proofs/proof_replay_risk_adapter_execution_shadow.json
+selected_reference_artifact: None
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29BV
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_execution_no_order_mapping_audit_29bv/00_no_order_candidate_inventory.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_execution_no_order_mapping_audit_29bv/01_selected_no_order_artifacts.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_execution_no_order_mapping_audit_29bv/02_no_order_mapping_readiness.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_execution_no_order_mapping_audit_29bv/03_next_batch_29bw_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_execution_no_order_mapping_audit_29bv/04_operator_summary.md
+- run/proofs/proof_risk_execution_no_order_mapping_audit_29bv.json
+- run/proofs/proof_risk_execution_no_order_mapping_audit_29bv_latest.json
+- etc/replay/parity/risk_execution_no_order_mapping_audit_29bv.json
+
+Next:
+Batch 29BV-R1 — repair risk/execution/no-order artifact discovery or field mapping; still no paper/live enablement.

@@ -1211,7 +1211,7 @@ _BATCH15_ORIGINAL_BUILD_SNAPSHOT = MonitorService._build_snapshot
 
 def _batch15_build_snapshot(self: MonitorService, *args: Any, **kwargs: Any) -> SystemSnapshot:
     snapshot = _BATCH15_ORIGINAL_BUILD_SNAPSHOT(self, *args, **kwargs)
-    missing = _batch15_missing_state_hashes(self.redis)
+    missing = _batch15_missing_state_hashes(self._redis)
 
     if not missing:
         diagnostics = dict(snapshot.diagnostics)

@@ -372,3 +372,32 @@ __all__ = [
     "differential_summary_to_dict",
     "differential_bundle_to_dict",
 ]
+
+# BEGIN BATCH27M_REPLAY_DIFFERENTIAL_HELPERS
+
+def replay_differential_summary_shape():
+    """Return replay-only differential summary proof boundary."""
+    return {
+        "schema_version": "replay_differential_summary_shape_v1",
+        "differential_summary_shape": "PROVEN_BY_27M",
+        "parameter_sweep_shape": "PROVEN_BY_27M",
+        "threshold_sweep_shape": "PROVEN_BY_27M",
+        "strategy_improvement_claim": "NOT_PROVEN_IN_27M",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_differential_summary_shape",
+)))
+
+# END BATCH27M_REPLAY_DIFFERENTIAL_HELPERS

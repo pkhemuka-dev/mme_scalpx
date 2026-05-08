@@ -1,0 +1,11 @@
+{
+  "broker_io_allowed": false,
+  "non_live": true,
+  "order_sending_allowed": false,
+  "owner": "deep replay report/artifact constructor audit repair",
+  "paper_live_enablement_allowed": false,
+  "promotion_allowed_by_raw_u": false,
+  "purpose": "Repair constructor_audit.py syntax and patch only AST-detected trade-like dict constructors.",
+  "redis_live_write_allowed": false,
+  "schema_version": "RAW-U.2"
+}

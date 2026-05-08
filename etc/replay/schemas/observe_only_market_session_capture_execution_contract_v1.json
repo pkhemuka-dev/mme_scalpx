@@ -1,0 +1,19 @@
+{
+  "accepted_for": "OBSERVE_ONLY_MARKET_SESSION_CAPTURE_EXECUTION_WRAPPER_ONLY",
+  "actual_live_market_capture_in_28e": false,
+  "execute_in_28e": false,
+  "expected_verdict": "PASS_OBSERVE_ONLY_MARKET_SESSION_CAPTURE_EXECUTION_WRAPPER_28E",
+  "full_live_replay_parity": "NOT_PROVEN_IN_28E",
+  "future_execution_calls_broker_api": false,
+  "future_execution_only_packages_existing_evidence_files": true,
+  "future_execution_reads_live_redis": false,
+  "future_execution_requires_confirm_observe_only": true,
+  "future_execution_requires_explicit_execute_flag": true,
+  "future_execution_requires_market_session": true,
+  "future_execution_starts_services": false,
+  "future_execution_writes_live_redis": false,
+  "live_trading_approved": false,
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "schema_version": "observe_only_market_session_capture_execution_contract_v1"
+}

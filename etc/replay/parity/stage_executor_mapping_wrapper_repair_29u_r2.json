@@ -1,0 +1,193 @@
+{
+  "accepted_for": "STAGE_EXECUTOR_MAPPING_WRAPPER_REPAIR_ONLY",
+  "after_sha256": "9ad2b5b9cb48b0e323bdd733768b5dd10d430fd7529e73bf73f43300a92331c8",
+  "backup_dir": "run/_code_backups/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451",
+  "backups": [
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451/bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "present": true,
+      "sha256": "9ad2b5b9cb48b0e323bdd733768b5dd10d430fd7529e73bf73f43300a92331c8",
+      "size_bytes": 27919
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451/app/mme_scalpx/replay/engine.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/engine.py",
+      "present": true,
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8",
+      "size_bytes": 20518
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451/app/mme_scalpx/replay/offline_context_shim.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/offline_context_shim.py",
+      "present": true,
+      "sha256": "eee4e38289abb93c0a2c805e19d83a0cacc7115649c8a826be3e5326987ec50c",
+      "size_bytes": 11868
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451/run/proofs/proof_stage_executor_dict_callable_audit_29u_r1_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_stage_executor_dict_callable_audit_29u_r1_latest.json",
+      "present": true,
+      "sha256": "06ca856ef93ee5c943e872ebe8c67c0358b873bb2841ed653541778462a14ec0",
+      "size_bytes": 9993
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451/run/proofs/proof_offline_stage_callable_materialization_repair_29u_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_offline_stage_callable_materialization_repair_29u_latest.json",
+      "present": true,
+      "sha256": "fb9c49fc985b33f566727ae5e2a9afb727fe00c1847b3b3a874bf0f2cecd6f56",
+      "size_bytes": 7723
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451/run/proofs/proof_dict_callable_runtime_gap_audit_29t_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_dict_callable_runtime_gap_audit_29t_latest.json",
+      "present": true,
+      "sha256": "4eb07f78ffffecdf2a404fd09748f4d96596b3904f516fc9536bde5bece28c6c",
+      "size_bytes": 11294
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "etc/replay/parity/stage_executor_mapping_wrapper_repair_29u_r2.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451/run/proofs/proof_stage_executor_mapping_wrapper_repair_29u_r2.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_stage_executor_mapping_wrapper_repair_29u_r2.json",
+      "present": true,
+      "sha256": "4979f01bb95ed71c1918fcb3018672176e7873907a079904af07c98b75c61f51",
+      "size_bytes": 8240
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451/run/proofs/proof_stage_executor_mapping_wrapper_repair_29u_r2_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_stage_executor_mapping_wrapper_repair_29u_r2_latest.json",
+      "present": true,
+      "sha256": "4979f01bb95ed71c1918fcb3018672176e7873907a079904af07c98b75c61f51",
+      "size_bytes": 8240
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451_driver_proof.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "docs/milestones/BATCH29U_R2_STAGE_EXECUTOR_MAPPING_WRAPPER_REPAIR.md",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    }
+  ],
+  "batch": "29U-R2",
+  "before_sha256": "9ad2b5b9cb48b0e323bdd733768b5dd10d430fd7529e73bf73f43300a92331c8",
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "compile_after_ok": true,
+  "compile_before_ok": true,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "dict_callable_gap_resolved": true,
+  "execution_arming_created": false,
+  "execution_ok": false,
+  "failing_stage_name_before": "offline_replay_input_load",
+  "files_changed": [],
+  "full_live_replay_parity": "NOT_PROVEN_IN_29U_R2",
+  "generated_at_utc": "2026-05-02T05:44:52.391116+00:00",
+  "inspection_manifest": "run/proofs/batch29u_r2_stage_executor_mapping_wrapper_repair_20260502_111451_inspection/inspection_manifest.json",
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 29V \u2014 audit/classify next guarded ReplayEngine runtime gap after stage_executor wrapper repair, still not paper/live enablement.",
+  "paper_armed_approved": false,
+  "patch_applied": false,
+  "patch_changes": [],
+  "production_doctrine_changed": false,
+  "proof": "run/proofs/proof_stage_executor_mapping_wrapper_repair_29u_r2.json",
+  "proof_29u_r1_valid": true,
+  "proof_latest": "run/proofs/proof_stage_executor_mapping_wrapper_repair_29u_r2_latest.json",
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "repair_path": "NEXT_REPLAY_ENGINE_RUNTIME_GAP_AUDIT",
+  "repair_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/stage_executor_mapping_wrapper_repair_29u_r2",
+  "replay_core_executed": false,
+  "replay_run_completed": false,
+  "retry_artifacts_ok": true,
+  "retry_execute_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29u_r2",
+  "retry_returncode": 2,
+  "retry_runtime_error": "AttributeError: 'OfflineReplayTopologyPlan' object has no attribute 'scope'",
+  "retry_runtime_error_before": "ReplayEngineStageError: stage execution failed at 'offline_replay_input_load': 'dict' object is not callable",
+  "runtime_gap_kind_before": "STAGE_EXECUTOR_OBJECT_MATERIALIZED_AS_DICT_NOT_CALLABLE",
+  "safety_ok": true,
+  "schema_version": "stage_executor_mapping_wrapper_repair_29u_r2_v1",
+  "stage_executor_wrap_report": {
+    "input_callable": false,
+    "input_type": "dict",
+    "object_summary": {
+      "module": "builtins",
+      "repr": "{'schema_version': 'observe_only_market_session_status_v1', 'now_utc': '2026-05-02T05:44:52.347838+00:00', 'now_ist': '2026-05-02T11:14:52.347838+05:30', 'weekday_open': False, 'time_open': True, 'holiday_calendar_verified': False, 'market_session_open_by_time_rule': False, 'market_session_rule': 'weekday and 09:15-15:30 IST only; holiday calendar is not verified by this local proof'}",
+      "type": "dict"
+    },
+    "output_callable": true,
+    "reason": "dict_mapping_wrapped_as_callable",
+    "schema_version": "stage_executor_mapping_wrapper_29u_r2_v1",
+    "selected_candidate": {
+      "args": [
+        "now_utc"
+      ],
+      "kind": "function",
+      "module_file": "app/mme_scalpx/replay/live_capture_executor.py",
+      "name": "market_session_status",
+      "required_kwonly": [],
+      "score": 3
+    },
+    "source_mapping_keys": [
+      "holiday_calendar_verified",
+      "market_session_open_by_time_rule",
+      "market_session_rule",
+      "now_ist",
+      "now_utc",
+      "schema_version",
+      "time_open",
+      "weekday_open"
+    ],
+    "wrapped": true
+  },
+  "stage_executor_wrapper_probe_ok": true,
+  "starts_services": false,
+  "target_file": "bin/guarded_replay_engine_execute_dry_run_29g.py",
+  "verdict": "DEFERRED_NEXT_REPLAY_ENGINE_RUNTIME_GAP_AFTER_STAGE_EXECUTOR_WRAPPER_29U_R2",
+  "writes_live_redis": false
+}

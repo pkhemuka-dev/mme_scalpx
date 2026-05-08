@@ -1,0 +1,36 @@
+{
+  "generated_at_utc": "2026-05-01T07:29:26.422397+00:00",
+  "laws": {
+    "oi_wall_context_used_for_entry_default": false,
+    "oi_wall_may_be_recorded_for_research": true,
+    "production_doctrine_changed": false,
+    "silent_oi_assumption_allowed": false
+  },
+  "purpose": "Frozen OI ladder and OI-wall context fields for replay and research.",
+  "required_fields": [
+    "oi_context_ts_ns",
+    "oi_context_age_ms",
+    "oi_context_fresh",
+    "call_oi_ladder_json",
+    "put_oi_ladder_json",
+    "call_oi_change_ladder_json",
+    "put_oi_change_ladder_json",
+    "nearest_call_wall",
+    "nearest_put_wall",
+    "nearest_call_wall_strength",
+    "nearest_put_wall_strength",
+    "oi_wall_distance_points",
+    "oi_wall_distance_pct",
+    "oi_wall_strength",
+    "oi_support_level",
+    "oi_resistance_level",
+    "oi_support_resistance_bias",
+    "oi_wall_blocking_side",
+    "oi_wall_supporting_side",
+    "oi_wall_breakout_context",
+    "oi_wall_rejection_context",
+    "oi_wall_context_used_for_entry",
+    "production_doctrine_changed"
+  ],
+  "schema_version": "replay_oi_ladder_contract_v1"
+}

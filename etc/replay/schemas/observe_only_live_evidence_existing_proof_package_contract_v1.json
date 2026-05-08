@@ -1,0 +1,38 @@
+{
+  "schema_version": "observe_only_live_evidence_existing_proof_package_contract_v1",
+  "purpose": "Dry-run package contract that uses existing proof artifacts as evidence-map inputs for the observe_only live evidence collector.",
+  "accepted_for": "EXISTING_PROOF_PACKAGE_DRY_RUN_ONLY",
+  "actual_live_market_capture": false,
+  "starts_services": false,
+  "reads_live_redis": false,
+  "writes_live_redis": false,
+  "calls_broker_api": false,
+  "paper_armed_approved": false,
+  "live_trading_approved": false,
+  "execution_arming_created": false,
+  "real_order_intent_allowed": false,
+  "production_doctrine_changed": false,
+  "required_evidence_items": [
+    "provider_runtime",
+    "feed_snapshot",
+    "feature_payload",
+    "family_surfaces",
+    "strategy_activation",
+    "no_order_sent",
+    "live_capture_log",
+    "live_stream_inventory",
+    "live_hash_inventory",
+    "provider_health_snapshot",
+    "selected_option_context",
+    "dhan_oi_ladder_context_if_available"
+  ],
+  "expected_verdict": "PASS_OBSERVE_ONLY_LIVE_EVIDENCE_EXISTING_PROOF_PACKAGE_28C",
+  "explicit_not_proven": [
+    "real_live_market_capture",
+    "full_live_replay_parity",
+    "paper_armed_readiness",
+    "live_trading_readiness",
+    "production_strategy_improvement_claim",
+    "production_doctrine_revision"
+  ]
+}

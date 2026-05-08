@@ -1,0 +1,38 @@
+BATCH 29BC STRATEGY ACTIVATION VALUE MAPPING CONTRACT
+
+generated_at_utc: 2026-05-02T08:20:54.033351+00:00
+verdict: PASS_STRATEGY_ACTIVATION_VALUE_MAPPING_CONTRACT_29BC
+selected_surface: strategy_activation_report_only_parity
+mapping_status: READY_FOR_REFERENCE_DISCOVERY
+mapped_field_count: 6
+concrete_field_count: 6
+ready_for_reference_discovery: True
+ready_for_comparison_contract: True
+strategy_activation_value_parity: NOT_PROVEN_READY_FOR_REFERENCE_DISCOVERY
+full_live_replay_parity: NOT_PROVEN_IN_29BC
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+repair_path: STRATEGY_ACTIVATION_REFERENCE_DISCOVERY_READY
+next_batch: Batch 29BD — discover strategy activation reference/live counterpart artifacts and prepare value comparison; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_value_mapping_contract_29bc/00_strategy_activation_value_mapping_report.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_value_mapping_contract_29bc/01_strategy_activation_canonical_mapping.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_value_mapping_contract_29bc/02_strategy_activation_comparison_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_value_mapping_contract_29bc/03_next_batch_29bd_contract.json
+
+Proofs:
+- run/proofs/proof_strategy_activation_value_mapping_contract_29bc.json
+- run/proofs/proof_strategy_activation_value_mapping_contract_29bc_latest.json
+- run/proofs/batch29bc_strategy_activation_value_mapping_contract_20260502_135053_driver_proof.json
+- etc/replay/parity/strategy_activation_value_mapping_contract_29bc.json

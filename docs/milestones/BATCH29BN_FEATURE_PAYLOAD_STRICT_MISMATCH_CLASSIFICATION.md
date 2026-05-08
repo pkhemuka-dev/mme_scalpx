@@ -1,0 +1,31 @@
+BATCH 29BN FEATURE PAYLOAD STRICT MISMATCH CLASSIFICATION
+
+generated_at_utc: 2026-05-02T10:20:28.961992+00:00
+verdict: PASS_29BN_STRICT_FEATURE_PAYLOAD_MISMATCH_CLASSIFIED_MAPPING_REVIEW_REQUIRED
+proof_29bm_valid: True
+compile_ok: True
+safety_ok: True
+classification_status: MAPPING_REVIEW_REQUIRED
+feature_payload_parity: NOT_PROVEN_MAPPING_REVIEW_REQUIRED
+strict_mismatch_count: 2
+weak_context_mismatch_count: 1
+strict_mismatched_fields: ['family_surfaces', 'provider']
+weak_context_mismatched_fields: ['timestamp']
+mapping_error_count: 2
+stale_or_context_count: 0
+semantic_gap_count: 0
+canonical_match_count: 0
+cause_counts: {'mapping_error': 2}
+full_live_replay_parity: NOT_PROVEN_IN_29BN
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BO — build corrected feature payload mapping contract excluding metadata/summary fields or freeze as NOT_COMPARABLE; still no production patch.
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_strict_mismatch_classification_29bn/00_strict_feature_payload_mismatch_classification.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_strict_mismatch_classification_29bn/01_strict_mismatch_source_path_audit.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_strict_mismatch_classification_29bn/02_strict_mismatch_classification_decision.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_strict_mismatch_classification_29bn/03_next_batch_29bo_contract.json
+- run/proofs/proof_feature_payload_strict_mismatch_classification_29bn.json
+- run/proofs/proof_feature_payload_strict_mismatch_classification_29bn_latest.json
+
+Files changed: none

@@ -933,6 +933,170 @@ class DhanFullFeedPollingAdapter:
 
 
 
+# Batch 25V corrective — build option-chain ladder rows for context payload
+def _batch25v_safe_float(value: Any, default: float | None = None) -> float | None:
+    try:
+        if value in (None, ""):
+            return default
+        out = float(value)
+        if out != out:
+            return default
+        return out
+    except Exception:
+        return default
+
+
+def _batch25v_safe_int(value: Any, default: int | None = None) -> int | None:
+    try:
+        if value in (None, ""):
+            return default
+        return int(float(value))
+    except Exception:
+        return default
+
+
+def _batch25v_first(mapping: Mapping[str, Any], *keys: str) -> Any:
+    for key in keys:
+        if key in mapping and mapping[key] not in (None, ""):
+            return mapping[key]
+    return None
+
+
+def _batch25v_normalize_dhan_option_side_row(
+    *,
+    strike: float,
+    side: str,
+    raw: Mapping[str, Any],
+    ts_event_ns: int,
+) -> dict[str, Any]:
+    side_upper = str(side).upper()
+    option_side = "CALL" if side_upper in {"CE", "CALL", "C"} else "PUT"
+
+    security_id = _batch25v_first(raw, "security_id", "securityId", "dhan_security_id")
+    trading_symbol = _batch25v_first(raw, "trading_symbol", "tradingSymbol", "symbol", "scrip_name", "scripName")
+    ltp = _batch25v_safe_float(_batch25v_first(raw, "last_price", "lastPrice", "ltp", "LTP"))
+    best_bid = _batch25v_safe_float(_batch25v_first(raw, "best_bid", "bestBid", "bid", "bid_price", "bidPrice"))
+    best_ask = _batch25v_safe_float(_batch25v_first(raw, "best_ask", "bestAsk", "ask", "ask_price", "askPrice"))
+    bid_qty = _batch25v_safe_int(_batch25v_first(raw, "bid_qty", "bidQty", "bid_quantity", "bidQuantity"))
+    ask_qty = _batch25v_safe_int(_batch25v_first(raw, "ask_qty", "askQty", "ask_quantity", "askQuantity"))
+    volume = _batch25v_safe_int(_batch25v_first(raw, "volume", "traded_volume", "tradedVolume"))
+    oi = _batch25v_safe_int(_batch25v_first(raw, "oi", "open_interest", "openInterest"))
+    oi_change = _batch25v_safe_int(_batch25v_first(raw, "oi_change", "oiChange", "change_in_oi", "changeInOI"))
+    iv = _batch25v_safe_float(_batch25v_first(raw, "iv", "implied_volatility", "impliedVolatility"))
+    delta = _batch25v_safe_float(_batch25v_first(raw, "delta"))
+    gamma = _batch25v_safe_float(_batch25v_first(raw, "gamma"))
+    theta = _batch25v_safe_float(_batch25v_first(raw, "theta"))
+    vega = _batch25v_safe_float(_batch25v_first(raw, "vega"))
+
+    spread_ratio = None
+    if best_bid is not None and best_ask is not None and ltp not in (None, 0):
+        spread_ratio = abs(best_ask - best_bid) / max(abs(ltp), 1.0)
+
+    score = 0.0
+    if ltp is not None:
+        score += float(ltp)
+    if volume is not None:
+        score += min(float(volume) / 10000.0, 20.0)
+    if oi is not None:
+        score += min(float(oi) / 100000.0, 20.0)
+
+    instrument_key = f"NFO:NIFTY{int(round(strike))}{'CE' if option_side == 'CALL' else 'PE'}"
+
+    return {
+        "side": option_side,
+        "option_type": "CE" if option_side == "CALL" else "PE",
+        "strike": float(strike),
+        "instrument_key": instrument_key,
+        "instrument_token": "" if security_id is None else str(security_id),
+        "dhan_security_id": "" if security_id is None else str(security_id),
+        "trading_symbol": "" if trading_symbol is None else str(trading_symbol),
+        "ltp": ltp,
+        "best_bid": best_bid,
+        "best_ask": best_ask,
+        "bid_qty_5": bid_qty,
+        "ask_qty_5": ask_qty,
+        "bid_qty": bid_qty,
+        "ask_qty": ask_qty,
+        "volume": volume,
+        "oi": oi,
+        "oi_change": oi_change,
+        "iv": iv,
+        "delta": delta,
+        "gamma": gamma,
+        "theta": theta,
+        "vega": vega,
+        "spread_ratio": spread_ratio,
+        "score": score,
+        "provider_id": "DHAN",
+        "ts_event_ns": int(ts_event_ns),
+    }
+
+
+def _batch25v_option_chain_rows_from_snapshot(snapshot: Mapping[str, Any], *, ts_event_ns: int) -> list[dict[str, Any]]:
+    data = snapshot.get("data")
+    if not isinstance(data, Mapping):
+        data = snapshot
+
+    oc = data.get("oc") if isinstance(data, Mapping) else None
+    if not isinstance(oc, Mapping):
+        oc = data.get("option_chain") if isinstance(data, Mapping) else None
+    if not isinstance(oc, Mapping):
+        oc = data.get("optionChain") if isinstance(data, Mapping) else None
+
+    rows: list[dict[str, Any]] = []
+
+    if isinstance(oc, Mapping):
+        for strike_raw, block in oc.items():
+            strike = _batch25v_safe_float(strike_raw)
+            if strike is None or not isinstance(block, Mapping):
+                continue
+
+            ce = block.get("ce") or block.get("CE") or block.get("call") or block.get("CALL")
+            pe = block.get("pe") or block.get("PE") or block.get("put") or block.get("PUT")
+
+            if isinstance(ce, Mapping):
+                rows.append(
+                    _batch25v_normalize_dhan_option_side_row(
+                        strike=float(strike),
+                        side="CE",
+                        raw=ce,
+                        ts_event_ns=ts_event_ns,
+                    )
+                )
+            if isinstance(pe, Mapping):
+                rows.append(
+                    _batch25v_normalize_dhan_option_side_row(
+                        strike=float(strike),
+                        side="PE",
+                        raw=pe,
+                        ts_event_ns=ts_event_ns,
+                    )
+                )
+
+    # Some Dhan-like wrappers may already return list rows.
+    if not rows:
+        for key in ("rows", "records", "data", "option_chain_ladder", "strike_ladder", "ladder"):
+            candidate = data.get(key) if isinstance(data, Mapping) else None
+            if isinstance(candidate, list):
+                for item in candidate:
+                    if not isinstance(item, Mapping):
+                        continue
+                    strike = _batch25v_safe_float(_batch25v_first(item, "strike", "strike_price", "strikePrice"))
+                    side = str(_batch25v_first(item, "side", "option_type", "right") or "").upper()
+                    if strike is None or side not in {"CE", "PE", "CALL", "PUT", "C", "P"}:
+                        continue
+                    rows.append(
+                        _batch25v_normalize_dhan_option_side_row(
+                            strike=float(strike),
+                            side=side,
+                            raw=item,
+                            ts_event_ns=ts_event_ns,
+                        )
+                    )
+
+    return rows
+
+
 class DhanContextPollingAdapter:
     """
     feeds.py-compatible polling adapter for Dhan option-chain context.
@@ -1091,45 +1255,24 @@ class DhanContextPollingAdapter:
         return out
 
     def _build_item_from_snapshot(self, snap: Mapping[str, Any]) -> dict[str, Any] | None:
-        data = snap.get("data") if isinstance(snap, Mapping) else None
-        oc = data.get("oc") if isinstance(data, Mapping) else None
-        if not isinstance(oc, Mapping):
+        """
+        Build a feeds.py-compatible Dhan option context item from /optionchain.
+
+        Batch 25V corrective:
+        the previous implementation emitted only selected keys/scores, which made
+        HASH_STATE_DHAN_CONTEXT fresh but empty:
+        option_chain_ladder_json=[], selected_call_context_json={}.
+        This method now carries normalized option-chain rows so feeds.py can
+        persist the frozen Dhan ladder contract.
+        """
+        if not isinstance(snap, Mapping) or not snap:
             return None
+
+        ts_event_ns = time.time_ns()
+        rows = _batch25v_option_chain_rows_from_snapshot(snap, ts_event_ns=ts_event_ns)
 
         ce_atm = getattr(self._runtime_instruments, "ce_atm", None)
         pe_atm = getattr(self._runtime_instruments, "pe_atm", None)
-
-        selected_call_key = self._contract_key(ce_atm) if ce_atm is not None else None
-        selected_put_key = self._contract_key(pe_atm) if pe_atm is not None else None
-
-        selected_call_score = None
-        selected_put_score = None
-        selected_call_security_id = None
-        selected_put_security_id = None
-
-        for strike_raw, block in oc.items():
-            if not isinstance(block, Mapping):
-                continue
-
-            strike_val = _as_float(strike_raw)
-
-            if (
-                ce_atm is not None
-                and strike_val is not None
-                and abs(strike_val - float(getattr(ce_atm, "strike"))) < 0.001
-            ):
-                ce_block = block.get("ce")
-                selected_call_score = self._extract_ltp(ce_block)
-                selected_call_security_id = self._extract_security_id(ce_block)
-
-            if (
-                pe_atm is not None
-                and strike_val is not None
-                and abs(strike_val - float(getattr(pe_atm, "strike"))) < 0.001
-            ):
-                pe_block = block.get("pe")
-                selected_put_score = self._extract_ltp(pe_block)
-                selected_put_security_id = self._extract_security_id(pe_block)
 
         atm_strike = None
         if ce_atm is not None:
@@ -1137,18 +1280,59 @@ class DhanContextPollingAdapter:
         if atm_strike is None and pe_atm is not None:
             atm_strike = _as_float(getattr(pe_atm, "strike", None))
 
+        selected_call_key = ""
+        selected_put_key = ""
+        selected_call_security_id = ""
+        selected_put_security_id = ""
+
+        if ce_atm is not None:
+            selected_call_key = str(getattr(ce_atm, "instrument_key", "") or "")
+        if pe_atm is not None:
+            selected_put_key = str(getattr(pe_atm, "instrument_key", "") or "")
+
+        selected_call_context: dict[str, Any] = {}
+        selected_put_context: dict[str, Any] = {}
+
+        if atm_strike is not None:
+            for row in rows:
+                try:
+                    row_strike = float(row.get("strike"))
+                except Exception:
+                    continue
+                if abs(row_strike - float(atm_strike)) > 0.001:
+                    continue
+
+                side = str(row.get("side") or row.get("option_type") or "").upper()
+                if side in {"CALL", "CE"} and not selected_call_context:
+                    selected_call_context = dict(row)
+                    selected_call_security_id = str(row.get("dhan_security_id") or row.get("instrument_token") or "")
+                elif side in {"PUT", "PE"} and not selected_put_context:
+                    selected_put_context = dict(row)
+                    selected_put_security_id = str(row.get("dhan_security_id") or row.get("instrument_token") or "")
+
+        selected_call_score = _batch25v_safe_float(selected_call_context.get("score"), 0.0) or 0.0
+        selected_put_score = _batch25v_safe_float(selected_put_context.get("score"), 0.0) or 0.0
+
         payload = {
-            "context_status": "HEALTHY",
+            "context_status": "HEALTHY" if rows else "DEGRADED",
             "provider_id": "DHAN",
             "context_source": "LIVE",
-            "context_epoch_ns": time.time_ns(),
+            "context_epoch_ns": ts_event_ns,
             "atm_strike": atm_strike,
-            "selected_call_instrument_key": selected_call_key or "",
-            "selected_put_instrument_key": selected_put_key or "",
-            "selected_call_security_id": selected_call_security_id or "",
-            "selected_put_security_id": selected_put_security_id or "",
+            "selected_call_instrument_key": selected_call_key or selected_call_context.get("instrument_key", ""),
+            "selected_put_instrument_key": selected_put_key or selected_put_context.get("instrument_key", ""),
+            "selected_call_security_id": selected_call_security_id,
+            "selected_put_security_id": selected_put_security_id,
             "selected_call_score": selected_call_score,
             "selected_put_score": selected_put_score,
+            "option_chain_ladder": rows,
+            "strike_ladder": rows,
+            "option_chain_ladder_json": json.dumps(rows, separators=(",", ":"), sort_keys=True),
+            "strike_ladder_json": json.dumps(rows, separators=(",", ":"), sort_keys=True),
+            "selected_call_context": selected_call_context,
+            "selected_put_context": selected_put_context,
+            "selected_call_context_json": json.dumps(selected_call_context, separators=(",", ":"), sort_keys=True),
+            "selected_put_context_json": json.dumps(selected_put_context, separators=(",", ":"), sort_keys=True),
         }
 
         return {

@@ -1,0 +1,186 @@
+{
+  "accepted_for": "GUARDED_OFFLINE_REPLAY_DRY_RUN_COMMAND_CONTRACT_ONLY",
+  "batch": "28O",
+  "broker_call_reachable": false,
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "contract_artifact_states": {
+    "00_dry_run_command_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_dry_run_contract/00_dry_run_command_contract.json",
+      "present": true,
+      "sha256": "4bd744b03c636f59cb9743de83182c7d173bbcb0722b054ab3cf1f4d0c0227ea",
+      "size_bytes": 2148
+    },
+    "01_input_surface_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_dry_run_contract/01_input_surface_contract.json",
+      "present": true,
+      "sha256": "22459b31221556a831df951c164c9164885dbe8f1dc860568a688a612ebb9a2d",
+      "size_bytes": 4541
+    },
+    "02_no_broker_no_live_redis_boundary.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_dry_run_contract/02_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "d8dd7e7691dfd6feeb76d8adc4728fafe14dc1d25ebfa16338a90729135cd2e9",
+      "size_bytes": 811
+    },
+    "03_future_output_root_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_dry_run_contract/03_future_output_root_contract.json",
+      "present": true,
+      "sha256": "13595816673a3f1b899a98823e1a09f8fdda2646e9a2b8c877c9b66d58ec5766",
+      "size_bytes": 383
+    },
+    "04_readiness_report.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_dry_run_contract/04_readiness_report.json",
+      "present": true,
+      "sha256": "2fe8fcb1327f69cddb57b81e6236560df369c6102b97c607bef9d39e73d3c841",
+      "size_bytes": 500
+    }
+  },
+  "contract_ready": true,
+  "contract_result": {
+    "accepted_for": "GUARDED_OFFLINE_REPLAY_DRY_RUN_COMMAND_CONTRACT_ONLY",
+    "calls_broker_api": false,
+    "capture_id": "pstrategy_20260430_094557",
+    "comparison_completed": false,
+    "contract_ready": true,
+    "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+    "dataset_materialized_for_replay_run": false,
+    "execution_arming_created": false,
+    "false_field_violations": [],
+    "full_live_replay_parity": "NOT_PROVEN_IN_28O",
+    "future_command_executed": false,
+    "future_command_prepared": true,
+    "live_trading_approved": false,
+    "missing_surfaces": [],
+    "next_batch": "Batch 28P \u2014 execute guarded offline replay engine dry-run only if 28O contract is still valid, still not paper/live enablement.",
+    "output_root": "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_dry_run_contract",
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_run_completed": false,
+    "schema_version": "guarded_offline_replay_dry_run_contract_result_28o_v1",
+    "starts_services": false,
+    "writes_live_redis": false,
+    "written_count": 5
+  },
+  "contract_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_dry_run_contract",
+  "contract_root_replay_safe": true,
+  "contract_script": "bin/prepare_guarded_offline_replay_dry_run_contract_28o.py",
+  "contract_script_sha256": "0ada3dc5d77e93ad48373bf361b301662b977a3fcec0f9013f47369e2f372e34",
+  "dataset_candidate_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "dataset_materialized_for_replay_run": false,
+  "entrypoint_static_inventory": {
+    "app/mme_scalpx/replay/contracts.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [],
+      "present": true,
+      "sha256": "b50ef9e3a139b14c998eb13ac9d74bb9a975718a213b55f9298eb4b2ed6081b7",
+      "size_bytes": 97130
+    },
+    "app/mme_scalpx/replay/dataset.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [],
+      "present": true,
+      "sha256": "e4b32c93c44875b75297de99eb92de1a24cdbd93141c7bd53edd511545c42bd3",
+      "size_bytes": 54560
+    },
+    "app/mme_scalpx/replay/engine.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [],
+      "present": true,
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8",
+      "size_bytes": 20518
+    },
+    "app/mme_scalpx/replay/fill_model.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [],
+      "present": true,
+      "sha256": "eb4b12690bb05adfcc0dbf2effc6ec4504c3a81a0220b69fe8fb3ee3ea65e009",
+      "size_bytes": 10599
+    },
+    "app/mme_scalpx/replay/injector.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [],
+      "present": true,
+      "sha256": "d32ba362be759083c4b3bfe0cc4afcbbdfcfb502e1b84539cad9f15cf565ee54",
+      "size_bytes": 14523
+    },
+    "app/mme_scalpx/replay/integrity.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [],
+      "present": true,
+      "sha256": "36eebdc84fcef136e9a006046578dc8a24e15c4d47ede543f5d7934dacf03576",
+      "size_bytes": 20539
+    },
+    "app/mme_scalpx/replay/runner.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [],
+      "present": true,
+      "sha256": "de39439819e44abed86b218493658d9ea49e6d8ebf783c2ea756df5db1ce9f35",
+      "size_bytes": 25284
+    },
+    "app/mme_scalpx/replay/safety.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [
+        ".set("
+      ],
+      "present": true,
+      "sha256": "381644eb6e5424f9e37406af6b468145a8b272d506c0fb75eca25572b4bd49d3",
+      "size_bytes": 15171
+    },
+    "app/mme_scalpx/replay/topology.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [],
+      "present": true,
+      "sha256": "448cf6bd7f34f13d02768684a0807dc8b5993f493e91bff503f0d1b34e589e0c",
+      "size_bytes": 12432
+    },
+    "bin/replay_compare.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [],
+      "present": true,
+      "sha256": "b1f4b7cfae28ed1c21095939f2ce47a6a8bda5caf18e85df91a88cda9bc2fe92",
+      "size_bytes": 21413
+    },
+    "bin/replay_run.py": {
+      "inspected_complete_file": true,
+      "note": "inventory_only_not_executed_in_28o",
+      "potential_live_surface_tokens": [],
+      "present": true,
+      "sha256": "cbda5ec8be7b18dc31cc99ae2c1af67ceda10bf84997e5af4e0beb2a16dc628d",
+      "size_bytes": 97072
+    }
+  },
+  "execution_arming_created": false,
+  "full_live_replay_parity": "NOT_PROVEN_IN_28O",
+  "future_command_executed": false,
+  "generated_at_utc": "2026-05-01T12:34:33.754964+00:00",
+  "live_redis_write_reachable": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 28P \u2014 execute guarded offline replay engine dry-run only if 28O contract is still valid, still not paper/live enablement.",
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "replay_run_completed": false,
+  "runtime_promotion_reachable": false,
+  "safety_gate_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/no_broker_no_live_redis_gate",
+  "schema_version": "guarded_offline_replay_dry_run_contract_28o_v1",
+  "starts_services": false,
+  "writes_live_redis": false
+}

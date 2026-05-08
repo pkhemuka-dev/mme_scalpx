@@ -1,0 +1,23 @@
+{
+  "accepted_for": "BOUNDED_OFFLINE_GUARDED_REPLAY_DRY_RUN_RETRY_ONLY",
+  "batch": "29AB",
+  "generated_at_utc": "2026-05-02T06:27:26.136822+00:00",
+  "retry_script": "bin/guarded_replay_engine_execute_dry_run_29g.py",
+  "safety": {
+    "batch": "29AB",
+    "bounded_guarded_retry": true,
+    "broker_calls_allowed": false,
+    "broker_calls_executed": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_allowed": false,
+    "real_order_sent": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "bounded_guarded_replay_retry_29ab_v1",
+  "timeout_seconds": 180
+}

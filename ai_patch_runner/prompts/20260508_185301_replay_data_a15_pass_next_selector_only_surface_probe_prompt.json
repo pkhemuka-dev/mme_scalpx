@@ -1,0 +1,66 @@
+{
+  "context_memory": {
+    "allowed_paths.json": "{\n  \"allowed_read_roots\": [\n    \"run/proofs/\",\n    \"docs/milestones/\",\n    \"ai_patch_runner/\",\n    \"app/mme_scalpx/replay/\",\n    \"app/mme_scalpx/services/\",\n    \"run/replay/parity/offline_materialization/\"\n  ],\n  \"allowed_write_roots\": [\n    \"run/proofs/\",\n    \"run/audits/\",\n    \"docs/milestones/\",\n    \"ai_patch_runner/outputs/\",\n    \"ai_patch_runner/reports/\",\n    \"ai_patch_runner/prompts/\",\n    \"ai_patch_runner/logs/\",\n    \"ai_patch_runner/context/\",\n    \"run/replay/parity/offline_materialization/\"\n  ],\n  \"version\": \"mme_ai_allowed_paths_v1\"\n}\n",
+    "blocked_paths.json": "{\n  \"blocked_path_patterns\": [\n    \"common/secrets/\",\n    \"etc/brokers/\",\n    \"app/mme_scalpx/main.py\",\n    \"app/mme_scalpx/services/execution.py\",\n    \"app/mme_scalpx/services/risk.py\",\n    \"app/mme_scalpx/integrations/\"\n  ],\n  \"blocked_runtime_patterns\": [\n    \"nohup\",\n    \"systemctl\",\n    \"python -m app.mme_scalpx.main\",\n    \"redis-cli SET/HSET/XADD/DEL\",\n    \"broker login/API call\",\n    \"SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME=1\",\n    \"SCALPX_REAL_LIVE_ALLOWED=1\",\n    \"SCALPX_ALLOW_REAL_LIVE=1\"\n  ],\n  \"blocked_write_roots\": {\n    \"broker_login_allowed\": false,\n    \"calls_broker_api\": false,\n    \"full_live_replay_parity\": \"NOT_PROVEN\",\n    \"live_trading_approved\": false,\n    \"paper_armed_approved\": false,\n    \"paper_live_status\": \"BLOCKED_NOT_IN_SCOPE\",\n    \"reads_live_redis\": false,\n    \"real_order_sent\": false,\n    \"redis_mutation_allowed\": false,\n    \"starts_services\": false,\n    \"writes_live_redis\": false\n  },\n  \"version\": \"mme_ai_blocked_paths_v1\"\n}\n",
+    "known_contracts.md": "# Known Contracts \u2014 MME AI Runner\n\n## Replay chain current contract\n\n- A7/A8/A8B/A9/A10 built selector-ready quote dataset.\n- A11 wrote features_rows_candidate.csv.\n- A12 wrote strategy_decisions_candidate.csv with conservative HOLD/NO_TRADE shadow rows.\n- A13 wrote risk_outputs_candidate.csv with conservative risk/no-order shadow rows.\n- A14 should create execution_shadow_candidate.csv only if schema-safe.\n- Full replay engine remains disabled until all required candidate surfaces exist and selector/probe proofs pass.\n\n## Safety contract\n\n- No live/paper approval.\n- No broker/API call.\n- No service start.\n- No Redis write.\n- No production risk/execution/main patch.\n- Candidate reconstruction is sandbox/offline under run/replay/parity/offline_materialization only.\n",
+    "latest_chain_summary.md": "# MME AI Runner Local Memory \u2014 Latest Chain Summary\n\nUpdated UTC: 2026-05-08T18:53:00.990700+00:00\n\n## Current State\n\n- Latest replay proof: `run/proofs/proof_replay_data_a14_execution_shadow_20260508T184835Z.json`\n- Latest replay batch: `REPLAY-DATA-A14`\n- Next expected batch: `REPLAY-DATA-A15 selector-only replay-data surface probe (no full engine)`\n- Canonical root: `run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z`\n- Source date: `2026-04-17`\n- Engine ready: `False`\n\n## Safety Boundary\n\n- paper_live_status = BLOCKED_NOT_IN_SCOPE\n- full_live_replay_parity = NOT_PROVEN\n- paper_armed_approved = false\n- live_trading_approved = false\n- services/broker/Redis/live execution remain blocked\n\n## Recent Replay Signposts\n\n- `REPLAY-DATA-A6` | proof=`run/proofs/proof_replay_data_a6_real_session_export_schema_plan_20260508T173622Z.json` | row_count=`None` | next=`None` | engine_ready=`None`\n- `REPLAY-DATA-A7` | proof=`run/proofs/proof_replay_data_a7_sandbox_canonical_day_dataset_20260508T173739Z.json` | row_count=`None` | next=`None` | engine_ready=`False`\n- `REPLAY-DATA-A8` | proof=`run/proofs/proof_replay_data_a8_quote_schema_mapping_20260508T174528Z.json` | row_count=`None` | next=`None` | engine_ready=`None`\n- `REPLAY-DATA-A8B` | proof=`run/proofs/proof_replay_data_a8b_deep_csv_payload_schema_20260508T174725Z.json` | row_count=`None` | next=`None` | engine_ready=`None`\n- `REPLAY-DATA-A9` | proof=`run/proofs/proof_replay_data_a9_quote_schema_transform_20260508T174832Z.json` | row_count=`None` | next=`None` | engine_ready=`False`\n- `REPLAY-DATA-A10` | proof=`run/proofs/proof_replay_data_a10_selector_only_cli_dry_probe_20260508T175024Z.json` | row_count=`None` | next=`None` | engine_ready=`None`\n- `REPLAY-DATA-A11` | proof=`run/proofs/proof_replay_data_a11_features_rows_reconstruction_20260508T180133Z.json` | row_count=`50021` | next=`REPLAY-DATA-A12 strategy_decisions shadow reconstruction audit` | engine_ready=`False`\n- `REPLAY-DATA-A12` | proof=`run/proofs/proof_replay_data_a12_strategy_decisions_shadow_20260508T181220Z.json` | row_count=`50021` | next=`REPLAY-DATA-A13 risk_outputs shadow reconstruction audit` | engine_ready=`False`\n- `REPLAY-DATA-A13` | proof=`run/proofs/proof_replay_data_a13_risk_outputs_shadow_20260508T182117Z.json` | row_count=`50021` | next=`REPLAY-DATA-A14 execution shadow reconstruction audit` | engine_ready=`False`\n- `REPLAY-DATA-A13` | proof=`run/proofs/proof_replay_data_a13_risk_outputs_shadow_20260508T182326Z.json` | row_count=`50021` | next=`REPLAY-DATA-A14 execution shadow reconstruction audit` | engine_ready=`False`\n- `REPLAY-DATA-A14` | proof=`run/proofs/proof_replay_data_a14_execution_shadow_20260508T184414Z.json` | row_count=`50021` | next=`REPLAY-DATA-A15 selector-only replay-data surface probe (no full engine)` | engine_ready=`False`\n- `REPLAY-DATA-A14` | proof=`run/proofs/proof_replay_data_a14_execution_shadow_20260508T184835Z.json` | row_count=`None` | next=`REPLAY-DATA-A15 selector-only replay-data surface probe (no full engine)` | engine_ready=`False`\n",
+    "project_constitution.md": "# MME AI Runner Project Constitution\n\nThe local AI runner accelerates offline replay-data development only. It is not authorized to approve paper/live trading, start services, call brokers, mutate live Redis, or modify production trading logic.\n\nEvery generated package must be proof-driven, one-batch scoped, statically validated, policy validated, and manually or guarded-run executed only through mrun.\n\nLatest proof beats memory. Uploaded evidence/proof artifacts beat old summaries. If memory conflicts with proof, proof wins.\n",
+    "replay_current_state.json": "{\n  \"calls_broker_api\": false,\n  \"canonical_root\": \"run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z\",\n  \"code_patch_applied\": false,\n  \"engine_execution_performed\": false,\n  \"engine_ready\": false,\n  \"full_live_replay_parity\": \"NOT_PROVEN\",\n  \"latest_candidate_path\": null,\n  \"latest_passed_or_latest_replay_batch\": \"REPLAY-DATA-A14\",\n  \"latest_replay_proof\": \"run/proofs/proof_replay_data_a14_execution_shadow_20260508T184835Z.json\",\n  \"latest_row_count\": null,\n  \"live_trading_approved\": false,\n  \"next_expected_batch\": \"REPLAY-DATA-A15 selector-only replay-data surface probe (no full engine)\",\n  \"paper_armed_approved\": false,\n  \"paper_live_status\": \"BLOCKED_NOT_IN_SCOPE\",\n  \"reads_live_redis\": false,\n  \"real_order_sent\": false,\n  \"source_date\": \"2026-04-17\",\n  \"starts_services\": false,\n  \"writes_live_redis\": false\n}\n",
+    "safety_boundary.json": "{\n  \"allowed_ai_runner_actions\": [\n    \"read latest proof JSON\",\n    \"generate next replay/offline command package\",\n    \"write proof JSON\",\n    \"write milestone markdown\",\n    \"write compact context memory\",\n    \"write sandbox/candidate replay data under run/replay/parity/offline_materialization\",\n    \"run guarded offline replay-data command only after static and policy validation\"\n  ],\n  \"blocked_paths\": [\n    \"common/secrets/\",\n    \"etc/brokers/\",\n    \"app/mme_scalpx/main.py\",\n    \"app/mme_scalpx/services/execution.py\",\n    \"app/mme_scalpx/services/risk.py\",\n    \"app/mme_scalpx/integrations/\"\n  ],\n  \"hard_blocks\": {\n    \"broker_login_allowed\": false,\n    \"calls_broker_api\": false,\n    \"full_live_replay_parity\": \"NOT_PROVEN\",\n    \"live_trading_approved\": false,\n    \"paper_armed_approved\": false,\n    \"paper_live_status\": \"BLOCKED_NOT_IN_SCOPE\",\n    \"reads_live_redis\": false,\n    \"real_order_sent\": false,\n    \"redis_mutation_allowed\": false,\n    \"starts_services\": false,\n    \"writes_live_redis\": false\n  },\n  \"updated_at_utc\": \"2026-05-08T18:53:00.990686+00:00\",\n  \"version\": \"mme_ai_safety_boundary_v1\"\n}\n"
+  },
+  "created_at_utc": "2026-05-08T18:53:01.873856+00:00",
+  "latest_proof": "/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/proof_replay_data_a14_execution_shadow_20260508T184835Z.json",
+  "local_classification": {
+    "next_batch": "REPLAY-DATA-A15",
+    "next_goal": "Run selector-only replay-data surface probe over quote/features/strategy/risk/execution candidate surfaces; no full engine.",
+    "reason": "A14 wrote execution_shadow_candidate or declared A15 as next; next layer is selector-only replay-data surface probe.",
+    "verdict": "PASS_NEXT_SELECTOR_ONLY_SURFACE_PROBE"
+  },
+  "mode": "ai_replay_r2_generate_only_no_execute",
+  "model": "gpt-5-mini",
+  "proof_summary": {
+    "batch": "REPLAY-DATA-A14",
+    "canonical_root": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+    "dataset_id": null,
+    "findings": [],
+    "safety": {
+      "SCALPX_OBSERVE_ONLY": "1",
+      "app_main_runtime_started": false,
+      "bin_replay_run_patched": false,
+      "broker_calls_executed": false,
+      "code_patched": false,
+      "engine_execution_performed": false,
+      "execution_shadow_created": true,
+      "full_replay_engine_run": false,
+      "live_redis_writes_executed": false,
+      "orders_sent": false,
+      "paper_or_live_enabled": false,
+      "risk_outputs_candidate_only": true,
+      "risk_outputs_created": true,
+      "services_started": false,
+      "strategy_risk_execution_parity_claimed": false
+    },
+    "selector_probe": {},
+    "source_date": "2026-04-17",
+    "summary": {
+      "engine_execution_performed": false,
+      "engine_ready": false,
+      "execution_shadow_candidate_path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z/2026-04-17/execution_shadow_candidate.csv",
+      "execution_shadow_candidate_row_count": 50021,
+      "execution_shadow_candidate_sha256": "3e7a1c0363ac4b7bc3cd6f66df9c46c17d724966f98eb0abe16ebe81aa843590",
+      "execution_shadow_candidate_written": true,
+      "next_batch": "REPLAY-DATA-A15 selector-only replay-data surface probe (no full engine)",
+      "source_risk_candidate_path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z/2026-04-17/risk_outputs_candidate.csv",
+      "source_risk_candidate_row_count": 50021
+    },
+    "title": "execution_shadow reconstruction audit"
+  },
+  "safety": {
+    "calls_broker": false,
+    "enables_paper_or_live": false,
+    "executes_generated_script": false,
+    "patches_real_project": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  }
+}

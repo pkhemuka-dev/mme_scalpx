@@ -1,0 +1,22 @@
+# 26-O23-P-R13 — exact-line decision payload patch repair
+
+- generated_at_utc: `2026-05-08T09:55:24.585965+00:00`
+- final_verdict: `FAIL_O23_P_R13_EXACT_LINE_DECISION_PAYLOAD_REPAIR_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written', 'summary_written']`
+- r12_classification: `R11_PATCH_MISS_NEEDS_EXACT_LINE_REPAIR`
+- r12_ready: `True`
+- patch_allowed: `True`
+- patch_applied: `True`
+- patch_reason: `removed/ignored R10 misplaced patch and inserted R13 block immediately before active decision XADD`
+- field_var: `fields`
+- patched_file: `app/mme_scalpx/services/strategy.py`
+- old_marker_present_after: `False`
+- new_marker_present_after: `True`
+- compile_ok: `True`
+- import_ok: `True`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- no service start / no paper / no real-live / no broker call / no order write: `True`
+- next_recommended_batch: `Inspect R13 false_keys/source inspection; do not run services until patch is proven.`

@@ -1,0 +1,50 @@
+schema_version: replay_integrity_policy_v1
+purpose: deterministic replay reset, run-id, and integrity policy
+replay_only: true
+paper_armed_approved: false
+live_trading_approved: false
+execution_arming_created: false
+broker_calls_allowed: false
+live_redis_writes_allowed: false
+production_doctrine_changed: false
+
+required_hash_inputs:
+  - dataset_fingerprint
+  - profile_fingerprint
+  - experiment_fingerprint
+  - selected_window_fingerprint
+  - code_fingerprint
+
+required_reset_components:
+  - replay_clock
+  - local_replay_transport
+  - feature_state
+  - strategy_state
+  - risk_state
+  - execution_shadow_state
+  - misr_consumed_trap_event_registry
+  - miso_consumed_burst_event_registry
+  - cooldown_state
+  - position_state
+  - artifact_state
+
+required_integrity_checks:
+  - deterministic_run_id
+  - dataset_hash_present
+  - profile_hash_present
+  - experiment_hash_present
+  - selected_window_hash_present
+  - code_hash_present
+  - event_order_monotonic
+  - reset_cleanliness
+  - artifact_root_is_run_replay
+  - config_root_is_etc_replay
+  - no_broker_call
+  - no_live_redis_write
+  - no_runtime_promotion
+
+advisory_boundary:
+  replay_result_is_advisory: true
+  replay_result_is_not_paper_approval: true
+  replay_result_is_not_live_approval: true
+  replay_result_is_not_doctrine_change: true

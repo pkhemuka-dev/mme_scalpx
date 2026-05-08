@@ -1,0 +1,38 @@
+BATCH 29BB STRATEGY ACTIVATION REPORT-ONLY SURFACE AUDIT
+
+generated_at_utc: 2026-05-02T08:19:23.724071+00:00
+verdict: PASS_STRATEGY_ACTIVATION_SURFACE_AUDIT_READY_FOR_VALUE_MAPPING_29BB
+selected_surface: strategy_activation_report_only_parity
+surface_audit_status: READY_FOR_VALUE_MAPPING_AUDIT
+evidence_file_count: 21
+strategy_hit_file_count: 21
+concrete_file_count: 20
+value_readiness: CONCRETE_REPLAY_SIDE_VALUES_FOUND
+strategy_activation_value_parity: NOT_PROVEN_READY_FOR_MAPPING
+full_live_replay_parity: NOT_PROVEN_IN_29BB
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+repair_path: STRATEGY_ACTIVATION_VALUE_MAPPING_AUDIT_READY
+next_batch: Batch 29BC — map strategy activation report-only replay values and define comparison contract; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_surface_audit_29bb/00_selected_strategy_activation_evidence_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_surface_audit_29bb/01_strategy_activation_report_only_surface_audit.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_surface_audit_29bb/02_strategy_activation_value_readiness_decision.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_surface_audit_29bb/03_next_batch_29bc_contract.json
+
+Proofs:
+- run/proofs/proof_strategy_activation_surface_audit_29bb.json
+- run/proofs/proof_strategy_activation_surface_audit_29bb_latest.json
+- run/proofs/batch29bb_strategy_activation_surface_audit_20260502_134923_driver_proof.json
+- etc/replay/parity/strategy_activation_surface_audit_29bb.json

@@ -1,0 +1,19 @@
+{
+  "broker_io_allowed": false,
+  "export_mode": "post_raw_s_replay_true_family_enrich_probe",
+  "law": [
+    "Run replay/research evidence only.",
+    "Do not enable paper/live.",
+    "Do not overwrite earlier RAW proofs.",
+    "Compare before/after UNKNOWN trade-family ratio."
+  ],
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "owner": "post-RAW-S replay-only export and RAW rerun",
+  "paper_live_enablement_allowed": false,
+  "promotion_allowed_by_raw_t": false,
+  "purpose": "Generate post-RAW-S replay evidence and rerun RAW-N/Q/R to compare family coverage.",
+  "redis_live_write_allowed": false,
+  "schema_version": "RAW-T.1"
+}

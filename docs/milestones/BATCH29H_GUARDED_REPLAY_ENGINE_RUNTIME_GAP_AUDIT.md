@@ -1,0 +1,48 @@
+Batch 29H Guarded ReplayEngine runtime-gap audit
+
+Date: 2026-05-01
+
+Verdict:
+FAIL_GUARDED_REPLAY_ENGINE_RUNTIME_GAP_AUDIT_29H
+
+Accepted for:
+GUARDED_REPLAY_ENGINE_RUNTIME_GAP_AUDIT_ONLY
+
+Source:
+- 29G proof: run/proofs/proof_guarded_replay_engine_execute_dry_run_29g_latest.json
+- 29G execute root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_dry_run_29g
+- 29F shim root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f
+- 29E materialization root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_context_object_materialization_29e
+- 29C adapter root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c
+
+Generated:
+- bin/audit_guarded_replay_engine_runtime_gap_29h.py
+- etc/replay/parity/guarded_replay_engine_runtime_gap_audit_29h.json
+- run/proofs/proof_guarded_replay_engine_runtime_gap_audit_29h.json
+- run/proofs/proof_guarded_replay_engine_runtime_gap_audit_29h_latest.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_runtime_gap_audit_29h/
+
+Result:
+runtime_gap_confirmed=true
+runtime_gap_kind=OFFLINE_CONTEXT_ATTRIBUTE_SHAPE_GAP
+repair_path=REPAIR_OFFLINE_CONTEXT_OBJECT_ATTRIBUTE_SHAPE
+error_text=AttributeError: 'OfflineReplayRunContext' object has no attribute 'run_id'
+candidate_executed=false
+replay_core_executed=false
+replay_run_completed=false
+comparison_completed=false
+
+Safety:
+starts_services=false
+reads_live_redis=false
+writes_live_redis=false
+calls_broker_api=false
+paper_armed_approved=false
+live_trading_approved=false
+execution_arming_created=false
+real_order_sent=false
+production_doctrine_changed=false
+full_live_replay_parity=NOT_PROVEN_IN_29H
+
+Next:
+Repair 29H runtime-gap audit before any 29I patch.

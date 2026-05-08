@@ -1,0 +1,109 @@
+{
+  "created_at_utc": "2026-05-08T18:03:13.469176+00:00",
+  "latest_proof": "/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/proof_replay_data_a10_selector_only_cli_dry_probe_20260508T175024Z.json",
+  "local_classification": {
+    "next_batch": "REPLAY-DATA-A11",
+    "next_goal": "Reconstruct features_rows candidate from quote feeds; selector-only validation; no engine execution.",
+    "reason": "A10 proved replay_run selector is ready for 2026-04-17 quote dataset, but engine remains blocked by missing features/strategy/risk/execution surfaces.",
+    "verdict": "PASS_NEXT_FEATURES_ROWS_RECONSTRUCTION"
+  },
+  "mode": "ai_replay_r2_generate_only_no_execute",
+  "model": "gpt-5.5",
+  "proof_summary": {
+    "batch": "REPLAY-DATA-A10",
+    "canonical_root": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+    "dataset_id": "session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+    "findings": [
+      {
+        "area": "engine_readiness",
+        "message": "CLI selector is ready, but full replay engine remains blocked until features_rows/strategy_decisions/risk_outputs/execution_shadow are reconstructed.",
+        "severity": "UNCLEAR"
+      }
+    ],
+    "safety": {
+      "broker_calls_executed": false,
+      "code_patched": false,
+      "engine_execution_performed": false,
+      "files_transformed": false,
+      "live_redis_writes_executed": false,
+      "orders_sent": false,
+      "paper_or_live_enabled": false,
+      "real_live_data_mutated": false,
+      "services_started": false
+    },
+    "selector_probe": {
+      "argv": [
+        "--dataset-root",
+        "run/replay/parity/offline_materialization",
+        "--dataset-id",
+        "session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+        "--selection-mode",
+        "single_day",
+        "--single-day",
+        "2026-04-17",
+        "--doctrine-mode",
+        "locked",
+        "--scope",
+        "feeds_only",
+        "--required-file-stems",
+        "quote_ticks_mme_fut_stream,quote_ticks_mme_opt_stream",
+        "--optional-file-stems",
+        "ticks_mme_fut_stream,ticks_mme_opt_stream,health_features,source_manifest,reconstruction_todo,quote_transform_manifest",
+        "--supported-suffixes",
+        ".csv,.json,.jsonl"
+      ],
+      "available_dates": [
+        "2026-04-17"
+      ],
+      "dataset_id": "session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+      "dataset_summary": {
+        "dataset_id": "session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+        "root": "",
+        "trading_days": [
+          "2026-04-17"
+        ]
+      },
+      "repo_root": "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+      "repo_root_exists": true,
+      "selected_dates": [
+        "2026-04-17"
+      ],
+      "selection_fingerprint": "dd673dc244ef028b6d2f498296f4300f9ecd8cc90b75fbf0b254b39e8e7dc677",
+      "selector_plan_ok": true,
+      "source_date": "2026-04-17"
+    },
+    "source_date": "2026-04-17",
+    "summary": {
+      "available_dates": [
+        "2026-04-17"
+      ],
+      "canonical_root": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+      "cli_help_ok": true,
+      "dataset_id": "session_exports_canonical_candidate_20260417_a7_20260508T173739Z",
+      "engine_execution_performed": false,
+      "fail_count": 0,
+      "overall_verdict": "PASS",
+      "py_compile_ok": true,
+      "recommended_next_batches": [
+        "REPLAY-DATA-A11 reconstruct features_rows from quote feeds",
+        "Then REPLAY-DATA-A12 reconstruct strategy_decisions shadow output"
+      ],
+      "selected_dates": [
+        "2026-04-17"
+      ],
+      "selection_fingerprint": "dd673dc244ef028b6d2f498296f4300f9ecd8cc90b75fbf0b254b39e8e7dc677",
+      "selector_plan_ok": true,
+      "source_date": "2026-04-17",
+      "unclear_count": 1
+    },
+    "title": "Selector-only replay_run CLI dry probe using quote transformed files"
+  },
+  "safety": {
+    "calls_broker": false,
+    "enables_paper_or_live": false,
+    "executes_generated_script": false,
+    "patches_real_project": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  }
+}

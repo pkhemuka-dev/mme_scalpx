@@ -1,0 +1,31 @@
+{
+  "batch": "29BB-R3",
+  "generated_at_utc": "2026-05-05T08:34:19.497255+00:00",
+  "mode": "micro_authority_resolver_no_patch",
+  "safety": {
+    "features_restarted": false,
+    "order_sending_performed": false,
+    "paper_live_enablement_performed": false,
+    "production_code_patched": false,
+    "strategy_restarted": false
+  },
+  "schema_version": "batch29bb_r3_config_v1",
+  "target_files": [
+    "app/mme_scalpx/services/features.py",
+    "app/mme_scalpx/services/strategy.py",
+    "app/mme_scalpx/core/redisx.py",
+    "app/mme_scalpx/core/names.py"
+  ],
+  "terms": [
+    "features:mme:stream",
+    "decisions:mme:stream",
+    "family_surfaces_json",
+    "consumer_view_json",
+    "family_features_json",
+    "payload_json",
+    "decision_json",
+    "XADD",
+    "xadd",
+    "xadd_json"
+  ]
+}

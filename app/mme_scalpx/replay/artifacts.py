@@ -36,6 +36,47 @@ Design rules
 
 from __future__ import annotations
 
+# RAW-S producer family emission hook — replay-only, non-live.
+try:
+    from app.mme_scalpx.replay.raw_producer_family_emission import emit_family_context as _raw_s_emit_family_context
+except Exception:  # defensive replay-only fallback
+    def _raw_s_emit_family_context(value, *, source_artifact=""):
+        return value
+
+
+def _raw_s_emit(value):
+    source_artifact = __file__
+    if isinstance(value, dict):
+        source_artifact = str(
+            value.get("source_artifact")
+            or value.get("raw_source_artifact")
+            or value.get("source_path")
+            or value.get("artifact_path")
+            or value.get("input_file")
+            or value.get("input_path")
+            or __file__
+        )
+    return _raw_s_emit_family_context(value, source_artifact=source_artifact)
+# END RAW-S producer family emission hook.
+
+# BEGIN BATCH27C_REPLAY_SAFETY_FIREWALL
+try:
+    from app.mme_scalpx.replay.safety import assert_replay_module_static_safety
+except ModuleNotFoundError:
+    import pathlib as _batch27c_pathlib
+    import sys as _batch27c_sys
+
+    _batch27c_here = _batch27c_pathlib.Path(__file__).resolve()
+    for _batch27c_parent in [_batch27c_here.parent, *_batch27c_here.parents]:
+        if (_batch27c_parent / "app" / "mme_scalpx").exists():
+            if str(_batch27c_parent) not in _batch27c_sys.path:
+                _batch27c_sys.path.insert(0, str(_batch27c_parent))
+            break
+    from app.mme_scalpx.replay.safety import assert_replay_module_static_safety
+
+assert_replay_module_static_safety(__file__)
+# END BATCH27C_REPLAY_SAFETY_FIREWALL
+
 import csv
 import json
 from dataclasses import dataclass
@@ -359,9 +400,7 @@ def read_json_artifact(path: str | Path) -> dict[str, Any]:
             f"JSON artifact must decode to object: {file_path}"
         )
 
-    return payload
-
-
+    return _raw_s_emit(payload)
 def _validate_artifact_plan(artifact_plan: ReplayArtifactPlan) -> None:
     required = (
         artifact_plan.root_dir,
@@ -486,3 +525,53 @@ if "_validate_artifact_plan" in globals():
         _BATCH16_ORIGINAL_VALIDATE_ARTIFACT_PLAN(artifact_plan)
         validate_artifact_plan_path_containment(artifact_plan)
 # ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====
+
+# BEGIN BATCH27E_REPLAY_ARTIFACT_INTEGRITY_HELPERS
+
+def replay_artifact_reset_manifest(*, run_id, artifact_root):
+    """Return replay-only artifact reset manifest.
+
+    The safety layer enforces that artifact_root is under run/replay.
+    """
+    from app.mme_scalpx.replay.safety import assert_replay_artifact_path
+
+    root = assert_replay_artifact_path(artifact_root)
+    return {
+        "schema_version": "replay_artifact_reset_manifest_v1",
+        "run_id": str(run_id),
+        "artifact_root": str(root),
+        "artifact_state_reset": True,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_artifact_reset_manifest",
+)))
+
+# END BATCH27E_REPLAY_ARTIFACT_INTEGRITY_HELPERS
+
+# BEGIN BATCH27K_REPLAY_ARTIFACT_MATERIALIZATION_HELPERS
+
+def replay_batch_required_artifact_names():
+    """Return frozen replay batch artifact names."""
+    from app.mme_scalpx.replay.artifact_materializer import REPLAY_BATCH_REQUIRED_ARTIFACTS
+
+    return tuple(REPLAY_BATCH_REQUIRED_ARTIFACTS)
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_batch_required_artifact_names",
+)))
+
+# END BATCH27K_REPLAY_ARTIFACT_MATERIALIZATION_HELPERS

@@ -1,0 +1,21 @@
+{
+  "accepted_for": "OFFLINE_REPLAY_TOPOLOGY_PLAN_TOPOLOGY_FINGERPRINT_PROPERTY_REPAIR_ONLY",
+  "batch": "29AI-R4",
+  "generated_at_utc": "2026-05-02T06:45:11.461914+00:00",
+  "safety": {
+    "batch": "29AI-R4",
+    "broker_calls_executed": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "patch_scope": "app/mme_scalpx/replay/offline_context_shim.py only",
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "topology_fingerprint_property_repair_29ai_r4_v1",
+  "target_file": "app/mme_scalpx/replay/offline_context_shim.py"
+}

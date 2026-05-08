@@ -1,0 +1,34 @@
+BATCH 29DG FINAL REPLAY/LIVE PARITY BOUNDARY ROLLUP
+
+verdict: PASS_29DG_FINAL_REPLAY_LIVE_PARITY_BOUNDARY_ROLLUP_FULL_PARITY_NOT_PROVEN
+final_boundary_rollup_status: FINAL_BOUNDARY_ROLLUP_COMPLETE_FULL_PARITY_NOT_PROVEN_CONTRACT_CHAIN_ONLY
+final_boundary_verdict_category: FULL_PARITY_NOT_PROVEN_CONTRACT_CHAIN_ONLY
+closed_surface_count: 12
+open_gap_count: 7
+real_same_session_artifacts_collected: false
+same_session_comparisons_executed: false
+temporal_alignment_executed: false
+real_evidence_package_built: false
+full_live_replay_parity: NOT_PROVEN_AFTER_29DG_FINAL_BOUNDARY_ROLLUP
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+paper_armed_approved: false
+live_trading_approved: false
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29dg/00_final_boundary_rollup.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29dg/01_closed_contract_chain.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29dg/02_open_gap_register.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29dg/03_handoff_note.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29dg/04_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/final_replay_live_parity_boundary_rollup_29dg/05_operator_summary.md
+- run/proofs/proof_final_replay_live_parity_boundary_rollup_29dg.json
+- run/proofs/proof_final_replay_live_parity_boundary_rollup_29dg_latest.json
+- etc/replay/parity/final_replay_live_parity_boundary_rollup_29dg.json
+
+Conclusion:
+Full live/replay parity remains NOT PROVEN. This batch does not approve paper_armed or live trading.
+
+Next:
+Batch 29DH — define future real same-session evidence collection contract; still no paper/live enablement.

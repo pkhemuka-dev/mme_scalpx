@@ -1,0 +1,60 @@
+{
+  "schema_version": "replay_live_parity_audit_plan_contract_v1",
+  "purpose": "Plan-only contract for future replay/live parity audit after a real observe_only market session capture.",
+  "replay_only": true,
+  "accepted_for": "PARITY_AUDIT_PLAN_ONLY",
+  "paper_armed_approved": false,
+  "live_trading_approved": false,
+  "execution_arming_created": false,
+  "broker_calls_allowed": false,
+  "live_redis_writes_allowed": false,
+  "real_order_intent_allowed": false,
+  "production_doctrine_changed": false,
+  "required_live_evidence": [
+    "provider_runtime",
+    "feed_snapshot",
+    "feature_payload",
+    "family_surfaces",
+    "strategy_activation",
+    "no_order_sent",
+    "live_capture_log",
+    "live_stream_inventory",
+    "live_hash_inventory",
+    "provider_health_snapshot",
+    "selected_option_context",
+    "dhan_oi_ladder_context_if_available"
+  ],
+  "required_replay_evidence": [
+    "dataset_manifest",
+    "replay_run_manifest",
+    "replay_transport_manifest",
+    "feature_family_adapter_proof",
+    "strategy_family_adapter_proof",
+    "risk_execution_shadow_proof",
+    "scenario_profile_manifest",
+    "batch_runner_artifacts",
+    "report_exports",
+    "experiment_artifacts"
+  ],
+  "parity_sections": [
+    "provider_runtime_parity",
+    "stream_shape_parity",
+    "hash_shape_parity",
+    "timestamp_staleness_parity",
+    "dataset_row_parity",
+    "feature_payload_parity",
+    "family_surface_parity",
+    "strategy_decision_parity",
+    "risk_execution_shadow_parity",
+    "report_export_parity",
+    "safety_no_order_parity"
+  ],
+  "explicit_not_proven": [
+    "full_live_replay_parity",
+    "paper_armed_readiness",
+    "live_trading_readiness",
+    "production_strategy_improvement_claim",
+    "production_doctrine_revision"
+  ],
+  "expected_28a_verdict": "PASS_REPLAY_LIVE_PARITY_AUDIT_PLAN"
+}

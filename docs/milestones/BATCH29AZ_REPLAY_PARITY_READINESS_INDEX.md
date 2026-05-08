@@ -1,0 +1,39 @@
+BATCH 29AZ REPLAY PARITY READINESS INDEX
+
+generated_at_utc: 2026-05-02T08:11:43.937551+00:00
+verdict: PASS_REPLAY_PARITY_READINESS_INDEX_29AZ
+readiness_index_verdict: PROVIDER_FEATURE_BRANCH_CLOSED_FULL_PARITY_NOT_PROVEN
+provider_feature_branch_complete: True
+provider_feature_value_parity: NOT_PROVEN_NULL_SAFE_REPLAY_VALUES
+replay_core_dry_run_status: PROVEN
+full_live_replay_parity: NOT_PROVEN_IN_29AZ
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+surface_count: 7
+proven_surface_count: 3
+not_comparable_surface_count: 1
+not_proven_surface_count: 1
+blocked_surface_count: 1
+next_batch: Batch 29BA — select the next replay/live parity surface or build broader readiness index from remaining artifacts; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_parity_readiness_index_29az/00_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_parity_readiness_index_29az/01_surface_classification_matrix.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_parity_readiness_index_29az/02_proof_chain_inventory.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_parity_readiness_index_29az/03_next_replay_live_parity_surface_contract.json
+
+Proofs:
+- run/proofs/proof_replay_parity_readiness_index_29az.json
+- run/proofs/proof_replay_parity_readiness_index_29az_latest.json
+- run/proofs/batch29az_replay_parity_readiness_index_20260502_134143_driver_proof.json
+- etc/replay/parity/replay_parity_readiness_index_29az.json

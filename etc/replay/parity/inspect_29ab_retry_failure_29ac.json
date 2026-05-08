@@ -1,0 +1,21 @@
+{
+  "accepted_for": "29AB_FAILURE_INSPECTION_ONLY",
+  "batch": "29AC",
+  "generated_at_utc": "2026-05-02T06:29:40.074416+00:00",
+  "safety": {
+    "audit_only": true,
+    "batch": "29AC",
+    "broker_calls_executed": false,
+    "code_patch_applied": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "inspect_29ab_retry_failure_29ac_v1"
+}

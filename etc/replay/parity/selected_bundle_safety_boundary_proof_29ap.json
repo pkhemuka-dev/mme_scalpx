@@ -1,0 +1,29 @@
+{
+  "accepted_for": "SELECTED_BUNDLE_SAFETY_BOUNDARY_PROOF_FROM_AUTHORITATIVE_EXISTING_ARTIFACTS_ONLY",
+  "batch": "29AP",
+  "extended_bundle": "run/replay/parity/batch29ap_selected_bundle_safety_boundary_proof_20260502_123630/selected_live_observe_bundle_extended_with_safety_boundary_29ap.json",
+  "generated_at_utc": "2026-05-02T07:06:30.779714+00:00",
+  "safety": {
+    "artifact_only": true,
+    "batch": "29AP",
+    "bounded_tool_written": false,
+    "broker_calls_executed": false,
+    "code_patch_applied": false,
+    "comparison_execution_performed": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "replay_rerun_performed": false,
+    "selected_bundle_extension_only": true,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "selected_bundle_safety_boundary_proof_29ap_v1",
+  "selected_boundary_latest": "run/proofs/proof_market_session_selected_bundle_safety_boundary_29ap_latest.json",
+  "selected_boundary_proof": "run/proofs/proof_market_session_selected_bundle_safety_boundary_29ap.json",
+  "source_authorities": "run/replay/parity/batch29ap_selected_bundle_safety_boundary_proof_20260502_123630/selected_bundle_safety_boundary_source_authorities_29ap.json"
+}

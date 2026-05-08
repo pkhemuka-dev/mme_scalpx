@@ -263,3 +263,29 @@ __all__ = [
     "ReplayClock",
     "replay_clock_snapshot_to_dict",
 ]
+
+# BEGIN BATCH27E_REPLAY_CLOCK_RESET_HELPERS
+
+def replay_clock_reset_seed(*, start_ts_ns=0, speed_multiplier=1.0):
+    """Return deterministic replay-clock reset seed data.
+
+    This does not mutate a running clock. It is a replay-only shape helper.
+    """
+    return {
+        "schema_version": "replay_clock_reset_seed_v1",
+        "start_ts_ns": int(start_ts_ns),
+        "speed_multiplier": float(speed_multiplier),
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_clock_reset_seed",
+)))
+
+# END BATCH27E_REPLAY_CLOCK_RESET_HELPERS

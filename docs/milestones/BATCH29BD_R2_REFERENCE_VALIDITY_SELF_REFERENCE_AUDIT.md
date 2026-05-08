@@ -1,0 +1,13 @@
+BATCH 29BD-R2 STRATEGY ACTIVATION REFERENCE VALIDITY SELF-REFERENCE AUDIT
+
+generated_at_utc: 2026-05-02T09:53:57.151421+00:00
+verdict: DEFERRED_29BD_R2_SELECTED_REFERENCE_REJECTED_SELF_REFERENCE
+selected_reference_artifact: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_value_mapping_contract_29bc/00_strategy_activation_value_mapping_report.json
+selected_reference_valid: False
+reference_validity_status: REJECTED_SELF_REFERENCE_OR_REPLAY_DERIVED_ARTIFACT
+strategy_activation_value_comparison_ready: False
+full_live_replay_parity: NOT_PROVEN_IN_29BD_R2
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BD-R3 — rediscover strategy activation reference artifacts excluding 29BA/29BB/29BC/29BD replay-derived outputs.
+
+Files changed: none

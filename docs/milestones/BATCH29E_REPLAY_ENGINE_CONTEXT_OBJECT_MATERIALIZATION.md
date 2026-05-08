@@ -1,0 +1,48 @@
+Batch 29E ReplayEngine context object materialization
+
+Date: 2026-05-01
+
+Verdict:
+DEFERRED_REPLAY_ENGINE_CONTEXT_OBJECT_SHIM_REQUIRED_29E
+
+Accepted for:
+REPLAY_ENGINE_CONTEXT_OBJECT_MATERIALIZATION_ONLY
+
+Source:
+- 29D proof: run/proofs/proof_replay_engine_offline_context_bridge_29d_latest.json
+- 29D bridge root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_offline_context_bridge_29d
+- 29C adapter root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c
+- dataset candidate root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate
+- callable output root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/explicit_offline_replay_callable_execution_28v
+
+Generated:
+- bin/materialize_replay_engine_context_objects_29e.py
+- etc/replay/parity/replay_engine_context_object_materialization_29e.json
+- run/proofs/proof_replay_engine_context_object_materialization_29e.json
+- run/proofs/proof_replay_engine_context_object_materialization_29e_latest.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_context_object_materialization_29e/
+
+Result:
+context_objects_materialized=false
+run_context_materialized=false
+topology_plan_materialized=true
+stage_executor_materialized=true
+candidate_executed=false
+replay_core_executed=false
+replay_run_completed=false
+comparison_completed=false
+
+Safety:
+starts_services=false
+reads_live_redis=false
+writes_live_redis=false
+calls_broker_api=false
+paper_armed_approved=false
+live_trading_approved=false
+execution_arming_created=false
+real_order_sent=false
+production_doctrine_changed=false
+full_live_replay_parity=NOT_PROVEN_IN_29E
+
+Next:
+Batch 29F — add explicit offline context-object shim for unmaterialized ReplayEngine inputs, still not paper/live enablement.

@@ -1,0 +1,32 @@
+BATCH 29AU REPLAY PROVIDER-FEATURE SOURCE-ENRICHMENT CONTRACT
+
+generated_at_utc: 2026-05-02T07:20:58.240058+00:00
+verdict: PASS_REPLAY_PROVIDER_FEATURE_SOURCE_ENRICHMENT_CONTRACT_29AU
+source_enrichment_contract_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_source_enrichment_contract_29au/00_replay_provider_feature_source_enrichment_contract.json
+source_enrichment_table_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_source_enrichment_contract_29au/02_replay_provider_feature_source_enrichment_table.csv
+provider_feature_field_count: 4
+fields_missing_real_replay_boolean_count: 4
+usable_boolean_candidate_count: 0
+source_enrichment_required: True
+source_enrichment_contract_ready: True
+provider_feature_value_comparison_ready: False
+full_live_replay_parity: NOT_PROVEN_IN_29AU
+repair_path: REPLAY_PROVIDER_FEATURE_PRODUCER_CONSUMER_SEAM_AUDIT_READY
+next_batch: Batch 29AV — audit exact replay provider-feature producer/consumer seam before any code patch; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_replay_provider_feature_source_enrichment_contract_29au.json
+- run/proofs/proof_replay_provider_feature_source_enrichment_contract_29au_latest.json
+- run/proofs/batch29au_replay_provider_feature_source_enrichment_contract_20260502_125058_driver_proof.json
+- etc/replay/parity/replay_provider_feature_source_enrichment_contract_29au.json

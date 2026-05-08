@@ -1,0 +1,39 @@
+BATCH 29BD STRATEGY ACTIVATION REFERENCE DISCOVERY
+
+generated_at_utc: 2026-05-02T08:42:00.920107+00:00
+verdict: PASS_STRATEGY_ACTIVATION_REFERENCE_DISCOVERY_COMPARISON_READY_29BD
+selected_surface: strategy_activation_report_only_parity
+reference_discovery_status: REFERENCE_ARTIFACT_SELECTED_COMPARISON_READY
+reference_candidate_count: 100
+selected_reference_artifact: run/proofs/batch29al_offline_live_observe_parity_contract_20260502_121933_inspection/candidate_proofs/run/proofs/proof_market_session_strategy_activation.json
+common_field_count: 3
+comparable_field_count: 3
+strategy_activation_value_comparison_ready: True
+strategy_activation_value_parity: NOT_PROVEN_READY_FOR_VALUE_COMPARISON
+full_live_replay_parity: NOT_PROVEN_IN_29BD
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+repair_path: STRATEGY_ACTIVATION_VALUE_COMPARISON_READY
+next_batch: Batch 29BE — execute strategy activation value comparison on mapped replay/reference fields; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_reference_discovery_29bd/00_reference_candidate_inventory.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_reference_discovery_29bd/01_selected_reference_mapping.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_reference_discovery_29bd/02_strategy_activation_comparison_readiness.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strategy_activation_reference_discovery_29bd/03_next_batch_29be_contract.json
+
+Proofs:
+- run/proofs/proof_strategy_activation_reference_discovery_29bd.json
+- run/proofs/proof_strategy_activation_reference_discovery_29bd_latest.json
+- run/proofs/batch29bd_strategy_activation_reference_discovery_20260502_135224_driver_proof.json
+- etc/replay/parity/strategy_activation_reference_discovery_29bd.json

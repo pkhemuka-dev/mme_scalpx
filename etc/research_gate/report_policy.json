@@ -1,0 +1,13 @@
+{
+  "compact_reports_only": true,
+  "default_reports": [
+    "manifest.json",
+    "dataset_quality_report.json",
+    "replay_backtest_verdict.json",
+    "pnl_report.json",
+    "strategy_rank_report.json",
+    "oi_wall_impact_report.json",
+    "promotion_verdict.json"
+  ],
+  "schema_version": "RAW-C.1"
+}

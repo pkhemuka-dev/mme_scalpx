@@ -1,0 +1,26 @@
+BATCH 29BW RISK/EXECUTION SHADOW NO-ORDER MAPPING CONTRACT
+
+verdict: PASS_29BW_RISK_EXECUTION_NO_ORDER_MAPPING_CONTRACT_READY
+risk_execution_shadow_no_order_parity: NOT_PROVEN_MAPPING_CONTRACT_READY
+mapping_contract_ready: True
+mapping_row_count: 6
+mapping_failure_count: 0
+approved_comparable_fields: ['broker_calls_executed', 'execution_arming_created', 'live_redis_writes_executed', 'live_trading_approved', 'paper_armed_approved', 'real_order_sent']
+same_file_exclusion_passed: True
+selected_replay_artifact: run/proofs/batch27n_replay_final_acceptance_gate_20260501_142734_inspection/source_snapshot/run/proofs/proof_replay_risk_adapter_execution_shadow.json
+selected_reference_artifact: run/replay/parity/live_evidence/batch28b_contract_only/06_no_order_sent.json
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29BW
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_execution_no_order_mapping_contract_29bw/00_risk_execution_no_order_mapping_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_execution_no_order_mapping_contract_29bw/01_mapping_summary.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/risk_execution_no_order_mapping_contract_29bw/02_operator_summary.md
+- run/proofs/proof_risk_execution_no_order_mapping_contract_29bw.json
+- run/proofs/proof_risk_execution_no_order_mapping_contract_29bw_latest.json
+- etc/replay/parity/risk_execution_no_order_mapping_contract_29bw.json
+
+Next:
+Batch 29BX — execute risk_execution_shadow_no_order mapped value comparison; still no paper/live enablement.

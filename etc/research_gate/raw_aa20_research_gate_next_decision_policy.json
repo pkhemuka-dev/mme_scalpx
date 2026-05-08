@@ -1,0 +1,19 @@
+{
+  "created_at_utc": "2026-05-02T07:33:33.568242+00:00",
+  "hard_safety": {
+    "broker_io_allowed": false,
+    "live_redis_write_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "production_patch_allowed": false,
+    "row_mutation_allowed": false
+  },
+  "manual_authority_paths": [
+    "cost model declaration",
+    "OI wall formula declaration",
+    "trade lifecycle/PnL declaration"
+  ],
+  "preferred_next": "RAW_AA21_AVAILABLE_FIELD_ANALYSIS_NOTEBOOK_OR_REPORT",
+  "promotion_allowed": false,
+  "raw_report_ready": true,
+  "schema_version": "raw_aa20_research_gate_next_decision_policy_v1"
+}

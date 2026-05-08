@@ -1,0 +1,98 @@
+{
+  "accepted_for": "OFFLINE_REPLAY_MATERIALIZATION_HARNESS_ONLY",
+  "batch": "28K",
+  "broker_call_reachable": false,
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "dataset_materialized": false,
+  "execution_arming_created": false,
+  "full_live_replay_parity": "NOT_PROVEN_IN_28K",
+  "generated_at_utc": "2026-05-01T12:27:34.704239+00:00",
+  "harness_artifact_states": {
+    "00_offline_materialization_harness_manifest.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/00_offline_materialization_harness_manifest.json",
+      "present": true,
+      "sha256": "b6f7414aacb02f00a37e30a8e9c62241a04778f1562ea16f6178b3e02d0934f3",
+      "size_bytes": 1266
+    },
+    "01_dataset_source_reference_index.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/01_dataset_source_reference_index.json",
+      "present": true,
+      "sha256": "c1e09c447e7bb0efe887f051d9fbda0a0c2793628e1fb4236ec89a8abf0bf18f",
+      "size_bytes": 3714
+    },
+    "02_service_surface_materialization_plan.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/02_service_surface_materialization_plan.json",
+      "present": true,
+      "sha256": "c267cc1ac20d540f10dc777056aa189df47d44cc699f66c62e10a50c64ae762c",
+      "size_bytes": 969
+    },
+    "03_no_enablement_boundary.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/03_no_enablement_boundary.json",
+      "present": true,
+      "sha256": "b09b7dfbe8b65633f4ca74e8db46a13cc697f9fcfa442056ca8847049527f1b2",
+      "size_bytes": 672
+    },
+    "04_future_execution_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/04_future_execution_contract.json",
+      "present": true,
+      "sha256": "ac874ec0087c421876f8934eb446bf2f85d96e9538b37b47ebb7dee85924a0b4",
+      "size_bytes": 718
+    },
+    "05_materialization_readiness.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/05_materialization_readiness.json",
+      "present": true,
+      "sha256": "044451badee1a5b3fdc1e42b35a9c8a2283660babab815895c012451ef59ea05",
+      "size_bytes": 387
+    }
+  },
+  "harness_built": true,
+  "harness_result": {
+    "accepted_for": "OFFLINE_REPLAY_MATERIALIZATION_HARNESS_ONLY",
+    "calls_broker_api": false,
+    "capture_id": "pstrategy_20260430_094557",
+    "comparison_completed": false,
+    "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+    "dataset_materialized": false,
+    "evidence_file_count": 12,
+    "execution_arming_created": false,
+    "full_live_replay_parity": "NOT_PROVEN_IN_28K",
+    "harness_built": true,
+    "live_trading_approved": false,
+    "next_batch": "Batch 28L \u2014 run offline replay materialization dry-run from the 28K harness, still not paper/live enablement.",
+    "output_root": "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0",
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_run_completed": false,
+    "schema_version": "offline_replay_materialization_harness_result_28k_v1",
+    "starts_services": false,
+    "writes_live_redis": false,
+    "written_count": 6
+  },
+  "harness_script": "bin/observe_only_offline_replay_materialization_harness_28k.py",
+  "harness_script_sha256": "21b7b09019746c6de35327a66273a4b47c2e8e9a8d9e22289d3ce3df49552e2d",
+  "live_redis_write_reachable": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "materialization_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0",
+  "materialization_root_replay_safe": true,
+  "next_batch": "Batch 28L \u2014 run offline replay materialization dry-run from the 28K harness, still not paper/live enablement.",
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "replay_run_completed": false,
+  "runtime_promotion_reachable": false,
+  "schema_version": "observe_only_offline_replay_materialization_harness_28k_v1",
+  "source_package_root": "run/replay/parity/live_evidence/pstrategy_20260430_094557",
+  "source_preflight_28j": "etc/replay/parity/observe_only_replay_input_dataset_preflight_28j.json",
+  "source_preflight_28j_sha256": "6fc925b1886de3d99fb78a9c513c61d43fadfe04bff82f70d4a5ceb2e481a6b1",
+  "source_preflight_root": "run/replay/parity/dataset_preflight/pstrategy_20260430_094557",
+  "starts_services": false,
+  "writes_live_redis": false
+}

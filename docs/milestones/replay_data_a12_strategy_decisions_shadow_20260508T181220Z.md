@@ -1,0 +1,21 @@
+# REPLAY-DATA-A12 — strategy_decisions shadow reconstruction audit
+
+- previous_proof: `run/proofs/proof_replay_data_a11_features_rows_reconstruction_20260508T180133Z.json`
+- canonical_root: `run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z`
+- source_date: `2026-04-17`
+- features_rows_candidate: `run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z/2026-04-17/features_rows_candidate.csv`
+- features_rows_sha256: `9dc6b1213353d55857660e0a544065d52270b4b423f7945ab0452710dbbf9510`
+- source_features_row_count: `50021`
+- strategy_decisions_candidate_written: `True`
+- row_count: `50021`
+- candidate_path: `run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z/2026-04-17/strategy_decisions_candidate.csv`
+- candidate_sha256: `ab070a89d3c2be360930b66fabc2bddaede8fc4e5a06096dc522f99511613d4e`
+- schema_safe: `True`
+- header_reason: `shadow_schema_v1_conservative_hold_no_trade`
+- policy: conservative `HOLD` / `NO_TRADE` shadow reconstruction only
+- engine_ready: `false`
+- engine_execution_performed: `false`
+- risk_outputs_created: `false`
+- execution_shadow_created: `false`
+- strategy/risk/execution parity claimed: `false`
+- next_batch: `REPLAY-DATA-A13 risk_outputs shadow reconstruction audit`

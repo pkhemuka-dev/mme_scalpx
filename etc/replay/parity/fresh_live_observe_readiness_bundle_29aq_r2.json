@@ -1,0 +1,30 @@
+{
+  "batch": "29AQ-R2",
+  "created_at_utc": "2026-05-04T04:49:55.700268+00:00",
+  "mode": "guarded_live_observe_readiness_only",
+  "safety": {
+    "batch": "29AQ-R2",
+    "bounded_tool_written": false,
+    "broker_calls_executed": false,
+    "code_patch_applied": false,
+    "comparison_execution_performed": false,
+    "live_redis_writes_executed": false,
+    "live_trading_approved": false,
+    "paper_armed_approved": false,
+    "production_strategy_code_patched": false,
+    "raw_patch_performed": false,
+    "readiness_check_only": true,
+    "replay_core_executed": false,
+    "replay_rerun_performed": false
+  },
+  "schema_version": "fresh_live_observe_readiness_bundle_29aq_r2_config_v1",
+  "stream_probe_wait_sec": 8,
+  "streams": {
+    "fut_dhan": "ticks:mme:fut:dhan:stream",
+    "fut_zerodha": "ticks:mme:fut:zerodha:stream",
+    "health": "system:health:stream",
+    "opt_context_dhan": "ticks:mme:opt:context:dhan:stream",
+    "opt_selected_dhan": "ticks:mme:opt:selected:dhan:stream",
+    "opt_selected_zerodha": "ticks:mme:opt:selected:zerodha:stream"
+  }
+}

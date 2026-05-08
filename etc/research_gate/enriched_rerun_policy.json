@@ -1,0 +1,32 @@
+{
+  "broker_io_allowed": false,
+  "inputs": [
+    "run/replay/*/enriched_replay_records.jsonl"
+  ],
+  "law": [
+    "RAW-N uses enriched replay evidence only.",
+    "RAW-N does not enable paper/live even if evidence improves.",
+    "RAW-N writes isolated reports under run/research_gate/<run_id>.",
+    "RAW-N does not overwrite RAW-D through RAW-J proofs."
+  ],
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "outputs": [
+    "raw_n_d_dataset_quality_report.json",
+    "raw_n_e_pnl_report.json",
+    "raw_n_f_strategy_ranking_report.json",
+    "raw_n_g_oi_wall_report.json",
+    "raw_n_h_forensics_report.json",
+    "raw_n_i_replay_backtest_verdict.json",
+    "raw_n_j_promotion_firewall.json",
+    "raw_n_old_vs_enriched_comparison.json"
+  ],
+  "overwrite_old_raw_d_j_proofs": false,
+  "owner": "RAW enriched rerun",
+  "paper_live_enablement_allowed": false,
+  "promotion_allowed_by_raw_n": false,
+  "purpose": "Rerun RAW-D through RAW-J style analysis on RAW-M enriched replay records.",
+  "redis_live_write_allowed": false,
+  "schema_version": "RAW-N.1"
+}

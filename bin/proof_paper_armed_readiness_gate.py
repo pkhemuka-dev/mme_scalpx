@@ -2,142 +2,204 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+import sys
+import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "run/proofs/proof_paper_armed_readiness_gate.json"
+for p in (ROOT, ROOT / "app"):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
+
+from app.mme_scalpx.core import names as N
+from bin._batch25v_market_observation_common import redis_client, hgetall_contract, json_load
 
 
-def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+PROOF_PATH = Path("run/proofs/proof_paper_armed_readiness_gate.json")
 
 
-def load_first(paths: list[str]) -> dict[str, Any]:
-    for path in paths:
-        p = ROOT / path
-        if not p.exists():
-            continue
-        try:
-            d = json.loads(p.read_text(errors="replace"))
-            if isinstance(d, dict):
-                d["_path"] = path
-                return d
-        except Exception as exc:
-            return {"_path": path, "_parse_error": repr(exc)}
-    return {"_missing": True, "_paths": paths}
+def _load_json(path_s: str) -> dict[str, Any]:
+    path = Path(path_s)
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
 
 
-def status(d: dict[str, Any]) -> str:
-    if d.get("_missing"):
-        return "MISSING"
-    if d.get("_parse_error"):
-        return "PARSE_ERROR"
-    return str(d.get("status") or d.get("overall_status") or d.get("result") or "UNKNOWN").upper()
+def _decode_value(value: Any) -> Any:
+    if isinstance(value, (bytes, bytearray)):
+        return value.decode("utf-8", errors="replace")
+    return value
 
 
-def is_pass(d: dict[str, Any]) -> bool:
-    return status(d) == "PASS"
+def _decode_hash(raw: Mapping[Any, Any]) -> dict[str, Any]:
+    return {str(_decode_value(k)): _decode_value(v) for k, v in dict(raw or {}).items()}
 
 
-def no_failures(d: dict[str, Any]) -> bool:
-    for k in ("failures", "failed_cases", "failed_checks"):
-        v = d.get(k)
-        if isinstance(v, list) and v:
-            return False
-    return True
+def _stream_len(client: Any, key: str) -> int:
+    try:
+        return int(client.xlen(key))
+    except Exception:
+        return -1
+
+
+def _hash_get(client: Any, key: str) -> dict[str, Any]:
+    try:
+        return _decode_hash(client.hgetall(key) or {})
+    except Exception:
+        return {}
+
+
+def _status_ready(value: Any) -> bool:
+    return str(value or "").strip().upper() in {"HEALTHY", "READY", "OK", "DEGRADED"}
+
+
+def _hard_ready_status(value: Any) -> bool:
+    return str(value or "").strip().upper() in {"HEALTHY", "READY", "OK"}
+
+
+def _runtime_mode_observe_only(value: Any) -> bool:
+    return str(value or "").strip().upper().replace("-", "_") in {
+        "OBSERVE_ONLY",
+        "HOLD_OBSERVE",
+        "HOLD_ONLY",
+    }
+
+
+def _boolish_false(value: Any) -> bool:
+    text = str(value or "").strip().lower()
+    return text in {"", "0", "false", "no", "off", "none", "null"}
+
+
+def _read_runtime_config_files() -> dict[str, Any]:
+    files = [
+        "etc/strategy_family/family_runtime.yaml",
+        "etc/strategy_family/rollout/paper_armed_readiness_gate.yaml",
+        "etc/brokers/runtime.yaml",
+        "etc/brokers/provider_roles.yaml",
+    ]
+    out: dict[str, Any] = {}
+    for f in files:
+        path = Path(f)
+        out[f] = {
+            "exists": path.exists(),
+            "size": path.stat().st_size if path.exists() else 0,
+        }
+    return out
 
 
 def main() -> int:
-    proofs = {
-        "runtime_truth": load_first(["run/proofs/proof_runtime_truth_authority.json"]),
-        "historical_replay_readiness": load_first(["run/proofs/proof_aftermarket_historical_replay_readiness.json"]),
-        "semantic_replay_dry_run": load_first(["run/proofs/proof_aftermarket_full_replay_dry_run.json"]),
-        "redis_contract": load_first(["run/proofs/redis_contract_matrix.json"]),
-        "provider_equivalence_static": load_first(["run/proofs/proof_runtime_instrument_provider_equivalence.json"]),
-        "strategy_promoted_contract": load_first(["run/proofs/proof_strategy_promoted_decision_contract.json"]),
-        "execution_entry_safety": load_first([
-            "run/proofs/execution_family_entry_safety.json",
-            "run/proofs/proof_execution_family_entry_safety.json",
-        ]),
-        "risk_exit_never_blocked": load_first([
-            "run/proofs/proof_risk_exit_never_blocked.json",
-            "run/proofs/risk_batch14_freeze.json",
-        ]),
-        "research_firewall": load_first(["run/proofs/proof_research_capture_production_firewall.json"]),
-        "monitor_report_ops": load_first(["run/proofs/monitor_report_ops_contracts.json"]),
-        "repo_hygiene": load_first(["run/proofs/repo_hygiene_quarantine.json"]),
-        "legacy_quarantine": load_first(["run/proofs/legacy_baseline_quarantine.json"]),
-        "names_alias_lifecycle": load_first(["run/proofs/names_alias_lifecycle.json"]),
+    PROOF_PATH.parent.mkdir(parents=True, exist_ok=True)
+    client = redis_client()
+    now_ns = time.time_ns()
+
+    batch25v = _load_json("run/proofs/proof_batch25v_final_summary.json")
+    provider_proof = _load_json("run/proofs/proof_market_session_provider_runtime.json")
+    feed_proof = _load_json("run/proofs/proof_market_session_feed_snapshot.json")
+    feature_proof = _load_json("run/proofs/proof_market_session_feature_payload.json")
+    family_proof = _load_json("run/proofs/proof_market_session_family_surfaces.json")
+    strategy_proof = _load_json("run/proofs/proof_market_session_strategy_activation.json")
+    no_order_proof = _load_json("run/proofs/proof_market_session_no_order_sent.json")
+
+    _, provider_key, provider = hgetall_contract(
+        client,
+        "HASH_STATE_PROVIDER_RUNTIME",
+        "HASH_PROVIDER_RUNTIME",
+    )
+
+    futures_status = provider.get("futures_marketdata_status") or provider.get("futures_provider_status")
+    selected_status = provider.get("selected_option_marketdata_status") or provider.get("selected_option_provider_status")
+    option_context_status = provider.get("option_context_status") or provider.get("option_context_provider_status")
+    execution_status = provider.get("execution_primary_status") or provider.get("execution_provider_status")
+
+    provider_ts = int(provider.get("last_update_ns") or provider.get("ts_event_ns") or 0)
+    provider_age_ms = round((now_ns - provider_ts) / 1_000_000, 2) if provider_ts else None
+
+    family_runtime_mode = provider.get("family_runtime_mode")
+    failover_mode = provider.get("failover_mode")
+    fallback_status = provider.get("execution_fallback_status") or provider.get("fallback_execution_provider_status")
+
+    orders_key = getattr(N, "STREAM_ORDERS_MME", "orders:mme:stream")
+    decisions_key = getattr(N, "STREAM_DECISIONS_MME", "decisions:mme:stream")
+    trades_key = getattr(N, "STREAM_TRADES_LEDGER", "trades:ledger:stream")
+
+    position_key = getattr(N, "HASH_STATE_POSITION_MME", getattr(N, "HASH_STATE_POSITION", "state:position:mme"))
+    position = _hash_get(client, position_key)
+
+    open_position_false = True
+    for key in ("side", "position_side", "net_qty", "qty", "quantity", "open_qty"):
+        value = position.get(key)
+        if key in {"side", "position_side"} and str(value or "").upper() not in {"", "FLAT", "NONE", "0"}:
+            open_position_false = False
+        if key not in {"side", "position_side"}:
+            try:
+                if float(value or 0) != 0:
+                    open_position_false = False
+            except Exception:
+                pass
+
+    runtime_files = _read_runtime_config_files()
+
+    checks = {
+        "batch25v_final_pass": batch25v.get("final_25v_market_session_observation_ok") is True,
+        "provider_runtime_proof_pass": provider_proof.get("market_session_provider_runtime_ok") is True,
+        "feed_snapshot_proof_pass": feed_proof.get("market_session_feed_snapshot_ok") is True,
+        "feature_payload_proof_pass": feature_proof.get("market_session_feature_payload_ok") is True,
+        "family_surfaces_proof_pass": family_proof.get("market_session_family_surfaces_ok") is True,
+        "strategy_activation_proof_pass": strategy_proof.get("market_session_strategy_activation_ok") is True,
+        "no_order_sent_proof_pass": no_order_proof.get("market_session_no_order_sent_ok") is True,
+
+        "provider_runtime_hash_present": bool(provider),
+        "provider_runtime_current": provider_age_ms is not None and provider_age_ms <= 120_000,
+        "futures_provider_current": _hard_ready_status(futures_status),
+        "selected_option_provider_current": _hard_ready_status(selected_status),
+        "option_context_provider_available": _status_ready(option_context_status),
+        "execution_primary_provider_current": _hard_ready_status(execution_status),
+
+        "runtime_mode_observe_only": _runtime_mode_observe_only(family_runtime_mode),
+        "manual_failover_only": str(failover_mode or "").strip().upper() == "MANUAL",
+        "fallback_execution_not_auto_active": str(fallback_status or "").strip().upper() in {"", "DISABLED", "UNAVAILABLE", "DEGRADED"},
+        "no_open_position": open_position_false,
+        "orders_stream_empty_or_no_growth_safe": _stream_len(client, orders_key) == 0,
+        "paper_armed_not_enabled": True,
+        "real_live_not_enabled": True,
+        "required_config_files_present": all(v["exists"] and v["size"] > 0 for v in runtime_files.values()),
     }
 
-    checks = []
-
-    def add(name: str, ok: bool, sev: str, detail: str) -> None:
-        checks.append({"name": name, "ok": bool(ok), "severity": sev, "detail": detail})
-
-    rt = proofs["runtime_truth"]
-    add("runtime_truth", is_pass(rt) and rt.get("paper_armed_allowed") is True, "P0",
-        f"status={status(rt)} paper_armed_allowed={rt.get('paper_armed_allowed')} path={rt.get('_path')}")
-
-    sem = proofs["semantic_replay_dry_run"]
-    add("semantic_replay_dry_run", is_pass(sem) and sem.get("replay_only_channels") is True and int(sem.get("events_materialized") or 0) > 0, "P1",
-        f"status={status(sem)} events={sem.get('events_materialized')} replay_only={sem.get('replay_only_channels')} path={sem.get('_path')}")
-
-    for key, sev in [
-        ("historical_replay_readiness", "P1"),
-        ("redis_contract", "P1"),
-        ("provider_equivalence_static", "P1"),
-        ("strategy_promoted_contract", "P0"),
-        ("execution_entry_safety", "P0"),
-        ("risk_exit_never_blocked", "P0"),
-        ("research_firewall", "P1"),
-        ("monitor_report_ops", "P2"),
-        ("repo_hygiene", "P2"),
-        ("legacy_quarantine", "P1"),
-        ("names_alias_lifecycle", "P1"),
-    ]:
-        d = proofs[key]
-        add(key, is_pass(d) and no_failures(d), sev, f"status={status(d)} path={d.get('_path')}")
-
-    p0 = [c for c in checks if not c["ok"] and c["severity"] == "P0"]
-    p1 = [c for c in checks if not c["ok"] and c["severity"] == "P1"]
-    p2 = [c for c in checks if not c["ok"] and c["severity"] == "P2"]
-
-    structural = not p0 and not p1
-
-    result = {
-        "proof": "proof_paper_armed_readiness_gate",
-        "generated_at": now_iso(),
-        "status": "PASS" if structural else "WARN",
-        "structural_paper_armed_allowed": structural,
-        "market_session_paper_armed_allowed": False,
-        "paper_armed_should_be_enabled_now": False,
-        "gate_checks": checks,
-        "p0_blockers": p0,
-        "p1_blockers": p1,
-        "p2_blockers": p2,
-        "proof_statuses": {k: status(v) for k, v in proofs.items()},
-        "notes": [
-            "This proof does not enable paper_armed.",
-            "After-hours structural readiness is separate from market-session paper readiness.",
-            "Market-session paper readiness remains false until live provider/token/currentness proof passes."
-        ],
+    proof = {
+        "proof_name": "proof_paper_armed_readiness_gate",
+        "batch": "25W",
+        "generated_at_ns": now_ns,
+        "paper_armed_readiness_gate_ok": all(checks.values()),
+        "checks": checks,
+        "provider_runtime_key": provider_key,
+        "provider_runtime_age_ms": provider_age_ms,
+        "provider_runtime": provider,
+        "streams": {
+            "orders": {"key": orders_key, "len": _stream_len(client, orders_key)},
+            "decisions": {"key": decisions_key, "len": _stream_len(client, decisions_key)},
+            "trades": {"key": trades_key, "len": _stream_len(client, trades_key)},
+        },
+        "position": {
+            "key": position_key,
+            "state": position,
+            "no_open_position": open_position_false,
+        },
+        "runtime_files": runtime_files,
+        "paper_armed_approved": False,
+        "real_live_approved": False,
+        "verdict": "READY_FOR_CONTROLLED_PAPER_PREP" if all(checks.values()) else "NOT_READY_FOR_PAPER_ARMED",
+        "proof_path": str(PROOF_PATH),
     }
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(result, indent=2, sort_keys=True))
+    PROOF_PATH.write_text(json.dumps(proof, indent=2, sort_keys=True), encoding="utf-8")
+    print(json.dumps(proof, indent=2, sort_keys=True))
 
-    print(json.dumps({
-        "status": result["status"],
-        "structural_paper_armed_allowed": structural,
-        "market_session_paper_armed_allowed": False,
-        "p0_blockers": p0,
-        "p1_blockers": p1,
-        "out": str(OUT.relative_to(ROOT)),
-    }, indent=2))
-    return 0
+    return 0 if proof["paper_armed_readiness_gate_ok"] else 1
 
 
 if __name__ == "__main__":

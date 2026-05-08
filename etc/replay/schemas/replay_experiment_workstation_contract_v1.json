@@ -1,0 +1,59 @@
+{
+  "schema_version": "replay_experiment_workstation_contract_v1",
+  "purpose": "Replay-only differential / parameter-sweep experiment workstation contract.",
+  "replay_only": true,
+  "paper_armed_approved": false,
+  "live_trading_approved": false,
+  "execution_arming_created": false,
+  "broker_calls_allowed": false,
+  "live_redis_writes_allowed": false,
+  "real_order_intent_allowed": false,
+  "production_doctrine_changed": false,
+  "supported_experiment_types": [
+    "baseline_vs_shadow",
+    "parameter_sweep",
+    "threshold_sweep",
+    "family_enable_disable",
+    "side_only",
+    "scenario_matrix_comparison"
+  ],
+  "required_profile_fields": [
+    "profile_id",
+    "experiment_type",
+    "description",
+    "baseline",
+    "variants",
+    "dates",
+    "scenario_ids",
+    "parameter_overrides",
+    "threshold_overrides",
+    "family_filter",
+    "side_filter",
+    "explicit_replay_only",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed"
+  ],
+  "required_exports": [
+    "00_experiment_manifest.json",
+    "01_experiment_summary.json",
+    "02_variant_results.json",
+    "03_differential_summary.json",
+    "04_parameter_sweep_summary.json",
+    "05_threshold_sweep_summary.json",
+    "06_family_side_summary.json",
+    "07_experiment_reproducibility.json",
+    "08_experiment_comparison_export.json"
+  ],
+  "proof_boundary": {
+    "experiment_profile_shape": "PROVEN_BY_27M",
+    "differential_summary_shape": "PROVEN_BY_27M",
+    "parameter_sweep_shape": "PROVEN_BY_27M",
+    "threshold_sweep_shape": "PROVEN_BY_27M",
+    "family_side_filter_shape": "PROVEN_BY_27M",
+    "experiment_reproducibility_hash": "PROVEN_BY_27M",
+    "strategy_improvement_claim": "NOT_PROVEN_IN_27M",
+    "full_live_replay_parity": "NOT_PROVEN_IN_27M",
+    "broker_order_path": "FORBIDDEN"
+  }
+}

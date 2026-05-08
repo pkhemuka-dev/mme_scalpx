@@ -1,0 +1,22 @@
+# 26-O23-P-R6B-R2 — feature-publisher class-precondition correction / exact patch
+
+- generated_at_utc: `2026-05-08T09:38:13.873896+00:00`
+- final_verdict: `FAIL_O23_P_R6B_R2_FEATURE_PUBLISHER_PATCH_NOT_PROVEN`
+- false_keys: `['latest_r6b_expected_failure_exists', 'manifest_written', 'milestone_written', 'patch_applied_or_already_present', 'patch_marker_present_after', 'proof_written', 'runbook_written', 'summary_written']`
+- latest_r6b: `run/proofs/proof_batch26o23_p_r6b_exact_active_features_publisher_patch_latest.json`
+- r6b_patch_reason: `None`
+- r6b_expected_failure: `False`
+- patch_applied: `False`
+- already_present: `False`
+- patch_blocked: `True`
+- patch_reason: `latest R6B not expected FeatureService precondition failure or pre-existing MME/forbidden PID present`
+- patched_file: `app/mme_scalpx/services/features.py`
+- patch_marker_present_after: `False`
+- compile_ok: `True`
+- import_ok: `True`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- no service start / no paper / no real-live / no broker call / no order write: `True`
+- next_recommended_batch: `Inspect R6B-R2 false_keys/source inspection; do not run services until patch is proven.`

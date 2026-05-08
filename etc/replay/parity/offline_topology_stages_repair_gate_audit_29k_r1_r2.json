@@ -1,0 +1,185 @@
+{
+  "accepted_for": "TOPOLOGY_STAGES_REPAIR_GATE_AUDIT_RESCUE_CLOSE_ONLY",
+  "artifact_states": {
+    "00_gate_audit_rescue_close_manifest.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1_r2/00_gate_audit_rescue_close_manifest.json",
+      "present": true,
+      "sha256": "22a96518742c7713cc8aeaeba7035ac831082f45055b6c23c120d992eb06a0c0"
+    },
+    "01_patch_gate_truth_table.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1_r2/01_patch_gate_truth_table.json",
+      "present": true,
+      "sha256": "9635009db7c8621dc6d5fc8c388bf0b69522f682e0dde3c93718f9f438c6fc78"
+    },
+    "02_target_shape_truth.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1_r2/02_target_shape_truth.json",
+      "present": true,
+      "sha256": "0c011322dc6485c397f2d0eeb94732c0aa814cbf1c3a371356480372abfac7f7"
+    },
+    "03_no_broker_no_live_redis_boundary.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1_r2/03_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "ec2cc05e0e911f4efcc157cf266beae429ab8e9a4c59f42e177983c7df85926b"
+    },
+    "04_next_29k_r2_repair_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1_r2/04_next_29k_r2_repair_contract.json",
+      "present": true,
+      "sha256": "329aa67763c7782e9358803a184b667c9e3a74ab3bcae49d6a48b21c65124faf"
+    }
+  },
+  "artifacts_ok": true,
+  "batch": "29K-R1-R2",
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "candidate_executed": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "exec_shape": {
+    "has_ensure_topology_call": false,
+    "has_original_topology_assignment": true,
+    "has_stage_executor_assignment": true,
+    "has_topology_wrap_report": false,
+    "sha256": "6521a59aadf25c75279667fb7bf7aafd9ba6bebd555acb420e985433b8139358"
+  },
+  "execution_arming_created": false,
+  "failure_kind": "PATCH_NOT_APPLIED_PREFLIGHT_OR_NEEDLE_GATE",
+  "full_live_replay_parity": "NOT_PROVEN_IN_29K_R1_R2",
+  "generated_at_utc": "2026-05-01T14:14:06.015929+00:00",
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 29K-R2 \u2014 repair 29K patch gate with direct offline topology shim and guarded execute wrapper, still not paper/live enablement.",
+  "no_enablement_failures": [],
+  "observed_no_enablement": {
+    "audit_29j": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "audit_29k_r1": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29i": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29j": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29k": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29k_r1": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "repair_29i": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "repair_29k": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    }
+  },
+  "paper_armed_approved": false,
+  "preflight_ok": true,
+  "prior_29k_failed_safely": true,
+  "production_doctrine_changed": false,
+  "r1_identified_patch_gate": true,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "repair_path": "REWRITE_29K_PATCHER_WITH_DIRECT_APPEND_AND_DIRECT_EXEC_WRAPPER",
+  "replay_core_executed": false,
+  "replay_run_completed": false,
+  "rescue_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_gate_audit_29k_r1_r2",
+  "rescue_root_replay_safe": true,
+  "schema_version": "offline_topology_stages_repair_gate_audit_rescue_close_29k_r1_r2_v1",
+  "shape_confirms_no_patch": true,
+  "shim_shape": {
+    "has_ensure_topology": false,
+    "has_offline_run_context": true,
+    "has_offline_stage": false,
+    "has_offline_topology_plan": false,
+    "has_run_id": true,
+    "sha256": "eec37f691fd49f8744102ae6a2b30619eb2bd25c0ac784ccfdffb0fc8d868249"
+  },
+  "starts_services": false,
+  "upstream_truth_ok": true,
+  "verdict": "PASS_TOPOLOGY_STAGES_REPAIR_GATE_AUDIT_RESCUE_CLOSE_29K_R1_R2",
+  "writes_live_redis": false
+}

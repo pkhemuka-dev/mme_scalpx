@@ -1,0 +1,22 @@
+{
+  "allowed_read_roots": [
+    "run/proofs/",
+    "docs/milestones/",
+    "ai_patch_runner/",
+    "app/mme_scalpx/replay/",
+    "app/mme_scalpx/services/",
+    "run/replay/parity/offline_materialization/"
+  ],
+  "allowed_write_roots": [
+    "run/proofs/",
+    "run/audits/",
+    "docs/milestones/",
+    "ai_patch_runner/outputs/",
+    "ai_patch_runner/reports/",
+    "ai_patch_runner/prompts/",
+    "ai_patch_runner/logs/",
+    "ai_patch_runner/context/",
+    "run/replay/parity/offline_materialization/"
+  ],
+  "version": "mme_ai_allowed_paths_v1"
+}

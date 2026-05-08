@@ -1,0 +1,52 @@
+{
+  "accepted_current_status": "BOUNDED_GUARDED_REPLAY_DRY_RUN_COMPLETED",
+  "created_at_utc": "2026-05-02T06:48:16.468854+00:00",
+  "marker_review": {
+    "boundary_safe": true,
+    "broker_or_live_markers_in_output": true,
+    "classification": "TEXT_MARKER_FALSE_POSITIVE_OR_SAFETY_ECHO"
+  },
+  "next_required_for_parity": [
+    "define replay/live output comparison columns",
+    "map guarded dry-run outputs to live-observe output surfaces",
+    "compare candidate/execution/safety/result fields",
+    "freeze mismatch taxonomy",
+    "preserve no paper/live promotion"
+  ],
+  "not_proven": [
+    "full_live_replay_parity",
+    "paper_armed_readiness",
+    "live_trading_readiness",
+    "production equivalence"
+  ],
+  "observed_current_truth": {
+    "broker_calls_executed": false,
+    "candidate_executed": true,
+    "context_reconstruction_ready": true,
+    "engine_instance_ready": true,
+    "execution_attempted": true,
+    "execution_ok": true,
+    "live_redis_writes_executed": false,
+    "paper_live_enablement_found": false,
+    "real_order_sent": false,
+    "replay_run_completed": true,
+    "retry_returncode": 0
+  },
+  "output_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aj",
+  "required_current_truth": {
+    "broker_calls_executed": false,
+    "candidate_executed": true,
+    "context_reconstruction_ready": true,
+    "engine_instance_ready": true,
+    "execution_attempted": true,
+    "execution_ok": true,
+    "live_redis_writes_executed": false,
+    "paper_live_enablement_found": false,
+    "real_order_sent": false,
+    "replay_run_completed": true,
+    "retry_returncode": 0
+  },
+  "schema_version": "offline_replay_output_parity_contract_29ak_v1",
+  "source_batch": "29AJ",
+  "source_proof": "run/proofs/proof_bounded_guarded_retry_after_topology_fingerprint_29aj_latest.json"
+}

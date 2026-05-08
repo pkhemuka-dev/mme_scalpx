@@ -1,0 +1,170 @@
+{
+  "accepted_for": "OFFLINE_STAGE_TERMINAL_STAGE_ALIAS_REPAIR_ONLY",
+  "backups": [
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845/app/mme_scalpx/replay/offline_context_shim.py",
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/offline_context_shim.py",
+      "present": true,
+      "sha256": "cb37815ab2f288df05f5fb5da8c8a2dddcea7d1c16093a702d863fc70b85be4a",
+      "size_bytes": 9800
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845/app/mme_scalpx/replay/engine.py",
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/engine.py",
+      "present": true,
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8",
+      "size_bytes": 20518
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845/app/mme_scalpx/replay/topology.py",
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/topology.py",
+      "present": true,
+      "sha256": "448cf6bd7f34f13d02768684a0807dc8b5993f493e91bff503f0d1b34e589e0c",
+      "size_bytes": 12432
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845/bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "is_file": true,
+      "path": "bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "present": true,
+      "sha256": "15af4dfaa1976cd421f545e500749a46737c9492a3b8e77f4026c662c5438148",
+      "size_bytes": 25026
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845/run/proofs/proof_offline_stage_order_index_alias_repair_29q_latest.json",
+      "is_file": true,
+      "path": "run/proofs/proof_offline_stage_order_index_alias_repair_29q_latest.json",
+      "present": true,
+      "sha256": "533ba3810a6829024338d4b69e8f9dd71d3adabfed36421afdf3fe7cdefc3358",
+      "size_bytes": 2119
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845/etc/replay/parity/offline_stage_order_index_alias_repair_29q.json",
+      "is_file": true,
+      "path": "etc/replay/parity/offline_stage_order_index_alias_repair_29q.json",
+      "present": true,
+      "sha256": "8270e891b2d03a7ab88985b74b3ee0341d0909d42e1f5e8dda188b6f68db8237",
+      "size_bytes": 9502
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845/run/proofs/proof_offline_stage_terminal_stage_runtime_gap_audit_29r_latest.json",
+      "is_file": true,
+      "path": "run/proofs/proof_offline_stage_terminal_stage_runtime_gap_audit_29r_latest.json",
+      "present": true,
+      "sha256": "05ede0e57f52de82e7c2e94a8d8243b6c40f600f298c30f59de53151ac478ff5",
+      "size_bytes": 2162
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845/run/proofs/proof_offline_stage_terminal_stage_runtime_gap_audit_29r.json",
+      "is_file": true,
+      "path": "run/proofs/proof_offline_stage_terminal_stage_runtime_gap_audit_29r.json",
+      "present": true,
+      "sha256": "05ede0e57f52de82e7c2e94a8d8243b6c40f600f298c30f59de53151ac478ff5",
+      "size_bytes": 2162
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845/etc/replay/parity/offline_stage_terminal_stage_runtime_gap_audit_29r.json",
+      "is_file": true,
+      "path": "etc/replay/parity/offline_stage_terminal_stage_runtime_gap_audit_29r.json",
+      "present": true,
+      "sha256": "fed50e11d9f8baa05e0e2e735c1a163b576de79bc61fea15ffa8e57f62e0f8be",
+      "size_bytes": 8961
+    },
+    {
+      "backed_up": false,
+      "is_file": false,
+      "path": "etc/replay/parity/offline_stage_terminal_stage_alias_repair_29s.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_file": false,
+      "path": "run/proofs/proof_offline_stage_terminal_stage_alias_repair_29s.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_file": false,
+      "path": "run/proofs/proof_offline_stage_terminal_stage_alias_repair_29s_latest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_file": false,
+      "path": "run/proofs/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845_driver_proof.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_file": false,
+      "path": "docs/milestones/BATCH29S_OFFLINE_STAGE_TERMINAL_STAGE_ALIAS_REPAIR.md",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    }
+  ],
+  "batch": "29S",
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "compile_ok": true,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "execution_arming_created": false,
+  "files_changed": [
+    "app/mme_scalpx/replay/offline_context_shim.py"
+  ],
+  "full_live_replay_parity": "NOT_PROVEN_IN_29S",
+  "generated_at_utc": "2026-05-02T05:28:45.902325+00:00",
+  "import_probe_ok": false,
+  "inspection_manifest": "run/proofs/batch29s_offline_stage_terminal_stage_alias_repair_20260502_105845_inspection/inspection_manifest.json",
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Repair static/import failure before retrying ReplayEngine dry-run.",
+  "paper_armed_approved": false,
+  "patch_applied": true,
+  "patch_changes": [
+    "added OfflineReplayStage.terminal_stage property",
+    "added terminal_stage to OfflineReplayStage.as_dict",
+    "added stage_count_29s for terminal-stage marking",
+    "marked final offline wrapped stage as terminal via metadata"
+  ],
+  "patch_report": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_terminal_stage_alias_repair_29s/01_offline_stage_terminal_stage_patch_report.json",
+  "production_doctrine_changed": false,
+  "proof": "run/proofs/proof_offline_stage_terminal_stage_alias_repair_29s.json",
+  "proof_29q_valid": true,
+  "proof_29r_valid": true,
+  "proof_latest": "run/proofs/proof_offline_stage_terminal_stage_alias_repair_29s_latest.json",
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "repair_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_terminal_stage_alias_repair_29s",
+  "replay_core_executed": false,
+  "replay_run_completed": false,
+  "schema_version": "offline_stage_terminal_stage_alias_repair_29s_v1",
+  "starts_services": false,
+  "target_file": "app/mme_scalpx/replay/offline_context_shim.py",
+  "terminal_stage_alias_present": true,
+  "terminal_stage_gap_resolved": false,
+  "verdict": "FAIL_OFFLINE_STAGE_TERMINAL_STAGE_ALIAS_REPAIR_STATIC_PROOF_FAILED_29S",
+  "writes_live_redis": false
+}

@@ -1,0 +1,64 @@
+{
+  "schema_version": "replay_strategy_family_adapter_contract_v1",
+  "purpose": "Replay-only strategy-family decision-shape and arbitration contract.",
+  "replay_only": true,
+  "paper_armed_approved": false,
+  "live_trading_approved": false,
+  "execution_arming_created": false,
+  "broker_calls_allowed": false,
+  "live_redis_writes_allowed": false,
+  "real_order_intent_allowed": false,
+  "production_doctrine_changed": false,
+  "families": [
+    "MIST",
+    "MISB",
+    "MISC",
+    "MISR",
+    "MISO"
+  ],
+  "sides": [
+    "CALL",
+    "PUT"
+  ],
+  "allowed_final_actions": [
+    "HOLD_REPORT_ONLY"
+  ],
+  "required_candidate_fields": [
+    "schema_version",
+    "run_id",
+    "family",
+    "side",
+    "candidate_id",
+    "candidate_present",
+    "eligible",
+    "score",
+    "blockers",
+    "metadata",
+    "order_allowed",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed"
+  ],
+  "required_arbitration_fields": [
+    "schema_version",
+    "run_id",
+    "candidate_count",
+    "eligible_candidate_count",
+    "winner",
+    "winning_family",
+    "winning_side",
+    "final_action",
+    "order_allowed",
+    "arbitration_reason",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "production_doctrine_changed"
+  ],
+  "proof_boundary": {
+    "safe_decision_shape_parity": "PROVEN_BY_27H",
+    "family_side_coverage": "PROVEN_BY_27H",
+    "arbitration_surface": "PROVEN_BY_27H",
+    "full_live_strategy_decision_parity": "NOT_PROVEN_IN_27H",
+    "broker_order_path": "FORBIDDEN"
+  }
+}

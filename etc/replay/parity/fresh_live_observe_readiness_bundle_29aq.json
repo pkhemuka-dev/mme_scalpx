@@ -1,0 +1,28 @@
+{
+  "accepted_for": "FRESH_CURRENT_LIVE_OBSERVE_PROVIDER_FEED_FEATURE_PROOF_COLLECTION_ONLY",
+  "batch": "29AQ",
+  "fresh_bundle": "run/replay/parity/batch29aq_fresh_live_observe_readiness_bundle_20260502_123802/fresh_live_observe_readiness_bundle_29aq.json",
+  "generated_at_utc": "2026-05-02T07:08:02.772556+00:00",
+  "safety": {
+    "batch": "29AQ",
+    "bounded_tool_written": false,
+    "broker_calls_allowed": false,
+    "broker_calls_executed": false,
+    "code_patch_applied": false,
+    "comparison_execution_performed": false,
+    "live_redis_reads_may_occur_via_existing_proof_scripts": true,
+    "live_trading_approved": false,
+    "observe_only": true,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "proof_collection_only": true,
+    "real_order_allowed": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "replay_rerun_performed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "fresh_live_observe_readiness_bundle_29aq_v1",
+  "script_runs": "run/replay/parity/batch29aq_fresh_live_observe_readiness_bundle_20260502_123802/fresh_live_observe_script_runs_29aq.json"
+}

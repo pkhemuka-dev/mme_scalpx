@@ -1,0 +1,26 @@
+BATCH 29BU-R3 CORRECTED FAMILY SURFACE VALUE COMPARISON
+
+verdict: PASS_29BU_R3_CORRECTED_FAMILY_SURFACE_VALUE_COMPARISON_STRICT_MATCH
+family_surface_payload_parity: PROVEN_FOR_CORRECTED_MAPPED_FAMILY_SURFACE_IDENTITY_FIELDS_ONLY
+comparison_completed: true
+strict_match: True
+comparison_row_count: 60
+expected_comparison_row_count: 60
+strict_mismatch_count: 0
+bad_compared_rich_surface_names: []
+same_file_exclusion_passed: True
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29BU_R3
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_family_surface_value_comparison_29bu_r3/00_corrected_family_surface_value_comparison.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_family_surface_value_comparison_29bu_r3/01_corrected_strict_mismatch_table.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_family_surface_value_comparison_29bu_r3/02_operator_summary.md
+- run/proofs/proof_corrected_family_surface_value_comparison_29bu_r3.json
+- run/proofs/proof_corrected_family_surface_value_comparison_29bu_r3_latest.json
+- etc/replay/parity/corrected_family_surface_value_comparison_29bu_r3.json
+
+Next:
+Batch 29BU-R4 — consolidate corrected family_surface_payload_parity and select next surface; still no paper/live enablement.

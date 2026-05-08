@@ -1,0 +1,45 @@
+Batch 29R OfflineReplayStage terminal_stage runtime-gap audit
+
+Date: 2026-05-02
+
+Verdict:
+PASS_OFFLINE_STAGE_TERMINAL_STAGE_RUNTIME_GAP_AUDIT_29R
+
+Accepted for:
+OFFLINE_STAGE_TERMINAL_STAGE_RUNTIME_GAP_AUDIT_ONLY
+
+Source:
+- 29Q proof: run/proofs/proof_offline_stage_order_index_alias_repair_29q_latest.json
+- 29Q repair root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_stage_order_index_alias_repair_29q
+- 29Q retry execute root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29q
+
+Result:
+order_index_gap_resolved=True
+stage_names_gap_resolved=True
+stage_name_gap_resolved=True
+topology_stages_gap_resolved=True
+offline_stage_terminal_stage_gap_confirmed=true
+stage_terminal_shape_gap_confirmed=true
+engine_consumes_terminal_stage=true
+runtime_gap_kind=OFFLINE_REPLAY_STAGE_TERMINAL_STAGE_ATTRIBUTE_GAP
+repair_path=REPAIR_OFFLINE_REPLAY_STAGE_TERMINAL_STAGE_ALIAS
+retry_runtime_error=ReplayEngineStageError: replay engine failed for run_id=offline_replay_a96ef007910c5d56: 'OfflineReplayStage' object has no attribute 'terminal_stage'
+candidate_executed=false
+replay_core_executed=false
+replay_run_completed=false
+comparison_completed=false
+
+Safety:
+starts_services=false
+reads_live_redis=false
+writes_live_redis=false
+calls_broker_api=false
+paper_armed_approved=false
+live_trading_approved=false
+execution_arming_created=false
+real_order_sent=false
+production_doctrine_changed=false
+full_live_replay_parity=NOT_PROVEN_IN_29R
+
+Next:
+Batch 29S — repair OfflineReplayStage terminal_stage alias for guarded ReplayEngine dry-run, still not paper/live enablement.

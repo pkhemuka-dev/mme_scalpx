@@ -1,0 +1,29 @@
+BATCH 29BO CORRECTED FEATURE PAYLOAD MAPPING CONTRACT
+
+generated_at_utc: 2026-05-02T11:54:45.703742+00:00
+verdict: PASS_29BO_FEATURE_PAYLOAD_FROZEN_NOT_COMPARABLE_METADATA_SUMMARY_ONLY
+proof_29bn_valid: True
+compile_ok: True
+safety_ok: True
+contract_status: NO_RUNTIME_FEATURE_COMPARABLE_FIELDS_AFTER_METADATA_EXCLUSION
+feature_payload_parity: NOT_PROVEN_NOT_COMPARABLE_METADATA_SUMMARY_ONLY
+selected_replay_artifact: run/proofs/batch27b_replay_gap_confirmation_20260501_123626.json
+selected_reference_artifact: etc/replay/parity/observe_only_replay_live_parity_manifest_28i.json
+strict_comparable_field_count: 0
+weak_context_field_count: 0
+approved_comparable_fields: []
+approved_strict_fields: []
+approved_weak_context_fields: []
+full_live_replay_parity: NOT_PROVEN_IN_29BO
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BP — consolidate feature_payload_parity as NOT_COMPARABLE and select next replay parity surface; still no paper/live enablement.
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_feature_payload_mapping_contract_29bo/00_corrected_feature_payload_mapping_audit.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_feature_payload_mapping_contract_29bo/01_corrected_feature_payload_mapping_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_feature_payload_mapping_contract_29bo/02_feature_payload_not_comparable_freeze_or_decision.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_feature_payload_mapping_contract_29bo/03_next_batch_29bp_contract.json
+- run/proofs/proof_corrected_feature_payload_mapping_contract_29bo.json
+- run/proofs/proof_corrected_feature_payload_mapping_contract_29bo_latest.json
+
+Files changed: none

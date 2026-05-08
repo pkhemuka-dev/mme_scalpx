@@ -1,0 +1,31 @@
+BATCH 29AR REPLAY PROVIDER-FEATURE SUMMARY MATERIALIZATION
+
+generated_at_utc: 2026-05-02T07:15:42.380738+00:00
+verdict: PASS_REPLAY_PROVIDER_FEATURE_SUMMARY_MATERIALIZATION_NULL_SAFE_29AR
+provider_feature_summary_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_summary_materialization_29ar/00_guarded_replay_provider_feature_summary.json
+provider_feature_summary_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_summary_materialization_29ar/01_guarded_replay_provider_feature_summary_flat.csv
+provider_feature_field_count: 4
+known_boolean_count: 0
+null_value_count: 4
+null_safe_materialization: True
+provider_feature_value_comparison_ready: False
+full_live_replay_parity: NOT_PROVEN_IN_29AR
+repair_path: PROVIDER_FEATURE_VALUE_COMPARISON_NOT_COMPARABLE_AUDIT_READY
+next_batch: Batch 29AS — audit provider-feature value comparison as not-comparable due to null-safe replay values; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_replay_provider_feature_summary_materialization_29ar.json
+- run/proofs/proof_replay_provider_feature_summary_materialization_29ar_latest.json
+- run/proofs/batch29ar_materialize_replay_provider_feature_summary_20260502_124542_driver_proof.json
+- etc/replay/parity/replay_provider_feature_summary_materialization_29ar.json

@@ -1,0 +1,40 @@
+{
+  "broker_io_allowed": false,
+  "input_artifact_roots": [
+    "run/replay",
+    "run/research_capture",
+    "run/proofs",
+    "reports",
+    "data"
+  ],
+  "insufficient_evidence_policy": {
+    "never_guess": true,
+    "no_oi_context": "return insufficient OI evidence",
+    "oi_without_pnl": "return context found but no PnL linkage"
+  },
+  "near_distance_points_default": 10.0,
+  "non_live": true,
+  "non_mutating": true,
+  "oi_wall_analysis_owner": "RAW_OI_Wall_Impact_Desk",
+  "oi_wall_computation_included": true,
+  "oi_wall_immediate_trigger_truth_allowed": false,
+  "oi_wall_role": "research_context_strike_quality_slow_evidence",
+  "order_sending_allowed": false,
+  "output_artifacts": [
+    "oi_wall_impact_report.json",
+    "oi_wall_context_matrix.csv",
+    "oi_wall_source_breakdown.csv",
+    "RAW_G_OI_WALL_SUMMARY.md"
+  ],
+  "paper_live_enablement_allowed": false,
+  "pnl_recomputation_allowed": false,
+  "production_mutation_allowed": false,
+  "redis_live_write_allowed": false,
+  "reserved_for_later_batches": [
+    "promotion decision",
+    "ML scoring",
+    "live strategy mutation"
+  ],
+  "schema_version": "RAW-G.1",
+  "strategy_ranking_included": false
+}

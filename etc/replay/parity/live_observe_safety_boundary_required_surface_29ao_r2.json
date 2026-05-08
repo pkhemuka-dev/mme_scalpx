@@ -1,0 +1,174 @@
+{
+  "contract_status": "REQUIRED_SURFACE_CONTRACT_ONLY",
+  "created_at_utc": "2026-05-02T07:03:44.651748+00:00",
+  "current_resolution_status": [
+    {
+      "accepted_for_29am_bundle": false,
+      "field": "broker_calls_executed",
+      "global_hit_count": 80,
+      "reason": "Explicit field exists outside selected 29AM bundle; parity remains unproven until bundle is extended/reselected.",
+      "selected_hit_count": 0,
+      "source": {
+        "field": "broker_calls_executed",
+        "json_path": "broker_calls_executed",
+        "key": "broker_calls_executed",
+        "normalized_bool": false,
+        "raw_value": false,
+        "selected_bundle": false,
+        "source_file": "run/proofs/proof_observe_only_market_session_package_collection_28f_r4_replay_safe_root_from_final_map_latest.json",
+        "source_sha256": "5fd53d8ca4a719a93db17268c9927c17e82381285574a4f16721969790565100"
+      },
+      "status": "EXPLICIT_FIELD_FOUND_OUTSIDE_SELECTED_BUNDLE",
+      "value": false
+    },
+    {
+      "accepted_for_29am_bundle": false,
+      "field": "live_redis_writes_executed",
+      "global_hit_count": 81,
+      "reason": "Explicit field exists outside selected 29AM bundle; parity remains unproven until bundle is extended/reselected.",
+      "selected_hit_count": 0,
+      "source": {
+        "field": "live_redis_writes_executed",
+        "json_path": "live_redis_writes_executed",
+        "key": "live_redis_writes_executed",
+        "normalized_bool": false,
+        "raw_value": false,
+        "selected_bundle": false,
+        "source_file": "run/proofs/proof_observe_only_market_session_package_collection_28f_r4_replay_safe_root_from_final_map_latest.json",
+        "source_sha256": "5fd53d8ca4a719a93db17268c9927c17e82381285574a4f16721969790565100"
+      },
+      "status": "EXPLICIT_FIELD_FOUND_OUTSIDE_SELECTED_BUNDLE",
+      "value": false
+    },
+    {
+      "accepted_for_29am_bundle": false,
+      "field": "live_trading_enabled",
+      "global_hit_count": 64,
+      "reason": "Explicit field exists outside selected 29AM bundle; parity remains unproven until bundle is extended/reselected.",
+      "selected_hit_count": 0,
+      "source": {
+        "field": "live_trading_enabled",
+        "json_path": "live_trading_approved",
+        "key": "live_trading_approved",
+        "normalized_bool": false,
+        "raw_value": false,
+        "selected_bundle": false,
+        "source_file": "run/proofs/proof_observe_only_market_session_package_collection_28f_r4_replay_safe_root_from_final_map_latest.json",
+        "source_sha256": "5fd53d8ca4a719a93db17268c9927c17e82381285574a4f16721969790565100"
+      },
+      "status": "EXPLICIT_FIELD_FOUND_OUTSIDE_SELECTED_BUNDLE",
+      "value": false
+    },
+    {
+      "accepted_for_29am_bundle": true,
+      "field": "paper_armed_enabled",
+      "global_hit_count": 60,
+      "reason": "Explicit field variant found in selected 29AM bundle.",
+      "selected_hit_count": 12,
+      "source": {
+        "field": "paper_armed_enabled",
+        "json_path": "paper_armed_approved",
+        "key": "paper_armed_approved",
+        "normalized_bool": false,
+        "raw_value": false,
+        "selected_bundle": true,
+        "source_file": "run/proofs/proof_market_session_no_order_sent.json",
+        "source_sha256": "3d3f2036b2e9e96b029a70de48f41778cdaf38c50f65aa24053bb8ebe2a818a8"
+      },
+      "status": "EXPLICIT_FIELD_FOUND_IN_SELECTED_BUNDLE",
+      "value": false
+    },
+    {
+      "accepted_for_29am_bundle": true,
+      "field": "market_session_provider_runtime_ok",
+      "global_hit_count": 2,
+      "reason": "Explicit field variant found in selected 29AM bundle.",
+      "selected_hit_count": 2,
+      "source": {
+        "field": "market_session_provider_runtime_ok",
+        "json_path": "market_session_provider_runtime_ok",
+        "key": "market_session_provider_runtime_ok",
+        "normalized_bool": false,
+        "raw_value": false,
+        "selected_bundle": true,
+        "source_file": "run/proofs/batch29am_live_observe_bundle_compare_executor_20260502_122116_inspection/live_observe_bundle/proof_market_session_provider_runtime.json",
+        "source_sha256": "13c3ca67e83a2b37159712babd8f99fee13afc575b76056b240494348e47f41e"
+      },
+      "status": "EXPLICIT_FIELD_FOUND_IN_SELECTED_BUNDLE",
+      "value": false
+    },
+    {
+      "accepted_for_29am_bundle": true,
+      "field": "market_session_feed_snapshot_ok",
+      "global_hit_count": 2,
+      "reason": "Explicit field variant found in selected 29AM bundle.",
+      "selected_hit_count": 2,
+      "source": {
+        "field": "market_session_feed_snapshot_ok",
+        "json_path": "market_session_feed_snapshot_ok",
+        "key": "market_session_feed_snapshot_ok",
+        "normalized_bool": false,
+        "raw_value": false,
+        "selected_bundle": true,
+        "source_file": "run/proofs/batch29am_live_observe_bundle_compare_executor_20260502_122116_inspection/live_observe_bundle/proof_market_session_feed_snapshot.json",
+        "source_sha256": "2b097ab684961b6279ef44e258b577f0aa9a3b32ec7da91b564e978c30073dc4"
+      },
+      "status": "EXPLICIT_FIELD_FOUND_IN_SELECTED_BUNDLE",
+      "value": false
+    },
+    {
+      "accepted_for_29am_bundle": true,
+      "field": "market_session_feature_payload_ok",
+      "global_hit_count": 1,
+      "reason": "Explicit field variant found in selected 29AM bundle.",
+      "selected_hit_count": 2,
+      "source": {
+        "field": "market_session_feature_payload_ok",
+        "json_path": "market_session_feature_payload_ok",
+        "key": "market_session_feature_payload_ok",
+        "normalized_bool": false,
+        "raw_value": false,
+        "selected_bundle": true,
+        "source_file": "run/proofs/batch29am_live_observe_bundle_compare_executor_20260502_122116_inspection/live_observe_bundle/proof_market_session_feature_payload.json",
+        "source_sha256": "f3373fbcb5f376135b5f9390968dc80dc3b691f7cc98539600f02609dd9fe4d0"
+      },
+      "status": "EXPLICIT_FIELD_FOUND_IN_SELECTED_BUNDLE",
+      "value": false
+    }
+  ],
+  "promotion_firewall": {
+    "broker_io_allowed": false,
+    "live_redis_write_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "production_mutation_allowed": false,
+    "reason": "29AO-R2 locates/defines proof surfaces only; it does not prove parity or promotion readiness."
+  },
+  "readiness_fields_that_must_be_true_for_future_parity": {
+    "market_session_feature_payload_ok": true,
+    "market_session_feed_snapshot_ok": true,
+    "market_session_provider_runtime_ok": true
+  },
+  "required_fields": {
+    "broker_calls_executed": {
+      "may_be_inferred_from_absence": false,
+      "required_value_for_safety": false,
+      "type": "bool"
+    },
+    "live_redis_writes_executed": {
+      "may_be_inferred_from_absence": false,
+      "required_value_for_safety": false,
+      "type": "bool"
+    },
+    "live_trading_enabled": {
+      "may_be_inferred_from_absence": false,
+      "required_value_for_safety": false,
+      "type": "bool"
+    },
+    "paper_armed_enabled": {
+      "may_be_inferred_from_absence": false,
+      "required_value_for_safety": false,
+      "type": "bool"
+    }
+  },
+  "schema_version": "live_observe_safety_boundary_required_surface_29ao_r2_v1"
+}

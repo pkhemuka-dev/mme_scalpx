@@ -1,0 +1,32 @@
+BATCH 29AP PROVIDER-FEATURE REPLAY-SOURCE MATERIALIZATION CONTRACT
+
+generated_at_utc: 2026-05-02T07:09:11.824363+00:00
+verdict: PASS_PROVIDER_FEATURE_REPLAY_SOURCE_MATERIALIZATION_CONTRACT_29AP
+materialization_contract: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_replay_source_materialization_contract_29ap/00_provider_feature_replay_source_materialization_contract.json
+materialization_table_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_replay_source_materialization_contract_29ap/01_provider_feature_replay_source_materialization_table.json
+materialization_table_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/provider_feature_replay_source_materialization_contract_29ap/02_provider_feature_replay_source_materialization_table.csv
+provider_feature_field_count: 4
+missing_replay_reference_count: 4
+source_candidate_available_count: 4
+materialization_contract_ready: True
+provider_feature_value_comparison_ready: False
+full_live_replay_parity: NOT_PROVEN_IN_29AP
+repair_path: REPLAY_PROVIDER_FEATURE_SOURCE_MATERIALIZATION_AUDIT_READY
+next_batch: Batch 29AQ — execute replay provider-feature source materialization audit/plan against guarded replay outputs; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_provider_feature_replay_source_materialization_contract_29ap.json
+- run/proofs/proof_provider_feature_replay_source_materialization_contract_29ap_latest.json
+- run/proofs/batch29ap_provider_feature_replay_source_materialization_contract_20260502_123911_driver_proof.json
+- etc/replay/parity/provider_feature_replay_source_materialization_contract_29ap.json

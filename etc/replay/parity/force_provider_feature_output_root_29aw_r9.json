@@ -1,0 +1,318 @@
+{
+  "accepted_for": "FORCE_PROVIDER_FEATURE_OUTPUT_ROOT_ONLY",
+  "artifacts_written": true,
+  "audit_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/force_provider_feature_output_root_29aw_r9",
+  "backup_dir": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235",
+  "backups": [
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "present": true,
+      "sha256": "65d709253e159225fec1651d73ce3a580a9b2305ef1ed4ae09895f17e652fbbb",
+      "size_bytes": 38747
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/app/mme_scalpx/replay/offline_context_shim.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/offline_context_shim.py",
+      "present": true,
+      "sha256": "82b99bd4af46f2de2c8a3eee67dc14cb4b92a208186ddbd66ee70a74fc0f4f52",
+      "size_bytes": 21868
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/app/mme_scalpx/replay/engine.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/engine.py",
+      "present": true,
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8",
+      "size_bytes": 20518
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/app/mme_scalpx/replay/topology.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/topology.py",
+      "present": true,
+      "sha256": "448cf6bd7f34f13d02768684a0807dc8b5993f493e91bff503f0d1b34e589e0c",
+      "size_bytes": 12432
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/run/proofs/proof_post_r7_emission_output_root_audit_29aw_r8_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_post_r7_emission_output_root_audit_29aw_r8_latest.json",
+      "present": true,
+      "sha256": "0626875d7f5944c68ad4048cec07634f03af2edb3a026e86f055ef670007a4b6",
+      "size_bytes": 10690
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/run/proofs/proof_emit_before_success_stdout_29aw_r7_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_emit_before_success_stdout_29aw_r7_latest.json",
+      "present": true,
+      "sha256": "53e53ba49433b304ba7809f75de953656d31c1d5ef29a30f8d0cd5cc44ccdabf",
+      "size_bytes": 15566
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/run/proofs/proof_post_r5_emission_reachability_artifact_audit_29aw_r6_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_post_r5_emission_reachability_artifact_audit_29aw_r6_latest.json",
+      "present": true,
+      "sha256": "3c5a9c2c999357e34a86b33da1201e2a6afe58504ea9a229d3754ce42d23f635",
+      "size_bytes": 9905
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/run/proofs/proof_move_provider_feature_emit_before_return_29aw_r5_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_move_provider_feature_emit_before_return_29aw_r5_latest.json",
+      "present": true,
+      "sha256": "8183a82bd57ead7e06ed7b8248cb6ffd2ce6227d66b5982c82c03c37c56e30d6",
+      "size_bytes": 14004
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/run/proofs/proof_provider_feature_emission_location_audit_29aw_r4_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_provider_feature_emission_location_audit_29aw_r4_latest.json",
+      "present": true,
+      "sha256": "6d463ca8f9e7b87fa059cf5ec9d5e35d8e4f8cf07fdf57744fd43d0f592d8da3",
+      "size_bytes": 9111
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/run/proofs/proof_provider_feature_summary_emission_shape_rescue_29aw_r3_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_provider_feature_summary_emission_shape_rescue_29aw_r3_latest.json",
+      "present": true,
+      "sha256": "de682144059704e19589960f8c0e920cb506406ef15af8869d9f76243a6d793e",
+      "size_bytes": 14215
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/run/proofs/proof_guarded_provider_feature_summary_runtime_rescue_29aw_r2_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_guarded_provider_feature_summary_runtime_rescue_29aw_r2_latest.json",
+      "present": true,
+      "sha256": "19b7a40f331ea1f9a45b276bd632296c03a8f24a112c394d85f5c78cf7fe5178",
+      "size_bytes": 12888
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/run/proofs/proof_guarded_provider_feature_summary_validation_rescue_29aw_r1_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_guarded_provider_feature_summary_validation_rescue_29aw_r1_latest.json",
+      "present": true,
+      "sha256": "0ea7234b65bd6c68e8d06509e4e2ffca34a4addc086050dc27949b2ed00d378f",
+      "size_bytes": 12051
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29aw_r9_force_provider_feature_output_root_20260502_133235/run/proofs/proof_replay_only_guarded_provider_feature_summary_patch_29aw_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_replay_only_guarded_provider_feature_summary_patch_29aw_latest.json",
+      "present": true,
+      "sha256": "57c8fc9b504a40221f7e7ccb6fe178ad584313566e7b8521f41274a06ddb3da7",
+      "size_bytes": 13606
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "etc/replay/parity/force_provider_feature_output_root_29aw_r9.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/proof_force_provider_feature_output_root_29aw_r9.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/proof_force_provider_feature_output_root_29aw_r9_latest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/batch29aw_r9_force_provider_feature_output_root_20260502_133235_driver_proof.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "docs/milestones/BATCH29AW_R9_FORCE_PROVIDER_FEATURE_OUTPUT_ROOT.md",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    }
+  ],
+  "batch": "29AW-R9",
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "code_patch_applied": true,
+  "comparison_completed": false,
+  "compile_ok": true,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "execution_arming_created": false,
+  "files_changed": [
+    "bin/guarded_replay_engine_execute_dry_run_29g.py"
+  ],
+  "force_output_root_patch_applied": true,
+  "force_output_root_report_json": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/force_provider_feature_output_root_29aw_r9/00_force_provider_feature_output_root_report.json",
+  "full_live_replay_parity": "NOT_PROVEN_IN_29AW_R9",
+  "generated_at_utc": "2026-05-02T08:05:32.525490+00:00",
+  "guarded_cmd": [
+    "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+    "bin/guarded_replay_engine_execute_dry_run_29g.py",
+    "--project-root",
+    "/home/Lenovo/scalpx/projects/mme_scalpx",
+    "--dataset-candidate-root",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0",
+    "--callable-output-root",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/stage_executor_dict_callable_audit_29u_r1",
+    "--materialization-root-29e",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_context_object_materialization_29e",
+    "--shim-root-29f",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f",
+    "--adapter-root-29c",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c",
+    "--output-root",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aw_r9_20260502_133235",
+    "--no-broker",
+    "--no-live-redis",
+    "--observe-only",
+    "--dry-run",
+    "--execute-guarded"
+  ],
+  "guarded_retry_returncode": 0,
+  "guarded_retry_stderr_tail": "",
+  "guarded_retry_stdout_tail": "{\n  \"accepted_for\": \"GUARDED_REPLAY_ENGINE_EXECUTE_DRY_RUN_ONLY\",\n  \"calls_broker_api\": false,\n  \"candidate_executed\": true,\n  \"comparison_completed\": false,\n  \"context_reconstruction_ready\": true,\n  \"engine_instance_ready\": true,\n  \"execution_arming_created\": false,\n  \"execution_attempted\": true,\n  \"execution_ok\": true,\n  \"full_live_replay_parity\": \"NOT_PROVEN_IN_29G\",\n  \"known_boolean_count\": 0,\n  \"live_trading_approved\": false,\n  \"next_batch\": \"Batch 29H \\u2014 inspect ReplayEngine dry-run outputs and build replay/live parity comparison contract, still not paper/live enablement.\",\n  \"null_value_count\": 4,\n  \"paper_armed_approved\": false,\n  \"production_doctrine_changed\": false,\n  \"provider_feature_field_count\": 4,\n  \"provider_feature_summary_found\": true,\n  \"provider_feature_summary_path\": \"/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aw_r9_20260502_133235/06_guarded_replay_provider_feature_summary.json\",\n  \"provider_feature_value_comparison_ready\": false,\n  \"reads_live_redis\": false,\n  \"real_order_sent\": false,\n  \"replay_core_executed\": true,\n  \"replay_run_completed\": true,\n  \"schema_version\": \"guarded_replay_engine_execute_result_29g_v1\",\n  \"starts_services\": false,\n  \"writes_live_redis\": false\n}\n",
+  "inspection_manifest": "run/proofs/batch29aw_r9_force_provider_feature_output_root_20260502_133235_inspection/inspection_manifest.json",
+  "known_boolean_count": 0,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "missing_args": [],
+  "next_batch": "Batch 29AX \u2014 validate emitted guarded_replay_provider_feature_summary and rerun provider-feature value comparison if value-ready; still not paper/live enablement.",
+  "next_validation_contract": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/force_provider_feature_output_root_29aw_r9/02_next_provider_feature_summary_validation_contract.json",
+  "null_value_count": 4,
+  "output_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aw_r9_20260502_133235",
+  "paper_armed_approved": false,
+  "patch_details": {
+    "helper_inserted": true,
+    "helper_marker": "# BATCH29AW_R9_FORCE_OUTPUT_ROOT_PROVIDER_FEATURE_HELPER",
+    "inserted_before_success_line": 972,
+    "new_call_marker": "# BATCH29AW_R9_FORCE_OUTPUT_ROOT_PROVIDER_FEATURE_SUMMARY_EMIT",
+    "old_block_preview": "    # BATCH29AW_R7_PRE_SUCCESS_STDOUT_PROVIDER_FEATURE_SUMMARY_EMIT\n    _batch29aw_locals = locals()\n    _batch29aw_args = _batch29aw_locals.get(\"args\")\n    _batch29aw_output_root = _batch29aw_locals.get(\"output_root\")\n    if _batch29aw_output_root is None and _batch29aw_args is not None:\n        _batch29aw_output_root = getattr(_batch29aw_args, \"output_root\", None)\n    if _batch29aw_output_root is None:\n        _batch29aw_output_root = _batch29aw_locals.get(\"audit_root\")\n    if _batch29aw_output_root is None:\n        _batch29aw_output_root = _batch29aw_locals.get(\"run_root\")\n    if _batch29aw_output_root is None:\n        _batch29aw_output_root = pathlib.Path(\".\")\n    _batch29aw_dataset_id = _batch29aw_locals.get(\"dataset_id\")\n    if _batch29aw_dataset_id is None and _batch29aw_args is not None:\n        _batch29aw_dataset_id = getattr(_batch29aw_args, \"dataset_id\", None)\n    _batch29aw_run_id = _batch29aw_locals.get(\"run_id\")\n    if _batch29aw_run_id is None and _batch29aw_args is not None:\n        _batch29aw_run_id = getattr(_batch29aw_args, \"run_id\", None)\n    _batch29aw_source_payloads = {\n        \"guarded_replay_summary\": _batch29aw_locals.get(\"summary\") if isinstance(_batch29aw_locals.get(\"summary\"), dict) else {},\n        \"boundary\": _batch29aw_locals.get(\"boundary\") if isinstance(_batch29aw_locals.get(\"boundary\"), dict) else {},\n        \"result\": _batch29aw_locals.get(\"result\") if isinstance(_batch29aw_locals.get(\"result\"), dict) else {},\n        \"context\": _batch29aw_locals.get(\"context\") if isinstance(_batch29aw_locals.get(\"context\"), dict) else {},\n        \"engine_report\": _batch29aw_locals.get(\"engine_report\") if isinstance(_batch29aw_locals.get(\"engine_report\"), dict) else {},\n        \"execution_report\": _batch29aw_locals.get(\"execution_report\") if isinstance(_batch29aw_locals.get(\"execution_report\"), dict) else {},\n        \"execution_summary\": _batch29aw_locals.get(\"execution_summary\") if isinstance(_batch29aw_locals.get(\"execution_summary\"), dict) else",
+    "old_emit_block_removed": true,
+    "repair": "force write under args.output_root and add provider_feature_summary_path/status to stdout result",
+    "success_target": {
+      "args": [
+        "json.dumps(result, indent=2, sort_keys=True)"
+      ],
+      "context": [
+        {
+          "line": 968,
+          "text": "        \"production_doctrine_changed\": False,"
+        },
+        {
+          "line": 969,
+          "text": "        \"full_live_replay_parity\": \"NOT_PROVEN_IN_29G\","
+        },
+        {
+          "line": 970,
+          "text": "        \"next_batch\": next_batch,"
+        },
+        {
+          "line": 971,
+          "text": "    }"
+        },
+        {
+          "line": 972,
+          "text": "    print(json.dumps(result, indent=2, sort_keys=True))"
+        },
+        {
+          "line": 973,
+          "text": "    return 0 if execution_ok else 2"
+        },
+        {
+          "line": 974,
+          "text": ""
+        },
+        {
+          "line": 975,
+          "text": "if __name__ == \"__main__\":"
+        },
+        {
+          "line": 976,
+          "text": "    raise SystemExit(main())"
+        }
+      ],
+      "line": 972
+    }
+  },
+  "patched_file": "bin/guarded_replay_engine_execute_dry_run_29g.py",
+  "post_patch_sha256": "17ac851a18415dd5737c3ddac42567b823bc6cce72b9448c679db41dda96fd73",
+  "pre_patch_sha256": "65d709253e159225fec1651d73ce3a580a9b2305ef1ed4ae09895f17e652fbbb",
+  "production_doctrine_changed": false,
+  "proof": "run/proofs/proof_force_provider_feature_output_root_29aw_r9.json",
+  "proof_29aw_r1_verdict": "FAIL_29AW_R1_GUARDED_VALIDATION_RUNTIME_FAILED",
+  "proof_29aw_r2_verdict": "DEFERRED_29AW_R2_SUMMARY_NOT_FOUND_OR_INVALID_SHAPE",
+  "proof_29aw_r3_verdict": "DEFERRED_29AW_R3_SUMMARY_STILL_NOT_FOUND_OR_INVALID_SHAPE",
+  "proof_29aw_r4_verdict": "PASS_PROVIDER_FEATURE_EMISSION_LOCATION_AUDIT_29AW_R4",
+  "proof_29aw_r5_verdict": "DEFERRED_29AW_R5_SUMMARY_STILL_NOT_FOUND_OR_INVALID_SHAPE",
+  "proof_29aw_r6_verdict": "PASS_POST_R5_EMISSION_REACHABILITY_ARTIFACT_AUDIT_29AW_R6",
+  "proof_29aw_r7_verdict": "DEFERRED_29AW_R7_SUMMARY_STILL_NOT_FOUND_OR_INVALID_SHAPE",
+  "proof_29aw_r8_valid": true,
+  "proof_29aw_r8_verdict": "PASS_POST_R7_EMISSION_OUTPUT_ROOT_AUDIT_29AW_R8",
+  "proof_29aw_verdict": "FAIL_29AW_GUARDED_DRY_RUN_OR_COMPILE_FAILED",
+  "proof_latest": "run/proofs/proof_force_provider_feature_output_root_29aw_r9_latest.json",
+  "provider_feature_field_count": 4,
+  "provider_feature_summary_copy": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/force_provider_feature_output_root_29aw_r9/01_guarded_replay_provider_feature_summary.json",
+  "provider_feature_summary_found": true,
+  "provider_feature_summary_path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aw_r9_20260502_133235/06_guarded_replay_provider_feature_summary.json",
+  "provider_feature_value_comparison_ready": false,
+  "provider_summary_valid_shape": true,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "repair_path": "PROVIDER_FEATURE_SUMMARY_VALIDATION_READY",
+  "safety_ok": true,
+  "schema_version": "force_provider_feature_output_root_29aw_r9_v1",
+  "starts_services": false,
+  "stdout_provider_feature_summary_path": "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aw_r9_20260502_133235/06_guarded_replay_provider_feature_summary.json",
+  "verdict": "PASS_FORCE_PROVIDER_FEATURE_OUTPUT_ROOT_29AW_R9",
+  "writes_live_redis": false
+}

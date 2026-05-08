@@ -1,0 +1,19 @@
+{
+  "allowed_next": "RAW-AA24 non-mutating analysis only for allowed_without_gated hypotheses",
+  "blocked": [
+    "paper/live enablement",
+    "production strategy patch",
+    "broker IO",
+    "live Redis writes",
+    "reward_cost_ratio derivation",
+    "OI wall derivation",
+    "PnL lifecycle reconstruction",
+    "row backfill"
+  ],
+  "created_at_utc": "2026-05-02T07:38:00.355710+00:00",
+  "hypotheses_reviewed": true,
+  "hypotheses_tested": false,
+  "promotion_allowed": false,
+  "row_mutation_allowed": false,
+  "schema_version": "raw_aa23_hypothesis_analysis_safety_policy_v1"
+}

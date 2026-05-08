@@ -1,0 +1,23 @@
+# 26-O23-P-R11 — decision family payload publication verify
+
+- generated_at_utc: `2026-05-08T09:50:32.137607+00:00`
+- final_verdict: `FAIL_O23_P_R11_DECISION_PAYLOAD_PUBLICATION_NOT_PROVEN`
+- false_keys: `['decision_family_features_json_seen', 'decision_family_payload_json_valid', 'decision_family_surfaces_json_seen', 'decision_patch_marker_seen', 'manifest_written', 'milestone_written', 'proof_written', 'runbook_written', 'summary_written']`
+- latest_r10: `run/proofs/proof_batch26o23_p_r10_strategy_decision_payload_patch_latest.json`
+- services_started: `['feeds', 'features', 'strategy']`
+- service_liveness_observed: `True`
+- features_growth: `6`
+- decisions_growth: `77`
+- orders_growth: `0`
+- activation_report_seen: `True`
+- activation_report_valid: `True`
+- decision_family_features_json_seen: `False`
+- decision_family_surfaces_json_seen: `False`
+- decision_patch_marker_seen: `False`
+- decision_family_payload_json_valid: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids_after_stop: `True`
+- risk_execution_not_running: `True`
+- no paper / no real-live / no order write: `True`
+- next_recommended_batch: `Inspect R11 false_keys/service logs/payload audit; do not advance to opportunity ranking.`

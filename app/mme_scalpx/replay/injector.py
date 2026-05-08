@@ -34,6 +34,24 @@ Design rules
 
 from __future__ import annotations
 
+# BEGIN BATCH27C_REPLAY_SAFETY_FIREWALL
+try:
+    from app.mme_scalpx.replay.safety import assert_replay_module_static_safety
+except ModuleNotFoundError:
+    import pathlib as _batch27c_pathlib
+    import sys as _batch27c_sys
+
+    _batch27c_here = _batch27c_pathlib.Path(__file__).resolve()
+    for _batch27c_parent in [_batch27c_here.parent, *_batch27c_here.parents]:
+        if (_batch27c_parent / "app" / "mme_scalpx").exists():
+            if str(_batch27c_parent) not in _batch27c_sys.path:
+                _batch27c_sys.path.insert(0, str(_batch27c_parent))
+            break
+    from app.mme_scalpx.replay.safety import assert_replay_module_static_safety
+
+assert_replay_module_static_safety(__file__)
+# END BATCH27C_REPLAY_SAFETY_FIREWALL
+
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, Sequence
 
@@ -400,3 +418,39 @@ def _validate_event_batch(events: Sequence[ReplayInjectionEvent]) -> None:
         previous_sequence = event.sequence_id
         previous_event_time = event_dt
 # ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====
+
+# BEGIN BATCH27F_REPLAY_INJECTOR_TRANSPORT_HELPERS
+
+def replay_injector_local_transport(run_id):
+    """Return replay-only LocalReplayTransport for future injector wiring.
+
+    This helper does not touch live Redis and does not call broker APIs.
+    """
+    from app.mme_scalpx.replay.transport import LocalReplayTransport
+
+    return LocalReplayTransport(run_id=str(run_id))
+
+def replay_injector_publish_live_shape(transport, *, surface, row=None, extra=None, event_ts_ns=None, sequence_id=None):
+    """Publish a replay-only live-compatible shape through LocalReplayTransport."""
+    from app.mme_scalpx.replay.live_adapter import publish_replay_live_shape
+
+    return publish_replay_live_shape(
+        transport,
+        surface=surface,
+        row=row,
+        extra=extra,
+        event_ts_ns=event_ts_ns,
+        sequence_id=sequence_id,
+    )
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_injector_local_transport",
+    "replay_injector_publish_live_shape",
+)))
+
+# END BATCH27F_REPLAY_INJECTOR_TRANSPORT_HELPERS

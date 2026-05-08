@@ -1,0 +1,110 @@
+{
+  "accepted_for": "OBSERVE_ONLY_MARKET_SESSION_CAPTURE_RUNBOOK_ONLY",
+  "actual_live_market_capture": false,
+  "created_at_utc": "2026-05-01T10:13:52.759539+00:00",
+  "evidence_map_template": {
+    "dhan_oi_ladder_context_if_available": "future_session_artifact_path",
+    "family_surfaces": "future_session_artifact_path",
+    "feature_payload": "future_session_artifact_path",
+    "feed_snapshot": "future_session_artifact_path",
+    "live_capture_log": "future_session_artifact_path",
+    "live_hash_inventory": "future_session_artifact_path",
+    "live_stream_inventory": "future_session_artifact_path",
+    "no_order_sent": "future_session_artifact_path",
+    "provider_health_snapshot": "future_session_artifact_path",
+    "provider_runtime": "future_session_artifact_path",
+    "selected_option_context": "future_session_artifact_path",
+    "strategy_activation": "future_session_artifact_path"
+  },
+  "failure_diagnostics": [
+    "Stop if no_order_sent proof fails.",
+    "Stop if broker_call_reachable is true.",
+    "Stop if live_redis_write_reachable is true.",
+    "Stop if runtime_promotion_reachable is true.",
+    "Stop if paper_armed or live trading is enabled."
+  ],
+  "not_proven_boundary": {
+    "full_live_replay_parity": "NOT_PROVEN_IN_28D",
+    "live_trading_readiness": "NOT_APPROVED_IN_28D",
+    "paper_armed_readiness": "NOT_APPROVED_IN_28D",
+    "production_doctrine_revision": "NOT_APPROVED_IN_28D",
+    "production_strategy_improvement_claim": "NOT_PROVEN_IN_28D",
+    "real_live_market_capture": "NOT_PERFORMED_IN_28D"
+  },
+  "operator_command_sequence": [
+    {
+      "executes_in_28d": false,
+      "operator_command": ".venv/bin/python bin/observe_only_market_session_capture_operator.py --session-id observe_only_YYYYMMDD",
+      "step": "operator_plan"
+    },
+    {
+      "executes_in_28d": false,
+      "operator_command": "Use existing safe observe_only capture flow during market session only.",
+      "step": "future_capture"
+    },
+    {
+      "executes_in_28d": false,
+      "operator_command": "Run proof_market_session scripts after capture; do not arm execution.",
+      "step": "post_capture_proofs"
+    },
+    {
+      "executes_in_28d": false,
+      "operator_command": ".venv/bin/python bin/observe_only_live_evidence_collect.py --capture-id observe_only_YYYYMMDD --evidence-map etc/replay/parity/observe_only_YYYYMMDD_evidence_map.json",
+      "step": "collect_package"
+    }
+  ],
+  "operator_plan_only": true,
+  "post_session_collection_steps": [
+    "Freeze generated market-session proof files.",
+    "Create session evidence map JSON.",
+    "Run observe_only_live_evidence_collect.py.",
+    "Do not change production doctrine from replay output."
+  ],
+  "required_plan_artifacts": [
+    "00_operator_plan_manifest.json",
+    "01_pre_session_checklist.json",
+    "02_operator_command_sequence.json",
+    "03_expected_evidence_map_template.json",
+    "04_no_enablement_boundary.json",
+    "05_post_session_collection_steps.json",
+    "06_failure_diagnostics.json",
+    "07_reproducibility.json"
+  ],
+  "required_post_session_evidence": [
+    "provider_runtime",
+    "feed_snapshot",
+    "feature_payload",
+    "family_surfaces",
+    "strategy_activation",
+    "no_order_sent",
+    "live_capture_log",
+    "live_stream_inventory",
+    "live_hash_inventory",
+    "provider_health_snapshot",
+    "selected_option_context",
+    "dhan_oi_ladder_context_if_available"
+  ],
+  "required_pre_session_checks": [
+    "confirm_market_open_day",
+    "confirm_runtime_observe_only",
+    "confirm_paper_armed_false",
+    "confirm_live_trading_false",
+    "confirm_no_existing_execution_position",
+    "confirm_28c_dry_run_passed"
+  ],
+  "runbook_reproducibility_hash": "6317fd156dfc5c683df4eaa07697bd44bf34fde2aa533ddcb4fd3103798d6cb1",
+  "safety_boundary": {
+    "broker_calls_executed": false,
+    "calls_broker_api": false,
+    "execution_arming_created": false,
+    "live_redis_writes_executed": false,
+    "live_trading_approved": false,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "observe_only_market_session_capture_runbook_v1"
+}

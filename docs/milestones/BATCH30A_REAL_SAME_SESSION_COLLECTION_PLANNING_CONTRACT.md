@@ -1,0 +1,31 @@
+BATCH 30A REAL SAME-SESSION OBSERVE_ONLY COLLECTION PLANNING CONTRACT
+
+verdict: PASS_30A_REAL_SAME_SESSION_COLLECTION_PLANNING_CONTRACT_FROZEN_COLLECTION_NOT_STARTED
+collection_plan_status: FROZEN_REAL_SAME_SESSION_OBSERVE_ONLY_COLLECTION_PLANNING_CONTRACT_COLLECTION_NOT_STARTED_FULL_PARITY_NOT_PROVEN
+required_artifact_count: 16
+artifact_slot_count: 16
+planning_step_count: 10
+collection_started: false
+collection_completed: false
+full_live_replay_parity: NOT_PROVEN_AFTER_30A_PLANNING_CONTRACT_ONLY
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+paper_armed_approved: false
+live_trading_approved: false
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/real_same_session_collection_planning_contract_30a/00_collection_planning_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/real_same_session_collection_planning_contract_30a/01_artifact_slot_blueprint.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/real_same_session_collection_planning_contract_30a/02_preflight_checklist.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/real_same_session_collection_planning_contract_30a/03_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/real_same_session_collection_planning_contract_30a/04_operator_summary.md
+- run/proofs/proof_real_same_session_collection_planning_contract_30a.json
+- run/proofs/proof_real_same_session_collection_planning_contract_30a_latest.json
+- etc/replay/parity/real_same_session_collection_planning_contract_30a.json
+
+Conclusion:
+30A freezes planning only. It does not start collection, services, Redis access, broker calls, replay, orders, paper_armed, live trading, or production patches.
+
+Next:
+Batch 30B — build offline real same-session collection planning validator/harness; still no paper/live enablement.

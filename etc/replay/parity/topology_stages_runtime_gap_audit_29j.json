@@ -1,0 +1,213 @@
+{
+  "accepted_for": "TOPOLOGY_STAGES_RUNTIME_GAP_AUDIT_ONLY",
+  "artifact_states": {
+    "00_topology_stages_gap_audit_manifest.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/00_topology_stages_gap_audit_manifest.json",
+      "present": true,
+      "sha256": "2c8ff8bc17a67348a5917ccaa81107373e87f84203d7aed73b0b4d6e29b85f03",
+      "size_bytes": 1115
+    },
+    "01_runtime_gap_truth_table.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/01_runtime_gap_truth_table.json",
+      "present": true,
+      "sha256": "49f2608bdfceab2a80e8944edc2089027045ee7c2323f88326ef712b7c9e45cb",
+      "size_bytes": 5555
+    },
+    "02_topology_builder_source_audit.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/02_topology_builder_source_audit.json",
+      "present": true,
+      "sha256": "3984b7cdce19fd5abc50f4b337a2978c3d7c24c390bc7fe836d201b2960e68c2",
+      "size_bytes": 1633
+    },
+    "03_topology_materialization_audit.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/03_topology_materialization_audit.json",
+      "present": true,
+      "sha256": "bf0448b1d76d76e8d217caf2f8cce6090764673a0001af34cf92cff0c515b310",
+      "size_bytes": 10211
+    },
+    "04_no_broker_no_live_redis_boundary.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "2c4cce2602bc8d2471e1e29fede2d683e057f00b3f9c76ed562e33c58ab919bc",
+      "size_bytes": 756
+    },
+    "05_next_29k_repair_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j/05_next_29k_repair_contract.json",
+      "present": true,
+      "sha256": "79e7ea9f9c7220af45ecf0b5c9bc01b000f5f144f1abc4f1fa240d47e9a049bc",
+      "size_bytes": 1077
+    }
+  },
+  "artifacts_ok": true,
+  "audit_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_stages_runtime_gap_audit_29j",
+  "audit_root_replay_safe": true,
+  "batch": "29J",
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "candidate_executed": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "engine_static": {
+    "hits": [],
+    "ok": true,
+    "path": "app/mme_scalpx/replay/engine.py",
+    "present": true,
+    "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8"
+  },
+  "execution_arming_created": false,
+  "full_live_replay_parity": "NOT_PROVEN_IN_29J",
+  "generated_at_utc": "2026-05-01T14:08:23.294918+00:00",
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 29K \u2014 repair offline topology_plan stages shape for ReplayEngine guarded dry-run, still not paper/live enablement.",
+  "no_enablement_failures": [],
+  "observed_no_enablement": {
+    "proof_29b": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29c": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29d": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29e": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29f": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29g": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29h_r2": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_29i": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "repair_29i": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    }
+  },
+  "paper_armed_approved": false,
+  "preflight_ok": true,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "repair_path": "REPAIR_OFFLINE_TOPOLOGY_PLAN_STAGES_SHAPE",
+  "repair_root_29i": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_run_id_repair_29i",
+  "replay_compile_ok": true,
+  "replay_core_executed": false,
+  "replay_run_completed": false,
+  "retry_execute_root_29i": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29i",
+  "retry_runtime_error": "AttributeError: 'ReplayTopologyBuilder' object has no attribute 'stages'",
+  "run_id_gap_resolved": true,
+  "runtime_gap_kind": "REPLAY_TOPOLOGY_BUILDER_STAGES_ATTRIBUTE_GAP",
+  "schema_version": "topology_stages_runtime_gap_audit_29j_v1",
+  "shim_static": {
+    "hits": [],
+    "ok": true,
+    "path": "app/mme_scalpx/replay/offline_context_shim.py",
+    "present": true,
+    "sha256": "eec37f691fd49f8744102ae6a2b30619eb2bd25c0ac784ccfdffb0fc8d868249"
+  },
+  "starts_services": false,
+  "topology_stages_gap_confirmed": true,
+  "verdict": "PASS_TOPOLOGY_STAGES_RUNTIME_GAP_AUDIT_29J",
+  "writes_live_redis": false
+}

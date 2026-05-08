@@ -344,3 +344,22 @@ __all__ = [
     "build_shadow_experiment",
     "build_experiment_bundle",
 ]
+
+# BEGIN BATCH27M_REPLAY_EXPERIMENT_WORKSTATION_HELPERS
+
+def replay_experiment_workstation_profiles():
+    """Return replay-only experiment profiles."""
+    from app.mme_scalpx.replay.experiment_workstation import list_replay_experiment_profiles
+
+    return list_replay_experiment_profiles()
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_experiment_workstation_profiles",
+)))
+
+# END BATCH27M_REPLAY_EXPERIMENT_WORKSTATION_HELPERS

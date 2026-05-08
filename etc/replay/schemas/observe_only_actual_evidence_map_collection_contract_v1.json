@@ -1,0 +1,17 @@
+{
+  "accepted_for": "OBSERVE_ONLY_ACTUAL_EVIDENCE_MAP_PACKAGE_COLLECTION_ONLY",
+  "actual_live_market_capture_started_by_28f": false,
+  "calls_broker_api": false,
+  "collection_only_copies_existing_evidence_files": true,
+  "collection_requires_actual_evidence_map": true,
+  "expected_deferred_verdict": "DEFERRED_ACTUAL_EVIDENCE_MAP_REQUIRED_28F",
+  "expected_pass_verdict": "PASS_OBSERVE_ONLY_ACTUAL_EVIDENCE_MAP_PACKAGE_COLLECTION_28F",
+  "full_live_replay_parity": "NOT_PROVEN_IN_28F",
+  "live_trading_approved": false,
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "schema_version": "observe_only_actual_evidence_map_collection_contract_v1",
+  "starts_services": false,
+  "writes_live_redis": false
+}

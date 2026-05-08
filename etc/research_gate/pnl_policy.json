@@ -1,0 +1,63 @@
+{
+  "broker_io_allowed": false,
+  "field_families": {
+    "cost_fields": [
+      "cost",
+      "costs",
+      "charges",
+      "fees",
+      "brokerage",
+      "transaction_cost",
+      "round_trip_cost"
+    ],
+    "gross_pnl_fields": [
+      "gross_pnl",
+      "pnl",
+      "realized_pnl",
+      "trade_pnl",
+      "pnl_points",
+      "points_pnl",
+      "closed_pnl"
+    ],
+    "net_pnl_fields": [
+      "net_pnl",
+      "net_pnl_after_costs",
+      "realized_net_pnl",
+      "pnl_net",
+      "realized_pnl_net",
+      "closed_net_pnl"
+    ]
+  },
+  "gross_pnl_alone_is_insufficient_for_promotion": true,
+  "net_pnl_after_costs_required": true,
+  "non_live": true,
+  "non_mutating": true,
+  "oi_wall_computation_included": false,
+  "order_sending_allowed": false,
+  "pnl_analysis_owner": "RAW_PnL_Desk",
+  "pnl_sources_allowed": [
+    "explicit_net_pnl",
+    "explicit_gross_pnl_minus_cost",
+    "derived_from_entry_exit_qty"
+  ],
+  "pnl_sources_not_allowed": [
+    "invented_trade",
+    "assumed_entry",
+    "assumed_exit",
+    "broker_live_query"
+  ],
+  "production_mutation_allowed": false,
+  "redis_live_write_allowed": false,
+  "reports": [
+    "pnl_report.json",
+    "RAW_E_PNL_SUMMARY.md"
+  ],
+  "reserved_for_later_batches": [
+    "strategy ranking",
+    "OI-wall impact",
+    "promotion decision",
+    "ML scoring"
+  ],
+  "schema_version": "RAW-E.1",
+  "strategy_ranking_included": false
+}

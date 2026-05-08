@@ -1,0 +1,27 @@
+BATCH 29BU-R2 CORRECTED FAMILY SURFACE CONTRACT
+
+verdict: PASS_29BU_R2_CORRECTED_FAMILY_SURFACE_CONTRACT_READY_RICH_SURFACE_EXCLUDED
+corrected_contract_ready: True
+family_surface_payload_parity: NOT_PROVEN_CORRECTED_MAPPING_CONTRACT_READY_RICH_SURFACE_EXCLUDED
+family_surface_closed: false
+comparison_completed: false
+same_file_exclusion_passed: True
+retained_compare_count: 60
+excluded_compare_count: 15
+bad_retained_rich_surface_names: []
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29BU_R2
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_family_surface_contract_29bu_r2/00_corrected_family_surface_comparison_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_family_surface_contract_29bu_r2/01_corrected_contract_summary.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_family_surface_contract_29bu_r2/02_excluded_non_comparable_rich_surface_items.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_family_surface_contract_29bu_r2/03_operator_summary.md
+- run/proofs/proof_corrected_family_surface_contract_29bu_r2.json
+- run/proofs/proof_corrected_family_surface_contract_29bu_r2_latest.json
+- etc/replay/parity/corrected_family_surface_contract_29bu_r2.json
+
+Next:
+Batch 29BU-R3 — execute corrected family surface value comparison excluding non-comparable rich_surface status; still no paper/live enablement.

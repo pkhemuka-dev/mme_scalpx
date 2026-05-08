@@ -1,0 +1,14 @@
+{
+  "provider_runtime": "run/proofs/proof_observe_only_live_evidence_capture_28b_latest.json",
+  "feed_snapshot": "run/proofs/proof_observe_only_live_evidence_capture_contract.json",
+  "feature_payload": "run/proofs/proof_replay_live_parity_audit_plan_28a_latest.json",
+  "family_surfaces": "run/proofs/proof_replay_final_acceptance_gate_latest.json",
+  "strategy_activation": "run/proofs/proof_observe_only_live_evidence_no_enablement.json",
+  "no_order_sent": "run/proofs/proof_replay_no_broker_call.json",
+  "live_capture_log": "docs/milestones/BATCH28B_OBSERVE_ONLY_LIVE_EVIDENCE_CAPTURE_CONTRACT.md",
+  "live_stream_inventory": "run/proofs/proof_replay_no_live_redis_write.json",
+  "live_hash_inventory": "run/proofs/proof_replay_no_runtime_promotion.json",
+  "provider_health_snapshot": "run/proofs/batch28b_r2_import_check.json",
+  "selected_option_context": "run/proofs/batch28b_r2_targeted_compile.json",
+  "dhan_oi_ladder_context_if_available": "run/proofs/batch28b_r2_unrelated_compileall_blocker.json"
+}

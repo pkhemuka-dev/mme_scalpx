@@ -1,0 +1,36 @@
+BATCH 29CI SAME-SESSION ARTIFACT INDEX AND COMPARISON MATRIX CONTRACT
+
+verdict: PASS_29CI_SAME_SESSION_ARTIFACT_INDEX_AND_COMPARISON_MATRIX_CONTRACT_FROZEN
+artifact_index_contract_status: FROZEN_SAME_SESSION_ARTIFACT_INDEX_AND_COMPARISON_MATRIX_CONTRACT_FULL_PARITY_NOT_PROVEN
+artifact_family_count: 7
+comparison_phase_count: 8
+matrix_row_count: 8
+contract_only: true
+index_built_for_real_session: false
+live_collection_started: false
+replay_run_started: false
+comparison_started: false
+full_live_replay_parity: NOT_PROVEN_AFTER_29CI_CONTRACT_ONLY
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+paper_armed_approved: false
+live_trading_approved: false
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_artifact_index_matrix_contract_29ci/00_artifact_index_schema.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_artifact_index_matrix_contract_29ci/01_artifact_index_template.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_artifact_index_matrix_contract_29ci/02_comparison_matrix_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_artifact_index_matrix_contract_29ci/03_matrix_dependency_graph.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_artifact_index_matrix_contract_29ci/04_artifact_index_matrix_contract_package.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_artifact_index_matrix_contract_29ci/05_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/same_session_artifact_index_matrix_contract_29ci/06_operator_summary.md
+- run/proofs/proof_same_session_artifact_index_matrix_contract_29ci.json
+- run/proofs/proof_same_session_artifact_index_matrix_contract_29ci_latest.json
+- etc/replay/parity/same_session_artifact_index_matrix_contract_29ci.json
+
+Conclusion:
+29CI freezes the artifact-index and comparison-matrix contract for future same-session parity. It does not approve paper_armed or live trading.
+
+Next:
+Batch 29CJ — define runtime feature value mapping requirements for same-session parity; still no paper/live enablement.

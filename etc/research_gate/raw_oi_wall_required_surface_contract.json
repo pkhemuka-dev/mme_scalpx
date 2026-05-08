@@ -1,0 +1,33 @@
+{
+  "created_at_utc": "2026-05-02T07:23:01.637505+00:00",
+  "hard_rules": [
+    "No oi_wall_strength derivation without explicit authorized formula/context.",
+    "No oi_wall_distance_points derivation without explicit authorized formula/context.",
+    "Raw OI/strike/expiry existence is not sufficient authority.",
+    "RAW output remains research-only and cannot enable paper/live."
+  ],
+  "oi_wall_distance_points_derivable_now": false,
+  "oi_wall_formula_authorized": false,
+  "oi_wall_strength_derivable_now": false,
+  "required_fields": [
+    "oi_wall_model_id",
+    "oi_wall_model_version",
+    "authorization_status",
+    "authorized_by",
+    "authorized_at_utc",
+    "source_of_truth_doc_or_config",
+    "required_input_fields",
+    "oi_ladder_source",
+    "strike_selection_scope",
+    "expiry_selection_scope",
+    "formula_for_oi_wall_strength",
+    "formula_for_oi_wall_distance_points",
+    "distance_unit",
+    "normalization_method",
+    "missing_context_behavior",
+    "backfill_allowed",
+    "non_promotion_statement"
+  ],
+  "schema_version": "raw_oi_wall_required_surface_contract_v1",
+  "status": "REQUIRED_OI_WALL_FORMULA_SURFACE_ONLY"
+}

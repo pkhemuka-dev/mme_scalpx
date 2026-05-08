@@ -1,0 +1,106 @@
+{
+  "accepted_for": "OFFLINE_REPLAY_MATERIALIZATION_DRY_RUN_ONLY",
+  "batch": "28L",
+  "broker_call_reachable": false,
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "dataset_materialized": false,
+  "dry_run_artifact_states": {
+    "00_dataset_materialization_dry_run_manifest.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/00_dataset_materialization_dry_run_manifest.json",
+      "present": true,
+      "sha256": "beea25559ab749a022a33d0ecdd4f8dff9b084fd03b6c94f3be3dc21af151656",
+      "size_bytes": 1513
+    },
+    "01_input_surface_catalog.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/01_input_surface_catalog.json",
+      "present": true,
+      "sha256": "7a36144e994c4f950983019cadc2e1b07fa10444ede61592e67436481b4a27b0",
+      "size_bytes": 14057
+    },
+    "02_replay_dataset_candidate_index.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/02_replay_dataset_candidate_index.json",
+      "present": true,
+      "sha256": "cf91c519ebdf032856f1feec4763171964afd3fdbea00a31150151cda87f1470",
+      "size_bytes": 14678
+    },
+    "03_service_surface_feasibility.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/03_service_surface_feasibility.json",
+      "present": true,
+      "sha256": "d38c0d2a19afdb8bbdc59c0185a47fabfb5fe4b64c0ec96c80172eacf419f619",
+      "size_bytes": 1353
+    },
+    "04_no_broker_no_live_redis_boundary.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "d4dc7af41b71913f976439e50537cb347c54cee88299db263c31a84bd67e1393",
+      "size_bytes": 768
+    },
+    "05_materialization_gap_report.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/05_materialization_gap_report.json",
+      "present": true,
+      "sha256": "06ef9dc2a6b944fb26c4836cb134d12074467a5d239815b94f0b0b991bbbb05d",
+      "size_bytes": 393
+    },
+    "06_next_materialization_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate/06_next_materialization_contract.json",
+      "present": true,
+      "sha256": "dfc3c8b248a6da257dadd7254e07053d7ebf6ba3ecc20db4577df8df041db810",
+      "size_bytes": 735
+    }
+  },
+  "dry_run_ok": true,
+  "dry_run_result": {
+    "accepted_for": "OFFLINE_REPLAY_MATERIALIZATION_DRY_RUN_ONLY",
+    "blocking_gap_count": 0,
+    "calls_broker_api": false,
+    "capture_id": "pstrategy_20260430_094557",
+    "comparison_completed": false,
+    "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+    "dataset_materialized": false,
+    "dry_run_completed": true,
+    "execution_arming_created": false,
+    "full_live_replay_parity": "NOT_PROVEN_IN_28L",
+    "live_trading_approved": false,
+    "materialization_dry_run_ready": true,
+    "missing_evidence": [],
+    "next_batch": "Batch 28M \u2014 materialize offline replay dataset candidate from the 28L dry-run, still not paper/live enablement.",
+    "output_root": "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate",
+    "paper_armed_approved": false,
+    "parse_error_keys": [],
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_run_completed": false,
+    "schema_version": "offline_replay_materialization_dry_run_result_28l_v1",
+    "starts_services": false,
+    "writes_live_redis": false,
+    "written_count": 7
+  },
+  "dry_run_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dry_run_candidate",
+  "dry_run_root_replay_safe": true,
+  "dry_run_script": "bin/observe_only_offline_replay_materialization_dry_run_28l.py",
+  "dry_run_script_sha256": "c145a49bc79397eca55d46eb46ed18b5824ed2cf23f8706257b5feec913c613c",
+  "execution_arming_created": false,
+  "full_live_replay_parity": "NOT_PROVEN_IN_28L",
+  "generated_at_utc": "2026-05-01T12:29:27.414611+00:00",
+  "live_redis_write_reachable": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "materialization_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0",
+  "next_batch": "Batch 28M \u2014 materialize offline replay dataset candidate from the 28L dry-run, still not paper/live enablement.",
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "replay_run_completed": false,
+  "runtime_promotion_reachable": false,
+  "schema_version": "observe_only_offline_replay_materialization_dry_run_28l_v1",
+  "source_28k_harness_manifest": "etc/replay/parity/observe_only_offline_replay_materialization_harness_28k.json",
+  "source_28k_proof_latest": "run/proofs/proof_observe_only_offline_replay_materialization_harness_28k_latest.json",
+  "starts_services": false,
+  "writes_live_redis": false
+}

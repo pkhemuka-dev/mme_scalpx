@@ -1,0 +1,68 @@
+{
+  "api_calls_used_estimate": 0,
+  "cycles_requested": 1,
+  "events": [
+    {
+      "cycle": 1,
+      "rc": 0,
+      "step": "mremember_before"
+    },
+    {
+      "cycle": 1,
+      "meta": {
+        "classification": "PASS_NEXT_EXECUTION_SHADOW_AUDIT",
+        "expected_batch": "REPLAY-DATA-A14",
+        "output_script": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/outputs/20260508_182732_replay_data_a14_pass_next_execution_shadow_audit.sh",
+        "path": "ai_patch_runner/reports/20260508_182732_replay_data_a14_pass_next_execution_shadow_audit_meta.json",
+        "policy_validation_ok": true,
+        "static_validation_ok": true
+      },
+      "step": "use_existing_valid_meta"
+    },
+    {
+      "cycle": 1,
+      "rc": 0,
+      "step": "mshow"
+    },
+    {
+      "cycle": 1,
+      "rc": 0,
+      "step": "mrun"
+    },
+    {
+      "cycle": 1,
+      "rc": 0,
+      "step": "mremember_after"
+    }
+  ],
+  "latest_meta": {
+    "classification": "PASS_NEXT_EXECUTION_SHADOW_AUDIT",
+    "expected_batch": "REPLAY-DATA-A14",
+    "output_script": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/outputs/20260508_183457_replay_data_a14_pass_next_execution_shadow_audit.sh",
+    "path": "ai_patch_runner/reports/20260508_183457_replay_data_a14_pass_next_execution_shadow_audit_meta.json",
+    "policy_validation_ok": true,
+    "static_validation_ok": false
+  },
+  "latest_replay_proof": {
+    "batch": "REPLAY-DATA-A14",
+    "candidate_path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z/2026-04-17/execution_shadow_candidate.csv",
+    "engine_execution_performed": false,
+    "engine_ready": false,
+    "next_batch": "REPLAY-DATA-A15 selector-only replay-data surface probe (no full engine)",
+    "path": "run/proofs/proof_replay_data_a14_execution_shadow_20260508T184414Z.json",
+    "row_count": 50021,
+    "verdict": "PASS_NEXT_SELECTOR_ONLY_SURFACE_PROBE"
+  },
+  "max_api_calls": 1,
+  "mode": "mauto_r2_bounded_offline_replay_supervisor",
+  "model": "gpt-5-mini",
+  "safety": {
+    "broker_calls_executed": false,
+    "live_redis_writes_executed": false,
+    "paper_or_live_enabled": false,
+    "real_orders_sent": false,
+    "services_started": false
+  },
+  "session_finished_utc": "2026-05-08T18:44:17.663515+00:00",
+  "session_started_utc": "2026-05-08T18:44:14.198339+00:00"
+}

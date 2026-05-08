@@ -1,0 +1,23 @@
+{
+  "accepted_for": "OFFLINE_STAGE_OWNS_RUNTIME_DECISIONING_ALIAS_REPAIR_ONLY",
+  "allowed_file_change": "app/mme_scalpx/replay/offline_context_shim.py",
+  "batch": "29AF",
+  "generated_at_utc": "2026-05-02T06:34:52.307005+00:00",
+  "repair_scope": "app/mme_scalpx/replay/offline_context_shim.py",
+  "runtime_gap_kind": "OFFLINE_REPLAY_STAGE_OWNS_RUNTIME_DECISIONING_ATTRIBUTE_GAP",
+  "safety": {
+    "batch": "29AF",
+    "broker_calls_executed": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "patch_scope": "app/mme_scalpx/replay/offline_context_shim.py only",
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "offline_stage_owns_runtime_decisioning_alias_repair_29af_v1"
+}

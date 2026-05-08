@@ -1,0 +1,36 @@
+{
+  "broker_io_allowed": false,
+  "input_artifacts": [
+    "run/research_gate/*/pnl_report.json"
+  ],
+  "minimum_family_trade_count_for_labeled_best": 3,
+  "negative_pnl_policy": {
+    "allow_promotion_conclusion": false,
+    "allow_ranking_for_diagnosis": true
+  },
+  "non_live": true,
+  "non_mutating": true,
+  "oi_wall_computation_included": false,
+  "order_sending_allowed": false,
+  "output_artifacts": [
+    "strategy_rank_report.json",
+    "family_side_matrix.csv",
+    "source_artifact_breakdown.csv",
+    "RAW_F_STRATEGY_RANK_SUMMARY.md"
+  ],
+  "pnl_recomputation_allowed": false,
+  "production_mutation_allowed": false,
+  "redis_live_write_allowed": false,
+  "reserved_for_later_batches": [
+    "OI-wall impact",
+    "promotion decision",
+    "ML scoring"
+  ],
+  "schema_version": "RAW-F.1",
+  "strategy_ranking_owner": "RAW_Strategy_Ranking_Desk",
+  "unknown_family_policy": {
+    "allow_unknown_as_best_family": false,
+    "include_unknown_bucket": true,
+    "warn_if_unknown_sample_ratio_gt": 0.25
+  }
+}

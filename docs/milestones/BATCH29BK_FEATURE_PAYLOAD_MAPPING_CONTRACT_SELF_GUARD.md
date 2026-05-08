@@ -1,0 +1,31 @@
+BATCH 29BK FEATURE PAYLOAD MAPPING CONTRACT WITH SELF-REFERENCE GUARD
+
+generated_at_utc: 2026-05-02T10:10:25.042730+00:00
+verdict: DEFERRED_29BK_FEATURE_PAYLOAD_NOT_COMPARABLE_SELF_REFERENCE_RISK
+proof_29bj_valid: True
+compile_ok: True
+safety_ok: True
+contract_status: SELF_REFERENCE_RISK_NO_CONTRACT
+feature_payload_parity: NOT_PROVEN_NOT_COMPARABLE_SELF_REFERENCE_RISK
+selected_replay_artifact: etc/replay/parity/observe_only_replay_live_parity_manifest_28i.json
+selected_reference_artifact: etc/replay/parity/observe_only_replay_live_parity_manifest_28i.json
+same_file_guard_required: True
+same_file_guard_status: SELF_REFERENCE_RISK_NO_PROVEN_SEPARATE_BRANCHES
+same_file_allowed_to_compare: False
+common_field_count: 0
+concrete_comparable_field_count: 0
+comparison_mapping_ready: False
+approved_comparable_fields: []
+full_live_replay_parity: NOT_PROVEN_IN_29BK
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BL — rediscover feature payload replay/reference artifacts with hard same-file exclusion, or freeze feature_payload_parity as NOT_COMPARABLE.
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_mapping_contract_29bk/00_same_artifact_self_reference_guard.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_mapping_contract_29bk/01_feature_payload_mapping_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_mapping_contract_29bk/02_feature_payload_contract_decision.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_mapping_contract_29bk/03_next_batch_29bl_contract.json
+- run/proofs/proof_feature_payload_mapping_contract_29bk.json
+- run/proofs/proof_feature_payload_mapping_contract_29bk_latest.json
+
+Files changed: none

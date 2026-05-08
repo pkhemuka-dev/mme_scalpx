@@ -1,0 +1,26 @@
+{
+  "accepted_for": "CONTRACT_ONLY_NO_COMPARISON_EXECUTION",
+  "batch": "29AL",
+  "contract_out": "etc/replay/parity/offline_live_observe_parity_comparison_contract_29al.json",
+  "generated_at_utc": "2026-05-02T06:49:33.606843+00:00",
+  "safety": {
+    "batch": "29AL",
+    "broker_calls_executed": false,
+    "code_patch_applied": false,
+    "comparison_execution_performed": false,
+    "contract_only": true,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "replay_rerun_performed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "offline_live_observe_parity_contract_29al_v1",
+  "source_29ak_contract": "etc/replay/parity/offline_replay_output_parity_contract_29ak.json",
+  "source_29ak_proof": "run/proofs/proof_offline_replay_output_parity_audit_29ak_latest.json"
+}

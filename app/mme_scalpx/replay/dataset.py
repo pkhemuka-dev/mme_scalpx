@@ -1351,8 +1351,102 @@ def classify_replay_feed_input_source_mode_for_dataset(dataset_summary):
     }
 
 
+
+def _raw_aa10q_merge_feed_input_declaration(payload: dict[str, object]) -> dict[str, object]:
+    """Merge generated replay feed-input declaration files before feed-input contract classification.
+
+    This is intentionally narrow: it only reads JSON declaration files from the generated
+    replay dataset root/day directories and returns a merged payload for classification.
+    It performs no replay execution, no broker IO, and no live Redis writes.
+    """
+    try:
+        import json as _json
+        from pathlib import Path as _Path
+
+        if not isinstance(payload, dict):
+            return payload
+
+        merged: dict[str, object] = dict(payload)
+
+        roots: list[_Path] = []
+        for key in ("dataset_root", "root", "source_root"):
+            value = merged.get(key)
+            if isinstance(value, str) and value:
+                p = _Path(value)
+                if p not in roots:
+                    roots.append(p)
+
+        trading_days: list[str] = []
+        raw_days = merged.get("trading_days")
+        if isinstance(raw_days, (list, tuple)):
+            for value in raw_days:
+                if isinstance(value, str) and value:
+                    trading_days.append(value)
+
+        candidate_paths: list[_Path] = []
+        for root in roots:
+            candidate_paths.extend([
+                root / "feed_input_declaration.json",
+                root / "dataset_declaration.json",
+                root / "replay_dataset_declaration.json",
+            ])
+            for day in trading_days:
+                candidate_paths.extend([
+                    root / day / "feed_input_declaration.json",
+                    root / day / "dataset_declaration.json",
+                    root / day / "replay_dataset_declaration.json",
+                    root / day / "01_dataset_summary.json",
+                ])
+
+        for path in candidate_paths:
+            if not path.exists() or not path.is_file():
+                continue
+
+            try:
+                declaration = _json.loads(path.read_text(encoding="utf-8", errors="replace"))
+            except Exception:
+                continue
+
+            if not isinstance(declaration, dict):
+                continue
+
+            preserved = {
+                key: merged.get(key)
+                for key in (
+                    "dataset_id",
+                    "dataset_root",
+                    "dataset_fingerprint",
+                    "total_days",
+                    "valid_days",
+                    "invalid_days",
+                    "total_files",
+                    "total_size_bytes",
+                    "trading_days",
+                    "required_file_stems",
+                    "optional_file_stems",
+                    "supported_suffixes",
+                    "notes",
+                )
+                if key in merged
+            }
+
+            merged.update(declaration)
+
+            for key, value in preserved.items():
+                if value not in (None, "", [], {}):
+                    merged[key] = value
+
+            merged["feed_input_declaration_source"] = str(path)
+            return merged
+
+        return payload
+    except Exception:
+        return payload
+
+
 def attach_replay_feed_input_contract_summary_to_dataset_summary(dataset_summary):
     payload = dict(dataset_summary)
+    payload = _raw_aa10q_merge_feed_input_declaration(payload)
     payload.update(classify_replay_feed_input_source_mode_for_dataset(payload))
     return payload
 
@@ -1446,3 +1540,63 @@ def validate_mme_feature_frame_record(record: Mapping[str, Any]) -> dict[str, An
 
     return validate_mme_replay_feature_frame(record)
 # ===== BATCH16_REPLAY_PACKAGE_FREEZE_GUARDS END =====
+
+# BEGIN BATCH27D_REPLAY_DATASET_HELPERS
+
+def replay_dataset_required_fields(surface=None):
+    """Proxy to the frozen replay dataset contract field registry."""
+    from app.mme_scalpx.replay.contracts import replay_required_dataset_fields
+
+    return replay_required_dataset_fields(surface)
+
+def replay_dataset_all_required_fields():
+    """Return all unique fields frozen for replay dataset rows."""
+    from app.mme_scalpx.replay.contracts import replay_all_required_dataset_fields
+
+    return replay_all_required_dataset_fields()
+
+def validate_replay_dataset_row(row, surface=None):
+    """Validate replay dataset row shape against frozen Batch 27D contracts.
+
+    This helper validates input surface shape only. It does not compute features,
+    evaluate strategies, write Redis, call brokers, or mutate doctrine.
+    """
+    from app.mme_scalpx.replay.contracts import validate_replay_dataset_row_contract
+
+    return validate_replay_dataset_row_contract(row, surface=surface)
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_dataset_required_fields",
+    "replay_dataset_all_required_fields",
+    "validate_replay_dataset_row",
+)))
+
+# END BATCH27D_REPLAY_DATASET_HELPERS
+
+# BEGIN BATCH27J_REPLAY_DATASET_SCENARIO_HELPERS
+
+def apply_replay_dataset_scenario(row, scenario_id):
+    """Apply a replay-only scenario to a dataset row.
+
+    This mutates only the returned row copy. It does not touch live Redis,
+    broker state, production settings, or doctrine.
+    """
+    from app.mme_scalpx.replay.scenarios import apply_replay_scenario_to_row
+
+    return apply_replay_scenario_to_row(row, scenario_id)
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "apply_replay_dataset_scenario",
+)))
+
+# END BATCH27J_REPLAY_DATASET_SCENARIO_HELPERS

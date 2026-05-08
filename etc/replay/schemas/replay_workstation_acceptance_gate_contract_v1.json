@@ -1,0 +1,47 @@
+{
+  "schema_version": "replay_workstation_acceptance_gate_contract_v1",
+  "purpose": "Final replay workstation acceptance gate for research-only use.",
+  "replay_only": true,
+  "accepted_for": "RESEARCH_AND_BACKTEST_WORKSTATION_ONLY",
+  "paper_armed_approved": false,
+  "live_trading_approved": false,
+  "execution_arming_created": false,
+  "broker_calls_allowed": false,
+  "live_redis_writes_allowed": false,
+  "real_order_intent_allowed": false,
+  "production_doctrine_changed": false,
+  "required_batches": [
+    "27C",
+    "27D",
+    "27E",
+    "27F",
+    "27G",
+    "27H",
+    "27I",
+    "27J",
+    "27K",
+    "27L",
+    "27M"
+  ],
+  "required_capabilities": [
+    "safety_firewall",
+    "dataset_contract",
+    "deterministic_reset_integrity",
+    "isolated_live_shape_transport",
+    "feature_family_adapter",
+    "strategy_family_adapter_arbitration",
+    "risk_adapter_execution_shadow",
+    "assumption_scenario_profiles",
+    "batch_date_range_runner",
+    "report_export_workstation",
+    "differential_parameter_sweep_workstation"
+  ],
+  "explicit_not_proven": [
+    "paper_armed_readiness",
+    "live_trading_readiness",
+    "full_live_replay_parity",
+    "production_strategy_improvement_claim",
+    "production_doctrine_revision"
+  ],
+  "final_verdict_expected": "PASS_REPLAY_FINAL_WORKSTATION_ACCEPTANCE_GATE"
+}

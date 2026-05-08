@@ -1,0 +1,35 @@
+BATCH 29AQ-R1 SEMANTIC REPORT PATH RECOVERY / PROVIDER-FEATURE MATERIALIZATION PLAN
+
+generated_at_utc: 2026-05-02T07:13:36.228067+00:00
+verdict: PASS_REPLAY_PROVIDER_FEATURE_SOURCE_MATERIALIZATION_AUDIT_PLAN_NULL_SAFE_29AQ_R1
+semantic_report: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_replay_live_parity_review_29aj/00_semantic_replay_live_parity_review_report.json
+semantic_report_resolution_source: 29AL_proof_semantic_report
+materializer_plan_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_source_materialization_audit_plan_29aq_r1/01_replay_provider_feature_materializer_plan.json
+materializer_plan_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_source_materialization_audit_plan_29aq_r1/02_replay_provider_feature_materializer_plan.csv
+provider_feature_field_count: 4
+real_value_source_count: 0
+scope_hint_source_count: 4
+missing_source_count: 0
+null_safe_preview_field_count: 4
+provider_feature_summary_materializer_plan_ready: True
+provider_feature_value_comparison_ready: False
+full_live_replay_parity: NOT_PROVEN_IN_29AQ_R1
+repair_path: NULL_SAFE_REPLAY_PROVIDER_FEATURE_SUMMARY_MATERIALIZATION_READY
+next_batch: Batch 29AR — materialize replay provider-feature summary artifact from 29AQ-R1 plan with null-safe provenance; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_replay_provider_feature_source_materialization_audit_plan_29aq_r1.json
+- run/proofs/proof_replay_provider_feature_source_materialization_audit_plan_29aq_r1_latest.json
+- run/proofs/batch29aq_r1_semantic_report_path_recovery_20260502_124335_driver_proof.json
+- etc/replay/parity/replay_provider_feature_source_materialization_audit_plan_29aq_r1.json

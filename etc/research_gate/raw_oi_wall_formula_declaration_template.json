@@ -1,0 +1,28 @@
+{
+  "authorization_status": "NOT_AUTHORIZED_TEMPLATE_ONLY",
+  "authorized_at_utc": "",
+  "authorized_by": "",
+  "backfill_allowed": "",
+  "created_at_utc": "2026-05-02T07:23:01.637505+00:00",
+  "distance_unit": "",
+  "expiry_selection_scope": "",
+  "formula_for_oi_wall_distance_points": "",
+  "formula_for_oi_wall_strength": "",
+  "missing_context_behavior": "",
+  "non_promotion_statement": "This declaration, even when filled, does not enable paper/live and does not mutate production doctrine.",
+  "normalization_method": "",
+  "oi_ladder_source": "",
+  "oi_wall_model_id": "",
+  "oi_wall_model_version": "",
+  "operator_notes": "",
+  "required_input_fields": [
+    "oi",
+    "strike",
+    "expiry",
+    "option_type",
+    "instrument_type"
+  ],
+  "schema_version": "raw_oi_wall_formula_declaration_template_v1",
+  "source_of_truth_doc_or_config": "",
+  "strike_selection_scope": ""
+}

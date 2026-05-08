@@ -1,0 +1,56 @@
+{
+  "accepted_for": "BOUNDED_GUARDED_RETRY_AFTER_TOPOLOGY_FINGERPRINT_PROOF_ONLY",
+  "arg_resolution": {
+    "all_required_roots_resolved": true,
+    "missing": [],
+    "resolved": {
+      "adapter_root_29c": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c",
+      "callable_output_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/stage_executor_dict_callable_audit_29u_r1",
+      "dataset_candidate_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0",
+      "materialization_root_29e": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_context_object_materialization_29e",
+      "output_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aj",
+      "project_root": ".",
+      "shim_root_29f": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f"
+    }
+  },
+  "batch": "29AJ",
+  "dry_run_args": [
+    "--project-root",
+    "/home/Lenovo/scalpx/projects/mme_scalpx",
+    "--dataset-candidate-root",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0",
+    "--callable-output-root",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/stage_executor_dict_callable_audit_29u_r1",
+    "--materialization-root-29e",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_context_object_materialization_29e",
+    "--shim-root-29f",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_run_context_shim_29f",
+    "--adapter-root-29c",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_adapter_29c",
+    "--output-root",
+    "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aj",
+    "--no-broker",
+    "--no-live-redis",
+    "--observe-only",
+    "--dry-run",
+    "--execute-guarded"
+  ],
+  "generated_at_utc": "2026-05-02T06:46:47.548420+00:00",
+  "safety": {
+    "batch": "29AJ",
+    "bounded_guarded_retry": true,
+    "broker_calls_allowed": false,
+    "broker_calls_executed": false,
+    "code_patch_applied": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_allowed": false,
+    "real_order_sent": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "bounded_guarded_retry_after_topology_fingerprint_29aj_v1"
+}

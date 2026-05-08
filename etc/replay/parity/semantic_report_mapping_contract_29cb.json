@@ -1,0 +1,59 @@
+{
+  "accepted_for": "SEMANTIC_COMPARISON_REPORT_SURFACE_MAPPING_CONTRACT_ONLY",
+  "approved_comparable_fields": [
+    "full_live_replay_parity",
+    "paper_live_status",
+    "risk_execution_shadow_no_order_parity"
+  ],
+  "audit_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_mapping_contract_29cb",
+  "batch": "29CB",
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "code_patch_applied": false,
+  "comparison_completed": false,
+  "compile_ok": true,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "execution_arming_created": false,
+  "files_changed": [],
+  "full_live_replay_parity": "NOT_PROVEN_IN_29CB",
+  "generated_at_utc": "2026-05-03T11:19:59.513211+00:00",
+  "inspection_manifest": "run/proofs/batch29cb_semantic_report_mapping_contract_20260503_164959_inspection/inspection_manifest.json",
+  "lifecycle_context_fields": [
+    "risk_execution_shadow_no_order_parity"
+  ],
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "mapping_contract_json": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_mapping_contract_29cb/00_semantic_report_mapping_contract.json",
+  "mapping_contract_ready": true,
+  "mapping_failure_count": 0,
+  "mapping_row_count": 3,
+  "mapping_summary_json": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_mapping_contract_29cb/01_mapping_summary.json",
+  "next_batch": "Batch 29CC \u2014 execute semantic_comparison_report_surface mapped comparison; still no paper/live enablement.",
+  "operator_summary_md": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_report_mapping_contract_29cb/02_operator_summary.md",
+  "paper_armed_approved": false,
+  "paper_live_status": "BLOCKED_NOT_IN_SCOPE",
+  "production_doctrine_changed": false,
+  "proof": "run/proofs/proof_semantic_report_mapping_contract_29cb.json",
+  "proof_latest": "run/proofs/proof_semantic_report_mapping_contract_29cb_latest.json",
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "repair_path": "PROCEED_TO_29CC_SEMANTIC_REPORT_VALUE_COMPARISON",
+  "safety_ok": true,
+  "same_file_exclusion_passed": true,
+  "schema_version": "semantic_report_mapping_contract_29cb_v1",
+  "selected_reference_artifact": "etc/replay/parity/repair_no_order_reference_discovery_29bv_r1.json",
+  "selected_reference_sha256": "aaf4d34f97e0580dd7a092df53f3a34a2599468b1e1ddd6af587566ae0fe77f0",
+  "selected_replay_artifact": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/consolidate_no_order_select_next_29bz/01_replay_parity_readiness_index.json",
+  "selected_replay_sha256": "cb971f418bd16b2f0e31849f5214d577cb920ea2cb5ce926661b076aafc6bae4",
+  "selected_surface": "semantic_comparison_report_surface",
+  "semantic_category_fields": [
+    "full_live_replay_parity"
+  ],
+  "semantic_comparison_report_surface": "NOT_PROVEN_MAPPING_CONTRACT_READY",
+  "starts_services": false,
+  "strict_value_fields": [
+    "paper_live_status"
+  ],
+  "verdict": "PASS_29CB_SEMANTIC_REPORT_MAPPING_CONTRACT_READY",
+  "writes_live_redis": false
+}

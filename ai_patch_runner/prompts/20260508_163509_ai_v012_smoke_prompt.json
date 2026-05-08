@@ -1,0 +1,15 @@
+{
+  "created_at": "2026-05-08T16:35:09.327942+00:00",
+  "batch": "AI-V012-SMOKE",
+  "goal": "Create a harmless audit-only smoke proof for AI Patch Runner v0.1.2. It must only create proof JSON and milestone note confirming that the AI runner generated a package but did not execute it, did not patch project code, did not start services, did not call broker, did not write live Redis, and did not enable paper/live. All embedded Python heredocs must use single-quoted delimiters. Output bash only.",
+  "model": "gpt-5.5",
+  "mode": "v0.1.1_generate_only_no_run_with_static_validation",
+  "safety": {
+    "runs_generated_script": false,
+    "patches_project": false,
+    "starts_services": false,
+    "calls_broker": false,
+    "writes_live_redis": false,
+    "enables_paper_or_live": false
+  }
+}

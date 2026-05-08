@@ -1,0 +1,18 @@
+BATCH 29BT FAMILY SURFACE VALUE CLASSIFICATION
+
+verdict: PASS_29BT_FAMILY_SURFACE_VALUE_STRICT_MISMATCH_CLASSIFIED
+classification_status: STRICT_MISMATCH_CLASSIFIED
+family_surface_payload_parity: NOT_PROVEN_STRICT_FIELD_MISMATCH_CLASSIFIED
+strict_mismatch_count: 5
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29BT
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/family_surface_value_classification_29bt/00_family_surface_value_classification.json
+- run/proofs/proof_family_surface_value_classification_29bt.json
+- run/proofs/proof_family_surface_value_classification_29bt_latest.json
+
+Next:
+Batch 29BU — consolidate family_surface_payload_parity and select next surface; still no paper/live enablement.

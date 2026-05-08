@@ -1,0 +1,42 @@
+Batch 29L OfflineReplayStage stage_name runtime-gap audit
+
+Date: 2026-05-01
+
+Verdict:
+PASS_OFFLINE_STAGE_NAME_RUNTIME_GAP_AUDIT_29L
+
+Accepted for:
+OFFLINE_STAGE_NAME_RUNTIME_GAP_AUDIT_ONLY
+
+Source:
+- 29K-R2 proof: run/proofs/proof_offline_topology_stages_repair_29k_r2_latest.json
+- 29K-R2 repair root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/offline_topology_stages_repair_29k_r2
+- 29K-R2 retry execute root: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29k_r2
+
+Result:
+topology_stages_gap_resolved=True
+offline_stage_name_gap_confirmed=true
+stage_shape_gap_confirmed=true
+engine_consumes_stage_name=true
+runtime_gap_kind=OFFLINE_REPLAY_STAGE_STAGE_NAME_ATTRIBUTE_GAP
+repair_path=REPAIR_OFFLINE_REPLAY_STAGE_STAGE_NAME_ALIAS
+retry_runtime_error=AttributeError: 'OfflineReplayStage' object has no attribute 'stage_name'
+candidate_executed=false
+replay_core_executed=false
+replay_run_completed=false
+comparison_completed=false
+
+Safety:
+starts_services=false
+reads_live_redis=false
+writes_live_redis=false
+calls_broker_api=false
+paper_armed_approved=false
+live_trading_approved=false
+execution_arming_created=false
+real_order_sent=false
+production_doctrine_changed=false
+full_live_replay_parity=NOT_PROVEN_IN_29L
+
+Next:
+Batch 29M — repair OfflineReplayStage stage_name alias for guarded ReplayEngine dry-run, still not paper/live enablement.

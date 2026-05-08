@@ -1,0 +1,23 @@
+{
+  "allowed_input_roots": [
+    "run/research_capture",
+    "run/replay",
+    "run/proofs",
+    "run/live_capture"
+  ],
+  "allowed_output_root": "run/research_gate",
+  "broker_io_allowed": false,
+  "duplicate_raw_capture_allowed": false,
+  "evidence_tracks": [
+    "live_evidence_audit",
+    "replay_evidence_audit",
+    "live_vs_replay_parity"
+  ],
+  "mode": "research_only",
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "production_mutation_allowed": false,
+  "schema_version": "RAW-C.1",
+  "write_live_redis_allowed": false
+}

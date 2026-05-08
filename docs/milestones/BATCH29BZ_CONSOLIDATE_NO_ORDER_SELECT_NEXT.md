@@ -1,0 +1,23 @@
+BATCH 29BZ RISK/EXECUTION SHADOW NO-ORDER CONSOLIDATION
+
+verdict: PASS_29BZ_RISK_EXECUTION_NO_ORDER_CONSOLIDATED_NEXT_SURFACE_SELECTED
+risk_execution_shadow_no_order_parity: PROVEN_FOR_MAPPED_NO_ORDER_SAFETY_FIELDS_ONLY
+risk_execution_shadow_no_order_closed: true
+closed_scope: mapped no-order/safety fields only
+selected_next_surface: semantic_comparison_report_surface
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+full_live_replay_parity: NOT_PROVEN_IN_29BZ
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/consolidate_no_order_select_next_29bz/00_risk_execution_no_order_consolidation.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/consolidate_no_order_select_next_29bz/01_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/consolidate_no_order_select_next_29bz/02_next_surface_29ca_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/consolidate_no_order_select_next_29bz/03_operator_summary.md
+- run/proofs/proof_consolidate_no_order_select_next_29bz.json
+- run/proofs/proof_consolidate_no_order_select_next_29bz_latest.json
+- etc/replay/parity/consolidate_no_order_select_next_29bz.json
+
+Next:
+Batch 29CA — audit semantic_comparison_report_surface artifact discovery and mapping readiness; still no paper/live enablement.

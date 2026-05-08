@@ -1,0 +1,33 @@
+BATCH 29DH REAL SESSION EVIDENCE COLLECTION CONTRACT
+
+verdict: PASS_29DH_REAL_SESSION_EVIDENCE_COLLECTION_CONTRACT_FROZEN_COLLECTION_NOT_STARTED
+real_session_evidence_collection_contract_status: FROZEN_REAL_SESSION_EVIDENCE_COLLECTION_CONTRACT_FULL_PARITY_NOT_PROVEN
+required_artifact_count: 16
+manifest_required_field_count: 18
+collection_started: false
+collection_completed: false
+real_market_session_observation_started: false
+replay_run_started: false
+comparison_started: false
+full_live_replay_parity: NOT_PROVEN_AFTER_29DH_COLLECTION_CONTRACT_ONLY
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+paper_armed_approved: false
+live_trading_approved: false
+files_changed: []
+code_patch_applied: false
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/real_session_evidence_collection_contract_29dh/00_real_session_evidence_collection_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/real_session_evidence_collection_contract_29dh/01_collection_manifest_schema.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/real_session_evidence_collection_contract_29dh/02_required_artifact_list.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/real_session_evidence_collection_contract_29dh/03_replay_parity_readiness_index.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/real_session_evidence_collection_contract_29dh/04_operator_summary.md
+- run/proofs/proof_real_session_evidence_collection_contract_29dh.json
+- run/proofs/proof_real_session_evidence_collection_contract_29dh_latest.json
+- etc/replay/parity/real_session_evidence_collection_contract_29dh.json
+
+Conclusion:
+29DH freezes future collection contract only. It does not approve paper_armed or live trading.
+
+Next:
+Batch 29DI — build offline real-session evidence collection manifest validator/harness; still no paper/live enablement.

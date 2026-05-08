@@ -1040,3 +1040,337 @@ def build_miso_branch_surface(*args, **kwargs):
     )
 
     return out
+
+
+# BEGIN BATCH26F_MISO_BURST_EVENT_ID_SURFACE
+BATCH26F_MISO_BURST_EVENT_ID_FIELD = "burst_event_id"
+
+
+def _batch26f_surface_get(obj, names, default=None):
+    if isinstance(names, str):
+        names = [names]
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        for name in names:
+            if name in obj:
+                return obj.get(name)
+        return default
+    for name in names:
+        try:
+            if hasattr(obj, name):
+                return getattr(obj, name)
+        except Exception:
+            pass
+    return default
+
+
+def _batch26f_surface_iter_children(obj):
+    if isinstance(obj, dict):
+        for child in obj.values():
+            yield child
+    elif isinstance(obj, (list, tuple)):
+        for child in obj:
+            yield child
+    else:
+        for attr in (
+            "surface",
+            "features",
+            "family_features",
+            "family_surface",
+            "candidate",
+            "decision",
+            "context",
+            "event",
+            "burst",
+            "selected_option",
+            "option_context",
+            "metadata",
+            "meta",
+        ):
+            try:
+                child = getattr(obj, attr)
+            except Exception:
+                child = None
+            if child is not None:
+                yield child
+
+
+def _batch26f_surface_deep_find(obj, names, max_depth=7):
+    names = set(names)
+    seen = set()
+
+    def walk(value, depth):
+        if depth > max_depth:
+            return None
+        ident = id(value)
+        if ident in seen:
+            return None
+        seen.add(ident)
+
+        direct = _batch26f_surface_get(value, names, None)
+        if direct is not None:
+            return direct
+
+        for child in _batch26f_surface_iter_children(value):
+            found = walk(child, depth + 1)
+            if found is not None:
+                return found
+        return None
+
+    return walk(obj, 0)
+
+
+def _batch26f_surface_text(value, default="UNKNOWN"):
+    if value is None:
+        return default
+    text = str(value).strip()
+    return text if text else default
+
+
+def _batch26f_surface_ts_ms(value):
+    if value is None:
+        return "0"
+    try:
+        number = float(str(value).strip())
+    except Exception:
+        return "0"
+    # If nanoseconds, convert to ms. If already ms, keep as ms.
+    if number > 10_000_000_000_000:
+        number = number / 1_000_000.0
+    return str(int(number))
+
+
+def _batch26f_build_burst_event_id(*objs):
+    existing = None
+    for obj in objs:
+        existing = _batch26f_surface_deep_find(
+            obj,
+            {"burst_event_id", "miso_burst_event_id", "event_id"},
+        )
+        if existing is not None and str(existing).strip():
+            return str(existing).strip()
+
+    side = None
+    symbol = None
+    start_ts = None
+    extreme_ts = None
+
+    for obj in objs:
+        if side is None:
+            side = _batch26f_surface_deep_find(
+                obj,
+                {"side", "branch_side", "option_side", "selected_side", "trade_side"},
+            )
+        if symbol is None:
+            symbol = _batch26f_surface_deep_find(
+                obj,
+                {
+                    "selected_option_symbol",
+                    "option_symbol",
+                    "tradingsymbol",
+                    "symbol",
+                    "selected_symbol",
+                    "security_id",
+                    "instrument_token",
+                    "selected_strike",
+                    "strike",
+                },
+            )
+        if start_ts is None:
+            start_ts = _batch26f_surface_deep_find(
+                obj,
+                {
+                    "burst_start_ts_epoch_ms",
+                    "burst_start_ts_ms",
+                    "burst_start_ts_ns",
+                    "trigger_start_ts_ns",
+                    "trigger_ts_ns",
+                    "frame_ts_ns",
+                    "ts_event_ns",
+                    "event_ts_ns",
+                    "local_ts_ns",
+                },
+            )
+        if extreme_ts is None:
+            extreme_ts = _batch26f_surface_deep_find(
+                obj,
+                {
+                    "burst_extreme_ts_epoch_ms",
+                    "burst_extreme_ts_ms",
+                    "burst_extreme_ts_ns",
+                    "burst_peak_ts_ns",
+                    "entry_trigger_ts_ns",
+                    "frame_ts_ns",
+                    "ts_event_ns",
+                    "event_ts_ns",
+                    "local_ts_ns",
+                },
+            )
+
+    side_text = _batch26f_surface_text(side, "UNKNOWN_SIDE").upper()
+    symbol_text = _batch26f_surface_text(symbol, "UNKNOWN_OPTION").upper()
+    start_text = _batch26f_surface_ts_ms(start_ts)
+    extreme_text = _batch26f_surface_ts_ms(extreme_ts)
+
+    return f"MISO|{side_text}|{symbol_text}|{start_text}|{extreme_text}"
+
+
+def _batch26f_surface_result_is_burst_like(result):
+    if isinstance(result, bool):
+        return result is True
+
+    if isinstance(result, dict):
+        action = str(result.get("action", "") or result.get("decision", "") or result.get("strategy_action", "")).upper()
+        if action.startswith("ENTER") or action in {"BUY", "ENTRY", "OPEN", "ENTER_CALL", "ENTER_PUT"}:
+            return True
+
+        for key in (
+            "burst_detected",
+            "burst_valid",
+            "burst_confirmed",
+            "entry_allowed",
+            "entry_ready",
+            "candidate",
+            "candidate_found",
+            "decision_allowed",
+            "trade_allowed",
+            "allow_entry",
+            "trigger_ready",
+            "option_trigger_ready",
+        ):
+            if key in result and str(result.get(key)).strip().lower() in {"1", "true", "yes", "ok", "pass", "ready"}:
+                return True
+        return False
+
+    for attr in (
+        "burst_detected",
+        "burst_valid",
+        "burst_confirmed",
+        "entry_allowed",
+        "entry_ready",
+        "candidate",
+        "candidate_found",
+        "decision_allowed",
+        "trade_allowed",
+        "allow_entry",
+        "trigger_ready",
+        "option_trigger_ready",
+    ):
+        value = _batch26f_surface_get(result, attr)
+        if str(value).strip().lower() in {"1", "true", "yes", "ok", "pass", "ready"}:
+            return True
+
+    return False
+
+
+def _batch26f_surface_attach_burst_event_id(result, *source_objs):
+    if not _batch26f_surface_result_is_burst_like(result):
+        return result
+
+    event_id = _batch26f_build_burst_event_id(*(source_objs + (result,)))
+
+    if isinstance(result, dict):
+        result.setdefault("burst_event_id", event_id)
+        result.setdefault("miso_burst_event_id", event_id)
+        result.setdefault("burst_event_id_source", "batch26f_deterministic_surface")
+        return result
+
+    try:
+        if not getattr(result, "burst_event_id", None):
+            setattr(result, "burst_event_id", event_id)
+        if not getattr(result, "miso_burst_event_id", None):
+            setattr(result, "miso_burst_event_id", event_id)
+        setattr(result, "burst_event_id_source", "batch26f_deterministic_surface")
+    except Exception:
+        pass
+    return result
+
+
+def _batch26f_surface_should_wrap_name(name):
+    lowered = str(name).lower()
+    if lowered.startswith("_batch26f"):
+        return False
+    if lowered.startswith("__"):
+        return False
+    needles = (
+        "build",
+        "surface",
+        "evaluat",
+        "eligib",
+        "candidate",
+        "decision",
+        "entry",
+        "signal",
+        "trigger",
+        "burst",
+        "aggression",
+        "imbalance",
+        "tape",
+        "context",
+    )
+    return any(n in lowered for n in needles)
+
+
+def _batch26f_surface_wrap_function(fn):
+    import functools
+
+    if getattr(fn, "_batch26f_burst_surface_wrapped", False):
+        return fn
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        result = fn(*args, **kwargs)
+        return _batch26f_surface_attach_burst_event_id(result, args, kwargs)
+
+    wrapper._batch26f_burst_surface_wrapped = True
+    return wrapper
+
+
+def _batch26f_install_burst_event_surface_wrappers(module_globals):
+    import inspect
+
+    installed = []
+
+    for name, obj in list(module_globals.items()):
+        if not _batch26f_surface_should_wrap_name(name):
+            continue
+
+        if inspect.isfunction(obj) and getattr(obj, "__module__", None) == module_globals.get("__name__"):
+            module_globals[name] = _batch26f_surface_wrap_function(obj)
+            installed.append(name)
+
+        elif inspect.isclass(obj) and getattr(obj, "__module__", None) == module_globals.get("__name__"):
+            for attr_name, attr_value in list(obj.__dict__.items()):
+                if not _batch26f_surface_should_wrap_name(attr_name):
+                    continue
+
+                raw = attr_value
+                descriptor_type = None
+                if isinstance(raw, staticmethod):
+                    descriptor_type = staticmethod
+                    raw = raw.__func__
+                elif isinstance(raw, classmethod):
+                    descriptor_type = classmethod
+                    raw = raw.__func__
+
+                if inspect.isfunction(raw):
+                    wrapped = _batch26f_surface_wrap_function(raw)
+                    if descriptor_type is staticmethod:
+                        setattr(obj, attr_name, staticmethod(wrapped))
+                    elif descriptor_type is classmethod:
+                        setattr(obj, attr_name, classmethod(wrapped))
+                    else:
+                        setattr(obj, attr_name, wrapped)
+                    installed.append(f"{name}.{attr_name}")
+
+    module_globals["BATCH26F_MISO_BURST_EVENT_ID_SURFACE_INSTALLED"] = True
+    module_globals["BATCH26F_MISO_BURST_EVENT_ID_SURFACE_WRAPPERS"] = tuple(sorted(set(installed)))
+    return installed
+
+
+BATCH26F_MISO_BURST_EVENT_ID_SURFACE_WRAPPERS = tuple(
+    _batch26f_install_burst_event_surface_wrappers(globals())
+)
+# END BATCH26F_MISO_BURST_EVENT_ID_SURFACE
+

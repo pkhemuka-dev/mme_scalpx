@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-05-08T16:41:07.365012+00:00",
+  "version": "v0.2",
+  "batch": "AI-V013-SMOKE",
+  "log_path": "ai_patch_runner/logs/20260508_163708_ai_v013_smoke_manual_run.log",
+  "model": "gpt-5.5",
+  "mode": "classify_manual_run_output_only_no_execution",
+  "local_precheck": {
+    "dangerous": {
+      "traceback_detected": false,
+      "command_not_found_detected": false,
+      "systemctl_detected": false,
+      "nohup_detected": false,
+      "main_service_start_detected": false,
+      "paper_live_env_detected": false,
+      "redis_write_detected": false
+    },
+    "positive": {
+      "smoke_proof_ok_detected": true,
+      "proof_path_detected": true,
+      "milestone_path_detected": true
+    },
+    "local_safety_clear": true
+  }
+}

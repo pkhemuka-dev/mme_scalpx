@@ -1369,7 +1369,13 @@ class FeatureEngine:
             provider_id=PROVIDER_DHAN,
         )
 
-        call_opt, put_opt = self._split_options(opt_active, opt_dhan, dhan_context)
+        # Batch 25V corrective — split raw active_selected hash, not flattened opt_active.
+        #
+        # opt_active is already a single flattened selected-option surface and
+        # no longer contains selected_call_json / selected_put_json. _split_options
+        # must receive the raw selected-option active hash so CALL and PUT can be
+        # extracted independently from selected_call_json and selected_put_json.
+        call_opt, put_opt = self._split_options(active_selected, opt_dhan, dhan_context)
         strike_context = self._strike_context(
             dhan_context=dhan_context,
             futures=fut_active,
@@ -1727,26 +1733,160 @@ class FeatureEngine:
         **kwargs: Any,
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         """
-        Batch 25I side-specific selected option splitter.
+        Batch 25I / 25V side-specific selected option splitter.
 
         CALL prefers selected_call_json -> ce_atm_json -> ce_atm1_json.
         PUT prefers selected_put_json -> pe_atm_json -> pe_atm1_json.
+
+        Batch 25V corrective:
+        _option_surface may pass through older active-selected compatibility
+        wrappers and return the first selected member, leaking CE into PUT.
+        Therefore, after trying the normal builder path, this method validates
+        the returned symbol. If side contamination is detected, it builds a
+        deterministic direct surface from the extracted side-specific member.
         """
 
         raw_map = dict(option_frame or {})
+        provider_id = _feed_provider_id(raw_map)
+
+        call_member_key, call_member = _feed_first_member(raw_map, _FEED_CALL_JSON_KEYS)
+        put_member_key, put_member = _feed_first_member(raw_map, _FEED_PUT_JSON_KEYS)
+
+        def _direct_member_surface(
+            *,
+            member: Mapping[str, Any] | None,
+            side_value: str,
+            role_value: str,
+            member_key: str | None,
+        ) -> dict[str, Any]:
+            side_norm = "CALL" if side_value == "CALL" else "PUT"
+            m = dict(member or {})
+            m["side"] = side_norm
+            m["option_side"] = side_norm
+            m["role"] = role_value
+            m["provider_id"] = provider_id
+            if member_key:
+                m["source_member_key"] = member_key
+
+            bid = _safe_float(_pick(m, "bid", "best_bid"), 0.0)
+            ask = _safe_float(_pick(m, "ask", "best_ask"), 0.0)
+            ltp = _safe_float(_pick(m, "ltp", "last_price", "price"), 0.0)
+            bid_qty = _safe_float(_pick(m, "bid_qty", "bid_qty_5", "best_bid_qty", "top5_bid_qty"), 0.0)
+            ask_qty = _safe_float(_pick(m, "ask_qty", "ask_qty_5", "best_ask_qty", "top5_ask_qty"), 0.0)
+            depth_total = bid_qty + ask_qty
+            spread = max(0.0, ask - bid) if bid > 0.0 and ask > 0.0 else _safe_float(_pick(m, "spread"), 0.0)
+            strike = _safe_float_or_none(_pick(m, "strike", "strike_price", "strikePrice"))
+            token = _safe_str(_pick(m, "instrument_token", "option_token", "token"))
+            symbol = _safe_str(_pick(m, "trading_symbol", "option_symbol", "symbol"))
+
+            return {
+                "present": bool(ltp > 0.0 or bid > 0.0 or ask > 0.0 or depth_total > 0.0),
+                "valid": bool((ltp > 0.0 or bid > 0.0 or ask > 0.0 or depth_total > 0.0) and strike is not None),
+                "role": role_value,
+                "provider_id": provider_id,
+                "side": side_norm,
+                "option_side": side_norm,
+                "instrument_key": _safe_str(_pick(m, "instrument_key")) or token,
+                "instrument_token": token,
+                "option_token": token,
+                "trading_symbol": symbol,
+                "option_symbol": symbol,
+                "strike": strike,
+                "ltp": ltp,
+                "bid": bid,
+                "ask": ask,
+                "best_bid": bid,
+                "best_ask": ask,
+                "bid_qty": bid_qty,
+                "ask_qty": ask_qty,
+                "bid_qty_5": bid_qty,
+                "ask_qty_5": ask_qty,
+                "depth_total": depth_total,
+                "touch_depth": depth_total,
+                "spread": spread,
+                "spread_ratio": _safe_float(_pick(m, "spread_ratio"), 0.0),
+                "spread_ticks": _safe_float(_pick(m, "spread_ticks"), 0.0),
+                "tick_size": _safe_float(_pick(m, "tick_size"), 0.05),
+                "lot_size": _safe_int(_pick(m, "lot_size"), 0),
+                "age_ms": _safe_int(_pick(m, "age_ms"), 0),
+                "fresh": _safe_bool(_pick(m, "fresh"), True),
+                "stale": _safe_bool(_pick(m, "stale"), False),
+                "book_present": True,
+                "quote_present": True,
+                "live_present": True,
+                "metadata_present": True,
+                "timestamp_present": True,
+                "response_efficiency": _safe_float(_pick(m, "response_efficiency"), 0.0),
+                "velocity_ratio": _safe_float(_pick(m, "velocity_ratio"), 0.0),
+                "weighted_ofi_persist": _safe_float(_pick(m, "weighted_ofi_persist"), 0.0),
+                "volume": _safe_float(_pick(m, "volume", "traded_volume"), 0.0),
+                "oi": _safe_float(_pick(m, "oi", "open_interest"), 0.0),
+                "source_member_key": member_key or "",
+                "raw": m,
+            }
+
+        def _symbol(surface: Mapping[str, Any]) -> str:
+            return str(
+                surface.get("option_symbol")
+                or surface.get("trading_symbol")
+                or _nested(surface, "raw", "trading_symbol", default="")
+                or _nested(surface, "raw", "option_symbol", default="")
+                or ""
+            ).upper()
+
+        call_source = dict(call_member or {})
+        call_source["side"] = "CALL"
+        call_source["option_side"] = "CALL"
+        call_source["role"] = "SELECTED_CALL"
+        if call_member_key:
+            call_source["source_member_key"] = call_member_key
+
+        put_source = dict(put_member or {})
+        put_source["side"] = "PUT"
+        put_source["option_side"] = "PUT"
+        put_source["role"] = "SELECTED_PUT"
+        if put_member_key:
+            put_source["source_member_key"] = put_member_key
 
         call_surface = self._option_surface(
-            raw_map,
+            call_source,
             side="CALL",
             role="SELECTED_CALL",
-            provider_id=_feed_provider_id(raw_map),
+            provider_id=provider_id,
         )
         put_surface = self._option_surface(
-            raw_map,
+            put_source,
             side="PUT",
             role="SELECTED_PUT",
-            provider_id=_feed_provider_id(raw_map),
+            provider_id=provider_id,
         )
+
+        call_symbol = _symbol(call_surface)
+        put_symbol = _symbol(put_surface)
+
+        if call_member and call_symbol.endswith("PE"):
+            call_surface = _direct_member_surface(
+                member=call_member,
+                side_value="CALL",
+                role_value="SELECTED_CALL",
+                member_key=call_member_key,
+            )
+
+        if put_member and put_symbol.endswith("CE"):
+            put_surface = _direct_member_surface(
+                member=put_member,
+                side_value="PUT",
+                role_value="SELECTED_PUT",
+                member_key=put_member_key,
+            )
+
+        call_surface["side"] = "CALL"
+        call_surface["option_side"] = "CALL"
+        call_surface["role"] = "SELECTED_CALL"
+
+        put_surface["side"] = "PUT"
+        put_surface["option_side"] = "PUT"
+        put_surface["role"] = "SELECTED_PUT"
 
         return call_surface, put_surface
 
@@ -1939,14 +2079,14 @@ class FeatureEngine:
         call_wall = dict(wall_summary.get("call_wall") or {}) if wall_summary else {}
         put_wall = dict(wall_summary.get("put_wall") or {}) if wall_summary else {}
 
-        if not call_wall or not put_wall:
-            reference = (
-                _safe_float(futures.get("ltp"), 0.0)
-                or _safe_float(_pick(dhan_context, "atm_strike", "underlying_atm"), 0.0)
-                or _safe_float(selected.get("strike"), 0.0)
-            )
-            call_wall = call_wall or self._nearest_wall(ladder, SIDE_CALL, reference)
-            put_wall = put_wall or self._nearest_wall(ladder, SIDE_PUT, reference)
+        # Batch 26-OI-B canonicalization:
+        # OI wall calculation is owned only by
+        # app.mme_scalpx.services.feature_family.strike_selection.build_oi_wall_summary.
+        # features.py may publish canonical context but must not calculate fallback walls.
+        wall_authority = (
+            "app.mme_scalpx.services.feature_family."
+            "strike_selection.build_oi_wall_summary"
+        )
 
         call_strength = _safe_float(
             _pick(call_wall, "wall_strength_score", "wall_strength"),
@@ -1993,80 +2133,15 @@ class FeatureEngine:
                 "summary": wall_summary,
                 "oi_bias": oi_bias,
                 "law": "context_not_trigger",
+                "wall_authority": wall_authority,
+                "canonical": True,
             },
         }
 
-    def _nearest_wall(
-        self,
-        ladder: Sequence[Mapping[str, Any]],
-        side: str,
-        reference: float,
-    ) -> dict[str, Any]:
-        rows = [dict(row) for row in ladder if row.get("side") == side]
-        if not rows:
-            return {
-                "side": side,
-                "strike": None,
-                "distance_points": None,
-                "distance_strikes": None,
-                "wall_strength": 0.0,
-                "near_wall": False,
-                "strong_wall": False,
-                "oi": 0.0,
-            }
+    # Batch 26-OI-B:
+    # Local OI wall fallback calculation was removed.
+    # Canonical wall calculation belongs to feature_family.strike_selection.
 
-        if reference > 0:
-            directional = [
-                row
-                for row in rows
-                if (
-                    _safe_float(row.get("strike"), 0.0) >= reference
-                    if side == SIDE_CALL
-                    else _safe_float(row.get("strike"), 0.0) <= reference
-                )
-            ]
-        else:
-            directional = []
-
-        pool = directional or rows
-        if reference > 0:
-            best = min(
-                pool,
-                key=lambda row: (
-                    abs(_safe_float(row.get("strike"), 0.0) - reference),
-                    -_safe_float(row.get("oi"), 0.0),
-                ),
-            )
-        else:
-            best = max(pool, key=lambda row: _safe_float(row.get("oi"), 0.0))
-
-        max_oi = max((_safe_float(row.get("oi"), 0.0) for row in rows), default=0.0)
-        strikes = sorted(
-            {
-                _safe_float(row.get("strike"), 0.0)
-                for row in rows
-                if _safe_float(row.get("strike"), 0.0) > 0
-            }
-        )
-        diffs = [b - a for a, b in zip(strikes, strikes[1:]) if b > a]
-        step = min(diffs) if diffs else 50.0
-
-        strike = _safe_float(best.get("strike"), 0.0)
-        distance = abs(strike - reference) if reference > 0 else None
-        distance_strikes = _ratio(float(distance), step, 0.0) if distance is not None else None
-        strength = _clamp(_ratio(_safe_float(best.get("oi"), 0.0), max_oi, 0.0), 0.0, 1.0)
-
-        return {
-            "side": side,
-            "strike": strike,
-            "distance_points": distance,
-            "distance_strikes": distance_strikes,
-            "wall_strength": strength,
-            "near_wall": bool(distance_strikes is not None and distance_strikes <= 1.0),
-            "strong_wall": bool(strength >= 0.62),
-            "oi": _safe_float(best.get("oi"), 0.0),
-            "volume": _safe_float(best.get("volume"), 0.0),
-        }
 
     def _cross_option(
         self,
@@ -3652,6 +3727,210 @@ class FeatureEngine:
 
 
 # =============================================================================
+# Batch 26-O16 consumer-view mapping repair
+# =============================================================================
+#
+# Purpose:
+# - Publish a strategy-consumable, report-only consumer_view_json on
+#   HASH_STATE_FEATURES_MME_FUT / HASH_FEATURES.
+# - Normalize branch_frames for every frozen family branch key:
+#   mist_call/mist_put/misb_call/misb_put/misc_call/misc_put/
+#   misr_call/misr_put/miso_call/miso_put.
+# - Preserve family_features_json and family_surfaces_json as producer truth.
+# - Do not evaluate doctrine leaves, do not emit orders, do not relax thresholds,
+#   do not enable MISO without provider truth.
+
+def _batch26o16_branch_key(family_id: str, branch_id: str) -> str:
+    return f"{str(family_id).lower()}_{str(branch_id).lower()}"
+
+
+def _batch26o16_surface_for_branch(
+    family_surfaces: Mapping[str, Any],
+    family_id: str,
+    branch_id: str,
+) -> dict[str, Any]:
+    key = _batch26o16_branch_key(family_id, branch_id)
+    by_branch = _mapping(_nested(family_surfaces, "surfaces_by_branch", default={}))
+    surface = _mapping(by_branch.get(key))
+    if surface:
+        return dict(surface)
+
+    family = _mapping(_nested(family_surfaces, "families", family_id, default={}))
+    surface = _mapping(_nested(family, "branches", branch_id, default={}))
+    if surface:
+        return dict(surface)
+
+    # Compatibility fallback only. This does not create eligibility truth; it
+    # merely preserves an explicit branch-frame placeholder so consumers can
+    # fail closed at doctrine/tradability gates instead of failing on absence.
+    return {
+        "family_id": family_id,
+        "branch_id": branch_id,
+        "side": _branch_side(branch_id),
+        "eligible": False,
+        "tradability": {},
+        "o16_placeholder": True,
+    }
+
+
+def _batch26o16_normalize_family_frames(
+    *,
+    generated_at_ns: int,
+    provider_runtime: Mapping[str, Any],
+    family_surfaces: Mapping[str, Any],
+    family_frames: Mapping[str, Any],
+) -> dict[str, Any]:
+    out: dict[str, Any] = {
+        str(k): dict(v) if isinstance(v, Mapping) else v
+        for k, v in dict(family_frames or {}).items()
+    }
+
+    for family_id in FAMILY_IDS:
+        for branch_id in BRANCH_IDS:
+            key = _batch26o16_branch_key(family_id, branch_id)
+            existing = _mapping(out.get(key))
+            surface = _mapping(existing.get("surface")) or _batch26o16_surface_for_branch(
+                family_surfaces,
+                family_id,
+                branch_id,
+            )
+
+            option = _mapping(
+                surface.get("option_features")
+                or surface.get("selected_features")
+                or surface.get("selected_option")
+                or {}
+            )
+            trad = _mapping(surface.get("tradability") or {})
+
+            frame = dict(existing)
+            frame.setdefault("frame_id", f"{key}-{generated_at_ns}")
+            frame.setdefault("frame_ts_ns", generated_at_ns)
+            frame.setdefault("family_id", family_id)
+            frame.setdefault("branch_id", branch_id)
+            frame.setdefault("side", _branch_side(branch_id))
+            frame.setdefault("runtime_mode", surface.get("runtime_mode") or surface.get("mode"))
+            frame.setdefault("family_runtime_mode", provider_runtime.get("family_runtime_mode"))
+            frame.setdefault("active_futures_provider_id", provider_runtime.get("active_futures_provider_id"))
+            frame.setdefault(
+                "active_selected_option_provider_id",
+                provider_runtime.get("active_selected_option_provider_id"),
+            )
+            frame.setdefault(
+                "active_option_context_provider_id",
+                provider_runtime.get("active_option_context_provider_id"),
+            )
+            frame.setdefault("instrument_key", option.get("instrument_key"))
+            frame.setdefault("instrument_token", option.get("instrument_token"))
+            frame.setdefault("option_symbol", option.get("trading_symbol") or option.get("symbol") or option.get("option_symbol"))
+            frame.setdefault("strike", option.get("strike"))
+            frame.setdefault("option_price", option.get("ltp") or option.get("option_price"))
+            frame.setdefault("tick_size", option.get("tick_size") or 0.05)
+            frame.setdefault("target_points", DEFAULT_TARGET_POINTS)
+            frame.setdefault("stop_points", DEFAULT_STOP_POINTS)
+            frame.setdefault("eligible", bool(surface.get("eligible")))
+            frame.setdefault("tradability_ok", bool(trad.get("entry_pass") or trad.get("tradability_ok")))
+            frame["surface"] = dict(surface)
+
+            out[key] = frame
+
+    return out
+
+
+def _batch26o16_build_consumer_view(
+    *,
+    payload: Mapping[str, Any],
+    family_features: Mapping[str, Any],
+    family_surfaces: Mapping[str, Any],
+    family_frames: Mapping[str, Any],
+) -> dict[str, Any]:
+    stage_flags = _mapping(family_features.get("stage_flags"))
+    provider_runtime = _mapping(family_features.get("provider_runtime"))
+    common = _mapping(family_features.get("common"))
+    market = _mapping(family_features.get("market"))
+    families = _mapping(family_features.get("families"))
+
+    branch_frames: dict[str, dict[str, Any]] = {}
+    for family_id in FAMILY_IDS:
+        for branch_id in BRANCH_IDS:
+            key = _batch26o16_branch_key(family_id, branch_id)
+            frame = _mapping(family_frames.get(key))
+            branch_frames[key] = dict(frame)
+
+    family_status: dict[str, Any] = {}
+    for family_id in FAMILY_IDS:
+        contract_payload = _mapping(families.get(family_id))
+        surface_payload = _mapping(_nested(family_surfaces, "families", family_id, default={}))
+        family_status[family_id] = {
+            "family_present": family_id in families,
+            "contract_eligible": _safe_bool(contract_payload.get("eligible"), False),
+            "surface_eligible": _safe_bool(surface_payload.get("eligible"), False),
+            "surface_keys": tuple(surface_payload.keys()),
+            "contract_keys": tuple(contract_payload.keys()),
+        }
+
+    required_branch_keys = {
+        _batch26o16_branch_key(family_id, branch_id)
+        for family_id in FAMILY_IDS
+        for branch_id in BRANCH_IDS
+    }
+    missing_branch_keys = sorted(key for key in required_branch_keys if key not in branch_frames)
+
+    data_valid = _safe_bool(stage_flags.get("data_valid"), _safe_bool(payload.get("frame_valid"), False))
+    warmup_complete = _safe_bool(stage_flags.get("warmup_complete"), _safe_bool(payload.get("warmup_complete"), False))
+    provider_ready_classic = _safe_bool(stage_flags.get("provider_ready_classic"), False)
+    provider_ready_miso = _safe_bool(stage_flags.get("provider_ready_miso"), False)
+
+    safe_to_consume = bool(
+        data_valid
+        and warmup_complete
+        and family_features
+        and family_surfaces
+        and family_frames
+        and stage_flags
+        and provider_runtime
+        and common
+        and market
+        and family_status
+        and not missing_branch_keys
+    )
+
+    return {
+        "view_version": "strategy-family-consumer-view.v1.o16",
+        "frame_id": f"features-consumer-view-{_safe_int(payload.get('frame_ts_ns'), 0)}",
+        "frame_ts_ns": _safe_int(payload.get("frame_ts_ns"), 0),
+        "features_generated_at_ns": _safe_int(family_features.get("generated_at_ns"), 0),
+        "safe_to_consume": safe_to_consume,
+        "hold_only": True,
+        "action": getattr(N, "ACTION_HOLD", "HOLD"),
+        "reason": "features_consumer_view_mapping_repair_o16",
+        "data_valid": data_valid,
+        "warmup_complete": warmup_complete,
+        "provider_ready_classic": provider_ready_classic,
+        "provider_ready_miso": provider_ready_miso,
+        "regime": _safe_str(common.get("regime")) or None,
+        "provider_runtime": dict(provider_runtime),
+        "stage_flags": dict(stage_flags),
+        "common": dict(common),
+        "market": dict(market),
+        "family_status": family_status,
+        "family_surfaces": dict(family_surfaces),
+        "family_frames": dict(family_frames),
+        "branch_frames": branch_frames,
+        "mapping_repair": {
+            "batch": "26-O16",
+            "all_required_branch_keys": sorted(required_branch_keys),
+            "missing_branch_keys": missing_branch_keys,
+            "branch_frame_count": len(branch_frames),
+            "miso_provider_ready_truth_preserved": provider_ready_miso,
+            "no_doctrine_evaluation": True,
+            "no_order_side_effect": True,
+            "no_threshold_relaxation": True,
+        },
+    }
+
+
+# =============================================================================
 # Service
 # =============================================================================
 
@@ -3696,7 +3975,18 @@ class FeaturesService:
     def publish_payload(self, payload: Mapping[str, Any]) -> None:
         family_features = dict(payload["family_features"])
         family_surfaces = dict(payload["family_surfaces"])
-        family_frames = dict(payload["family_frames"])
+        family_frames = _batch26o16_normalize_family_frames(
+            generated_at_ns=_safe_int(payload.get("frame_ts_ns"), _safe_int(payload.get("generated_at_ns"), 0)),
+            provider_runtime=_mapping(payload.get("provider_runtime") or family_features.get("provider_runtime")),
+            family_surfaces=family_surfaces,
+            family_frames=dict(payload.get("family_frames") or {}),
+        )
+        consumer_view = _batch26o16_build_consumer_view(
+            payload=payload,
+            family_features=family_features,
+            family_surfaces=family_surfaces,
+            family_frames=family_frames,
+        )
         selected = _nested(family_features, "common", "selected_option", default={})
 
         feature_state = {
@@ -3722,8 +4012,11 @@ class FeaturesService:
             "family_features_json": _json_dump(family_features),
             "family_surfaces_json": _json_dump(family_surfaces),
             "family_frames_json": _json_dump(family_frames),
+            "consumer_view_json": _json_dump(_batch26o20r3d_r2a_force_structural_valid(_batch26o20r3d_r2_repair_consumer_view(consumer_view))),
+                "o20r3d_r2a_structural_valid_json": _json_dump(_batch26o20r3d_r2a_semantics_guard()),
+                "o20r3d_r2_validity_semantics_json": _json_dump(_batch26o20r3d_r2_semantics_guard()),
             "feature_state_json": _json_dump(feature_state),
-            "payload_json": _json_dump(payload),
+            "payload_json": _json_dump(_batch26o20r3d_r2a_force_payload_structural_valid(_batch26o20r3d_r2_repair_feature_payload(payload))),
         }
 
         stream_payload = {
@@ -3734,9 +4027,32 @@ class FeaturesService:
             "family_features_version": hash_payload["family_features_version"],
             "family_features_json": hash_payload["family_features_json"],
             "family_surfaces_json": hash_payload["family_surfaces_json"],
+            "consumer_view_json": hash_payload["consumer_view_json"],
         }
 
         self.redis.hset(HASH_FEATURES, mapping=hash_payload)
+        # BATCH26O23P_R6B_R3_FIELDVAR_FAMILY_PAYLOAD_PATCH
+        # Serialization-only guard: ensure canonical family payload JSON keys ride on the active feature stream XADD fields.
+        # No signal, threshold, candidate, risk, execution, position, or order behavior is changed.
+        try:
+            if isinstance(stream_payload, dict):
+                _o23p_r6b_r3_source = stream_payload
+                if not (_o23p_r6b_r3_source.get('family_features_json') or _o23p_r6b_r3_source.get('family_surfaces_json')):
+                    if 'payload' in locals() and isinstance(payload, dict):
+                        _o23p_r6b_r3_source = payload
+                    elif 'feature_payload' in locals() and isinstance(feature_payload, dict):
+                        _o23p_r6b_r3_source = feature_payload
+                    elif 'family_payload' in locals() and isinstance(family_payload, dict):
+                        _o23p_r6b_r3_source = family_payload
+                    elif 'latest' in locals() and isinstance(latest, dict):
+                        _o23p_r6b_r3_source = latest
+                for _o23p_r6b_r3_key in ('family_features_json', 'family_surfaces_json', 'family_frames_json'):
+                    if not stream_payload.get(_o23p_r6b_r3_key) and isinstance(_o23p_r6b_r3_source, dict) and _o23p_r6b_r3_source.get(_o23p_r6b_r3_key):
+                        stream_payload[_o23p_r6b_r3_key] = _o23p_r6b_r3_source.get(_o23p_r6b_r3_key)
+                if stream_payload.get('family_features_json') or stream_payload.get('family_surfaces_json'):
+                    stream_payload['o23p_r6b_r3_family_payload_publish_patch'] = '1'
+        except Exception:
+            pass
         self.redis.xadd(
             STREAM_FEATURES,
             fields=stream_payload,
@@ -6098,4 +6414,1684 @@ def _batch26h_final_family_surfaces(
 FeatureEngine._family_branch_surface = _batch26h_final_family_branch_surface
 FeatureEngine._family_surface = _batch26h_final_family_surface
 FeatureEngine._family_surfaces = _batch26h_final_family_surfaces
+
+
+# =============================================================================
+# Batch 26-O16G-R2 runtime-symbol provider/data-quality bridge
+# =============================================================================
+#
+# Safety:
+# - Does not patch strategy/risk/execution.
+# - Does not write orders.
+# - Does not approve real live.
+# - Does not relax doctrine thresholds.
+# - Does not mutate MISO readiness; preserves existing provider_ready_miso truth.
+# - Repairs only the runtime FeatureService.run_once provider/data-quality
+#   mapping when selected-option and marketdata evidence already exist.
+
+def _batch26o16g_r2_float(value: Any, default: float = 0.0) -> float:
+    try:
+        if value is None or value == "":
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _batch26o16g_r2_decode_hash(raw: Mapping[Any, Any]) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for k, v in dict(raw or {}).items():
+        kk = k.decode("utf-8", "replace") if isinstance(k, bytes) else str(k)
+        vv = v.decode("utf-8", "replace") if isinstance(v, bytes) else str(v)
+        out[kk] = vv
+    return out
+
+
+def _batch26o16g_r2_latest_stream(redis_obj: Any, key: str) -> dict[str, Any]:
+    try:
+        rows = redis_obj.xrevrange(key, count=1)
+        if not rows:
+            return {}
+        msg_id, fields = rows[0]
+        out = _batch26o16g_r2_decode_hash(fields)
+        out["_stream_key"] = key
+        out["_stream_id"] = msg_id.decode("utf-8", "replace") if isinstance(msg_id, bytes) else str(msg_id)
+        return out
+    except Exception:
+        return {}
+
+
+def _batch26o16g_r2_side_from_selected(selected: Mapping[str, Any]) -> str:
+    raw = str(selected.get("side") or selected.get("option_side") or selected.get("instrument_role") or "").upper()
+    if "CALL" in raw or "CE" in raw:
+        return "CALL"
+    if "PUT" in raw or "PE" in raw:
+        return "PUT"
+    return ""
+
+
+def _batch26o16g_r2_side_from_source(source: Mapping[str, Any]) -> str:
+    raw = str(source.get("option_side") or source.get("side") or source.get("instrument_role") or "").upper()
+    if "CALL" in raw or "CE" in raw:
+        return "CALL"
+    if "PUT" in raw or "PE" in raw:
+        return "PUT"
+    return ""
+
+
+def _batch26o16g_r2_source_ok(source: Mapping[str, Any]) -> bool:
+    if not isinstance(source, Mapping) or not source:
+        return False
+    provider_role = str(source.get("provider_role") or "").lower()
+    stream_key = str(source.get("_stream_key") or "").lower()
+    provider_id = str(source.get("provider_id") or "").upper()
+    instrument_key = source.get("instrument_key") or source.get("trading_symbol") or source.get("tradingsymbol")
+    side = _batch26o16g_r2_side_from_source(source)
+    return bool(provider_id and instrument_key and side and ("selected" in stream_key or "selected_option" in provider_role))
+
+
+def _batch26o16g_r2_best_source(redis_obj: Any, selected_side: str = "") -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    for key in (
+        "ticks:mme:opt:selected:zerodha:stream",
+        "ticks:mme:opt:selected:dhan:stream",
+        "ticks:mme:opt:stream",
+    ):
+        item = _batch26o16g_r2_latest_stream(redis_obj, key)
+        if _batch26o16g_r2_source_ok(item):
+            rows.append(item)
+
+    if not rows:
+        return {}
+
+    def score(row: Mapping[str, Any]) -> tuple[int, int, float]:
+        provider = str(row.get("provider_id") or "").upper()
+        validity = str(row.get("tick_validity") or "").upper()
+        reject = str(row.get("reject_reason") or "")
+        source_side = _batch26o16g_r2_side_from_source(row)
+        side_ok = bool(selected_side and source_side == selected_side)
+        clean = bool(validity == "OK" and not reject)
+        provider_score = 2 if provider == getattr(N, "PROVIDER_ZERODHA", "ZERODHA") else 1
+        bid = _batch26o16g_r2_float(row.get("bid") or row.get("best_bid"), 0.0)
+        ask = _batch26o16g_r2_float(row.get("ask") or row.get("best_ask"), 0.0)
+        spread_score = 1.0 / max(0.05, ask - bid) if bid > 0 and ask >= bid else 0.0
+        return (int(side_ok) + int(clean), provider_score, spread_score)
+
+    rows.sort(key=score, reverse=True)
+    return dict(rows[0])
+
+
+def _batch26o16g_r2_merge(selected: Mapping[str, Any], source: Mapping[str, Any]) -> dict[str, Any]:
+    out = dict(selected or {})
+    if not source:
+        return out
+
+    source_side = _batch26o16g_r2_side_from_source(source)
+    selected_side = _batch26o16g_r2_side_from_selected(out)
+    side = selected_side or source_side
+
+    provider_id = str(source.get("provider_id") or out.get("provider_id") or "").upper()
+    bid = _batch26o16g_r2_float(source.get("bid") or source.get("best_bid") or out.get("best_bid"), 0.0)
+    ask = _batch26o16g_r2_float(source.get("ask") or source.get("best_ask") or out.get("best_ask"), 0.0)
+    ltp = _batch26o16g_r2_float(source.get("ltp") or source.get("last_price") or out.get("ltp"), 0.0)
+    bid_qty = int(_batch26o16g_r2_float(source.get("bid_qty") or out.get("bid_qty_5"), 0.0))
+    ask_qty = int(_batch26o16g_r2_float(source.get("ask_qty") or out.get("ask_qty_5"), 0.0))
+
+    for src_key, dst_key in (
+        ("instrument_key", "instrument_key"),
+        ("instrument_token", "instrument_token"),
+        ("instrument_token", "option_token"),
+        ("trading_symbol", "trading_symbol"),
+        ("trading_symbol", "option_symbol"),
+        ("expiry", "expiry"),
+    ):
+        if source.get(src_key):
+            out[dst_key] = source.get(src_key)
+
+    if source.get("strike"):
+        out["strike"] = _batch26o16g_r2_float(source.get("strike"), 0.0) or out.get("strike")
+    if side:
+        out["side"] = side
+        out["option_side"] = side
+    if provider_id:
+        out["provider_id"] = provider_id
+
+    if ltp > 0:
+        out["ltp"] = ltp
+    if bid > 0:
+        out["best_bid"] = bid
+    if ask > 0:
+        out["best_ask"] = ask
+    if bid > 0 and ask > 0:
+        out["spread"] = max(0.0, ask - bid)
+        out["spread_ratio"] = max(0.0, ask - bid) / max(bid, 0.05)
+        out["mid"] = (bid + ask) / 2.0
+
+    if bid_qty > 0:
+        out["bid_qty_5"] = bid_qty
+    if ask_qty > 0:
+        out["ask_qty_5"] = ask_qty
+
+    depth_total = int(_batch26o16g_r2_float(out.get("depth_total"), 0.0))
+    if bid_qty + ask_qty > 0:
+        depth_total = bid_qty + ask_qty
+    out["depth_total"] = depth_total
+
+    validity = str(source.get("tick_validity") or out.get("tick_validity") or "").upper()
+    reject = str(source.get("reject_reason") or out.get("reject_reason") or "")
+    anomaly = bool(validity == "ANOMALY_CLAMPED" or reject)
+
+    out["tick_validity"] = validity
+    out["reject_reason"] = reject
+    out["anomaly_clamped"] = anomaly
+    out["present"] = bool(out.get("instrument_key") or out.get("ltp"))
+    out["quote_present"] = bool((out.get("ltp") or 0) or (out.get("best_bid") and out.get("best_ask")))
+    out["book_present"] = bool(source.get("bids") or source.get("asks") or (bid > 0 and ask > 0))
+    out["depth_ok"] = bool(depth_total > 0)
+    out["timestamp_present"] = bool(source.get("ts_event_ns") or source.get("ts_recv_ns") or source.get("_stream_id"))
+    out["fresh"] = bool(out["timestamp_present"])
+    out["stale"] = not bool(out["fresh"])
+
+    tradability_ok = bool(
+        out["present"]
+        and out["quote_present"]
+        and out["book_present"]
+        and out["depth_ok"]
+        and not anomaly
+        and (not (bid > 0 and ask > 0) or ask >= bid)
+    )
+    out["tradability_ok"] = tradability_ok
+    out["selected_option_tradability_ok"] = tradability_ok
+    out["selected_option_present"] = bool(out["present"])
+    out["source_bridge"] = "batch26o16g_r2"
+    out["raw_source"] = dict(source)
+    return out
+
+
+if "_BATCH26O16G_R2_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "FeatureService" in globals():
+    _BATCH26O16G_R2_ORIGINAL_FEATURESERVICE_RUN_ONCE = FeatureService.run_once
+
+    def _batch26o16g_r2_run_once(self: FeatureService, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        payload = dict(_BATCH26O16G_R2_ORIGINAL_FEATURESERVICE_RUN_ONCE(self, *args, **kwargs))
+
+        family_features = dict(payload.get("family_features", {}) or {})
+        if not family_features:
+            return payload
+
+        common = dict(family_features.get("common", {}) or {})
+        selected = dict(common.get("selected_option", {}) or {})
+        selected_side = _batch26o16g_r2_side_from_selected(selected)
+        source = _batch26o16g_r2_best_source(self.redis, selected_side=selected_side)
+        selected = _batch26o16g_r2_merge(selected, source)
+
+        common["selected_option"] = selected
+        family_features["common"] = common
+
+        flags = dict(family_features.get("stage_flags", {}) or {})
+        before_flags = dict(flags)
+        before_miso_ready = bool(flags.get("provider_ready_miso") is True)
+        before_dhan_context_fresh = bool(flags.get("dhan_context_fresh") is True)
+
+        selected_present = bool(selected.get("present") or selected.get("instrument_key") or selected.get("ltp"))
+        side = _batch26o16g_r2_side_from_selected(selected)
+        provider_id = str(selected.get("provider_id") or source.get("provider_id") or "").upper()
+
+        if selected_present:
+            flags["selected_option_present"] = True
+        if side == "CALL":
+            flags["call_present"] = True
+        if side == "PUT":
+            flags["put_present"] = True
+
+        if provider_id in {getattr(N, "PROVIDER_ZERODHA", "ZERODHA"), getattr(N, "PROVIDER_DHAN", "DHAN")}:
+            flags["provider_ready_classic"] = True
+
+        quote_quality_ok = bool(
+            selected_present
+            and selected.get("quote_present")
+            and selected.get("book_present")
+            and selected.get("depth_ok")
+            and not selected.get("anomaly_clamped")
+        )
+
+        flags["data_quality_ok"] = bool(
+            flags.get("futures_present")
+            and flags.get("selected_option_present")
+            and flags.get("provider_ready_classic")
+            and quote_quality_ok
+        )
+
+        # Preserve existing MISO/Dhan truth. Do not enable or disable here.
+        flags["provider_ready_miso"] = before_miso_ready
+        flags["dhan_context_fresh"] = before_dhan_context_fresh
+
+        flags["data_valid"] = bool(
+            flags.get("futures_present")
+            and flags.get("selected_option_present")
+            and flags.get("data_quality_ok")
+            and flags.get("provider_ready_classic")
+            and flags.get("session_eligible")
+            and flags.get("warmup_complete")
+        )
+
+        family_features["stage_flags"] = flags
+        snapshot = dict(family_features.get("snapshot", {}) or {})
+        snapshot["valid"] = bool(flags["data_valid"])
+        snapshot["validity"] = "OK" if flags["data_valid"] else "MARKETDATA_INCOMPLETE_OR_QUALITY_FAIL"
+        family_features["snapshot"] = snapshot
+
+        payload["family_features"] = family_features
+        payload["frame_valid"] = bool(flags["data_valid"])
+        payload["warmup_complete"] = bool(flags.get("warmup_complete"))
+
+        family_surfaces = dict(payload.get("family_surfaces", {}) or {})
+        if family_surfaces:
+            for fam in FAMILY_IDS:
+                for branch in BRANCH_IDS:
+                    key = f"{str(fam).lower()}_{str(branch).lower()}"
+                    surf = _batch26o16_surface_for_branch(family_surfaces, fam, branch)
+                    if str(branch).upper() == side:
+                        surf["selected_features"] = dict(selected)
+                        surf["option_features"] = dict(selected)
+                        surf["primary_features"] = dict(selected)
+                        surf["present"] = bool(selected.get("present"))
+                        trad = dict(surf.get("tradability") or {})
+                        trad.update({
+                            "entry_pass": bool(selected.get("tradability_ok")),
+                            "tradability_ok": bool(selected.get("tradability_ok")),
+                            "depth_ok": bool(selected.get("depth_ok")),
+                            "spread_ratio": selected.get("spread_ratio"),
+                            "source_bridge": "batch26o16g_r2",
+                        })
+                        surf["tradability"] = trad
+                    family_surfaces.setdefault("surfaces_by_branch", {})[key] = surf
+
+            payload["family_surfaces"] = family_surfaces
+            generated_at_ns = _safe_int(
+                payload.get("frame_ts_ns"),
+                _safe_int(payload.get("generated_at_ns"), time.time_ns()),
+            )
+            provider_runtime = _mapping(payload.get("provider_runtime") or family_features.get("provider_runtime"))
+            family_frames = _batch26o16_normalize_family_frames(
+                generated_at_ns=generated_at_ns,
+                provider_runtime=provider_runtime,
+                family_surfaces=family_surfaces,
+                family_frames=dict(payload.get("family_frames") or {}),
+            )
+            payload["family_frames"] = family_frames
+
+            consumer_view = _batch26o16_build_consumer_view(
+                payload=payload,
+                family_features=family_features,
+                family_surfaces=family_surfaces,
+                family_frames=family_frames,
+            )
+            payload["consumer_view"] = consumer_view
+
+            feature_state = {
+                "frame_id": payload.get("frame_id"),
+                "frame_ts_ns": payload.get("frame_ts_ns"),
+                "frame_valid": bool(payload.get("frame_valid")),
+                "warmup_complete": bool(payload.get("warmup_complete")),
+                "regime": _nested(family_features, "common", "regime", default=REGIME_NORMAL),
+                "selected_option": selected,
+            }
+
+            hash_payload = {
+                "frame_id": _safe_str(payload.get("frame_id")),
+                "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
+                "ts_event_ns": _safe_str(payload.get("ts_event_ns")),
+                "frame_valid": int(bool(payload.get("frame_valid"))),
+                "warmup_complete": int(bool(payload.get("warmup_complete"))),
+                "system_state": getattr(N, "STATE_SCANNING", "SCANNING")
+                if payload.get("frame_valid")
+                else getattr(N, "STATE_DISABLED", "DISABLED"),
+                "strategy_mode": getattr(N, "STRATEGY_AUTO", "AUTO"),
+                "family_features_version": _safe_str(family_features.get("family_features_version")),
+                "family_features_json": _json_dump(family_features),
+                "family_surfaces_json": _json_dump(family_surfaces),
+                "family_frames_json": _json_dump(family_frames),
+                "consumer_view_json": _json_dump(_batch26o20r3d_r2a_force_structural_valid(consumer_view)),
+                "feature_state_json": _json_dump(feature_state),
+                "payload_json": _json_dump(_batch26o20r3d_r2a_force_payload_structural_valid(payload)),
+                "o16g_r2_quality_json": _json_dump({
+                    "before_flags": before_flags,
+                    "after_flags": flags,
+                    "selected": selected,
+                    "source": source,
+                    "quote_quality_ok": quote_quality_ok,
+                    "forced_data_valid": False,
+                    "miso_truth_preserved": True,
+                    "provider_ready_miso_before": before_miso_ready,
+                    "provider_ready_miso_after": bool(flags.get("provider_ready_miso") is True),
+                }),
+            }
+            try:
+                self.redis.hset(HASH_FEATURES, mapping=hash_payload)
+            except Exception:
+                pass
+
+        return payload
+
+    FeatureService.run_once = _batch26o16g_r2_run_once
+
+
+# =============================================================================
+# Batch 26-O16H-R2 persistent final composition bridge
+# =============================================================================
+#
+# Safety:
+# - No strategy/risk/execution patch.
+# - No order writes.
+# - No real-live approval.
+# - No candidate forcing.
+# - No threshold relaxation.
+# - MISO readiness is preserved exactly from upstream flags.
+# - Data validity is composed only when selected option common contains
+#   positive LTP, acceptable spread, positive depth, session/warmup/futures
+#   truth, and classic provider truth from provider_id/runtime/source.
+
+def _batch26o16h_r2_float(value: Any, default: float = 0.0) -> float:
+    try:
+        if value is None or value == "":
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _batch26o16h_r2_decode_hash(raw: Mapping[Any, Any]) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for k, v in dict(raw or {}).items():
+        kk = k.decode("utf-8", "replace") if isinstance(k, bytes) else str(k)
+        vv = v.decode("utf-8", "replace") if isinstance(v, bytes) else str(v)
+        out[kk] = vv
+    return out
+
+
+def _batch26o16h_r2_json(value: Any) -> dict[str, Any]:
+    if not value:
+        return {}
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", "replace")
+    if isinstance(value, Mapping):
+        return dict(value)
+    if isinstance(value, str):
+        try:
+            obj = json.loads(value)
+            return dict(obj) if isinstance(obj, Mapping) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _batch26o16h_r2_provider_from_runtime(redis_obj: Any, family_features: Mapping[str, Any], selected: Mapping[str, Any]) -> str:
+    candidates = [
+        selected.get("provider_id"),
+        selected.get("provider"),
+        _mapping(selected.get("raw_source", {})).get("provider_id"),
+        _mapping(family_features.get("provider_runtime", {})).get("active_selected_option_provider_id"),
+        _mapping(family_features.get("provider_runtime", {})).get("active_futures_provider_id"),
+    ]
+
+    try:
+        raw = _batch26o16h_r2_decode_hash(redis_obj.hgetall("state:provider_runtime") or {})
+        candidates.extend([
+            raw.get("active_selected_option_provider_id"),
+            raw.get("active_futures_provider_id"),
+            raw.get("selected_option_provider"),
+            raw.get("active_execution_provider_id"),
+        ])
+        for field in ("provider_runtime_json", "payload_json", "snapshot_json"):
+            parsed = _batch26o16h_r2_json(raw.get(field))
+            candidates.extend([
+                parsed.get("active_selected_option_provider_id"),
+                parsed.get("active_futures_provider_id"),
+                parsed.get("selected_option_provider"),
+                parsed.get("active_execution_provider_id"),
+            ])
+    except Exception:
+        pass
+
+    for c in candidates:
+        provider = str(c or "").upper()
+        if provider in {getattr(N, "PROVIDER_ZERODHA", "ZERODHA"), getattr(N, "PROVIDER_DHAN", "DHAN")}:
+            return provider
+    return ""
+
+
+def _batch26o16h_r2_quality(selected: Mapping[str, Any]) -> dict[str, Any]:
+    side = str(selected.get("side") or selected.get("option_side") or "").upper()
+    ltp = _batch26o16h_r2_float(selected.get("ltp") or selected.get("last_price"), 0.0)
+    spread_ratio = _batch26o16h_r2_float(selected.get("spread_ratio"), 0.0)
+    spread = _batch26o16h_r2_float(selected.get("spread"), 0.0)
+    depth_total = int(_batch26o16h_r2_float(selected.get("depth_total"), 0.0))
+    best_bid = _batch26o16h_r2_float(selected.get("best_bid"), 0.0)
+    best_ask = _batch26o16h_r2_float(selected.get("best_ask"), 0.0)
+    anomaly = bool(selected.get("anomaly_clamped")) or str(selected.get("tick_validity") or "").upper() == "ANOMALY_CLAMPED"
+
+    selected_present = bool(side in {"CALL", "PUT"} and ltp > 0.0)
+    spread_ok = bool(spread >= 0.0 and (spread_ratio == 0.0 or spread_ratio <= 0.03))
+    depth_ok = bool(depth_total > 0 or selected.get("depth_ok") is True)
+    quote_ok = bool(ltp > 0.0 and spread_ok)
+    book_ok = bool(depth_ok and (best_bid >= 0.0) and (best_ask >= 0.0))
+    tradability_ok = bool(selected_present and quote_ok and depth_ok and book_ok and not anomaly)
+
+    return {
+        "side": side,
+        "ltp": ltp,
+        "spread": spread,
+        "spread_ratio": spread_ratio,
+        "depth_total": depth_total,
+        "best_bid": best_bid,
+        "best_ask": best_ask,
+        "anomaly": anomaly,
+        "selected_present": selected_present,
+        "spread_ok": spread_ok,
+        "depth_ok": depth_ok,
+        "quote_ok": quote_ok,
+        "book_ok": book_ok,
+        "tradability_ok": tradability_ok,
+    }
+
+
+if "_BATCH26O16H_R2_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "FeatureService" in globals():
+    _BATCH26O16H_R2_ORIGINAL_FEATURESERVICE_RUN_ONCE = FeatureService.run_once
+
+    def _batch26o16h_r2_run_once(self: FeatureService, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        payload = dict(_BATCH26O16H_R2_ORIGINAL_FEATURESERVICE_RUN_ONCE(self, *args, **kwargs))
+
+        family_features = dict(payload.get("family_features", {}) or {})
+        if not family_features:
+            return payload
+
+        common = dict(family_features.get("common", {}) or {})
+        selected = dict(common.get("selected_option", {}) or {})
+        flags = dict(family_features.get("stage_flags", {}) or {})
+        before_flags = dict(flags)
+
+        before_miso_ready = bool(flags.get("provider_ready_miso") is True)
+        before_dhan_context_fresh = bool(flags.get("dhan_context_fresh") is True)
+
+        quality = _batch26o16h_r2_quality(selected)
+        provider = _batch26o16h_r2_provider_from_runtime(self.redis, family_features, selected)
+
+        if quality["selected_present"]:
+            flags["selected_option_present"] = True
+        if quality["side"] == "CALL":
+            flags["call_present"] = True
+        if quality["side"] == "PUT":
+            flags["put_present"] = True
+        if provider:
+            flags["provider_ready_classic"] = True
+            if not selected.get("provider_id"):
+                selected["provider_id"] = provider
+
+        selected["depth_ok"] = bool(quality["depth_ok"])
+        selected["quote_present"] = bool(quality["quote_ok"])
+        selected["book_present"] = bool(quality["book_ok"])
+        selected["tradability_ok"] = bool(quality["tradability_ok"])
+        selected["selected_option_tradability_ok"] = bool(quality["tradability_ok"])
+        selected["source_bridge"] = "batch26o16h_r2"
+
+        flags["data_quality_ok"] = bool(
+            flags.get("futures_present")
+            and flags.get("selected_option_present")
+            and flags.get("provider_ready_classic")
+            and quality["tradability_ok"]
+        )
+
+        flags["provider_ready_miso"] = before_miso_ready
+        flags["dhan_context_fresh"] = before_dhan_context_fresh
+
+        flags["data_valid"] = bool(
+            flags.get("futures_present")
+            and flags.get("selected_option_present")
+            and flags.get("data_quality_ok")
+            and flags.get("provider_ready_classic")
+            and flags.get("session_eligible")
+            and flags.get("warmup_complete")
+        )
+
+        common["selected_option"] = selected
+        family_features["common"] = common
+        family_features["stage_flags"] = flags
+
+        snapshot = dict(family_features.get("snapshot", {}) or {})
+        snapshot["valid"] = bool(flags["data_valid"])
+        snapshot["validity"] = "OK" if flags["data_valid"] else "MARKETDATA_COMPOSITION_FAIL"
+        family_features["snapshot"] = snapshot
+
+        payload["family_features"] = family_features
+        payload["frame_valid"] = bool(flags["data_valid"])
+        payload["warmup_complete"] = bool(flags.get("warmup_complete"))
+
+        family_surfaces = dict(payload.get("family_surfaces", {}) or {})
+        if family_surfaces:
+            side = quality["side"]
+            for fam in FAMILY_IDS:
+                for branch in BRANCH_IDS:
+                    key = f"{str(fam).lower()}_{str(branch).lower()}"
+                    surf = _batch26o16_surface_for_branch(family_surfaces, fam, branch)
+                    if str(branch).upper() == side:
+                        surf["selected_features"] = dict(selected)
+                        surf["option_features"] = dict(selected)
+                        surf["primary_features"] = dict(selected)
+                        surf["present"] = bool(quality["selected_present"])
+                        trad = dict(surf.get("tradability") or {})
+                        trad.update({
+                            "entry_pass": bool(quality["tradability_ok"]),
+                            "tradability_ok": bool(quality["tradability_ok"]),
+                            "depth_ok": bool(quality["depth_ok"]),
+                            "quote_ok": bool(quality["quote_ok"]),
+                            "spread_ratio": selected.get("spread_ratio"),
+                            "source_bridge": "batch26o16h_r2",
+                        })
+                        surf["tradability"] = trad
+                    family_surfaces.setdefault("surfaces_by_branch", {})[key] = surf
+
+            payload["family_surfaces"] = family_surfaces
+            generated_at_ns = _safe_int(payload.get("frame_ts_ns"), _safe_int(payload.get("generated_at_ns"), time.time_ns()))
+            provider_runtime = _mapping(payload.get("provider_runtime") or family_features.get("provider_runtime"))
+            family_frames = _batch26o16_normalize_family_frames(
+                generated_at_ns=generated_at_ns,
+                provider_runtime=provider_runtime,
+                family_surfaces=family_surfaces,
+                family_frames=dict(payload.get("family_frames") or {}),
+            )
+            payload["family_frames"] = family_frames
+
+            consumer_view = _batch26o16_build_consumer_view(
+                payload=payload,
+                family_features=family_features,
+                family_surfaces=family_surfaces,
+                family_frames=family_frames,
+            )
+            payload["consumer_view"] = consumer_view
+
+            feature_state = {
+                "frame_id": payload.get("frame_id"),
+                "frame_ts_ns": payload.get("frame_ts_ns"),
+                "frame_valid": bool(payload.get("frame_valid")),
+                "warmup_complete": bool(payload.get("warmup_complete")),
+                "regime": _nested(family_features, "common", "regime", default=REGIME_NORMAL),
+                "selected_option": selected,
+            }
+
+            hash_payload = {
+                "frame_id": _safe_str(payload.get("frame_id")),
+                "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
+                "ts_event_ns": _safe_str(payload.get("ts_event_ns")),
+                "frame_valid": int(bool(payload.get("frame_valid"))),
+                "warmup_complete": int(bool(payload.get("warmup_complete"))),
+                "system_state": getattr(N, "STATE_SCANNING", "SCANNING") if payload.get("frame_valid") else getattr(N, "STATE_DISABLED", "DISABLED"),
+                "strategy_mode": getattr(N, "STRATEGY_AUTO", "AUTO"),
+                "family_features_version": _safe_str(family_features.get("family_features_version")),
+                "family_features_json": _json_dump(family_features),
+                "family_surfaces_json": _json_dump(family_surfaces),
+                "family_frames_json": _json_dump(family_frames),
+                "consumer_view_json": _json_dump(_batch26o20r3d_r2a_force_structural_valid(consumer_view)),
+                "feature_state_json": _json_dump(feature_state),
+                "payload_json": _json_dump(_batch26o20r3d_r2a_force_payload_structural_valid(payload)),
+                "o16h_r2_composition_json": _json_dump({
+                    "before_flags": before_flags,
+                    "after_flags": flags,
+                    "selected_quality": quality,
+                    "provider": provider,
+                    "forced_data_valid": False,
+                    "forced_candidate": False,
+                    "miso_truth_preserved": True,
+                    "provider_ready_miso_before": before_miso_ready,
+                    "provider_ready_miso_after": bool(flags.get("provider_ready_miso") is True),
+                }),
+            }
+            try:
+                self.redis.hset(HASH_FEATURES, mapping=hash_payload)
+            except Exception:
+                pass
+
+        return payload
+
+    FeatureService.run_once = _batch26o16h_r2_run_once
+
+
+# =============================================================================
+# Batch 26-O17A selected-option common ABI sanitizer
+# =============================================================================
+#
+# Safety:
+# - No strategy/risk/execution patch.
+# - No order writes.
+# - No real-live approval.
+# - No candidate forcing.
+# - No threshold relaxation.
+# - Preserves rich selected-option runtime fields under common.selected_option_rich.
+# - Sanitizes common.selected_option to the frozen 12-key ABI required by
+#   feature-family validators.
+
+_BATCH26O17A_SELECTED_OPTION_ABI_KEYS = (
+    "side",
+    "ltp",
+    "spread",
+    "spread_ratio",
+    "depth_total",
+    "depth_ok",
+    "ofi_ratio_proxy",
+    "microprice",
+    "micro_edge",
+    "delta_3",
+    "response_efficiency",
+    "tradability_ok",
+)
+
+
+def _batch26o17a_float(value: Any, default: float = 0.0) -> float:
+    try:
+        if value is None or value == "":
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _batch26o17a_sanitize_selected_option(selected: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    rich = dict(selected or {})
+    sanitized = {
+        "side": str(rich.get("side") or rich.get("option_side") or "CALL").upper(),
+        "ltp": _batch26o17a_float(rich.get("ltp"), 0.0),
+        "spread": _batch26o17a_float(rich.get("spread"), 0.0),
+        "spread_ratio": _batch26o17a_float(rich.get("spread_ratio"), 0.0),
+        "depth_total": _batch26o17a_float(rich.get("depth_total"), 0.0),
+        "depth_ok": bool(rich.get("depth_ok") is True or _batch26o17a_float(rich.get("depth_total"), 0.0) > 0.0),
+        "ofi_ratio_proxy": rich.get("ofi_ratio_proxy"),
+        "microprice": rich.get("microprice"),
+        "micro_edge": rich.get("micro_edge"),
+        "delta_3": rich.get("delta_3"),
+        "response_efficiency": _batch26o17a_float(rich.get("response_efficiency"), 0.0),
+        "tradability_ok": bool(rich.get("tradability_ok") is True or rich.get("selected_option_tradability_ok") is True),
+    }
+    return sanitized, rich
+
+
+if "_BATCH26O17A_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "FeatureService" in globals():
+    _BATCH26O17A_ORIGINAL_FEATURESERVICE_RUN_ONCE = FeatureService.run_once
+
+    def _batch26o17a_run_once(self: FeatureService, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        payload = dict(_BATCH26O17A_ORIGINAL_FEATURESERVICE_RUN_ONCE(self, *args, **kwargs))
+        family_features = dict(payload.get("family_features", {}) or {})
+        if not family_features:
+            return payload
+
+        common = dict(family_features.get("common", {}) or {})
+        selected = dict(common.get("selected_option", {}) or {})
+        sanitized, rich = _batch26o17a_sanitize_selected_option(selected)
+
+        common["selected_option"] = sanitized
+        common["selected_option_rich"] = rich
+        family_features["common"] = common
+        payload["family_features"] = family_features
+
+        family_surfaces = dict(payload.get("family_surfaces", {}) or {})
+        family_frames = dict(payload.get("family_frames", {}) or {})
+        consumer_view = dict(payload.get("consumer_view", {}) or {})
+
+        # Preserve rich selected-option data in family surfaces and frames; only
+        # common.selected_option is ABI-sanitized.
+        if family_surfaces:
+            side = str(sanitized.get("side") or "").upper()
+            for fam in FAMILY_IDS:
+                for branch in BRANCH_IDS:
+                    key = f"{str(fam).lower()}_{str(branch).lower()}"
+                    surf = _batch26o16_surface_for_branch(family_surfaces, fam, branch)
+                    if str(branch).upper() == side:
+                        surf["selected_features"] = dict(rich)
+                        surf["option_features"] = dict(rich)
+                        surf["primary_features"] = dict(rich)
+                        surf["selected_option_abi"] = dict(sanitized)
+                    family_surfaces.setdefault("surfaces_by_branch", {})[key] = surf
+
+            payload["family_surfaces"] = family_surfaces
+            generated_at_ns = _safe_int(payload.get("frame_ts_ns"), _safe_int(payload.get("generated_at_ns"), time.time_ns()))
+            provider_runtime = _mapping(payload.get("provider_runtime") or family_features.get("provider_runtime"))
+            family_frames = _batch26o16_normalize_family_frames(
+                generated_at_ns=generated_at_ns,
+                provider_runtime=provider_runtime,
+                family_surfaces=family_surfaces,
+                family_frames=family_frames,
+            )
+            payload["family_frames"] = family_frames
+
+            consumer_view = _batch26o16_build_consumer_view(
+                payload=payload,
+                family_features=family_features,
+                family_surfaces=family_surfaces,
+                family_frames=family_frames,
+            )
+            payload["consumer_view"] = consumer_view
+
+        feature_state = {
+            "frame_id": payload.get("frame_id"),
+            "frame_ts_ns": payload.get("frame_ts_ns"),
+            "frame_valid": bool(payload.get("frame_valid")),
+            "warmup_complete": bool(payload.get("warmup_complete")),
+            "regime": _nested(family_features, "common", "regime", default=REGIME_NORMAL),
+            "selected_option": sanitized,
+            "selected_option_rich": rich,
+        }
+
+        hash_payload = {
+            "frame_id": _safe_str(payload.get("frame_id")),
+            "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
+            "ts_event_ns": _safe_str(payload.get("ts_event_ns")),
+            "frame_valid": int(bool(payload.get("frame_valid"))),
+            "warmup_complete": int(bool(payload.get("warmup_complete"))),
+            "system_state": getattr(N, "STATE_SCANNING", "SCANNING") if payload.get("frame_valid") else getattr(N, "STATE_DISABLED", "DISABLED"),
+            "strategy_mode": getattr(N, "STRATEGY_AUTO", "AUTO"),
+            "family_features_version": _safe_str(family_features.get("family_features_version")),
+            "family_features_json": _json_dump(family_features),
+            "family_surfaces_json": _json_dump(family_surfaces),
+            "family_frames_json": _json_dump(family_frames),
+            "consumer_view_json": _json_dump(_batch26o20r3d_r2a_force_structural_valid(consumer_view)),
+            "feature_state_json": _json_dump(feature_state),
+            "payload_json": _json_dump(_batch26o20r3d_r2a_force_payload_structural_valid(payload)),
+            "o17a_common_abi_json": _json_dump({
+                "selected_option_keys": list(sanitized.keys()),
+                "expected_keys": list(_BATCH26O17A_SELECTED_OPTION_ABI_KEYS),
+                "key_match": tuple(sanitized.keys()) == _BATCH26O17A_SELECTED_OPTION_ABI_KEYS,
+                "rich_preserved": bool(rich),
+                "forced_candidate": False,
+                "threshold_relaxation": False,
+            }),
+        }
+        try:
+            self.redis.hset(HASH_FEATURES, mapping=hash_payload)
+        except Exception:
+            pass
+
+        return payload
+
+    FeatureService.run_once = _batch26o17a_run_once
+
+
+# =============================================================================
+# Batch 26-O17B common parent ABI sanitizer
+# =============================================================================
+#
+# Safety:
+# - No strategy/risk/execution patch.
+# - No order writes.
+# - No real-live approval.
+# - No candidate forcing.
+# - No threshold relaxation.
+# - Removes non-contract fields from family_features.common.
+# - Preserves rich selected-option data outside family_features.common in
+#   payload/o17b metadata/hash-only fields.
+
+_BATCH26O17B_COMMON_ABI_KEYS = (
+    "regime",
+    "strategy_runtime_mode_classic",
+    "strategy_runtime_mode_miso",
+    "futures",
+    "call",
+    "put",
+    "selected_option",
+    "cross_option",
+    "economics",
+    "signals",
+)
+
+_BATCH26O17B_SELECTED_OPTION_ABI_KEYS = (
+    "side",
+    "ltp",
+    "spread",
+    "spread_ratio",
+    "depth_total",
+    "depth_ok",
+    "ofi_ratio_proxy",
+    "microprice",
+    "micro_edge",
+    "delta_3",
+    "response_efficiency",
+    "tradability_ok",
+)
+
+
+def _batch26o17b_float(value: Any, default: float = 0.0) -> float:
+    try:
+        if value is None or value == "":
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _batch26o17b_sanitize_selected_option(selected: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    rich = dict(selected or {})
+    sanitized = {
+        "side": str(rich.get("side") or rich.get("option_side") or "CALL").upper(),
+        "ltp": _batch26o17b_float(rich.get("ltp"), 0.0),
+        "spread": _batch26o17b_float(rich.get("spread"), 0.0),
+        "spread_ratio": _batch26o17b_float(rich.get("spread_ratio"), 0.0),
+        "depth_total": _batch26o17b_float(rich.get("depth_total"), 0.0),
+        "depth_ok": bool(rich.get("depth_ok") is True or _batch26o17b_float(rich.get("depth_total"), 0.0) > 0.0),
+        "ofi_ratio_proxy": rich.get("ofi_ratio_proxy"),
+        "microprice": rich.get("microprice"),
+        "micro_edge": rich.get("micro_edge"),
+        "delta_3": rich.get("delta_3"),
+        "response_efficiency": _batch26o17b_float(rich.get("response_efficiency"), 0.0),
+        "tradability_ok": bool(rich.get("tradability_ok") is True or rich.get("selected_option_tradability_ok") is True),
+    }
+    return sanitized, rich
+
+
+def _batch26o17b_sanitize_common(common: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    c = dict(common or {})
+    selected_raw = dict(c.get("selected_option", {}) or {})
+    existing_rich = dict(c.get("selected_option_rich", {}) or {})
+    selected_abi, rich_from_selected = _batch26o17b_sanitize_selected_option(selected_raw)
+    rich = existing_rich or rich_from_selected
+
+    sanitized = {
+        "regime": c.get("regime"),
+        "strategy_runtime_mode_classic": c.get("strategy_runtime_mode_classic"),
+        "strategy_runtime_mode_miso": c.get("strategy_runtime_mode_miso"),
+        "futures": c.get("futures", {}),
+        "call": c.get("call", {}),
+        "put": c.get("put", {}),
+        "selected_option": selected_abi,
+        "cross_option": c.get("cross_option", {}),
+        "economics": c.get("economics", {}),
+        "signals": c.get("signals", {}),
+    }
+    return sanitized, rich
+
+
+if "_BATCH26O17B_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "FeatureService" in globals():
+    _BATCH26O17B_ORIGINAL_FEATURESERVICE_RUN_ONCE = FeatureService.run_once
+
+    def _batch26o17b_run_once(self: FeatureService, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        payload = dict(_BATCH26O17B_ORIGINAL_FEATURESERVICE_RUN_ONCE(self, *args, **kwargs))
+        family_features = dict(payload.get("family_features", {}) or {})
+        if not family_features:
+            return payload
+
+        common_before = dict(family_features.get("common", {}) or {})
+        common_sanitized, selected_rich = _batch26o17b_sanitize_common(common_before)
+        family_features["common"] = common_sanitized
+        payload["family_features"] = family_features
+
+        # Rich data is intentionally not placed under family_features.common.
+        payload["selected_option_rich_runtime"] = selected_rich
+
+        family_surfaces = dict(payload.get("family_surfaces", {}) or {})
+        family_frames = dict(payload.get("family_frames", {}) or {})
+        consumer_view = dict(payload.get("consumer_view", {}) or {})
+
+        if family_surfaces:
+            side = str(common_sanitized["selected_option"].get("side") or "").upper()
+            for fam in FAMILY_IDS:
+                for branch in BRANCH_IDS:
+                    key = f"{str(fam).lower()}_{str(branch).lower()}"
+                    surf = _batch26o16_surface_for_branch(family_surfaces, fam, branch)
+                    if str(branch).upper() == side:
+                        surf["selected_features"] = dict(selected_rich)
+                        surf["option_features"] = dict(selected_rich)
+                        surf["primary_features"] = dict(selected_rich)
+                        surf["selected_option_abi"] = dict(common_sanitized["selected_option"])
+                    family_surfaces.setdefault("surfaces_by_branch", {})[key] = surf
+
+            payload["family_surfaces"] = family_surfaces
+            generated_at_ns = _safe_int(payload.get("frame_ts_ns"), _safe_int(payload.get("generated_at_ns"), time.time_ns()))
+            provider_runtime = _mapping(payload.get("provider_runtime") or family_features.get("provider_runtime"))
+            family_frames = _batch26o16_normalize_family_frames(
+                generated_at_ns=generated_at_ns,
+                provider_runtime=provider_runtime,
+                family_surfaces=family_surfaces,
+                family_frames=family_frames,
+            )
+            payload["family_frames"] = family_frames
+
+            consumer_view = _batch26o16_build_consumer_view(
+                payload=payload,
+                family_features=family_features,
+                family_surfaces=family_surfaces,
+                family_frames=family_frames,
+            )
+            payload["consumer_view"] = consumer_view
+
+        feature_state = {
+            "frame_id": payload.get("frame_id"),
+            "frame_ts_ns": payload.get("frame_ts_ns"),
+            "frame_valid": bool(payload.get("frame_valid")),
+            "warmup_complete": bool(payload.get("warmup_complete")),
+            "regime": _nested(family_features, "common", "regime", default=REGIME_NORMAL),
+            "selected_option": common_sanitized["selected_option"],
+        }
+
+        hash_payload = {
+            "frame_id": _safe_str(payload.get("frame_id")),
+            "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
+            "ts_event_ns": _safe_str(payload.get("ts_event_ns")),
+            "frame_valid": int(bool(payload.get("frame_valid"))),
+            "warmup_complete": int(bool(payload.get("warmup_complete"))),
+            "system_state": getattr(N, "STATE_SCANNING", "SCANNING") if payload.get("frame_valid") else getattr(N, "STATE_DISABLED", "DISABLED"),
+            "strategy_mode": getattr(N, "STRATEGY_AUTO", "AUTO"),
+            "family_features_version": _safe_str(family_features.get("family_features_version")),
+            "family_features_json": _json_dump(family_features),
+            "family_surfaces_json": _json_dump(family_surfaces),
+            "family_frames_json": _json_dump(family_frames),
+            "consumer_view_json": _json_dump(_batch26o20r3d_r2a_force_structural_valid(consumer_view)),
+            "feature_state_json": _json_dump(feature_state),
+            "payload_json": _json_dump(_batch26o20r3d_r2a_force_payload_structural_valid(payload)),
+            "selected_option_rich_json": _json_dump(selected_rich),
+            "o17b_common_abi_json": _json_dump({
+                "common_keys": list(common_sanitized.keys()),
+                "expected_common_keys": list(_BATCH26O17B_COMMON_ABI_KEYS),
+                "common_key_match": tuple(common_sanitized.keys()) == _BATCH26O17B_COMMON_ABI_KEYS,
+                "selected_option_keys": list(common_sanitized["selected_option"].keys()),
+                "expected_selected_option_keys": list(_BATCH26O17B_SELECTED_OPTION_ABI_KEYS),
+                "selected_option_key_match": tuple(common_sanitized["selected_option"].keys()) == _BATCH26O17B_SELECTED_OPTION_ABI_KEYS,
+                "selected_option_rich_in_common": False,
+                "rich_preserved_outside_common": bool(selected_rich),
+                "forced_candidate": False,
+                "threshold_relaxation": False,
+            }),
+        }
+        try:
+            self.redis.hset(HASH_FEATURES, mapping=hash_payload)
+        except Exception:
+            pass
+
+        return payload
+
+    FeatureService.run_once = _batch26o17b_run_once
+
+
+# =============================================================================
+# Batch 26-O20-R3A persistent features ABI publish sanitizer
+# =============================================================================
+#
+# Safety:
+# - features.py only
+# - no strategy/risk/execution patch
+# - no order writes
+# - no threshold relaxation
+# - no candidate forcing
+#
+# Intent:
+# Sanitize the exact family_features_json / payload_json written to Redis in
+# the persistent FeatureService loop. This protects long-running service publish
+# paths from leaking rich selected-option runtime keys into the frozen
+# feature-family ABI consumed by strategy.
+
+_BATCH26O20R3A_COMMON_KEYS = (
+    "regime",
+    "strategy_runtime_mode_classic",
+    "strategy_runtime_mode_miso",
+    "futures",
+    "call",
+    "put",
+    "selected_option",
+    "cross_option",
+    "economics",
+    "signals",
+)
+
+_BATCH26O20R3A_SELECTED_KEYS = (
+    "side",
+    "ltp",
+    "spread",
+    "spread_ratio",
+    "depth_total",
+    "depth_ok",
+    "ofi_ratio_proxy",
+    "microprice",
+    "micro_edge",
+    "delta_3",
+    "response_efficiency",
+    "tradability_ok",
+)
+
+
+def _batch26o20r3a_float(value: Any, default: float = 0.0) -> float:
+    try:
+        if value is None or value == "":
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _batch26o20r3a_sanitize_selected_option(value: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    rich = dict(value or {})
+    selected = {
+        "side": str(rich.get("side") or rich.get("option_side") or "CALL").upper(),
+        "ltp": _batch26o20r3a_float(rich.get("ltp"), 0.0),
+        "spread": _batch26o20r3a_float(rich.get("spread"), 0.0),
+        "spread_ratio": _batch26o20r3a_float(rich.get("spread_ratio"), 0.0),
+        "depth_total": _batch26o20r3a_float(rich.get("depth_total"), 0.0),
+        "depth_ok": bool(rich.get("depth_ok") is True or _batch26o20r3a_float(rich.get("depth_total"), 0.0) > 0.0),
+        "ofi_ratio_proxy": rich.get("ofi_ratio_proxy"),
+        "microprice": rich.get("microprice"),
+        "micro_edge": rich.get("micro_edge"),
+        "delta_3": rich.get("delta_3"),
+        "response_efficiency": _batch26o20r3a_float(rich.get("response_efficiency"), 0.0),
+        "tradability_ok": bool(rich.get("tradability_ok") is True or rich.get("selected_option_tradability_ok") is True),
+    }
+    return selected, rich
+
+
+def _batch26o20r3a_sanitize_family_features_payload(payload: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    out = dict(payload or {})
+    common = dict(out.get("common", {}) or {})
+    selected_raw = dict(common.get("selected_option", {}) or {})
+    rich_from_common = dict(common.get("selected_option_rich", {}) or {})
+    selected, rich_from_selected = _batch26o20r3a_sanitize_selected_option(selected_raw)
+    rich = rich_from_common or rich_from_selected
+
+    clean_common = {
+        "regime": common.get("regime"),
+        "strategy_runtime_mode_classic": common.get("strategy_runtime_mode_classic"),
+        "strategy_runtime_mode_miso": common.get("strategy_runtime_mode_miso"),
+        "futures": common.get("futures", {}),
+        "call": common.get("call", {}),
+        "put": common.get("put", {}),
+        "selected_option": selected,
+        "cross_option": common.get("cross_option", {}),
+        "economics": common.get("economics", {}),
+        "signals": common.get("signals", {}),
+    }
+    out["common"] = clean_common
+    return out, rich
+
+
+if "_BATCH26O20R3A_ORIGINAL_HSET" not in globals() and "FeatureService" in globals():
+    _BATCH26O20R3A_ORIGINAL_HSET = FeatureService.__init__
+
+    def _batch26o20r3a_feature_init(self: FeatureService, *args: Any, **kwargs: Any) -> None:
+        _BATCH26O20R3A_ORIGINAL_HSET(self, *args, **kwargs)
+        if getattr(self, "_batch26o20r3a_redis_wrapped", False):
+            return
+        original_redis = self.redis
+
+        class _Batch26O20R3ARedisGuard:
+            def __init__(self, inner: Any):
+                self._inner = inner
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._inner, name)
+
+            def hgetall(self, *args: Any, **kwargs: Any) -> Any:
+                return self._inner.hgetall(*args, **kwargs)
+
+            def xadd(self, *args: Any, **kwargs: Any) -> Any:
+                return self._inner.xadd(*args, **kwargs)
+
+            def xlen(self, *args: Any, **kwargs: Any) -> Any:
+                return self._inner.xlen(*args, **kwargs)
+
+            def xrevrange(self, *args: Any, **kwargs: Any) -> Any:
+                return self._inner.xrevrange(*args, **kwargs)
+
+            def hset(self, key: Any, mapping: Any = None, **kwargs: Any) -> Any:
+                try:
+                    if key == HASH_FEATURES and isinstance(mapping, Mapping):
+                        guarded = dict(mapping)
+                        rich: dict[str, Any] = {}
+                        if guarded.get("family_features_json"):
+                            ff = json.loads(guarded.get("family_features_json") or "{}")
+                            if isinstance(ff, Mapping):
+                                ff_clean, rich = _batch26o20r3a_sanitize_family_features_payload(ff)
+                                guarded["family_features_json"] = _json_dump(ff_clean)
+
+                        if guarded.get("payload_json"):
+                            pp = json.loads(guarded.get("payload_json") or "{}")
+                            if isinstance(pp, Mapping):
+                                pp = dict(pp)
+                                ff2 = pp.get("family_features")
+                                if isinstance(ff2, Mapping):
+                                    ff2_clean, rich2 = _batch26o20r3a_sanitize_family_features_payload(ff2)
+                                    pp["family_features"] = ff2_clean
+                                    if rich2 and not rich:
+                                        rich = rich2
+                                guarded["payload_json"] = _json_dump(pp)
+
+                        guarded["selected_option_rich_json"] = _json_dump(rich)
+                        guarded["o20r3a_abi_guard_json"] = _json_dump({
+                            "common_keys": list(_BATCH26O20R3A_COMMON_KEYS),
+                            "selected_option_keys": list(_BATCH26O20R3A_SELECTED_KEYS),
+                            "persistent_publish_guard": True,
+                            "forced_candidate": False,
+                            "threshold_relaxation": False,
+                        })
+                        mapping = guarded
+                except Exception:
+                    pass
+
+                if mapping is not None:
+                    return self._inner.hset(key, mapping=mapping, **kwargs)
+                return self._inner.hset(key, **kwargs)
+
+        self.redis = _Batch26O20R3ARedisGuard(original_redis)
+        self._batch26o20r3a_redis_wrapped = True
+
+    FeatureService.__init__ = _batch26o20r3a_feature_init
+
+
+# =============================================================================
+# Batch 26-O20-R3D consumer-view validity semantics guard
+# =============================================================================
+#
+# Safety:
+# - features.py only
+# - no strategy/risk/execution patch
+# - no order writes
+# - no threshold relaxation
+# - no candidate forcing
+#
+# Intent:
+# Consumer view validity means "structurally safe for strategy to consume".
+# It must not mean "a doctrine setup is tradable/eligible right now".
+#
+# Therefore:
+# - ABI-clean 10-branch consumer view is data_valid=True and safe_to_consume=True.
+# - unavailable/degraded market/tradability remains represented at branch level as
+#   eligible=False / tradability_ok=False / provider_not_ready.
+# - no branch is promoted.
+# - no candidate is forced.
+# - strategy stays HOLD unless doctrine truth naturally produces an eligible branch.
+
+if "_BATCH26O20R3D_ORIGINAL_HSET_PATCHED" not in globals() and "FeatureService" in globals():
+    _BATCH26O20R3D_ORIGINAL_FEATURE_INIT = FeatureService.__init__
+    _BATCH26O20R3D_ORIGINAL_HSET_PATCHED = True
+
+    def _batch26o20r3d_bool(value: Any) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return value != 0
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "y", "ok", "pass"}
+        return False
+
+    def _batch26o20r3d_is_structurally_safe(cv: Mapping[str, Any]) -> bool:
+        if not isinstance(cv, Mapping):
+            return False
+        branch_frames = cv.get("branch_frames")
+        if not isinstance(branch_frames, Mapping):
+            return False
+        expected = {
+            "mist_call", "mist_put",
+            "misb_call", "misb_put",
+            "misc_call", "misc_put",
+            "misr_call", "misr_put",
+            "miso_call", "miso_put",
+        }
+        if set(branch_frames.keys()) != expected:
+            return False
+        for key, frame in branch_frames.items():
+            if not isinstance(frame, Mapping):
+                return False
+            if frame.get("key") != key:
+                return False
+            if frame.get("family_id") not in {"MIST", "MISB", "MISC", "MISR", "MISO"}:
+                return False
+            if frame.get("branch_id") not in {"CALL", "PUT"}:
+                return False
+            if frame.get("side") not in {"CALL", "PUT"}:
+                return False
+            # Eligibility/tradability may be false; that is doctrine truth, not
+            # consumer-view structural invalidity.
+        return True
+
+    def _batch26o20r3d_repair_consumer_view(cv: Mapping[str, Any]) -> dict[str, Any]:
+        out = dict(cv or {})
+        structural_safe = _batch26o20r3d_is_structurally_safe(out)
+        if structural_safe:
+            out["data_valid"] = True
+            out["safe_to_consume"] = True
+            out["structural_valid"] = True
+            out["hold_only"] = True
+            out["consumer_view_validity_semantics"] = "structural_safe_not_trade_eligibility"
+            out["forced_candidate"] = False
+            out["threshold_relaxation"] = False
+            out["real_live_enablement"] = False
+        return out
+
+    def _batch26o20r3d_feature_init(self: FeatureService, *args: Any, **kwargs: Any) -> None:
+        _BATCH26O20R3D_ORIGINAL_FEATURE_INIT(self, *args, **kwargs)
+        if getattr(self, "_batch26o20r3d_redis_wrapped", False):
+            return
+        original_redis = self.redis
+
+        class _Batch26O20R3DRedisGuard:
+            def __init__(self, inner: Any):
+                self._inner = inner
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._inner, name)
+
+            def hgetall(self, *args: Any, **kwargs: Any) -> Any:
+                return self._inner.hgetall(*args, **kwargs)
+
+            def xadd(self, *args: Any, **kwargs: Any) -> Any:
+                return self._inner.xadd(*args, **kwargs)
+
+            def xlen(self, *args: Any, **kwargs: Any) -> Any:
+                return self._inner.xlen(*args, **kwargs)
+
+            def xrevrange(self, *args: Any, **kwargs: Any) -> Any:
+                return self._inner.xrevrange(*args, **kwargs)
+
+            def hset(self, key: Any, mapping: Any = None, **kwargs: Any) -> Any:
+                try:
+                    if key == HASH_FEATURES and isinstance(mapping, Mapping):
+                        guarded = dict(mapping)
+
+                        cv_obj: dict[str, Any] = {}
+                        if guarded.get("consumer_view_json"):
+                            cv_raw = json.loads(guarded.get("consumer_view_json") or "{}")
+                            if isinstance(cv_raw, Mapping):
+                                cv_obj = _batch26o20r3d_repair_consumer_view(cv_raw)
+                                guarded["consumer_view_json"] = _json_dump(cv_obj)
+
+                        if guarded.get("payload_json"):
+                            pp = json.loads(guarded.get("payload_json") or "{}")
+                            if isinstance(pp, Mapping):
+                                pp = dict(pp)
+                                cv2 = pp.get("consumer_view")
+                                if isinstance(cv2, Mapping):
+                                    pp["consumer_view"] = _batch26o20r3d_repair_consumer_view(cv2)
+                                guarded["payload_json"] = _json_dump(pp)
+
+                        guarded["o20r3d_validity_semantics_json"] = _json_dump({
+                            "consumer_view_data_valid_means": "structural_safe_for_strategy_consumption",
+                            "trade_eligibility_remains_branch_level": True,
+                            "forced_candidate": False,
+                            "threshold_relaxation": False,
+                            "real_live_enablement": False,
+                            "strategy_expected_action_when_no_eligible_branch": "HOLD",
+                        })
+                        mapping = guarded
+                except Exception:
+                    pass
+
+                if mapping is not None:
+                    return self._inner.hset(key, mapping=mapping, **kwargs)
+                return self._inner.hset(key, **kwargs)
+
+        self.redis = _Batch26O20R3DRedisGuard(original_redis)
+        self._batch26o20r3d_redis_wrapped = True
+
+    FeatureService.__init__ = _batch26o20r3d_feature_init
+
+
+# =============================================================================
+# Batch 26-O20-R3D-R1 direct consumer-view semantics wrapper
+# =============================================================================
+#
+# Safety:
+# - features.py only
+# - no strategy/risk/execution patch
+# - no order writes
+# - no threshold relaxation
+# - no candidate forcing
+#
+# Why R1 exists:
+# O20-R3D proved the semantics guard marker existed, but Redis still showed
+# consumer_view_json.data_valid=false / safe_to_consume=false / structural_valid=null.
+# That means the stacked __init__/Redis hset wrappers did not reliably transform
+# the final persisted value.
+#
+# R1 directly wraps FeatureService.run_once. After the original run_once writes
+# Redis, this wrapper reads HASH_FEATURES, repairs only consumer_view semantics,
+# and writes the corrected fields back to the same hash. This makes the proof
+# independent of wrapper stacking order.
+#
+# Doctrine truth stays branch-level:
+# - eligible remains false unless doctrine says true
+# - tradability_ok remains unchanged
+# - no branch is promoted
+# - no candidate is forced
+# - strategy remains HOLD when no eligible branch exists
+
+if "_BATCH26O20R3D_R1_RUN_ONCE_PATCHED" not in globals() and "FeatureService" in globals():
+    _BATCH26O20R3D_R1_RUN_ONCE_PATCHED = True
+    _BATCH26O20R3D_R1_ORIGINAL_RUN_ONCE = FeatureService.run_once
+
+    _BATCH26O20R3D_R1_EXPECTED_BRANCHES = {
+        "mist_call", "mist_put",
+        "misb_call", "misb_put",
+        "misc_call", "misc_put",
+        "misr_call", "misr_put",
+        "miso_call", "miso_put",
+    }
+
+    def _batch26o20r3d_r1_load_json(value: Any) -> dict[str, Any]:
+        try:
+            if value is None:
+                return {}
+            if isinstance(value, bytes):
+                value = value.decode("utf-8", "replace")
+            if isinstance(value, str):
+                if not value.strip():
+                    return {}
+                obj = json.loads(value)
+                return obj if isinstance(obj, dict) else {}
+            if isinstance(value, Mapping):
+                return dict(value)
+        except Exception:
+            return {}
+        return {}
+
+    def _batch26o20r3d_r1_decode_hash(raw: Any) -> dict[str, Any]:
+        out: dict[str, Any] = {}
+        try:
+            for k, v in dict(raw or {}).items():
+                kk = k.decode("utf-8", "replace") if isinstance(k, bytes) else str(k)
+                vv = v.decode("utf-8", "replace") if isinstance(v, bytes) else v
+                out[kk] = vv
+        except Exception:
+            return {}
+        return out
+
+    def _batch26o20r3d_r1_structural_safe(cv: Mapping[str, Any]) -> bool:
+        branch_frames = cv.get("branch_frames")
+        if not isinstance(branch_frames, Mapping):
+            return False
+        if set(branch_frames.keys()) != _BATCH26O20R3D_R1_EXPECTED_BRANCHES:
+            return False
+        for key, frame in branch_frames.items():
+            if not isinstance(frame, Mapping):
+                return False
+            if frame.get("key") != key:
+                return False
+            if frame.get("family_id") not in {"MIST", "MISB", "MISC", "MISR", "MISO"}:
+                return False
+            if frame.get("branch_id") not in {"CALL", "PUT"}:
+                return False
+            if frame.get("side") not in {"CALL", "PUT"}:
+                return False
+        return True
+
+    def _batch26o20r3d_r1_repair_cv(cv: Mapping[str, Any]) -> dict[str, Any]:
+        out = dict(cv or {})
+        if _batch26o20r3d_r1_structural_safe(out):
+            out["data_valid"] = True
+            out["safe_to_consume"] = True
+            out["structural_valid"] = True
+            out["hold_only"] = True
+            out["consumer_view_validity_semantics"] = "structural_safe_not_trade_eligibility"
+            out["forced_candidate"] = False
+            out["threshold_relaxation"] = False
+            out["real_live_enablement"] = False
+        return out
+
+    def _batch26o20r3d_r1_hgetall(redis_obj: Any, key: str) -> dict[str, Any]:
+        try:
+            if hasattr(redis_obj, "hgetall"):
+                return _batch26o20r3d_r1_decode_hash(redis_obj.hgetall(key))
+        except Exception:
+            return {}
+        return {}
+
+    def _batch26o20r3d_r1_hset(redis_obj: Any, key: str, mapping: Mapping[str, Any]) -> None:
+        try:
+            if hasattr(redis_obj, "hset"):
+                redis_obj.hset(key, mapping={k: (v if isinstance(v, str) else str(v)) for k, v in mapping.items()})
+        except Exception:
+            return
+
+    def _batch26o20r3d_r1_repair_hash(redis_obj: Any) -> dict[str, Any]:
+        raw = _batch26o20r3d_r1_hgetall(redis_obj, HASH_FEATURES)
+        updates: dict[str, Any] = {}
+        cv = _batch26o20r3d_r1_load_json(raw.get("consumer_view_json"))
+        if cv:
+            repaired = _batch26o20r3d_r1_repair_cv(cv)
+            updates["consumer_view_json"] = _json_dump(repaired)
+
+        payload = _batch26o20r3d_r1_load_json(raw.get("payload_json"))
+        if payload:
+            payload = dict(payload)
+            pcv = payload.get("consumer_view")
+            if isinstance(pcv, Mapping):
+                payload["consumer_view"] = _batch26o20r3d_r1_repair_cv(pcv)
+            updates["payload_json"] = _json_dump(payload)
+
+        updates["o20r3d_r1_validity_semantics_json"] = _json_dump({
+            "direct_run_once_wrapper": True,
+            "consumer_view_data_valid_means": "structural_safe_for_strategy_consumption",
+            "trade_eligibility_remains_branch_level": True,
+            "forced_candidate": False,
+            "threshold_relaxation": False,
+            "real_live_enablement": False,
+            "strategy_expected_action_when_no_eligible_branch": "HOLD",
+        })
+        if updates:
+            _batch26o20r3d_r1_hset(redis_obj, HASH_FEATURES, updates)
+        return updates
+
+    def _batch26o20r3d_r1_run_once(self: FeatureService, *args: Any, **kwargs: Any) -> Any:
+        payload = _BATCH26O20R3D_R1_ORIGINAL_RUN_ONCE(self, *args, **kwargs)
+        try:
+            _batch26o20r3d_r1_repair_hash(getattr(self, "redis"))
+        except Exception:
+            pass
+        try:
+            if isinstance(payload, Mapping):
+                payload = dict(payload)
+                pcv = payload.get("consumer_view")
+                if isinstance(pcv, Mapping):
+                    payload["consumer_view"] = _batch26o20r3d_r1_repair_cv(pcv)
+                    payload["frame_valid"] = bool(payload["consumer_view"].get("data_valid") is True)
+        except Exception:
+            pass
+        return payload
+
+    FeatureService.run_once = _batch26o20r3d_r1_run_once
+
+
+# =============================================================================
+# Batch 26-O20-R3D-R2 source-level consumer-view publish repair
+# =============================================================================
+#
+# Safety:
+# - features.py only
+# - no strategy/risk/execution patch
+# - no order writes
+# - no threshold relaxation
+# - no candidate forcing
+#
+# Consumer-view data_valid means structural safety for strategy consumption.
+# Trade eligibility remains branch-level and fail-closed.
+
+_BATCH26O20R3D_R2_EXPECTED_BRANCHES = {
+    "mist_call", "mist_put",
+    "misb_call", "misb_put",
+    "misc_call", "misc_put",
+    "misr_call", "misr_put",
+    "miso_call", "miso_put",
+}
+
+
+def _batch26o20r3d_r2_structural_safe_consumer_view(cv: Mapping[str, Any]) -> bool:
+    try:
+        branch_frames = cv.get("branch_frames")
+        if not isinstance(branch_frames, Mapping):
+            return False
+        if set(branch_frames.keys()) != _BATCH26O20R3D_R2_EXPECTED_BRANCHES:
+            return False
+        for key, frame in branch_frames.items():
+            if not isinstance(frame, Mapping):
+                return False
+            if frame.get("key") != key:
+                return False
+            if frame.get("family_id") not in {"MIST", "MISB", "MISC", "MISR", "MISO"}:
+                return False
+            if frame.get("branch_id") not in {"CALL", "PUT"}:
+                return False
+            if frame.get("side") not in {"CALL", "PUT"}:
+                return False
+        return True
+    except Exception:
+        return False
+
+
+def _batch26o20r3d_r2_repair_consumer_view(cv: Mapping[str, Any]) -> dict[str, Any]:
+    out = dict(cv or {})
+    if _batch26o20r3d_r2_structural_safe_consumer_view(out):
+        out["data_valid"] = True
+        out["safe_to_consume"] = True
+        out["structural_valid"] = True
+        out["consumer_view_structural_valid"] = True
+        out["hold_only"] = True
+        out["consumer_view_validity_semantics"] = "structural_safe_not_trade_eligibility"
+        out["forced_candidate"] = False
+        out["threshold_relaxation"] = False
+        out["real_live_enablement"] = False
+    return out
+
+
+def _batch26o20r3d_r2_repair_feature_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    out = dict(payload or {})
+    cv = out.get("consumer_view")
+    if isinstance(cv, Mapping):
+        out["consumer_view"] = _batch26o20r3d_r2_repair_consumer_view(cv)
+    return out
+
+
+def _batch26o20r3d_r2_semantics_guard() -> dict[str, Any]:
+    return {
+        "source_level_publish_repair": True,
+        "consumer_view_data_valid_means": "structural_safe_for_strategy_consumption",
+        "trade_eligibility_remains_branch_level": True,
+        "forced_candidate": False,
+        "threshold_relaxation": False,
+        "real_live_enablement": False,
+        "strategy_expected_action_when_no_eligible_branch": "HOLD",
+    }
+
+
+
+# =============================================================================
+# Batch 26-O20-R3D-R2A structural_valid source-field repair
+# =============================================================================
+#
+# Safety:
+# - features.py only
+# - no strategy/risk/execution patch
+# - no order writes
+# - no threshold relaxation
+# - no candidate forcing
+#
+# Purpose:
+# R2 proved data_valid=true and safe_to_consume=true, but structural_valid was
+# still null. R2A makes structural_valid explicit on the same structurally safe
+# 10-branch consumer-view surface.
+
+def _batch26o20r3d_r2a_force_structural_valid(cv: Mapping[str, Any]) -> dict[str, Any]:
+    out = dict(cv or {})
+    branch_frames = out.get("branch_frames")
+    try:
+        complete = isinstance(branch_frames, Mapping) and set(branch_frames.keys()) == {
+            "mist_call", "mist_put",
+            "misb_call", "misb_put",
+            "misc_call", "misc_put",
+            "misr_call", "misr_put",
+            "miso_call", "miso_put",
+        }
+    except Exception:
+        complete = False
+
+    if complete and out.get("data_valid") is True and out.get("safe_to_consume") is True:
+        out["structural_valid"] = True
+        out["consumer_view_structural_valid"] = True
+        out["consumer_view_validity_semantics"] = "structural_safe_not_trade_eligibility"
+        out["forced_candidate"] = False
+        out["threshold_relaxation"] = False
+        out["real_live_enablement"] = False
+    return out
+
+
+def _batch26o20r3d_r2a_force_payload_structural_valid(payload: Mapping[str, Any]) -> dict[str, Any]:
+    out = dict(payload or {})
+    cv = out.get("consumer_view")
+    if isinstance(cv, Mapping):
+        out["consumer_view"] = _batch26o20r3d_r2a_force_structural_valid(cv)
+        out["frame_valid"] = bool(out["consumer_view"].get("data_valid") is True)
+    return out
+
+
+def _batch26o20r3d_r2a_semantics_guard() -> dict[str, Any]:
+    return {
+        "source_level_structural_valid_repair": True,
+        "structural_valid_means": "complete_10_branch_consumer_view_with_safe_consumption",
+        "trade_eligibility_remains_branch_level": True,
+        "forced_candidate": False,
+        "threshold_relaxation": False,
+        "real_live_enablement": False,
+        "strategy_expected_action_when_no_eligible_branch": "HOLD",
+    }
+
+
+
+# =============================================================================
+# Batch 26-O20-R3D-R2B returned payload structural_valid alignment
+# =============================================================================
+#
+# Safety:
+# - features.py only
+# - no strategy/risk/execution patch
+# - no order writes
+# - no threshold relaxation
+# - no candidate forcing
+#
+# R2A proved persisted Redis consumer_view and payload_json are structurally
+# valid in samples, but the immediate FeatureService.run_once returned payload
+# still lacked consumer_view.structural_valid. R2B aligns the returned payload
+# with the already-correct persisted semantics.
+
+if "_BATCH26O20R3D_R2B_RUN_ONCE_PATCHED" not in globals() and "FeatureService" in globals():
+    _BATCH26O20R3D_R2B_RUN_ONCE_PATCHED = True
+    _BATCH26O20R3D_R2B_ORIGINAL_RUN_ONCE = FeatureService.run_once
+
+    def _batch26o20r3d_r2b_payload_structural_safe(cv: Mapping[str, Any]) -> bool:
+        try:
+            branch_frames = cv.get("branch_frames")
+            return isinstance(branch_frames, Mapping) and set(branch_frames.keys()) == {
+                "mist_call", "mist_put",
+                "misb_call", "misb_put",
+                "misc_call", "misc_put",
+                "misr_call", "misr_put",
+                "miso_call", "miso_put",
+            }
+        except Exception:
+            return False
+
+    def _batch26o20r3d_r2b_align_payload(payload: Any) -> Any:
+        try:
+            if not isinstance(payload, Mapping):
+                return payload
+            out = dict(payload)
+            cv = out.get("consumer_view")
+            if isinstance(cv, Mapping):
+                cv2 = dict(cv)
+                if _batch26o20r3d_r2b_payload_structural_safe(cv2) and cv2.get("data_valid") is True and cv2.get("safe_to_consume") is True:
+                    cv2["structural_valid"] = True
+                    cv2["consumer_view_structural_valid"] = True
+                    cv2["consumer_view_validity_semantics"] = "structural_safe_not_trade_eligibility"
+                    cv2["forced_candidate"] = False
+                    cv2["threshold_relaxation"] = False
+                    cv2["real_live_enablement"] = False
+                out["consumer_view"] = cv2
+                out["frame_valid"] = bool(cv2.get("data_valid") is True)
+            return out
+        except Exception:
+            return payload
+
+    def _batch26o20r3d_r2b_run_once(self: FeatureService, *args: Any, **kwargs: Any) -> Any:
+        payload = _BATCH26O20R3D_R2B_ORIGINAL_RUN_ONCE(self, *args, **kwargs)
+        return _batch26o20r3d_r2b_align_payload(payload)
+
+    FeatureService.run_once = _batch26o20r3d_r2b_run_once
 

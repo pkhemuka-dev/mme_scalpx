@@ -1,0 +1,18 @@
+{
+  "broker_io_allowed": false,
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "owner": "RAW unknown-trade lineage trace",
+  "paper_live_enablement_allowed": false,
+  "patch_law": [
+    "Trace only; do not patch producers in RAW-V.",
+    "Use RAW-T / RAW-Q evidence inputs.",
+    "Produce exact source and target maps before next producer patch.",
+    "Keep promotion and paper/live blocked."
+  ],
+  "promotion_allowed_by_raw_v": false,
+  "purpose": "Trace UNKNOWN-family trade rows to source artifacts, producer candidates, missing fields, and exact patch targets.",
+  "redis_live_write_allowed": false,
+  "schema_version": "RAW-V.1"
+}

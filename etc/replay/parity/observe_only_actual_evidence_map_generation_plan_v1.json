@@ -1,0 +1,78 @@
+{
+  "accepted_for": "OBSERVE_ONLY_ACTUAL_EVIDENCE_MAP_GENERATION_ONLY",
+  "contract_hash": "a256eb566c85994846a00ed400339c50fe159fe7b4c0ab69ab6724a14700a089",
+  "created_at_utc": "2026-05-01T11:45:31.959727+00:00",
+  "default_source_candidates": {
+    "dhan_oi_ladder_context_if_available": [
+      "run/proofs/proof_market_session_dhan_oi_ladder_context.json",
+      "run/proofs/proof_market_session_dhan_oi_ladder_context_if_available.json"
+    ],
+    "family_surfaces": [
+      "run/proofs/proof_market_session_family_surfaces.json"
+    ],
+    "feature_payload": [
+      "run/proofs/proof_market_session_feature_payload.json"
+    ],
+    "feed_snapshot": [
+      "run/proofs/proof_market_session_feed_snapshot.json"
+    ],
+    "live_hash_inventory": [
+      "run/proofs/proof_market_session_live_hash_inventory.json"
+    ],
+    "live_stream_inventory": [
+      "run/proofs/proof_market_session_live_stream_inventory.json"
+    ],
+    "no_order_sent": [
+      "run/proofs/proof_market_session_no_order_sent.json"
+    ],
+    "provider_health_snapshot": [
+      "run/proofs/proof_market_session_provider_health_snapshot.json"
+    ],
+    "provider_runtime": [
+      "run/proofs/proof_market_session_provider_runtime.json"
+    ],
+    "selected_option_context": [
+      "run/proofs/proof_market_session_selected_option_context.json"
+    ],
+    "strategy_activation": [
+      "run/proofs/proof_market_session_strategy_activation.json"
+    ]
+  },
+  "generates_candidate_map": true,
+  "not_approved_or_not_proven_boundary": {
+    "full_live_replay_parity": "NOT_PROVEN_IN_28G",
+    "live_trading_readiness": "NOT_APPROVED_IN_28G",
+    "paper_armed_readiness": "NOT_APPROVED_IN_28G",
+    "production_doctrine_revision": "NOT_APPROVED_IN_28G",
+    "production_strategy_improvement_claim": "NOT_PROVEN_IN_28G"
+  },
+  "publishes_final_map_only_when_complete": true,
+  "required_evidence_items": [
+    "provider_runtime",
+    "feed_snapshot",
+    "feature_payload",
+    "family_surfaces",
+    "strategy_activation",
+    "no_order_sent",
+    "live_capture_log",
+    "live_stream_inventory",
+    "live_hash_inventory",
+    "provider_health_snapshot",
+    "selected_option_context",
+    "dhan_oi_ladder_context_if_available"
+  ],
+  "safety_boundary": {
+    "broker_calls_executed": false,
+    "calls_broker_api": false,
+    "execution_arming_created": false,
+    "live_redis_writes_executed": false,
+    "live_trading_approved": false,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "observe_only_actual_evidence_map_generation_v1"
+}

@@ -1,0 +1,15 @@
+{
+  "accepted_for": "OBSERVE_ONLY_MARKET_SESSION_CAPTURE_RUNBOOK_ONLY",
+  "actual_live_market_capture": false,
+  "calls_broker_api": false,
+  "execution_arming_created": false,
+  "expected_verdict": "PASS_OBSERVE_ONLY_MARKET_SESSION_CAPTURE_RUNBOOK_28D",
+  "live_trading_approved": false,
+  "operator_plan_only": true,
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "schema_version": "observe_only_market_session_capture_runbook_contract_v1",
+  "starts_services": false,
+  "writes_live_redis": false
+}

@@ -1,0 +1,47 @@
+{
+  "created_at_utc": "2026-05-02T07:27:29.257383+00:00",
+  "hard_rules": [
+    "Do not reconstruct pnl without entry/exit/qty/cost authority.",
+    "Observed net_pnl_after_costs is not the same as reconstructable lifecycle truth.",
+    "No row mutation in authority resolver.",
+    "RAW output is research-only and cannot enable paper/live."
+  ],
+  "optional_observed_fields": [
+    "net_pnl",
+    "net_pnl_after_costs"
+  ],
+  "pnl_lifecycle_authorized": false,
+  "pnl_reconstruction_derivable_now": false,
+  "required_declaration_fields": [
+    "trade_lifecycle_model_id",
+    "trade_lifecycle_model_version",
+    "authorization_status",
+    "authorized_by",
+    "authorized_at_utc",
+    "source_of_truth_doc_or_config",
+    "entry_price_source",
+    "exit_price_source",
+    "qty_source",
+    "gross_pnl_formula",
+    "costs_source",
+    "exit_reason_source",
+    "entry_ts_source",
+    "exit_ts_source",
+    "net_pnl_after_costs_interpretation",
+    "backfill_allowed",
+    "missing_context_behavior",
+    "non_promotion_statement"
+  ],
+  "required_fields_for_reconstruction": [
+    "entry_price",
+    "exit_price",
+    "qty",
+    "gross_pnl",
+    "costs",
+    "exit_reason",
+    "entry_ts",
+    "exit_ts"
+  ],
+  "schema_version": "raw_trade_lifecycle_pnl_required_surface_contract_v1",
+  "status": "REQUIRED_TRADE_LIFECYCLE_SURFACE_ONLY"
+}

@@ -1,0 +1,33 @@
+{
+  "accepted_for": "OFFLINE_REPLAY_TOPOLOGY_PLAN_FINGERPRINT_ACTUAL_AUTHORITY_REPAIR_ONLY",
+  "allowed_file_change": null,
+  "authority_location": {
+    "error": "OfflineReplayTopologyPlan not exported from topology module",
+    "export_class_module": null,
+    "export_class_present": false,
+    "export_class_qualname": null,
+    "module": "app.mme_scalpx.replay.topology",
+    "module_import_ok": true,
+    "source_file": null,
+    "source_file_under_replay": false
+  },
+  "batch": "29AI-R2",
+  "generated_at_utc": "2026-05-02T06:40:03.662641+00:00",
+  "repair_scope": null,
+  "runtime_gap_kind": "OFFLINE_REPLAY_TOPOLOGY_PLAN_TOPOLOGY_FINGERPRINT_ATTRIBUTE_GAP",
+  "safety": {
+    "batch": "29AI-R2",
+    "broker_calls_executed": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "patch_scope": "actual source file defining OfflineReplayTopologyPlan only",
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "topology_fingerprint_actual_authority_repair_29ai_r2_v1"
+}

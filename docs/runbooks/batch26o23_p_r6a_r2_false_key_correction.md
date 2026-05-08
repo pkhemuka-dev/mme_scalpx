@@ -1,0 +1,21 @@
+# 26-O23-P-R6A-R2 — R6A false-key correction / classification freeze
+
+- generated_at_utc: `2026-05-08T07:22:19.745131+00:00`
+- final_verdict: `FAIL_O23_P_R6A_R2_FALSE_KEY_CORRECTION_NOT_PROVEN`
+- false_keys: `['classification_supported', 'manifest_written', 'milestone_written', 'proof_written', 'r6_failure_acceptable', 'runbook_written', 'summary_written']`
+- r6_verdict: `FAIL_O23_P_R6_FAMILY_PAYLOAD_PUBLICATION_PATCH_NOT_PROVEN`
+- r6_false_keys: `['patch_applied_or_already_present']`
+- r6_patch_reason: `None`
+- r6_patch_blocked: `None`
+- r6a_verdict: `FAIL_O23_P_R6A_PATCH_PRECONDITION_CLASSIFIER_NOT_PROVEN`
+- r6a_false_keys: `['latest_r6_expected_precondition_failure']`
+- r6a_failure_classification: `R6_PRECONDITION_TOO_STRICT_OR_WRONG_ACTIVE_FEATURE_PUBLISHER`
+- corrected_failure_classification: `R6A_R2_CLASSIFICATION_NOT_PROVEN`
+- classification_supported: `False`
+- source_patch_applied: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- no service start / no paper / no real-live / no broker call / no order write: `True`
+- next_recommended_batch: `Inspect R6A-R2 false_keys/source recheck; do not patch yet.`

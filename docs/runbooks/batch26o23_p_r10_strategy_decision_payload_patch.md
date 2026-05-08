@@ -1,0 +1,22 @@
+# 26-O23-P-R10 — strategy decision-stream canonical family payload patch
+
+- generated_at_utc: `2026-05-08T09:48:59.032996+00:00`
+- final_verdict: `FAIL_O23_P_R10_STRATEGY_DECISION_PAYLOAD_PATCH_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written', 'summary_written']`
+- latest_r9: `run/proofs/proof_batch26o23_p_r9_decision_payload_source_audit_latest.json`
+- r9_ready: `True`
+- patch_allowed: `True`
+- patch_applied: `True`
+- already_present: `False`
+- patch_blocked: `False`
+- patch_reason: `inserted decision-stream canonical family payload patch from activation_report_json`
+- field_var: `fields`
+- patched_file: `app/mme_scalpx/services/strategy.py`
+- compile_ok: `True`
+- import_ok: `True`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- no service start / no paper / no real-live / no broker call / no order write: `True`
+- next_recommended_batch: `Inspect R10 false_keys/source inspection; do not run services until patch is proven.`

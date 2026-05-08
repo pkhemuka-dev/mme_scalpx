@@ -1,0 +1,31 @@
+{
+  "accepted_for": "BOUNDED_LIVE_OBSERVE_SAFETY_BOUNDARY_LOCATOR_AND_REQUIRED_SURFACE_CONTRACT_ONLY",
+  "batch": "29AO-R2",
+  "boundary_locator": "run/replay/parity/batch29ao_r2_bounded_live_observe_safety_boundary_locator_20260502_123344/live_observe_safety_boundary_locator_29ao_r2.json",
+  "boundary_matrix_csv": "run/replay/parity/batch29ao_r2_bounded_live_observe_safety_boundary_locator_20260502_123344/live_observe_safety_boundary_matrix_29ao_r2.csv",
+  "boundary_resolution": "run/replay/parity/batch29ao_r2_bounded_live_observe_safety_boundary_locator_20260502_123344/live_observe_safety_boundary_resolution_29ao_r2.json",
+  "generated_at_utc": "2026-05-02T07:03:44.651748+00:00",
+  "required_surface_contract": "etc/replay/parity/live_observe_safety_boundary_required_surface_29ao_r2.json",
+  "safety": {
+    "audit_only": true,
+    "batch": "29AO-R2",
+    "bounded_scan": true,
+    "bounded_tool_written": false,
+    "broker_calls_executed": false,
+    "code_patch_applied": false,
+    "comparison_execution_performed": false,
+    "contract_only": true,
+    "live_trading_approved": false,
+    "locator_only": true,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "replay_rerun_performed": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "live_observe_safety_boundary_locator_29ao_r2_v1"
+}

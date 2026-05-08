@@ -1,0 +1,528 @@
+{
+  "broker_calls_allowed": false,
+  "execution_arming_created": false,
+  "experiment_types": [
+    "baseline_vs_shadow",
+    "parameter_sweep",
+    "threshold_sweep",
+    "family_enable_disable",
+    "side_only",
+    "scenario_matrix_comparison"
+  ],
+  "live_redis_writes_allowed": false,
+  "live_trading_approved": false,
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "profile_count": 6,
+  "profiles": [
+    {
+      "baseline": {
+        "label": "baseline_full_fill",
+        "scenario_ids": [
+          "full_fill"
+        ]
+      },
+      "broker_calls_allowed": false,
+      "dates": [
+        "2026-05-01"
+      ],
+      "description": "Compare a baseline full-fill replay against full scenario-matrix shadow replay.",
+      "execution_arming_created": false,
+      "experiment_type": "baseline_vs_shadow",
+      "explicit_replay_only": true,
+      "family_filter": [
+        "MIST",
+        "MISB",
+        "MISC",
+        "MISR",
+        "MISO"
+      ],
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "parameter_overrides": {},
+      "production_doctrine_changed": false,
+      "profile_id": "baseline_vs_shadow",
+      "scenario_ids": [
+        "missing_futures_feed",
+        "missing_selected_option_feed",
+        "stale_futures_feed",
+        "stale_selected_option_feed",
+        "dhan_context_unavailable",
+        "dhan_context_stale",
+        "oi_ladder_missing",
+        "oi_wall_shock",
+        "wide_spread",
+        "low_depth",
+        "high_slippage",
+        "packet_gaps",
+        "timestamp_skew",
+        "event_burst",
+        "liquidity_shock",
+        "forced_risk_veto",
+        "full_fill",
+        "partial_fill",
+        "no_fill",
+        "rejected",
+        "forced_flatten",
+        "session_close"
+      ],
+      "schema_version": "replay_experiment_workstation_v1",
+      "side_filter": [
+        "CALL",
+        "PUT"
+      ],
+      "threshold_overrides": {},
+      "variants": [
+        {
+          "label": "shadow_scenario_matrix",
+          "scenario_ids": [
+            "missing_futures_feed",
+            "missing_selected_option_feed",
+            "stale_futures_feed",
+            "stale_selected_option_feed",
+            "dhan_context_unavailable",
+            "dhan_context_stale",
+            "oi_ladder_missing",
+            "oi_wall_shock",
+            "wide_spread",
+            "low_depth",
+            "high_slippage",
+            "packet_gaps",
+            "timestamp_skew",
+            "event_burst",
+            "liquidity_shock",
+            "forced_risk_veto",
+            "full_fill",
+            "partial_fill",
+            "no_fill",
+            "rejected",
+            "forced_flatten",
+            "session_close"
+          ]
+        }
+      ]
+    },
+    {
+      "baseline": {
+        "label": "baseline_full_fill",
+        "scenario_ids": [
+          "full_fill"
+        ]
+      },
+      "broker_calls_allowed": false,
+      "dates": [
+        "2026-05-01"
+      ],
+      "description": "Replay-only parameter sweep shape for non-production research.",
+      "execution_arming_created": false,
+      "experiment_type": "parameter_sweep",
+      "explicit_replay_only": true,
+      "family_filter": [
+        "MIST",
+        "MISB",
+        "MISC",
+        "MISR",
+        "MISO"
+      ],
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "parameter_overrides": {
+        "sweep_field": "slippage_points",
+        "values": [
+          0.5,
+          2.0,
+          5.0
+        ]
+      },
+      "production_doctrine_changed": false,
+      "profile_id": "parameter_sweep",
+      "scenario_ids": [
+        "full_fill",
+        "high_slippage"
+      ],
+      "schema_version": "replay_experiment_workstation_v1",
+      "side_filter": [
+        "CALL",
+        "PUT"
+      ],
+      "threshold_overrides": {},
+      "variants": [
+        {
+          "label": "slippage_0_5",
+          "parameter_overrides": {
+            "slippage_points": 0.5
+          },
+          "scenario_ids": [
+            "full_fill"
+          ]
+        },
+        {
+          "label": "slippage_2_0",
+          "parameter_overrides": {
+            "slippage_points": 2.0
+          },
+          "scenario_ids": [
+            "high_slippage"
+          ]
+        },
+        {
+          "label": "slippage_5_0",
+          "parameter_overrides": {
+            "slippage_points": 5.0
+          },
+          "scenario_ids": [
+            "high_slippage"
+          ]
+        }
+      ]
+    },
+    {
+      "baseline": {
+        "label": "baseline_full_fill",
+        "scenario_ids": [
+          "full_fill"
+        ]
+      },
+      "broker_calls_allowed": false,
+      "dates": [
+        "2026-05-01"
+      ],
+      "description": "Replay-only threshold sweep shape for non-production research.",
+      "execution_arming_created": false,
+      "experiment_type": "threshold_sweep",
+      "explicit_replay_only": true,
+      "family_filter": [
+        "MIST",
+        "MISB",
+        "MISC",
+        "MISR",
+        "MISO"
+      ],
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "parameter_overrides": {},
+      "production_doctrine_changed": false,
+      "profile_id": "threshold_sweep",
+      "scenario_ids": [
+        "forced_risk_veto",
+        "full_fill",
+        "no_fill"
+      ],
+      "schema_version": "replay_experiment_workstation_v1",
+      "side_filter": [
+        "CALL",
+        "PUT"
+      ],
+      "threshold_overrides": {
+        "sweep_field": "risk_score_min",
+        "values": [
+          0.25,
+          0.5,
+          0.75
+        ]
+      },
+      "variants": [
+        {
+          "label": "risk_threshold_low",
+          "scenario_ids": [
+            "forced_risk_veto"
+          ],
+          "threshold_overrides": {
+            "risk_score_min": 0.25
+          }
+        },
+        {
+          "label": "risk_threshold_mid",
+          "scenario_ids": [
+            "full_fill"
+          ],
+          "threshold_overrides": {
+            "risk_score_min": 0.5
+          }
+        },
+        {
+          "label": "risk_threshold_high",
+          "scenario_ids": [
+            "no_fill"
+          ],
+          "threshold_overrides": {
+            "risk_score_min": 0.75
+          }
+        }
+      ]
+    },
+    {
+      "baseline": {
+        "family_filter": [
+          "MIST",
+          "MISB",
+          "MISC",
+          "MISR",
+          "MISO"
+        ],
+        "label": "all_families",
+        "scenario_ids": [
+          "full_fill"
+        ]
+      },
+      "broker_calls_allowed": false,
+      "dates": [
+        "2026-05-01"
+      ],
+      "description": "Replay-only family enable/disable comparison shape.",
+      "execution_arming_created": false,
+      "experiment_type": "family_enable_disable",
+      "explicit_replay_only": true,
+      "family_filter": [
+        "MIST",
+        "MISB",
+        "MISC",
+        "MISR",
+        "MISO"
+      ],
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "parameter_overrides": {},
+      "production_doctrine_changed": false,
+      "profile_id": "family_enable_disable",
+      "scenario_ids": [
+        "full_fill"
+      ],
+      "schema_version": "replay_experiment_workstation_v1",
+      "side_filter": [
+        "CALL",
+        "PUT"
+      ],
+      "threshold_overrides": {},
+      "variants": [
+        {
+          "family_filter": [
+            "MIST"
+          ],
+          "label": "only_mist",
+          "scenario_ids": [
+            "full_fill"
+          ]
+        },
+        {
+          "family_filter": [
+            "MISB"
+          ],
+          "label": "only_misb",
+          "scenario_ids": [
+            "full_fill"
+          ]
+        },
+        {
+          "family_filter": [
+            "MISC"
+          ],
+          "label": "only_misc",
+          "scenario_ids": [
+            "full_fill"
+          ]
+        },
+        {
+          "family_filter": [
+            "MISR"
+          ],
+          "label": "only_misr",
+          "scenario_ids": [
+            "full_fill"
+          ]
+        },
+        {
+          "family_filter": [
+            "MISO"
+          ],
+          "label": "only_miso",
+          "scenario_ids": [
+            "full_fill"
+          ]
+        }
+      ]
+    },
+    {
+      "baseline": {
+        "label": "both_sides",
+        "scenario_ids": [
+          "full_fill"
+        ],
+        "side_filter": [
+          "CALL",
+          "PUT"
+        ]
+      },
+      "broker_calls_allowed": false,
+      "dates": [
+        "2026-05-01"
+      ],
+      "description": "Replay-only CALL-only and PUT-only comparison shape.",
+      "execution_arming_created": false,
+      "experiment_type": "side_only",
+      "explicit_replay_only": true,
+      "family_filter": [
+        "MIST",
+        "MISB",
+        "MISC",
+        "MISR",
+        "MISO"
+      ],
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "parameter_overrides": {},
+      "production_doctrine_changed": false,
+      "profile_id": "side_only",
+      "scenario_ids": [
+        "full_fill"
+      ],
+      "schema_version": "replay_experiment_workstation_v1",
+      "side_filter": [
+        "CALL",
+        "PUT"
+      ],
+      "threshold_overrides": {},
+      "variants": [
+        {
+          "label": "call_only",
+          "scenario_ids": [
+            "full_fill"
+          ],
+          "side_filter": [
+            "CALL"
+          ]
+        },
+        {
+          "label": "put_only",
+          "scenario_ids": [
+            "full_fill"
+          ],
+          "side_filter": [
+            "PUT"
+          ]
+        }
+      ]
+    },
+    {
+      "baseline": {
+        "label": "baseline_full_fill",
+        "scenario_ids": [
+          "full_fill"
+        ]
+      },
+      "broker_calls_allowed": false,
+      "dates": [
+        "2026-05-01"
+      ],
+      "description": "Replay-only comparison across all scenario profiles.",
+      "execution_arming_created": false,
+      "experiment_type": "scenario_matrix_comparison",
+      "explicit_replay_only": true,
+      "family_filter": [
+        "MIST",
+        "MISB",
+        "MISC",
+        "MISR",
+        "MISO"
+      ],
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "parameter_overrides": {},
+      "production_doctrine_changed": false,
+      "profile_id": "scenario_matrix_comparison",
+      "scenario_ids": [
+        "missing_futures_feed",
+        "missing_selected_option_feed",
+        "stale_futures_feed",
+        "stale_selected_option_feed",
+        "dhan_context_unavailable",
+        "dhan_context_stale",
+        "oi_ladder_missing",
+        "oi_wall_shock",
+        "wide_spread",
+        "low_depth",
+        "high_slippage",
+        "packet_gaps",
+        "timestamp_skew",
+        "event_burst",
+        "liquidity_shock",
+        "forced_risk_veto",
+        "full_fill",
+        "partial_fill",
+        "no_fill",
+        "rejected",
+        "forced_flatten",
+        "session_close"
+      ],
+      "schema_version": "replay_experiment_workstation_v1",
+      "side_filter": [
+        "CALL",
+        "PUT"
+      ],
+      "threshold_overrides": {},
+      "variants": [
+        {
+          "label": "all_scenarios",
+          "scenario_ids": [
+            "missing_futures_feed",
+            "missing_selected_option_feed",
+            "stale_futures_feed",
+            "stale_selected_option_feed",
+            "dhan_context_unavailable",
+            "dhan_context_stale",
+            "oi_ladder_missing",
+            "oi_wall_shock",
+            "wide_spread",
+            "low_depth",
+            "high_slippage",
+            "packet_gaps",
+            "timestamp_skew",
+            "event_burst",
+            "liquidity_shock",
+            "forced_risk_veto",
+            "full_fill",
+            "partial_fill",
+            "no_fill",
+            "rejected",
+            "forced_flatten",
+            "session_close"
+          ]
+        },
+        {
+          "label": "liquidity_scenarios",
+          "scenario_ids": [
+            "wide_spread",
+            "low_depth",
+            "liquidity_shock"
+          ]
+        },
+        {
+          "label": "provider_scenarios",
+          "scenario_ids": [
+            "dhan_context_unavailable",
+            "dhan_context_stale",
+            "oi_ladder_missing"
+          ]
+        }
+      ]
+    }
+  ],
+  "required_exports": [
+    "00_experiment_manifest.json",
+    "01_experiment_summary.json",
+    "02_variant_results.json",
+    "03_differential_summary.json",
+    "04_parameter_sweep_summary.json",
+    "05_threshold_sweep_summary.json",
+    "06_family_side_summary.json",
+    "07_experiment_reproducibility.json",
+    "08_experiment_comparison_export.json"
+  ],
+  "schema_version": "replay_experiment_profile_manifest_v1"
+}

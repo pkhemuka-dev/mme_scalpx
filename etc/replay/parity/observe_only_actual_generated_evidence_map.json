@@ -1,0 +1,14 @@
+{
+  "dhan_oi_ladder_context_if_available": "run/proofs/proof_market_session_dhan_oi_ladder_context.json",
+  "family_surfaces": "run/proofs/proof_market_session_family_surfaces.json",
+  "feature_payload": "run/proofs/proof_market_session_feature_payload.json",
+  "feed_snapshot": "run/proofs/proof_market_session_feed_snapshot.json",
+  "live_capture_log": "run/live_capture/pstrategy_20260430_094557.log",
+  "live_hash_inventory": "run/proofs/proof_market_session_live_hash_inventory.json",
+  "live_stream_inventory": "run/proofs/proof_market_session_live_stream_inventory.json",
+  "no_order_sent": "run/proofs/proof_market_session_no_order_sent.json",
+  "provider_health_snapshot": "run/proofs/proof_market_session_provider_health_snapshot.json",
+  "provider_runtime": "run/proofs/proof_market_session_provider_runtime.json",
+  "selected_option_context": "run/proofs/proof_market_session_selected_option_context.json",
+  "strategy_activation": "run/proofs/proof_market_session_strategy_activation.json"
+}

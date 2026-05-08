@@ -155,6 +155,37 @@ ERROR_STREAM_MAXLEN: Final[int] = 10_000
 # =============================================================================
 
 
+
+# BEGIN BATCH26B_EXECUTION_ENTRY_HARD_ARMING_HELPER
+def _batch26b_execution_entry_hard_arming_verdict():
+    """
+    Execution-owned hard gate for ENTRY broker calls.
+
+    This is deliberately independent of strategy and risk:
+    - strategy may emit only HOLD/report-only today
+    - risk may veto entries but never exits
+    - execution must still fail closed before ENTRY broker calls
+
+    EXIT broker calls are not blocked by this helper.
+    """
+    try:
+        from app.mme_scalpx.services.controlled_paper_runtime import (
+            controlled_execution_entry_allowed,
+        )
+    except Exception as exc:
+        return False, f"execution_entry_arming_contract_unavailable:{type(exc).__name__}:{exc}"
+
+    try:
+        allowed = bool(controlled_execution_entry_allowed())
+    except Exception as exc:
+        return False, f"execution_entry_arming_contract_error:{type(exc).__name__}:{exc}"
+
+    if not allowed:
+        return False, "execution_entry_not_armed"
+
+    return True, "execution_entry_armed"
+# END BATCH26B_EXECUTION_ENTRY_HARD_ARMING_HELPER
+
 class ExecutionError(RuntimeError):
     """Base execution error."""
 
@@ -1267,6 +1298,12 @@ class ExecutionService:
         )
 
         try:
+            # BATCH26B_EXECUTION_ENTRY_HARD_ARMING_GUARD
+            entry_armed, entry_arm_reason = _batch26b_execution_entry_hard_arming_verdict()
+            if not entry_armed:
+                self._fail_decision(decision, entry_arm_reason)
+                return
+
             broker_order = self.broker.place_entry_order(
                 client_order_id=client_order_id,
                 option_symbol=option_symbol,

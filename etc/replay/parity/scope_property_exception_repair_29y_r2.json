@@ -1,0 +1,186 @@
+{
+  "accepted_for": "SCOPE_PROPERTY_EXCEPTION_REPAIR_ONLY",
+  "after_scope_report": {
+    "has_wrapper": true,
+    "property_decorator_count": 1,
+    "scope_decorator_start_line": 281,
+    "scope_found": true,
+    "scope_function_end_line": 304,
+    "scope_function_start_line": 282
+  },
+  "after_sha256": "a1154eff59a5dedd1d61a68deb75d143ad778dd8fe59b48b9bc24b1cddd2fd93",
+  "backup_dir": "run/_code_backups/batch29y_r2_scope_property_exception_repair_20260502_114531",
+  "backups": [
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29y_r2_scope_property_exception_repair_20260502_114531/app/mme_scalpx/replay/offline_context_shim.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/offline_context_shim.py",
+      "present": true,
+      "sha256": "7b96696bfb44eb2db7cba52007d04f2a930861504b832f2f63e380de742b4a19",
+      "size_bytes": 14924
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29y_r2_scope_property_exception_repair_20260502_114531/app/mme_scalpx/replay/engine.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/engine.py",
+      "present": true,
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8",
+      "size_bytes": 20518
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29y_r2_scope_property_exception_repair_20260502_114531/app/mme_scalpx/replay/topology.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/topology.py",
+      "present": true,
+      "sha256": "448cf6bd7f34f13d02768684a0807dc8b5993f493e91bff503f0d1b34e589e0c",
+      "size_bytes": 12432
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29y_r2_scope_property_exception_repair_20260502_114531/bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "present": true,
+      "sha256": "9ad2b5b9cb48b0e323bdd733768b5dd10d430fd7529e73bf73f43300a92331c8",
+      "size_bytes": 27919
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29y_r2_scope_property_exception_repair_20260502_114531/run/proofs/proof_scope_value_probe_failure_audit_29y_r1_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_scope_value_probe_failure_audit_29y_r1_latest.json",
+      "present": true,
+      "sha256": "c9f15fbc89b7cff027c1fd994b18860628cb7bd55f795203509445fbc9d0f96a",
+      "size_bytes": 7092
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29y_r2_scope_property_exception_repair_20260502_114531/run/proofs/proof_offline_topology_scope_value_compat_repair_29y_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_offline_topology_scope_value_compat_repair_29y_latest.json",
+      "present": true,
+      "sha256": "adc54ffaaadf0ab0c47eb3e3d66cf8c8235211d563c678c3e2ab93a439668402",
+      "size_bytes": 6816
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29y_r2_scope_property_exception_repair_20260502_114531/run/proofs/proof_topology_scope_value_runtime_gap_audit_29x_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_topology_scope_value_runtime_gap_audit_29x_latest.json",
+      "present": true,
+      "sha256": "daab090b0e036b2d6a5647b550f46634b6a8e27697f86d712f11b0ad265dd621",
+      "size_bytes": 9368
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "etc/replay/parity/scope_property_exception_repair_29y_r2.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/proof_scope_property_exception_repair_29y_r2.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/proof_scope_property_exception_repair_29y_r2_latest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/batch29y_r2_scope_property_exception_repair_20260502_114531_driver_proof.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "docs/milestones/BATCH29Y_R2_SCOPE_PROPERTY_EXCEPTION_REPAIR.md",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    }
+  ],
+  "batch": "29Y-R2",
+  "before_scope_report": {
+    "has_wrapper": true,
+    "property_decorator_count": 2,
+    "scope_decorator_start_line": 281,
+    "scope_found": true,
+    "scope_function_end_line": 305,
+    "scope_function_start_line": 283
+  },
+  "before_sha256": "7b96696bfb44eb2db7cba52007d04f2a930861504b832f2f63e380de742b4a19",
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "compile_after_ok": true,
+  "compile_before_ok": true,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "execution_arming_created": false,
+  "execution_ok": false,
+  "files_changed": [
+    "app/mme_scalpx/replay/offline_context_shim.py"
+  ],
+  "full_live_replay_parity": "NOT_PROVEN_IN_29Y_R2",
+  "generated_at_utc": "2026-05-02T06:15:32.455064+00:00",
+  "inspection_manifest": "run/proofs/batch29y_r2_scope_property_exception_repair_20260502_114531_inspection/inspection_manifest.json",
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 29Z \u2014 audit/classify next guarded ReplayEngine runtime gap after scope property exception repair, still not paper/live enablement.",
+  "paper_armed_approved": false,
+  "patch_applied": true,
+  "patch_changes": [
+    "normalized OfflineReplayTopologyPlan.scope to a single @property block"
+  ],
+  "production_doctrine_changed": false,
+  "proof": "run/proofs/proof_scope_property_exception_repair_29y_r2.json",
+  "proof_29y_r1_valid": true,
+  "proof_latest": "run/proofs/proof_scope_property_exception_repair_29y_r2_latest.json",
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "repair_path": "NEXT_REPLAY_ENGINE_RUNTIME_GAP_AUDIT",
+  "repair_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/scope_property_exception_repair_29y_r2",
+  "replay_core_executed": false,
+  "replay_run_completed": false,
+  "retry_artifacts_ok": true,
+  "retry_execute_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29y_r2",
+  "retry_returncode": 2,
+  "retry_runtime_error": "AttributeError: 'OfflineReplayStage' object has no attribute 'description'",
+  "safety_ok": true,
+  "schema_version": "scope_property_exception_repair_29y_r2_v1",
+  "scope_property_exception_resolved": true,
+  "scope_value_gap_resolved": true,
+  "scope_value_probe_ok": true,
+  "starts_services": false,
+  "target_file": "app/mme_scalpx/replay/offline_context_shim.py",
+  "verdict": "DEFERRED_NEXT_REPLAY_ENGINE_RUNTIME_GAP_AFTER_SCOPE_PROPERTY_EXCEPTION_REPAIR_29Y_R2",
+  "writes_live_redis": false
+}

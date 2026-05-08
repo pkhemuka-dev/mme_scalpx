@@ -1,0 +1,23 @@
+{
+  "broker_io_allowed": false,
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "outputs": [
+    "label_enriched_replay_records.jsonl",
+    "label_enrichment_summary.json",
+    "label_enrichment_manifest.json"
+  ],
+  "owner": "RAW replay label enrichment",
+  "paper_live_enablement_allowed": false,
+  "promotion_allowed_by_raw_o": false,
+  "purpose": "Conservatively recover family, side, strategy_id, OI wall context, and outcome labels from enriched replay rows and source lineage.",
+  "redis_live_write_allowed": false,
+  "schema_version": "RAW-O.1",
+  "source_law": [
+    "Do not invent labels without row/source-lineage evidence.",
+    "Keep unresolved labels UNKNOWN or null.",
+    "Write label-enriched copies only.",
+    "Rerun RAW-N on label-enriched copies for evidence impact."
+  ]
+}

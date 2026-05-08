@@ -220,6 +220,58 @@ def float_any(mapping: Mapping[str, Any], keys: Sequence[str], default: float = 
 # =============================================================================
 
 
+
+# BEGIN BATCH26D_STRATEGY_LEAF_REQUIRED_COMMON_SURFACE
+def _batch26d_required_common_surface(container, key, *, family="MISO", source="unknown"):
+    """
+    Batch 26D fail-closed common-surface accessor.
+
+    Required surfaces must not silently collapse to empty mappings:
+    - view.provider_runtime
+    - common.selected_option
+
+    Missing/None/empty required surfaces become explicit blockers by raising
+    RuntimeError before family eligibility can interpret absent data as safe.
+    """
+    sentinel = object()
+    value = sentinel
+
+    if container is None:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:container_none")
+
+    if isinstance(container, dict):
+        value = container.get(key, sentinel)
+    else:
+        getter = getattr(container, "get", None)
+        if callable(getter):
+            try:
+                value = getter(key, sentinel)
+            except TypeError:
+                try:
+                    value = getter(key)
+                except Exception:
+                    value = sentinel
+            except Exception:
+                value = sentinel
+
+        if value is sentinel:
+            try:
+                value = getattr(container, key)
+            except Exception:
+                value = sentinel
+
+    if value is sentinel:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:absent")
+
+    if value is None:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:none")
+
+    if isinstance(value, dict) and not value:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:empty")
+
+    return value
+# END BATCH26D_STRATEGY_LEAF_REQUIRED_COMMON_SURFACE
+
 @dataclass(frozen=True, slots=True)
 class MisoBlocker:
     code: str
@@ -487,7 +539,7 @@ def extract_stage_flags(view: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def extract_provider_runtime(view: Mapping[str, Any]) -> dict[str, Any]:
-    return as_mapping(view.get("provider_runtime"))
+    return as_mapping(_batch26d_required_common_surface(view, "provider_runtime", family="MISO", source="view"))
 
 
 def futures_block(view: Mapping[str, Any]) -> dict[str, Any]:
@@ -497,7 +549,7 @@ def futures_block(view: Mapping[str, Any]) -> dict[str, Any]:
 
 def selected_option(view: Mapping[str, Any], branch_id: str) -> dict[str, Any]:
     common = extract_common(view)
-    selected = as_mapping(common.get("selected_option"))
+    selected = as_mapping(_batch26d_required_common_surface(common, "selected_option", family="MISO", source="common"))
     branch_side = side_for_branch(branch_id)
 
     if safe_str(selected.get("side")).upper() == branch_side:
@@ -1436,4 +1488,853 @@ def evaluate(view_like: Any, branch_id: str | None = None):
         reason="all_branches_no_signal",
         metadata={"family_id": FAMILY_ID},
     )
+
+
+# BEGIN BATCH26F_MISO_BURST_EVENT_CONSUMPTION_REGISTRY
+BATCH26F_MISO_BURST_EVENT_CONSUMED_BLOCKER = "MISO_BURST_EVENT_CONSUMED_NO_RETRY"
+BATCH26F_MISO_BURST_EVENT_MISSING_BLOCKER = "MISO_BURST_EVENT_ID_MISSING"
+BATCH26F_MISO_BURST_EVENT_INVALID_BLOCKER = "MISO_BURST_EVENT_ID_INVALID"
+BATCH26F_MISO_DHAN_CONTEXT_REQUIRED_BLOCKER = "MISO_DHAN_CONTEXT_REQUIRED"
+
+_BATCH26F_MISO_CONSUMED_BURST_EVENTS = {}
+_BATCH26F_MISO_LATEST_CONSUMED_BY_SYMBOL_SIDE = {}
+_BATCH26F_MISO_ACTIVE_SESSION_KEY = None
+
+
+def _batch26f_truthy(value):
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {
+        "1", "true", "yes", "y", "on", "enabled", "allow", "allowed", "pass", "passed", "ok", "ready", "healthy"
+    }
+
+
+def _batch26f_falsey(value):
+    if isinstance(value, bool):
+        return value is False
+    if value is None:
+        return False
+    return str(value).strip().lower() in {
+        "0", "false", "no", "n", "off", "disabled", "deny", "denied", "blocked", "fail", "failed", "stale", "unhealthy"
+    }
+
+
+def _batch26f_get(obj, names, default=None):
+    if isinstance(names, str):
+        names = [names]
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        for name in names:
+            if name in obj:
+                return obj.get(name)
+        return default
+    for name in names:
+        try:
+            if hasattr(obj, name):
+                return getattr(obj, name)
+        except Exception:
+            pass
+    return default
+
+
+def _batch26f_iter_children(obj):
+    if isinstance(obj, dict):
+        for child in obj.values():
+            yield child
+    elif isinstance(obj, (list, tuple)):
+        for child in obj:
+            yield child
+    else:
+        for attr in (
+            "stage",
+            "stage_flags",
+            "metadata",
+            "meta",
+            "surface",
+            "features",
+            "family_features",
+            "family_surface",
+            "candidate",
+            "decision",
+            "context",
+            "event",
+            "burst",
+            "selected_option",
+            "option_context",
+            "provider_runtime",
+        ):
+            try:
+                child = getattr(obj, attr)
+            except Exception:
+                child = None
+            if child is not None:
+                yield child
+
+
+def _batch26f_deep_find(obj, names, max_depth=8):
+    names = set(names)
+    seen = set()
+
+    def walk(value, depth):
+        if depth > max_depth:
+            return None
+        ident = id(value)
+        if ident in seen:
+            return None
+        seen.add(ident)
+
+        direct = _batch26f_get(value, names, None)
+        if direct is not None:
+            return direct
+
+        for child in _batch26f_iter_children(value):
+            found = walk(child, depth + 1)
+            if found is not None:
+                return found
+        return None
+
+    return walk(obj, 0)
+
+
+def _batch26f_text(value, default="UNKNOWN"):
+    if value is None:
+        return default
+    text = str(value).strip()
+    return text if text else default
+
+
+def _batch26f_ts_ms(value):
+    if value is None:
+        return "0"
+    try:
+        number = float(str(value).strip())
+    except Exception:
+        return "0"
+    if number > 10_000_000_000_000:
+        number = number / 1_000_000.0
+    return str(int(number))
+
+
+def _batch26f_build_burst_event_id(*objs):
+    for obj in objs:
+        existing = _batch26f_deep_find(
+            obj,
+            {"burst_event_id", "miso_burst_event_id", "event_id"},
+        )
+        if existing is not None and str(existing).strip():
+            return str(existing).strip()
+
+    side = None
+    symbol = None
+    start_ts = None
+    extreme_ts = None
+
+    for obj in objs:
+        if side is None:
+            side = _batch26f_deep_find(
+                obj,
+                {"side", "branch_side", "option_side", "selected_side", "trade_side"},
+            )
+        if symbol is None:
+            symbol = _batch26f_deep_find(
+                obj,
+                {
+                    "selected_option_symbol",
+                    "option_symbol",
+                    "tradingsymbol",
+                    "symbol",
+                    "selected_symbol",
+                    "security_id",
+                    "instrument_token",
+                    "selected_strike",
+                    "strike",
+                },
+            )
+        if start_ts is None:
+            start_ts = _batch26f_deep_find(
+                obj,
+                {
+                    "burst_start_ts_epoch_ms",
+                    "burst_start_ts_ms",
+                    "burst_start_ts_ns",
+                    "trigger_start_ts_ns",
+                    "trigger_ts_ns",
+                    "frame_ts_ns",
+                    "ts_event_ns",
+                    "event_ts_ns",
+                    "local_ts_ns",
+                },
+            )
+        if extreme_ts is None:
+            extreme_ts = _batch26f_deep_find(
+                obj,
+                {
+                    "burst_extreme_ts_epoch_ms",
+                    "burst_extreme_ts_ms",
+                    "burst_extreme_ts_ns",
+                    "burst_peak_ts_ns",
+                    "entry_trigger_ts_ns",
+                    "frame_ts_ns",
+                    "ts_event_ns",
+                    "event_ts_ns",
+                    "local_ts_ns",
+                },
+            )
+
+    side_text = _batch26f_text(side, "UNKNOWN_SIDE").upper()
+    symbol_text = _batch26f_text(symbol, "UNKNOWN_OPTION").upper()
+    start_text = _batch26f_ts_ms(start_ts)
+    extreme_text = _batch26f_ts_ms(extreme_ts)
+
+    return f"MISO|{side_text}|{symbol_text}|{start_text}|{extreme_text}"
+
+
+def _batch26f_parse_burst_event_id(burst_event_id):
+    if burst_event_id is None:
+        return {
+            "valid": False,
+            "error": "missing",
+            "burst_event_id": None,
+        }
+
+    text = str(burst_event_id).strip()
+    parts = text.split("|")
+    if len(parts) != 5:
+        return {
+            "valid": False,
+            "error": "expected_5_pipe_separated_parts",
+            "burst_event_id": text,
+            "parts": parts,
+        }
+
+    family, side, symbol, start_ms, extreme_ms = [p.strip() for p in parts]
+    if family != "MISO":
+        return {
+            "valid": False,
+            "error": "invalid_family",
+            "burst_event_id": text,
+            "family": family,
+        }
+
+    if side not in {"CALL", "PUT"}:
+        return {
+            "valid": False,
+            "error": "invalid_side",
+            "burst_event_id": text,
+            "side": side,
+        }
+
+    if not symbol or symbol == "UNKNOWN_OPTION":
+        return {
+            "valid": False,
+            "error": "missing_symbol",
+            "burst_event_id": text,
+            "symbol": symbol,
+        }
+
+    try:
+        start_i = int(float(start_ms))
+        extreme_i = int(float(extreme_ms))
+    except Exception:
+        return {
+            "valid": False,
+            "error": "invalid_timestamp",
+            "burst_event_id": text,
+            "start_ms": start_ms,
+            "extreme_ms": extreme_ms,
+        }
+
+    return {
+        "valid": True,
+        "burst_event_id": text,
+        "family": family,
+        "side": side,
+        "symbol": symbol,
+        "symbol_side_key": f"{side}|{symbol}",
+        "burst_start_ts_epoch_ms": start_i,
+        "burst_extreme_ts_epoch_ms": extreme_i,
+    }
+
+
+def _batch26f_reset_miso_burst_event_registry(reason="manual_reset"):
+    _BATCH26F_MISO_CONSUMED_BURST_EVENTS.clear()
+    _BATCH26F_MISO_LATEST_CONSUMED_BY_SYMBOL_SIDE.clear()
+    return {
+        "reset": True,
+        "reason": reason,
+        "consumed_count": 0,
+    }
+
+
+def _batch26f_extract_session_key(*objs):
+    for obj in objs:
+        value = _batch26f_deep_find(
+            obj,
+            {"session_key", "session_id", "trading_session", "trading_date", "session_date", "market_session_date"},
+        )
+        if value is not None and str(value).strip():
+            return str(value).strip()
+    return None
+
+
+def _batch26f_update_session_from_objects(*objs):
+    global _BATCH26F_MISO_ACTIVE_SESSION_KEY
+
+    session_key = _batch26f_extract_session_key(*objs)
+    if not session_key:
+        return {
+            "session_key": _BATCH26F_MISO_ACTIVE_SESSION_KEY,
+            "reset": False,
+        }
+
+    if _BATCH26F_MISO_ACTIVE_SESSION_KEY is None:
+        _BATCH26F_MISO_ACTIVE_SESSION_KEY = session_key
+        return {
+            "session_key": session_key,
+            "reset": False,
+        }
+
+    if session_key != _BATCH26F_MISO_ACTIVE_SESSION_KEY:
+        old = _BATCH26F_MISO_ACTIVE_SESSION_KEY
+        _BATCH26F_MISO_ACTIVE_SESSION_KEY = session_key
+        _batch26f_reset_miso_burst_event_registry(reason=f"session_change:{old}->{session_key}")
+        return {
+            "session_key": session_key,
+            "reset": True,
+            "old_session_key": old,
+        }
+
+    return {
+        "session_key": session_key,
+        "reset": False,
+    }
+
+
+def _batch26f_miso_burst_consumed_status(burst_event_id):
+    parsed = _batch26f_parse_burst_event_id(burst_event_id)
+    if not parsed.get("valid"):
+        return {
+            "blocked": True,
+            "reason": BATCH26F_MISO_BURST_EVENT_INVALID_BLOCKER,
+            "parsed": parsed,
+        }
+
+    event_id = parsed["burst_event_id"]
+    if event_id in _BATCH26F_MISO_CONSUMED_BURST_EVENTS:
+        return {
+            "blocked": True,
+            "reason": BATCH26F_MISO_BURST_EVENT_CONSUMED_BLOCKER,
+            "parsed": parsed,
+            "existing": _BATCH26F_MISO_CONSUMED_BURST_EVENTS.get(event_id),
+        }
+
+    key = parsed["symbol_side_key"]
+    latest = _BATCH26F_MISO_LATEST_CONSUMED_BY_SYMBOL_SIDE.get(key)
+    if latest is not None:
+        latest_start = int(latest.get("burst_start_ts_epoch_ms", -1))
+        if int(parsed["burst_start_ts_epoch_ms"]) <= latest_start:
+            return {
+                "blocked": True,
+                "reason": BATCH26F_MISO_BURST_EVENT_CONSUMED_BLOCKER,
+                "parsed": parsed,
+                "symbol_latest": latest,
+            }
+
+    return {
+        "blocked": False,
+        "reason": "",
+        "parsed": parsed,
+    }
+
+
+def _batch26f_consume_miso_burst_event(burst_event_id, *, consume_reason="entry_decision_emitted"):
+    parsed = _batch26f_parse_burst_event_id(burst_event_id)
+    if not parsed.get("valid"):
+        return {
+            "consumed": False,
+            "reason": BATCH26F_MISO_BURST_EVENT_INVALID_BLOCKER,
+            "parsed": parsed,
+        }
+
+    record = {
+        "burst_event_id": parsed["burst_event_id"],
+        "side": parsed["side"],
+        "symbol": parsed["symbol"],
+        "symbol_side_key": parsed["symbol_side_key"],
+        "burst_start_ts_epoch_ms": parsed["burst_start_ts_epoch_ms"],
+        "burst_extreme_ts_epoch_ms": parsed["burst_extreme_ts_epoch_ms"],
+        "consume_reason": consume_reason,
+    }
+
+    _BATCH26F_MISO_CONSUMED_BURST_EVENTS[parsed["burst_event_id"]] = record
+    _BATCH26F_MISO_LATEST_CONSUMED_BY_SYMBOL_SIDE[parsed["symbol_side_key"]] = record
+    return {
+        "consumed": True,
+        "record": record,
+    }
+
+
+def _batch26f_result_is_entry_like(result):
+    if isinstance(result, bool):
+        return result is True
+
+    if isinstance(result, dict):
+        action = str(result.get("action", "") or result.get("decision", "") or result.get("strategy_action", "")).upper()
+        state = str(result.get("state", "") or result.get("next_state", "")).upper()
+
+        if action.startswith("ENTER") or action in {"BUY", "ENTRY", "OPEN", "ENTER_CALL", "ENTER_PUT"}:
+            return True
+        if state in {"ENTRY_PENDING", "POSITION_OPEN"}:
+            return True
+
+        for key in (
+            "entry_allowed",
+            "entry_ready",
+            "eligible",
+            "candidate",
+            "candidate_found",
+            "decision_allowed",
+            "trade_allowed",
+            "allow_entry",
+            "burst_detected",
+            "burst_valid",
+            "trigger_ready",
+        ):
+            if key in result and _batch26f_truthy(result.get(key)):
+                return True
+
+        return False
+
+    for attr in ("action", "decision", "strategy_action"):
+        value = _batch26f_get(result, attr)
+        if value is not None:
+            action = str(value).upper()
+            if action.startswith("ENTER") or action in {"BUY", "ENTRY", "OPEN", "ENTER_CALL", "ENTER_PUT"}:
+                return True
+
+    for attr in (
+        "entry_allowed",
+        "entry_ready",
+        "eligible",
+        "candidate",
+        "candidate_found",
+        "decision_allowed",
+        "trade_allowed",
+        "allow_entry",
+        "burst_detected",
+        "burst_valid",
+        "trigger_ready",
+    ):
+        value = _batch26f_get(result, attr)
+        if value is not None and _batch26f_truthy(value):
+            return True
+
+    return False
+
+
+def _batch26f_dhan_context_ready(*objs):
+    # Hard law for MISO: selected-option signal path must have Dhan option context.
+    for obj in objs:
+        if _batch26f_truthy(_batch26f_deep_find(obj, {"dhan_context_ready", "dhan_option_context_ready"})):
+            return True
+
+    provider_values = []
+    status_values = []
+
+    for obj in objs:
+        for key in (
+            "selected_option_provider",
+            "option_context_provider",
+            "selected_option_data_provider",
+            "option_context_data_provider",
+            "provider",
+        ):
+            value = _batch26f_deep_find(obj, {key})
+            if value is not None:
+                provider_values.append(str(value).upper())
+
+        for key in (
+            "option_context_status",
+            "dhan_context_status",
+            "selected_option_provider_status",
+            "option_context_provider_status",
+            "context_status",
+            "dhan_status",
+        ):
+            value = _batch26f_deep_find(obj, {key})
+            if value is not None:
+                status_values.append(str(value).upper())
+
+    provider_has_dhan = any("DHAN" in value for value in provider_values)
+    status_healthy = any(value in {"HEALTHY", "READY", "CURRENT", "OK", "PASS", "AVAILABLE"} for value in status_values)
+
+    return provider_has_dhan and status_healthy
+
+
+def _batch26f_append_blocker_to_dict(result, blocker, details=None):
+    existing = result.get("blockers")
+    if isinstance(existing, list):
+        existing.append(blocker)
+    elif existing:
+        result["blockers"] = [existing, blocker]
+    else:
+        result["blockers"] = [blocker]
+
+    existing_reasons = result.get("blocker_reasons")
+    if isinstance(existing_reasons, list):
+        existing_reasons.append(blocker)
+    elif existing_reasons:
+        result["blocker_reasons"] = [existing_reasons, blocker]
+    else:
+        result["blocker_reasons"] = [blocker]
+
+    result["miso_burst_event_consumed_blocked"] = blocker == BATCH26F_MISO_BURST_EVENT_CONSUMED_BLOCKER
+    result["miso_dhan_context_required_blocked"] = blocker == BATCH26F_MISO_DHAN_CONTEXT_REQUIRED_BLOCKER
+    result["miso_burst_event_consumption_registry_reason"] = blocker
+    if details is not None:
+        result["miso_burst_event_consumption_registry_detail"] = str(details)
+
+    for key in (
+        "eligible",
+        "entry_allowed",
+        "entry_ready",
+        "candidate",
+        "candidate_found",
+        "decision_allowed",
+        "trade_allowed",
+        "allow_entry",
+        "signal",
+        "ready",
+        "burst_valid",
+        "trigger_ready",
+    ):
+        if key in result:
+            result[key] = False
+
+    action = str(result.get("action", "") or "").upper()
+    if action.startswith("ENTER") or action in {"BUY", "ENTRY", "OPEN", "ENTER_CALL", "ENTER_PUT"}:
+        result["action_before_miso_burst_consumed_block"] = action
+        result["action"] = "HOLD"
+
+    if "reason_code" not in result:
+        result["reason_code"] = blocker
+    if "reason" not in result:
+        result["reason"] = blocker
+
+    return result
+
+
+def _batch26f_block_result(result, blocker, details=None):
+    if isinstance(result, bool):
+        return False
+
+    if isinstance(result, dict):
+        return _batch26f_append_blocker_to_dict(result, blocker, details)
+
+    if isinstance(result, list):
+        return [_batch26f_block_result(item, blocker, details) for item in result]
+
+    if isinstance(result, tuple):
+        return tuple(_batch26f_block_result(item, blocker, details) for item in result)
+
+    mutated = False
+    for attr in (
+        "eligible",
+        "entry_allowed",
+        "entry_ready",
+        "candidate",
+        "candidate_found",
+        "decision_allowed",
+        "trade_allowed",
+        "allow_entry",
+        "signal",
+        "ready",
+        "burst_valid",
+        "trigger_ready",
+    ):
+        try:
+            if hasattr(result, attr):
+                setattr(result, attr, False)
+                mutated = True
+        except Exception:
+            pass
+
+    for attr in ("blockers", "blocker_reasons"):
+        try:
+            current = getattr(result, attr)
+            if isinstance(current, list):
+                current.append(blocker)
+            else:
+                setattr(result, attr, [current, blocker] if current else [blocker])
+            mutated = True
+        except Exception:
+            try:
+                setattr(result, attr, [blocker])
+                mutated = True
+            except Exception:
+                pass
+
+    try:
+        action = str(getattr(result, "action", "") or "").upper()
+        if action.startswith("ENTER") or action in {"BUY", "ENTRY", "OPEN", "ENTER_CALL", "ENTER_PUT"}:
+            setattr(result, "action_before_miso_burst_consumed_block", action)
+            setattr(result, "action", "HOLD")
+            mutated = True
+    except Exception:
+        pass
+
+    try:
+        setattr(result, "miso_burst_event_consumption_registry_reason", blocker)
+        setattr(result, "miso_burst_event_consumption_registry_detail", str(details))
+        mutated = True
+    except Exception:
+        pass
+
+    return result if mutated else result
+
+
+def _batch26f_should_wrap_name(name):
+    lowered = str(name).lower()
+    if lowered.startswith("_batch26f"):
+        return False
+    if lowered.startswith("__"):
+        return False
+
+    needles = (
+        "evaluat",
+        "eligib",
+        "candidate",
+        "decision",
+        "decide",
+        "entry",
+        "signal",
+        "select",
+        "resolve",
+        "confirm",
+        "burst",
+        "aggression",
+        "imbalance",
+        "tape",
+        "context",
+        "trigger",
+    )
+    return any(n in lowered for n in needles)
+
+
+def _batch26f_wrap_function(fn):
+    import functools
+
+    if getattr(fn, "_batch26f_miso_registry_wrapped", False):
+        return fn
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        _batch26f_update_session_from_objects(args, kwargs)
+
+        result = fn(*args, **kwargs)
+
+        _batch26f_update_session_from_objects(args, kwargs, result)
+
+        if not _batch26f_result_is_entry_like(result):
+            return result
+
+        if not _batch26f_dhan_context_ready(args, kwargs, result):
+            return _batch26f_block_result(
+                result,
+                BATCH26F_MISO_DHAN_CONTEXT_REQUIRED_BLOCKER,
+                {"reason": "Dhan selected-option/context lane not proven healthy/current"},
+            )
+
+        burst_event_id = _batch26f_deep_find(
+            result,
+            {"burst_event_id", "miso_burst_event_id", "event_id"},
+        )
+        if not burst_event_id:
+            burst_event_id = _batch26f_build_burst_event_id(args, kwargs, result)
+            if isinstance(result, dict):
+                result["burst_event_id"] = burst_event_id
+                result["miso_burst_event_id"] = burst_event_id
+            else:
+                try:
+                    setattr(result, "burst_event_id", burst_event_id)
+                    setattr(result, "miso_burst_event_id", burst_event_id)
+                except Exception:
+                    pass
+
+        consumed_status = _batch26f_miso_burst_consumed_status(burst_event_id)
+        if consumed_status.get("blocked") is True:
+            return _batch26f_block_result(result, consumed_status.get("reason"), consumed_status)
+
+        _batch26f_consume_miso_burst_event(
+            burst_event_id,
+            consume_reason="entry_like_decision_emitted",
+        )
+        return result
+
+    wrapper._batch26f_miso_registry_wrapped = True
+    return wrapper
+
+
+def _batch26f_install_miso_burst_event_registry(module_globals):
+    import inspect
+
+    installed = []
+
+    for name, obj in list(module_globals.items()):
+        if not _batch26f_should_wrap_name(name):
+            continue
+
+        if inspect.isfunction(obj) and getattr(obj, "__module__", None) == module_globals.get("__name__"):
+            module_globals[name] = _batch26f_wrap_function(obj)
+            installed.append(name)
+
+        elif inspect.isclass(obj) and getattr(obj, "__module__", None) == module_globals.get("__name__"):
+            for attr_name, attr_value in list(obj.__dict__.items()):
+                if not _batch26f_should_wrap_name(attr_name):
+                    continue
+
+                raw = attr_value
+                descriptor_type = None
+                if isinstance(raw, staticmethod):
+                    descriptor_type = staticmethod
+                    raw = raw.__func__
+                elif isinstance(raw, classmethod):
+                    descriptor_type = classmethod
+                    raw = raw.__func__
+
+                if inspect.isfunction(raw):
+                    wrapped = _batch26f_wrap_function(raw)
+                    if descriptor_type is staticmethod:
+                        setattr(obj, attr_name, staticmethod(wrapped))
+                    elif descriptor_type is classmethod:
+                        setattr(obj, attr_name, classmethod(wrapped))
+                    else:
+                        setattr(obj, attr_name, wrapped)
+                    installed.append(f"{name}.{attr_name}")
+
+    module_globals["BATCH26F_MISO_BURST_EVENT_REGISTRY_INSTALLED"] = True
+    module_globals["BATCH26F_MISO_BURST_EVENT_REGISTRY_WRAPPERS"] = tuple(sorted(set(installed)))
+    return installed
+
+
+BATCH26F_MISO_BURST_EVENT_REGISTRY_WRAPPERS = tuple(
+    _batch26f_install_miso_burst_event_registry(globals())
+)
+# END BATCH26F_MISO_BURST_EVENT_CONSUMPTION_REGISTRY
+
+
+
+# ===== BATCH26_OI_C_FAMILY_SOFT_SCORING_ONLY START =====
+# Batch 26-OI-C freeze-final law:
+# - OI / Dhan option-ladder context is score context only in this strategy leaf.
+# - OI wall context may reduce or improve context_score.
+# - OI wall context may NOT create a hard entry blocker.
+# - No live-order promotion is introduced here.
+# - No risk/execution/Redis side effect is introduced here.
+# - Canonical OI wall calculation remains owned by strike_selection.py.
+
+_BATCH26_OI_C_FAMILY_ID = "MISO"
+_BATCH26_OI_C_SOFT_POLICY = "ladder_shadow_strike_quality_context_only"
+_BATCH26_OI_C_SOFT_POLICY_DESCRIPTION = "MISO uses OI wall only as ladder/selected/shadow strike-quality context."
+_BATCH26_OI_C_ORIGINAL_CONTEXT_SCORE = context_score
+
+_BATCH26_OI_C_BLOCKER_TOKENS = (
+    "oi_wall",
+    "near_strong_oi_wall",
+    "hostile_near_strong_oi_wall",
+    "extreme_near_hostile_oi_wall",
+)
+
+def _batch26_oi_c_side_key(branch_id):
+    try:
+        return "call" if branch_id == BRANCH_CALL else "put"
+    except Exception:
+        text = str(branch_id or "").upper()
+        return "call" if "CALL" in text else "put"
+
+def _batch26_oi_c_as_mapping(value):
+    try:
+        return as_mapping(value)
+    except Exception:
+        return value if isinstance(value, dict) else {}
+
+def _batch26_oi_c_nested(mapping, *path):
+    try:
+        return nested(mapping, *path, default={})
+    except Exception:
+        return {}
+
+def _batch26_oi_c_has_oi_context(view, branch_id, surface):
+    side_key = _batch26_oi_c_side_key(branch_id)
+    probes = []
+
+    try:
+        probes.append(surface.get("oi_wall_context"))
+    except Exception:
+        pass
+
+    probes.append(_batch26_oi_c_nested(view, "oi_wall_context", side_key))
+    probes.append(_batch26_oi_c_nested(view, "shared_core", "oi_wall_context", side_key))
+    probes.append(_batch26_oi_c_nested(view, "shared_core", "strike_selection", "oi_wall_context", side_key))
+    probes.append(_batch26_oi_c_nested(view, "common", "cross_option", f"{side_key}_oi_wall_context"))
+
+    try:
+        if "branch_frame_key" in globals():
+            branch_key = branch_frame_key(branch_id)
+            probes.append(_batch26_oi_c_nested(view, "family_surfaces", "surfaces_by_branch", branch_key, "oi_wall_context"))
+    except Exception:
+        pass
+
+    try:
+        probes.append(_batch26_oi_c_nested(view, "family_surfaces", "families", FAMILY_ID, "branches", branch_id, "oi_wall_context"))
+    except Exception:
+        pass
+
+    for probe in probes:
+        item = _batch26_oi_c_as_mapping(probe)
+        if item:
+            return True
+
+    return False
+
+def _batch26_oi_c_reason_text(reason):
+    try:
+        return safe_str(reason, "").lower()
+    except Exception:
+        return str(reason or "").lower()
+
+def _batch26_oi_c_min_context_score():
+    try:
+        return float(MIN_CONTEXT_SCORE)
+    except Exception:
+        return 0.0
+
+def context_score(view, branch_id, surface):
+    score, passed, reason = _BATCH26_OI_C_ORIGINAL_CONTEXT_SCORE(view, branch_id, surface)
+
+    reason_text = _batch26_oi_c_reason_text(reason)
+    reason_is_oi = any(token in reason_text for token in _BATCH26_OI_C_BLOCKER_TOKENS)
+    has_oi_context = _batch26_oi_c_has_oi_context(view, branch_id, surface) or reason_is_oi
+
+    if not has_oi_context:
+        return score, passed, reason
+
+    soft_floor = _batch26_oi_c_min_context_score()
+
+    # OI-specific blockers become soft metadata and score shaping only.
+    if not passed and reason_is_oi:
+        return max(float(score), soft_floor), True, f"soft_only_{reason or 'oi_context'}"
+
+    # If canonical OI context dragged context_score below the later MIN_CONTEXT_SCORE
+    # gate, floor it to the minimum passing context so OI remains soft. The aggregate
+    # family score can still fail normally through score_below_threshold.
+    if float(score) < soft_floor:
+        return soft_floor, True, "soft_only_oi_context_floor"
+
+    return score, passed, reason
+
+# ===== BATCH26_OI_C_FAMILY_SOFT_SCORING_ONLY END =====
 

@@ -1,0 +1,51 @@
+{
+  "accepted_for": "OBSERVE_ONLY_ACTUAL_EVIDENCE_MAP_PACKAGE_COLLECTION_ONLY",
+  "actual_live_market_capture_started_by_28f": false,
+  "collection_contract_hash": "937213a1c182f1168f7a18c859e16b1c47dd0c76520871041c325c12cb335fb3",
+  "collection_only_copies_existing_evidence_files": true,
+  "collection_requires_actual_evidence_map": true,
+  "created_at_utc": "2026-05-01T10:20:44.404435+00:00",
+  "not_approved_or_not_proven_boundary": {
+    "full_live_replay_parity": "NOT_PROVEN_IN_28F",
+    "live_trading_readiness": "NOT_APPROVED_IN_28F",
+    "paper_armed_readiness": "NOT_APPROVED_IN_28F",
+    "production_doctrine_revision": "NOT_APPROVED_IN_28F",
+    "production_strategy_improvement_claim": "NOT_PROVEN_IN_28F"
+  },
+  "required_actual_evidence_items": [
+    "provider_runtime",
+    "feed_snapshot",
+    "feature_payload",
+    "family_surfaces",
+    "strategy_activation",
+    "no_order_sent",
+    "live_capture_log",
+    "live_stream_inventory",
+    "live_hash_inventory",
+    "provider_health_snapshot",
+    "selected_option_context",
+    "dhan_oi_ladder_context_if_available"
+  ],
+  "required_collection_artifacts": [
+    "00_collection_manifest.json",
+    "01_evidence_map_validation.json",
+    "02_copied_evidence_index.json",
+    "03_capture_completeness.json",
+    "04_no_enablement_boundary.json",
+    "05_reproducibility.json"
+  ],
+  "safety_boundary": {
+    "broker_calls_executed": false,
+    "calls_broker_api": false,
+    "execution_arming_created": false,
+    "live_redis_writes_executed": false,
+    "live_trading_approved": false,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "observe_only_actual_evidence_map_collection_v1"
+}

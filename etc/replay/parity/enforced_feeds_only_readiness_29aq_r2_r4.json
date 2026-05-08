@@ -1,0 +1,31 @@
+{
+  "activity_method": "latest_stream_id_movement_or_positive_xlen_growth",
+  "batch": "29AQ-R2-R4-ENFORCED-FEEDS-ONLY",
+  "generated_at_utc": "2026-05-05T09:12:41.319139+00:00",
+  "mode": "enforced_feeds_only_readiness_after_features_strategy_cleanup",
+  "pfeedcheck_used_as_hard_gate": false,
+  "required_tick_streams": [
+    "fut_zerodha",
+    "fut_dhan",
+    "opt_selected_zerodha",
+    "opt_selected_dhan",
+    "opt_context_dhan"
+  ],
+  "safety": {
+    "batch": "29AQ-R2-R4-ENFORCED-FEEDS-ONLY",
+    "broker_execution_path_used": false,
+    "features_restarted": false,
+    "features_strategy_stopped": true,
+    "feeds_only_readiness": true,
+    "live_redis_write_performed_by_batch": false,
+    "operational_containment_performed": true,
+    "order_sending_performed": false,
+    "paper_live_enablement_performed": false,
+    "pfeedcheck_used_as_hard_gate": false,
+    "production_code_patched": false,
+    "raw_patch_performed": false,
+    "replay_patch_performed": false,
+    "strategy_restarted": false
+  },
+  "schema_version": "batch29aq_r2_r4_config_v1"
+}

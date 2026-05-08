@@ -1,0 +1,9 @@
+{
+  "classification": "UNCLEAR_AUDIT_REQUIRED",
+  "created_at_utc": "2026-05-08T19:18:56.532763+00:00",
+  "expected_batch": "REPLAY-DATA-NEXT-AUDIT",
+  "output_script": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/outputs/20260508_191856_replay_data_next_audit_unclear_audit_required.sh",
+  "path": "ai_patch_runner/reports/20260508_191856_replay_data_next_audit_unclear_audit_required_meta.json",
+  "policy_validation_ok": true,
+  "static_validation_ok": false
+}

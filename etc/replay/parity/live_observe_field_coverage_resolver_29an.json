@@ -1,0 +1,28 @@
+{
+  "accepted_for": "LIVE_OBSERVE_FIELD_COVERAGE_RESOLVER_ONLY",
+  "batch": "29AN",
+  "field_coverage": "run/replay/parity/batch29an_live_observe_field_coverage_resolver_20260502_122246/live_observe_field_coverage_29an.json",
+  "field_matrix_csv": "run/replay/parity/batch29an_live_observe_field_coverage_resolver_20260502_122246/live_observe_field_coverage_matrix_29an.csv",
+  "field_resolution": "run/replay/parity/batch29an_live_observe_field_coverage_resolver_20260502_122246/live_observe_field_resolution_plan_29an.json",
+  "generated_at_utc": "2026-05-02T06:52:46.147654+00:00",
+  "safety": {
+    "audit_only": true,
+    "batch": "29AN",
+    "bounded_tool_written": false,
+    "broker_calls_executed": false,
+    "code_patch_applied": false,
+    "comparison_execution_performed": false,
+    "live_trading_approved": false,
+    "offline_only": true,
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "replay_rerun_performed": false,
+    "resolver_only": true,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "schema_version": "live_observe_field_coverage_resolver_29an_v1"
+}

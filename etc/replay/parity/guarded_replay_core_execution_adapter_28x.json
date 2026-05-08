@@ -1,0 +1,276 @@
+{
+  "accepted_for": "GUARDED_REPLAY_CORE_EXECUTION_ADAPTER_BUILD_ONLY",
+  "adapter_artifact_states": {
+    "00_core_execution_adapter_manifest.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/00_core_execution_adapter_manifest.json",
+      "present": true,
+      "sha256": "9e7e8f96459ac229697520ac0c5c1ea501df948631989419ec5b0b8d25d2025b",
+      "size_bytes": 2338
+    },
+    "01_selected_core_candidate_report.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/01_selected_core_candidate_report.json",
+      "present": true,
+      "sha256": "e37beeea13afa7c1d0ff0e0d155f724d61c2c5289f5404e1ae848283ef51a95e",
+      "size_bytes": 898
+    },
+    "02_candidate_import_signature_report.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/02_candidate_import_signature_report.json",
+      "present": true,
+      "sha256": "edf3eb3cb897c771106ad2efbfe8f858981b793eb6b95ea5b2f5f2552d811ef9",
+      "size_bytes": 245
+    },
+    "03_dataset_callable_bridge_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/03_dataset_callable_bridge_contract.json",
+      "present": true,
+      "sha256": "75f2dd1da94725d3f6cacf68a30018dca2f2a79c535862bcb417914c12e4a6f5",
+      "size_bytes": 2322
+    },
+    "04_no_broker_no_live_redis_boundary.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "4fa365603cc5e3283bdb57aff8ff2f49b4e7049b6a9f5a97826cb8474fd117a4",
+      "size_bytes": 729
+    },
+    "05_next_core_execution_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x/05_next_core_execution_contract.json",
+      "present": true,
+      "sha256": "4abe49b7cdfeab5077c72ed826a1932a9982728249f55bcff0c5b1d35ec9af9a",
+      "size_bytes": 753
+    }
+  },
+  "adapter_artifacts_ok": true,
+  "adapter_result": {
+    "accepted_for": "GUARDED_REPLAY_CORE_EXECUTION_ADAPTER_BUILD_ONLY",
+    "bridge_ready": true,
+    "calls_broker_api": false,
+    "candidate_executed": false,
+    "candidate_report": {
+      "call_signature": null,
+      "candidate_callable_ready": false,
+      "candidate_executed": false,
+      "candidate_name": "ReplayEngineHook",
+      "candidate_resolved": false,
+      "direct_import": {
+        "error": "ImportError: attempted relative import with no known parent package",
+        "module_file": "/home/Lenovo/scalpx/projects/mme_scalpx/app/mme_scalpx/replay/engine.py",
+        "ok": false
+      },
+      "init_signature": null,
+      "module_file": "app/mme_scalpx/replay/engine.py",
+      "object_kind": null,
+      "package_import": {
+        "error": "ModuleNotFoundError: No module named 'app'",
+        "module": "app.mme_scalpx.replay.engine",
+        "ok": false
+      }
+    },
+    "comparison_completed": false,
+    "core_adapter_ready": false,
+    "execution_arming_created": false,
+    "full_live_replay_parity": "NOT_PROVEN_IN_28X",
+    "live_trading_approved": false,
+    "next_batch": "Batch 28Y \u2014 repair selected replay core candidate import/signature bridge, still not paper/live enablement.",
+    "paper_armed_approved": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_core_executed": false,
+    "replay_run_completed": false,
+    "schema_version": "guarded_replay_core_execution_adapter_result_28x_v1",
+    "selected_candidate": {
+      "kind": "class",
+      "module_file": "app/mme_scalpx/replay/engine.py",
+      "name": "ReplayEngineHook"
+    },
+    "starts_services": false,
+    "writes_live_redis": false,
+    "written_count": 6
+  },
+  "adapter_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x",
+  "adapter_root_replay_safe": true,
+  "adapter_static": {
+    "broker_or_enablement_hits": [],
+    "ok": true,
+    "path": "bin/guarded_replay_core_execution_adapter_28x.py",
+    "redis_surface_hits": [],
+    "sha256": "47eb4ab65b8581335f8db64ea775777645747db021e06dcc7344130683a4faf6"
+  },
+  "batch": "28X",
+  "broker_call_reachable": false,
+  "broker_calls_executed": false,
+  "callable_output_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/explicit_offline_replay_callable_execution_28v",
+  "calls_broker_api": false,
+  "candidate_executed": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "compile_adapter": {
+    "args": [
+      "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+      "-m",
+      "py_compile",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/bin/guarded_replay_core_execution_adapter_28x.py"
+    ],
+    "ok": true,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "",
+    "timeout": false
+  },
+  "core_adapter_ready": false,
+  "dataset_candidate_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "execution_arming_created": false,
+  "full_live_replay_parity": "NOT_PROVEN_IN_28X",
+  "generated_at_utc": "2026-05-01T13:32:46.575928+00:00",
+  "live_redis_write_reachable": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 28Y \u2014 repair selected replay core candidate import/signature bridge, still not paper/live enablement.",
+  "observed_no_enablement": {
+    "proof_28m": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28n": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28u_r1": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28v": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28w": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "wiring_28w": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    }
+  },
+  "paper_armed_approved": false,
+  "preflight_ok": true,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "replay_compile_ok": true,
+  "replay_core_executed": false,
+  "replay_run_completed": false,
+  "run_result": {
+    "args": [
+      "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/bin/guarded_replay_core_execution_adapter_28x.py",
+      "--project-root",
+      "/home/Lenovo/scalpx/projects/mme_scalpx",
+      "--dataset-candidate-root",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+      "--callable-output-root",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/explicit_offline_replay_callable_execution_28v",
+      "--output-root",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_core_execution_adapter_28x",
+      "--module-file",
+      "app/mme_scalpx/replay/engine.py",
+      "--candidate-name",
+      "ReplayEngineHook",
+      "--candidate-kind",
+      "class",
+      "--no-broker",
+      "--no-live-redis",
+      "--observe-only",
+      "--dry-run",
+      "--contract-only"
+    ],
+    "ok": false,
+    "returncode": 2,
+    "stderr": "",
+    "stdout": "{\n  \"accepted_for\": \"GUARDED_REPLAY_CORE_EXECUTION_ADAPTER_BUILD_ONLY\",\n  \"bridge_ready\": true,\n  \"calls_broker_api\": false,\n  \"candidate_executed\": false,\n  \"candidate_report\": {\n    \"call_signature\": null,\n    \"candidate_callable_ready\": false,\n    \"candidate_executed\": false,\n    \"candidate_name\": \"ReplayEngineHook\",\n    \"candidate_resolved\": false,\n    \"direct_import\": {\n      \"error\": \"ImportError: attempted relative import with no known parent package\",\n      \"module_file\": \"/home/Lenovo/scalpx/projects/mme_scalpx/app/mme_scalpx/replay/engine.py\",\n      \"ok\": false\n    },\n    \"init_signature\": null,\n    \"module_file\": \"app/mme_scalpx/replay/engine.py\",\n    \"object_kind\": null,\n    \"package_import\": {\n      \"error\": \"ModuleNotFoundError: No module named 'app'\",\n      \"module\": \"app.mme_scalpx.replay.engine\",\n      \"ok\": false\n    }\n  },\n  \"comparison_completed\": false,\n  \"core_adapter_ready\": false,\n  \"execution_arming_created\": false,\n  \"full_live_replay_parity\": \"NOT_PROVEN_IN_28X\",\n  \"live_trading_approved\": false,\n  \"next_batch\": \"Batch 28Y \\u2014 repair selected replay core candidate import/signature bridge, still not paper/live enablement.\",\n  \"paper_armed_approved\": false,\n  \"production_doctrine_changed\": false,\n  \"reads_live_redis\": false,\n  \"real_order_sent\": false,\n  \"replay_core_executed\": false,\n  \"replay_run_completed\": false,\n  \"schema_version\": \"guarded_replay_core_execution_adapter_result_28x_v1\",\n  \"selected_candidate\": {\n    \"kind\": \"class\",\n    \"module_file\": \"app/mme_scalpx/replay/engine.py\",\n    \"name\": \"ReplayEngineHook\"\n  },\n  \"starts_services\": false,\n  \"writes_live_redis\": false,\n  \"written_count\": 6\n}\n",
+    "timeout": false
+  },
+  "runtime_promotion_reachable": false,
+  "schema_version": "guarded_replay_core_execution_adapter_28x_v1",
+  "selected_candidate": {
+    "kind": "class",
+    "methods": [
+      "__call__"
+    ],
+    "module_file": "app/mme_scalpx/replay/engine.py",
+    "name": "ReplayEngineHook",
+    "score": 9
+  },
+  "starts_services": false,
+  "verdict": "DEFERRED_REPLAY_CORE_CANDIDATE_IMPORT_OR_SIGNATURE_REQUIRED_28X",
+  "writes_live_redis": false
+}

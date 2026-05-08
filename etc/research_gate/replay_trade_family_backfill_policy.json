@@ -1,0 +1,18 @@
+{
+  "broker_io_allowed": false,
+  "law": [
+    "Only write backfilled evidence copies.",
+    "Do not overwrite earlier RAW-D/J proofs.",
+    "Do not enable paper/live.",
+    "Keep unresolved labels UNKNOWN."
+  ],
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "owner": "replay trade-row family backfill",
+  "paper_live_enablement_allowed": false,
+  "promotion_allowed_by_raw_q": false,
+  "purpose": "Backfill family/side/strategy_id specifically onto closed-trade rows using nearby candidate/decision/source lineage.",
+  "redis_live_write_allowed": false,
+  "schema_version": "RAW-Q.1"
+}

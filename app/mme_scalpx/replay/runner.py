@@ -37,6 +37,24 @@ Design rules
 
 from __future__ import annotations
 
+# BEGIN BATCH27C_REPLAY_SAFETY_FIREWALL
+try:
+    from app.mme_scalpx.replay.safety import assert_replay_module_static_safety
+except ModuleNotFoundError:
+    import pathlib as _batch27c_pathlib
+    import sys as _batch27c_sys
+
+    _batch27c_here = _batch27c_pathlib.Path(__file__).resolve()
+    for _batch27c_parent in [_batch27c_here.parent, *_batch27c_here.parents]:
+        if (_batch27c_parent / "app" / "mme_scalpx").exists():
+            if str(_batch27c_parent) not in _batch27c_sys.path:
+                _batch27c_sys.path.insert(0, str(_batch27c_parent))
+            break
+    from app.mme_scalpx.replay.safety import assert_replay_module_static_safety
+
+assert_replay_module_static_safety(__file__)
+# END BATCH27C_REPLAY_SAFETY_FIREWALL
+
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -673,3 +691,65 @@ __all__ = [
     "effective_inputs_snapshot_to_dict",
     "flattened_override_payload_to_dict",
 ]
+
+# BEGIN BATCH27E_REPLAY_RUNNER_INTEGRITY_HELPERS
+
+def replay_runner_deterministic_reset_plan(*, run_id):
+    """Return replay-only reset plan for future runner integration.
+
+    This helper does not execute live services, mutate Redis, or call brokers.
+    """
+    from app.mme_scalpx.replay.reset import REPLAY_RESET_COMPONENTS
+
+    return {
+        "schema_version": "replay_runner_deterministic_reset_plan_v1",
+        "run_id": str(run_id),
+        "reset_components": REPLAY_RESET_COMPONENTS,
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_runner_deterministic_reset_plan",
+)))
+
+# END BATCH27E_REPLAY_RUNNER_INTEGRITY_HELPERS
+
+# BEGIN BATCH27K_REPLAY_RUNNER_BATCH_HELPERS
+
+def replay_runner_batch_artifact_plan(*, run_id):
+    """Return replay-only batch/artifact plan for future runner wiring."""
+    from app.mme_scalpx.replay.artifact_materializer import REPLAY_BATCH_REQUIRED_ARTIFACTS
+    from app.mme_scalpx.replay.batch_runner import REPLAY_BATCH_SUPPORTED_RUN_SCOPES
+
+    return {
+        "schema_version": "replay_runner_batch_artifact_plan_v1",
+        "run_id": str(run_id),
+        "supported_run_scopes": tuple(REPLAY_BATCH_SUPPORTED_RUN_SCOPES),
+        "required_artifacts": tuple(REPLAY_BATCH_REQUIRED_ARTIFACTS),
+        "artifact_root": "run/replay/",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_runner_batch_artifact_plan",
+)))
+
+# END BATCH27K_REPLAY_RUNNER_BATCH_HELPERS

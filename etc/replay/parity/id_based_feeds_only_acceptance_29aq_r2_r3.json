@@ -1,0 +1,29 @@
+{
+  "activity_method": "latest_stream_id_movement_or_positive_xlen_growth",
+  "batch": "29AQ-R2-R3-FEEDS-ONLY-ID-ACCEPTANCE",
+  "generated_at_utc": "2026-05-05T09:04:49.410748+00:00",
+  "mode": "id_based_feeds_only_acceptance_pfeedcheck_supplementary",
+  "pfeedcheck_used_as_hard_gate": false,
+  "required_tick_streams": [
+    "fut_zerodha",
+    "fut_dhan",
+    "opt_selected_zerodha",
+    "opt_selected_dhan",
+    "opt_context_dhan"
+  ],
+  "safety": {
+    "acceptance_proof_only": true,
+    "batch": "29AQ-R2-R3-FEEDS-ONLY-ID-ACCEPTANCE",
+    "broker_execution_path_used": false,
+    "features_restarted": false,
+    "live_redis_write_performed_by_batch": false,
+    "order_sending_performed": false,
+    "paper_live_enablement_performed": false,
+    "pfeedcheck_used_as_hard_gate": false,
+    "production_code_patched": false,
+    "raw_patch_performed": false,
+    "replay_patch_performed": false,
+    "strategy_restarted": false
+  },
+  "schema_version": "batch29aq_r2_r3_config_v1"
+}

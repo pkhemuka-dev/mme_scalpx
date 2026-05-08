@@ -1,0 +1,30 @@
+{
+  "generated_at_utc": "2026-05-01T07:29:26.422629+00:00",
+  "laws": {
+    "mid_position_provider_migration_blocked": true,
+    "no_silent_provider_defaults": true,
+    "pre_position_provider_change_invalidates_setup": true,
+    "production_doctrine_changed": false,
+    "provider_ready_miso_required": true
+  },
+  "purpose": "Frozen provider runtime fields required by replay for live-mimic provider readiness.",
+  "required_fields": [
+    "provider_runtime_ts_ns",
+    "provider_runtime_age_ms",
+    "futures_provider",
+    "selected_option_provider",
+    "option_context_provider",
+    "execution_provider",
+    "fallback_execution_provider",
+    "zerodha_ready",
+    "dhan_ready",
+    "dhan_context_ready",
+    "provider_ready_miso",
+    "provider_mode",
+    "provider_degraded_reason",
+    "provider_switch_blocked",
+    "pre_position_provider_change_invalidates_setup",
+    "mid_position_provider_migration_blocked"
+  ],
+  "schema_version": "replay_provider_runtime_contract_v1"
+}

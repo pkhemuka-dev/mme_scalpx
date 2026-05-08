@@ -207,6 +207,58 @@ def float_any(mapping: Mapping[str, Any], keys: Sequence[str], default: float = 
     return default
 
 
+
+# BEGIN BATCH26D_STRATEGY_LEAF_REQUIRED_COMMON_SURFACE
+def _batch26d_required_common_surface(container, key, *, family="MISR", source="unknown"):
+    """
+    Batch 26D fail-closed common-surface accessor.
+
+    Required surfaces must not silently collapse to empty mappings:
+    - view.provider_runtime
+    - common.selected_option
+
+    Missing/None/empty required surfaces become explicit blockers by raising
+    RuntimeError before family eligibility can interpret absent data as safe.
+    """
+    sentinel = object()
+    value = sentinel
+
+    if container is None:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:container_none")
+
+    if isinstance(container, dict):
+        value = container.get(key, sentinel)
+    else:
+        getter = getattr(container, "get", None)
+        if callable(getter):
+            try:
+                value = getter(key, sentinel)
+            except TypeError:
+                try:
+                    value = getter(key)
+                except Exception:
+                    value = sentinel
+            except Exception:
+                value = sentinel
+
+        if value is sentinel:
+            try:
+                value = getattr(container, key)
+            except Exception:
+                value = sentinel
+
+    if value is sentinel:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:absent")
+
+    if value is None:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:none")
+
+    if isinstance(value, dict) and not value:
+        raise RuntimeError(f"BATCH26D_REQUIRED_SURFACE_MISSING:{family}:{source}.{key}:empty")
+
+    return value
+# END BATCH26D_STRATEGY_LEAF_REQUIRED_COMMON_SURFACE
+
 @dataclass(frozen=True, slots=True)
 class MisrBlocker:
     code: str
@@ -448,7 +500,7 @@ def extract_stage_flags(view: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def extract_provider_runtime(view: Mapping[str, Any]) -> dict[str, Any]:
-    return as_mapping(view.get("provider_runtime"))
+    return as_mapping(_batch26d_required_common_surface(view, "provider_runtime", family="MISR", source="view"))
 
 
 def runtime_mode(view: Mapping[str, Any]) -> str:
@@ -464,7 +516,7 @@ def futures_block(view: Mapping[str, Any]) -> dict[str, Any]:
 
 def selected_option(view: Mapping[str, Any], branch_id: str) -> dict[str, Any]:
     common = extract_common(view)
-    selected = as_mapping(common.get("selected_option"))
+    selected = as_mapping(_batch26d_required_common_surface(common, "selected_option", family="MISR", source="common"))
     side = side_for_branch(branch_id)
     if safe_str(selected.get("side")).upper() == side:
         return selected
@@ -1340,4 +1392,718 @@ def evaluate(view_like: Any, branch_id: str | None = None):
         reason="all_branches_no_signal",
         metadata={"family_id": FAMILY_ID},
     )
+
+
+# BEGIN BATCH26E_MISR_TRAP_EVENT_CONSUMPTION_REGISTRY
+BATCH26E_MISR_TRAP_EVENT_CONSUMED_BLOCKER = "MISR_TRAP_EVENT_CONSUMED_NO_RETRY"
+BATCH26E_MISR_TRAP_EVENT_MISSING_BLOCKER = "MISR_TRAP_EVENT_ID_MISSING"
+BATCH26E_MISR_TRAP_EVENT_INVALID_BLOCKER = "MISR_TRAP_EVENT_ID_INVALID"
+
+# Process-local deterministic consumed-event registry.
+# This is intentionally strategy-local and blocks retrying the same trap event
+# after an entry-like decision has been emitted for that event.
+_BATCH26E_MISR_CONSUMED_TRAP_EVENTS = {}
+_BATCH26E_MISR_LATEST_CONSUMED_BY_ZONE_SIDE = {}
+_BATCH26E_MISR_ACTIVE_SESSION_KEY = None
+
+
+def _batch26e_truthy(value):
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {
+        "1", "true", "yes", "y", "on", "enabled", "allow", "allowed", "pass", "passed", "ok", "ready"
+    }
+
+
+def _batch26e_falsey(value):
+    if isinstance(value, bool):
+        return value is False
+    if value is None:
+        return False
+    return str(value).strip().lower() in {
+        "0", "false", "no", "n", "off", "disabled", "deny", "denied", "blocked", "fail", "failed"
+    }
+
+
+def _batch26e_get(obj, names, default=None):
+    if isinstance(names, str):
+        names = [names]
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        for name in names:
+            if name in obj:
+                return obj.get(name)
+        return default
+    for name in names:
+        try:
+            if hasattr(obj, name):
+                return getattr(obj, name)
+        except Exception:
+            pass
+    return default
+
+
+def _batch26e_iter_children(obj):
+    if isinstance(obj, dict):
+        for child in obj.values():
+            yield child
+    elif isinstance(obj, (list, tuple)):
+        for child in obj:
+            yield child
+    else:
+        for attr in (
+            "stage",
+            "stage_flags",
+            "metadata",
+            "meta",
+            "surface",
+            "features",
+            "family_features",
+            "family_surface",
+            "candidate",
+            "decision",
+            "context",
+            "event",
+            "trap_event",
+            "active_zone",
+            "zone",
+        ):
+            try:
+                child = getattr(obj, attr)
+            except Exception:
+                child = None
+            if child is not None:
+                yield child
+
+
+def _batch26e_deep_find(obj, names, max_depth=7):
+    names = set(names)
+    seen = set()
+
+    def walk(value, depth):
+        if depth > max_depth:
+            return None
+        ident = id(value)
+        if ident in seen:
+            return None
+        seen.add(ident)
+
+        found = _batch26e_get(value, names, None)
+        if found is not None:
+            return found
+
+        for child in _batch26e_iter_children(value):
+            result = walk(child, depth + 1)
+            if result is not None:
+                return result
+        return None
+
+    return walk(obj, 0)
+
+
+def _batch26e_extract_trap_event_id(*objs):
+    for obj in objs:
+        value = _batch26e_deep_find(
+            obj,
+            {
+                "trap_event_id",
+                "misr_trap_event_id",
+                "event_id",
+            },
+        )
+        if value is not None:
+            text = str(value).strip()
+            if text:
+                return text
+    return None
+
+
+def _batch26e_extract_session_key(*objs):
+    for obj in objs:
+        value = _batch26e_deep_find(
+            obj,
+            {
+                "session_key",
+                "session_id",
+                "trading_session",
+                "trading_date",
+                "session_date",
+                "market_session_date",
+            },
+        )
+        if value is not None:
+            text = str(value).strip()
+            if text:
+                return text
+    return None
+
+
+def _batch26e_parse_trap_event_id(trap_event_id):
+    """
+    Contract format:
+    {branch_side}|{active_zone_id}|{fake_break_start_ts_epoch_ms}|{fake_break_extreme_ts_epoch_ms}
+    """
+    if trap_event_id is None:
+        return {
+            "valid": False,
+            "error": "missing",
+            "trap_event_id": None,
+        }
+
+    text = str(trap_event_id).strip()
+    parts = text.split("|")
+    if len(parts) != 4:
+        return {
+            "valid": False,
+            "error": "expected_4_pipe_separated_parts",
+            "trap_event_id": text,
+            "parts": parts,
+        }
+
+    side, zone_id, start_ms, extreme_ms = [p.strip() for p in parts]
+    if side not in {"CALL", "PUT"}:
+        return {
+            "valid": False,
+            "error": "invalid_side",
+            "trap_event_id": text,
+            "side": side,
+            "zone_id": zone_id,
+            "start_ms": start_ms,
+            "extreme_ms": extreme_ms,
+        }
+
+    try:
+        start_i = int(float(start_ms))
+        extreme_i = int(float(extreme_ms))
+    except Exception:
+        return {
+            "valid": False,
+            "error": "invalid_timestamp",
+            "trap_event_id": text,
+            "side": side,
+            "zone_id": zone_id,
+            "start_ms": start_ms,
+            "extreme_ms": extreme_ms,
+        }
+
+    if not zone_id:
+        return {
+            "valid": False,
+            "error": "missing_zone_id",
+            "trap_event_id": text,
+            "side": side,
+            "zone_id": zone_id,
+            "start_ms": start_i,
+            "extreme_ms": extreme_i,
+        }
+
+    return {
+        "valid": True,
+        "trap_event_id": text,
+        "side": side,
+        "zone_id": zone_id,
+        "zone_side_key": f"{side}|{zone_id}",
+        "fake_break_start_ts_epoch_ms": start_i,
+        "fake_break_extreme_ts_epoch_ms": extreme_i,
+    }
+
+
+def _batch26e_reset_misr_trap_event_registry(reason="manual_reset"):
+    _BATCH26E_MISR_CONSUMED_TRAP_EVENTS.clear()
+    _BATCH26E_MISR_LATEST_CONSUMED_BY_ZONE_SIDE.clear()
+    return {
+        "reset": True,
+        "reason": reason,
+        "consumed_count": 0,
+    }
+
+
+def _batch26e_update_session_from_objects(*objs):
+    global _BATCH26E_MISR_ACTIVE_SESSION_KEY
+
+    session_key = _batch26e_extract_session_key(*objs)
+    if not session_key:
+        return {
+            "session_key": _BATCH26E_MISR_ACTIVE_SESSION_KEY,
+            "reset": False,
+        }
+
+    if _BATCH26E_MISR_ACTIVE_SESSION_KEY is None:
+        _BATCH26E_MISR_ACTIVE_SESSION_KEY = session_key
+        return {
+            "session_key": session_key,
+            "reset": False,
+        }
+
+    if session_key != _BATCH26E_MISR_ACTIVE_SESSION_KEY:
+        old = _BATCH26E_MISR_ACTIVE_SESSION_KEY
+        _BATCH26E_MISR_ACTIVE_SESSION_KEY = session_key
+        _batch26e_reset_misr_trap_event_registry(reason=f"session_change:{old}->{session_key}")
+        return {
+            "session_key": session_key,
+            "reset": True,
+            "old_session_key": old,
+        }
+
+    return {
+        "session_key": session_key,
+        "reset": False,
+    }
+
+
+def _batch26e_misr_trap_event_consumed_status(trap_event_id):
+    parsed = _batch26e_parse_trap_event_id(trap_event_id)
+    if not parsed.get("valid"):
+        return {
+            "blocked": True,
+            "reason": BATCH26E_MISR_TRAP_EVENT_INVALID_BLOCKER,
+            "parsed": parsed,
+        }
+
+    event_id = parsed["trap_event_id"]
+    if event_id in _BATCH26E_MISR_CONSUMED_TRAP_EVENTS:
+        return {
+            "blocked": True,
+            "reason": BATCH26E_MISR_TRAP_EVENT_CONSUMED_BLOCKER,
+            "parsed": parsed,
+            "existing": _BATCH26E_MISR_CONSUMED_TRAP_EVENTS.get(event_id),
+        }
+
+    zone_key = parsed["zone_side_key"]
+    latest = _BATCH26E_MISR_LATEST_CONSUMED_BY_ZONE_SIDE.get(zone_key)
+    if latest is not None:
+        latest_start = int(latest.get("fake_break_start_ts_epoch_ms", -1))
+        if int(parsed["fake_break_start_ts_epoch_ms"]) <= latest_start:
+            return {
+                "blocked": True,
+                "reason": BATCH26E_MISR_TRAP_EVENT_CONSUMED_BLOCKER,
+                "parsed": parsed,
+                "zone_latest": latest,
+            }
+
+    return {
+        "blocked": False,
+        "reason": "",
+        "parsed": parsed,
+    }
+
+
+def _batch26e_consume_misr_trap_event(trap_event_id, *, consume_reason="entry_decision_emitted"):
+    parsed = _batch26e_parse_trap_event_id(trap_event_id)
+    if not parsed.get("valid"):
+        return {
+            "consumed": False,
+            "reason": BATCH26E_MISR_TRAP_EVENT_INVALID_BLOCKER,
+            "parsed": parsed,
+        }
+
+    record = {
+        "trap_event_id": parsed["trap_event_id"],
+        "side": parsed["side"],
+        "zone_id": parsed["zone_id"],
+        "zone_side_key": parsed["zone_side_key"],
+        "fake_break_start_ts_epoch_ms": parsed["fake_break_start_ts_epoch_ms"],
+        "fake_break_extreme_ts_epoch_ms": parsed["fake_break_extreme_ts_epoch_ms"],
+        "consume_reason": consume_reason,
+    }
+    _BATCH26E_MISR_CONSUMED_TRAP_EVENTS[parsed["trap_event_id"]] = record
+    _BATCH26E_MISR_LATEST_CONSUMED_BY_ZONE_SIDE[parsed["zone_side_key"]] = record
+    return {
+        "consumed": True,
+        "record": record,
+    }
+
+
+def _batch26e_result_is_entry_like(result):
+    if isinstance(result, bool):
+        return result is True
+
+    if isinstance(result, dict):
+        action = str(result.get("action", "") or result.get("decision", "") or result.get("strategy_action", "")).upper()
+        state = str(result.get("state", "") or result.get("next_state", "")).upper()
+
+        if action.startswith("ENTER") or action in {"BUY", "ENTRY", "OPEN", "ENTER_CALL", "ENTER_PUT"}:
+            return True
+        if state in {"ENTRY_PENDING", "POSITION_OPEN"}:
+            return True
+
+        for key in (
+            "entry_allowed",
+            "entry_ready",
+            "eligible",
+            "candidate",
+            "candidate_found",
+            "decision_allowed",
+            "trade_allowed",
+            "allow_entry",
+        ):
+            if key in result and _batch26e_truthy(result.get(key)):
+                return True
+
+        return False
+
+    for attr in ("action", "decision", "strategy_action"):
+        value = _batch26e_get(result, attr)
+        if value is not None:
+            action = str(value).upper()
+            if action.startswith("ENTER") or action in {"BUY", "ENTRY", "OPEN", "ENTER_CALL", "ENTER_PUT"}:
+                return True
+
+    for attr in (
+        "entry_allowed",
+        "entry_ready",
+        "eligible",
+        "candidate",
+        "candidate_found",
+        "decision_allowed",
+        "trade_allowed",
+        "allow_entry",
+    ):
+        value = _batch26e_get(result, attr)
+        if value is not None and _batch26e_truthy(value):
+            return True
+
+    return False
+
+
+def _batch26e_append_blocker_to_dict(result, blocker, details=None):
+    existing = result.get("blockers")
+    if isinstance(existing, list):
+        existing.append(blocker)
+    elif existing:
+        result["blockers"] = [existing, blocker]
+    else:
+        result["blockers"] = [blocker]
+
+    existing_reasons = result.get("blocker_reasons")
+    if isinstance(existing_reasons, list):
+        existing_reasons.append(blocker)
+    elif existing_reasons:
+        result["blocker_reasons"] = [existing_reasons, blocker]
+    else:
+        result["blocker_reasons"] = [blocker]
+
+    result["misr_trap_event_consumed_blocked"] = True
+    result["misr_trap_event_consumption_registry_reason"] = blocker
+    if details is not None:
+        result["misr_trap_event_consumption_registry_detail"] = str(details)
+
+    for key in (
+        "eligible",
+        "entry_allowed",
+        "entry_ready",
+        "candidate",
+        "candidate_found",
+        "decision_allowed",
+        "trade_allowed",
+        "allow_entry",
+        "signal",
+        "ready",
+    ):
+        if key in result:
+            result[key] = False
+
+    action = str(result.get("action", "") or "").upper()
+    if action.startswith("ENTER") or action in {"BUY", "ENTRY", "OPEN", "ENTER_CALL", "ENTER_PUT"}:
+        result["action_before_misr_trap_consumed_block"] = action
+        result["action"] = "HOLD"
+
+    if "reason_code" not in result:
+        result["reason_code"] = blocker
+    if "reason" not in result:
+        result["reason"] = blocker
+
+    return result
+
+
+def _batch26e_block_result(result, blocker, details=None):
+    if isinstance(result, bool):
+        return False
+
+    if isinstance(result, dict):
+        return _batch26e_append_blocker_to_dict(result, blocker, details)
+
+    if isinstance(result, list):
+        return [_batch26e_block_result(item, blocker, details) for item in result]
+
+    if isinstance(result, tuple):
+        return tuple(_batch26e_block_result(item, blocker, details) for item in result)
+
+    mutated = False
+    for attr in (
+        "eligible",
+        "entry_allowed",
+        "entry_ready",
+        "candidate",
+        "candidate_found",
+        "decision_allowed",
+        "trade_allowed",
+        "allow_entry",
+        "signal",
+        "ready",
+    ):
+        try:
+            if hasattr(result, attr):
+                setattr(result, attr, False)
+                mutated = True
+        except Exception:
+            pass
+
+    for attr in ("blockers", "blocker_reasons"):
+        try:
+            current = getattr(result, attr)
+            if isinstance(current, list):
+                current.append(blocker)
+            else:
+                setattr(result, attr, [current, blocker] if current else [blocker])
+            mutated = True
+        except Exception:
+            try:
+                setattr(result, attr, [blocker])
+                mutated = True
+            except Exception:
+                pass
+
+    try:
+        action = str(getattr(result, "action", "") or "").upper()
+        if action.startswith("ENTER") or action in {"BUY", "ENTRY", "OPEN", "ENTER_CALL", "ENTER_PUT"}:
+            setattr(result, "action_before_misr_trap_consumed_block", action)
+            setattr(result, "action", "HOLD")
+            mutated = True
+    except Exception:
+        pass
+
+    try:
+        setattr(result, "misr_trap_event_consumed_blocked", True)
+        setattr(result, "misr_trap_event_consumption_registry_reason", blocker)
+        setattr(result, "misr_trap_event_consumption_registry_detail", str(details))
+        mutated = True
+    except Exception:
+        pass
+
+    return result if mutated else result
+
+
+def _batch26e_should_wrap_name(name):
+    lowered = str(name).lower()
+    if lowered.startswith("_batch26e"):
+        return False
+    if lowered.startswith("__"):
+        return False
+
+    needles = (
+        "evaluat",
+        "eligib",
+        "candidate",
+        "decision",
+        "decide",
+        "entry",
+        "signal",
+        "select",
+        "resolve",
+        "confirm",
+        "trap",
+        "fake",
+        "range",
+        "impulse",
+    )
+    return any(n in lowered for n in needles)
+
+
+def _batch26e_wrap_function(fn):
+    import functools
+
+    if getattr(fn, "_batch26e_misr_registry_wrapped", False):
+        return fn
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        _batch26e_update_session_from_objects(args, kwargs)
+
+        result = fn(*args, **kwargs)
+
+        _batch26e_update_session_from_objects(args, kwargs, result)
+
+        trap_event_id = _batch26e_extract_trap_event_id(args, kwargs, result)
+        if not trap_event_id:
+            return result
+
+        consumed_status = _batch26e_misr_trap_event_consumed_status(trap_event_id)
+        if consumed_status.get("blocked") is True:
+            return _batch26e_block_result(result, consumed_status.get("reason"), consumed_status)
+
+        if _batch26e_result_is_entry_like(result):
+            _batch26e_consume_misr_trap_event(
+                trap_event_id,
+                consume_reason="entry_like_decision_emitted",
+            )
+
+        return result
+
+    wrapper._batch26e_misr_registry_wrapped = True
+    return wrapper
+
+
+def _batch26e_install_misr_trap_event_registry(module_globals):
+    import inspect
+
+    installed = []
+
+    for name, obj in list(module_globals.items()):
+        if not _batch26e_should_wrap_name(name):
+            continue
+
+        if inspect.isfunction(obj) and getattr(obj, "__module__", None) == module_globals.get("__name__"):
+            module_globals[name] = _batch26e_wrap_function(obj)
+            installed.append(name)
+
+        elif inspect.isclass(obj) and getattr(obj, "__module__", None) == module_globals.get("__name__"):
+            for attr_name, attr_value in list(obj.__dict__.items()):
+                if not _batch26e_should_wrap_name(attr_name):
+                    continue
+
+                raw = attr_value
+                descriptor_type = None
+                if isinstance(raw, staticmethod):
+                    descriptor_type = staticmethod
+                    raw = raw.__func__
+                elif isinstance(raw, classmethod):
+                    descriptor_type = classmethod
+                    raw = raw.__func__
+
+                if inspect.isfunction(raw):
+                    wrapped = _batch26e_wrap_function(raw)
+                    if descriptor_type is staticmethod:
+                        setattr(obj, attr_name, staticmethod(wrapped))
+                    elif descriptor_type is classmethod:
+                        setattr(obj, attr_name, classmethod(wrapped))
+                    else:
+                        setattr(obj, attr_name, wrapped)
+                    installed.append(f"{name}.{attr_name}")
+
+    module_globals["BATCH26E_MISR_TRAP_EVENT_REGISTRY_INSTALLED"] = True
+    module_globals["BATCH26E_MISR_TRAP_EVENT_REGISTRY_WRAPPERS"] = tuple(sorted(set(installed)))
+    return installed
+
+
+BATCH26E_MISR_TRAP_EVENT_REGISTRY_WRAPPERS = tuple(
+    _batch26e_install_misr_trap_event_registry(globals())
+)
+# END BATCH26E_MISR_TRAP_EVENT_CONSUMPTION_REGISTRY
+
+
+
+# ===== BATCH26_OI_C_FAMILY_SOFT_SCORING_ONLY START =====
+# Batch 26-OI-C freeze-final law:
+# - OI / Dhan option-ladder context is score context only in this strategy leaf.
+# - OI wall context may reduce or improve context_score.
+# - OI wall context may NOT create a hard entry blocker.
+# - No live-order promotion is introduced here.
+# - No risk/execution/Redis side effect is introduced here.
+# - Canonical OI wall calculation remains owned by strike_selection.py.
+
+_BATCH26_OI_C_FAMILY_ID = "MISR"
+_BATCH26_OI_C_SOFT_POLICY = "registered_zone_support_context_only"
+_BATCH26_OI_C_SOFT_POLICY_DESCRIPTION = "MISR uses OI wall only to support registered ORB/SWING zone context."
+_BATCH26_OI_C_ORIGINAL_CONTEXT_SCORE = context_score
+
+_BATCH26_OI_C_BLOCKER_TOKENS = (
+    "oi_wall",
+    "near_strong_oi_wall",
+    "hostile_near_strong_oi_wall",
+    "extreme_near_hostile_oi_wall",
+)
+
+def _batch26_oi_c_side_key(branch_id):
+    try:
+        return "call" if branch_id == BRANCH_CALL else "put"
+    except Exception:
+        text = str(branch_id or "").upper()
+        return "call" if "CALL" in text else "put"
+
+def _batch26_oi_c_as_mapping(value):
+    try:
+        return as_mapping(value)
+    except Exception:
+        return value if isinstance(value, dict) else {}
+
+def _batch26_oi_c_nested(mapping, *path):
+    try:
+        return nested(mapping, *path, default={})
+    except Exception:
+        return {}
+
+def _batch26_oi_c_has_oi_context(view, branch_id, surface):
+    side_key = _batch26_oi_c_side_key(branch_id)
+    probes = []
+
+    try:
+        probes.append(surface.get("oi_wall_context"))
+    except Exception:
+        pass
+
+    probes.append(_batch26_oi_c_nested(view, "oi_wall_context", side_key))
+    probes.append(_batch26_oi_c_nested(view, "shared_core", "oi_wall_context", side_key))
+    probes.append(_batch26_oi_c_nested(view, "shared_core", "strike_selection", "oi_wall_context", side_key))
+    probes.append(_batch26_oi_c_nested(view, "common", "cross_option", f"{side_key}_oi_wall_context"))
+
+    try:
+        if "branch_frame_key" in globals():
+            branch_key = branch_frame_key(branch_id)
+            probes.append(_batch26_oi_c_nested(view, "family_surfaces", "surfaces_by_branch", branch_key, "oi_wall_context"))
+    except Exception:
+        pass
+
+    try:
+        probes.append(_batch26_oi_c_nested(view, "family_surfaces", "families", FAMILY_ID, "branches", branch_id, "oi_wall_context"))
+    except Exception:
+        pass
+
+    for probe in probes:
+        item = _batch26_oi_c_as_mapping(probe)
+        if item:
+            return True
+
+    return False
+
+def _batch26_oi_c_reason_text(reason):
+    try:
+        return safe_str(reason, "").lower()
+    except Exception:
+        return str(reason or "").lower()
+
+def _batch26_oi_c_min_context_score():
+    try:
+        return float(MIN_CONTEXT_SCORE)
+    except Exception:
+        return 0.0
+
+def context_score(view, branch_id, surface):
+    score, passed, reason = _BATCH26_OI_C_ORIGINAL_CONTEXT_SCORE(view, branch_id, surface)
+
+    reason_text = _batch26_oi_c_reason_text(reason)
+    reason_is_oi = any(token in reason_text for token in _BATCH26_OI_C_BLOCKER_TOKENS)
+    has_oi_context = _batch26_oi_c_has_oi_context(view, branch_id, surface) or reason_is_oi
+
+    if not has_oi_context:
+        return score, passed, reason
+
+    soft_floor = _batch26_oi_c_min_context_score()
+
+    # OI-specific blockers become soft metadata and score shaping only.
+    if not passed and reason_is_oi:
+        return max(float(score), soft_floor), True, f"soft_only_{reason or 'oi_context'}"
+
+    # If canonical OI context dragged context_score below the later MIN_CONTEXT_SCORE
+    # gate, floor it to the minimum passing context so OI remains soft. The aggregate
+    # family score can still fail normally through score_below_threshold.
+    if float(score) < soft_floor:
+        return soft_floor, True, "soft_only_oi_context_floor"
+
+    return score, passed, reason
+
+# ===== BATCH26_OI_C_FAMILY_SOFT_SCORING_ONLY END =====
 

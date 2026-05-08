@@ -1,0 +1,36 @@
+{
+  "applicability_scope": {
+    "families": [
+      "MIST",
+      "MISB",
+      "MISC",
+      "MISR",
+      "MISO"
+    ],
+    "instrument_type": "NIFTY_OPTIONS",
+    "mode": "research_gate_only",
+    "raw_batches": [
+      "RAW-AA15-R4_OR_LATER_ONLY"
+    ]
+  },
+  "authorization_status": "NOT_AUTHORIZED_TEMPLATE_ONLY",
+  "authorized_at_utc": "",
+  "authorized_by": "",
+  "brokerage_basis": "",
+  "cost_model_id": "",
+  "cost_model_version": "",
+  "cost_per_trade_or_per_leg": "",
+  "cost_unit": "",
+  "created_at_utc": "2026-05-02T07:20:26.773775+00:00",
+  "fees_taxes_basis": "",
+  "formula_for_cost_ticks": "",
+  "formula_for_reward_cost_ratio": "",
+  "how_to_interpret_existing_net_pnl_after_costs": "",
+  "non_promotion_statement": "This declaration, even when filled, does not enable paper/live and does not mutate production doctrine.",
+  "operator_notes": "",
+  "point_value_or_lot_basis": "",
+  "schema_version": "raw_cost_model_declaration_template_v1",
+  "slippage_basis": "",
+  "source_of_truth_doc_or_config": "",
+  "whether_backfill_allowed_without_entry_exit_qty": ""
+}

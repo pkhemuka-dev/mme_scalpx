@@ -1,0 +1,803 @@
+# Batch 26H — Alias / Monkey-Patch Inventory
+
+Date: 2026-04-29
+
+## Verdict
+
+- alias_override_inventory_ok: `True`
+- scan_completed: `True`
+- source_code_patched: `False`
+- paper_armed_approved: `False`
+- real_live_approved: `False`
+- patch_required_items_present: `True`
+- temp_alias_items_present: `True`
+- remove_after_proof_items_present: `True`
+- unbalanced_batch_markers_present: `False`
+
+## Classification Counts
+
+```json
+{
+  "KEEP_PERMANENT_ALIAS": 54,
+  "PATCH_REQUIRED": 2191,
+  "PROOF_ONLY_EXEMPTION": 455,
+  "REMOVE_AFTER_PROOF": 632,
+  "TEMP_ALIAS_WITH_EXPIRY": 278
+}
+```
+
+## Group Counts
+
+```json
+{
+  "alias_or_compatibility": 644,
+  "batch_or_override": 2829,
+  "legacy_runtime_reference": 37,
+  "raw_redis_name": 136
+}
+```
+
+## Paths by Classification
+
+```json
+{
+  "KEEP_PERMANENT_ALIAS": [
+    "app/mme_scalpx/core/names.py",
+    "app/mme_scalpx/main.py",
+    "app/mme_scalpx/services/features_legacy_single.py",
+    "app/mme_scalpx/services/strategy_legacy_single.py"
+  ],
+  "PATCH_REQUIRED": [
+    "app/mme_scalpx/core/clock.py",
+    "app/mme_scalpx/core/codec.py",
+    "app/mme_scalpx/core/models.py",
+    "app/mme_scalpx/core/names.py",
+    "app/mme_scalpx/core/redisx.py",
+    "app/mme_scalpx/core/settings.py",
+    "app/mme_scalpx/domain/instruments.py",
+    "app/mme_scalpx/integrations/broker_api.py",
+    "app/mme_scalpx/integrations/broker_auth.py",
+    "app/mme_scalpx/integrations/dhan_marketdata.py",
+    "app/mme_scalpx/integrations/dhan_runtime_clients.py",
+    "app/mme_scalpx/integrations/login.py",
+    "app/mme_scalpx/integrations/provider_runtime.py",
+    "app/mme_scalpx/main.py",
+    "app/mme_scalpx/replay/artifacts.py",
+    "app/mme_scalpx/replay/clock.py",
+    "app/mme_scalpx/replay/contracts.py",
+    "app/mme_scalpx/replay/dataset.py",
+    "app/mme_scalpx/replay/engine.py",
+    "app/mme_scalpx/replay/experiments.py",
+    "app/mme_scalpx/replay/injector.py",
+    "app/mme_scalpx/replay/integrity.py",
+    "app/mme_scalpx/replay/modes.py",
+    "app/mme_scalpx/replay/overrides.py",
+    "app/mme_scalpx/replay/topology.py",
+    "app/mme_scalpx/research_capture/archive_writer.py",
+    "app/mme_scalpx/research_capture/artifact_materializer.py",
+    "app/mme_scalpx/research_capture/artifact_plan.py",
+    "app/mme_scalpx/research_capture/capture_plan.py",
+    "app/mme_scalpx/research_capture/config_bootstrap.py",
+    "app/mme_scalpx/research_capture/config_context.py",
+    "app/mme_scalpx/research_capture/config_loader.py",
+    "app/mme_scalpx/research_capture/contracts.py",
+    "app/mme_scalpx/research_capture/enricher.py",
+    "app/mme_scalpx/research_capture/integrity.py",
+    "app/mme_scalpx/research_capture/manifest.py",
+    "app/mme_scalpx/research_capture/manifest_materializer.py",
+    "app/mme_scalpx/research_capture/models.py",
+    "app/mme_scalpx/research_capture/normalizer.py",
+    "app/mme_scalpx/research_capture/raw_capture_bridge.py",
+    "app/mme_scalpx/research_capture/reader.py",
+    "app/mme_scalpx/research_capture/router.py",
+    "app/mme_scalpx/research_capture/runtime_bridge.py",
+    "app/mme_scalpx/research_capture/session_materializer.py",
+    "app/mme_scalpx/research_capture/utils.py",
+    "app/mme_scalpx/services/controlled_paper_runtime.py",
+    "app/mme_scalpx/services/execution.py",
+    "app/mme_scalpx/services/feature_family/common.py",
+    "app/mme_scalpx/services/feature_family/contracts.py",
+    "app/mme_scalpx/services/feature_family/futures_core.py",
+    "app/mme_scalpx/services/feature_family/misb_surface.py",
+    "app/mme_scalpx/services/feature_family/misc_surface.py",
+    "app/mme_scalpx/services/feature_family/miso_surface.py",
+    "app/mme_scalpx/services/feature_family/misr_surface.py",
+    "app/mme_scalpx/services/feature_family/mist_surface.py",
+    "app/mme_scalpx/services/feature_family/option_core.py",
+    "app/mme_scalpx/services/feature_family/regime.py",
+    "app/mme_scalpx/services/feature_family/strike_selection.py",
+    "app/mme_scalpx/services/feature_family/tradability.py",
+    "app/mme_scalpx/services/features.py",
+    "app/mme_scalpx/services/features_legacy_single.py",
+    "app/mme_scalpx/services/feeds.py",
+    "app/mme_scalpx/services/monitor.py",
+    "app/mme_scalpx/services/report.py",
+    "app/mme_scalpx/services/risk.py",
+    "app/mme_scalpx/services/strategy.py",
+    "app/mme_scalpx/services/strategy_family/activation.py",
+    "app/mme_scalpx/services/strategy_family/arbitration.py",
+    "app/mme_scalpx/services/strategy_family/common.py",
+    "app/mme_scalpx/services/strategy_family/cooldowns.py",
+    "app/mme_scalpx/services/strategy_family/decisions.py",
+    "app/mme_scalpx/services/strategy_family/doctrine_contracts.py",
+    "app/mme_scalpx/services/strategy_family/doctrine_runtime.py",
+    "app/mme_scalpx/services/strategy_family/eligibility.py",
+    "app/mme_scalpx/services/strategy_family/event_registry.py",
+    "app/mme_scalpx/services/strategy_family/misb.py",
+    "app/mme_scalpx/services/strategy_family/misc.py",
+    "app/mme_scalpx/services/strategy_family/miso.py",
+    "app/mme_scalpx/services/strategy_family/misr.py",
+    "app/mme_scalpx/services/strategy_family/mist.py",
+    "app/mme_scalpx/services/strategy_family/order_intent.py",
+    "app/mme_scalpx/services/strategy_family/registry.py",
+    "app/mme_scalpx/services/strategy_legacy_single.py"
+  ],
+  "PROOF_ONLY_EXEMPTION": [
+    "bin/_batch25v_market_observation_common.py",
+    "bin/batch26m_enable_controlled_paper_from_25v25w.sh",
+    "bin/build_proof_bundle.py",
+    "bin/dhan_nifty_capability_audit.py",
+    "bin/diagnose_replay_zero_injection.py",
+    "bin/mme_live_observer.py",
+    "bin/observe_strategy_activation_report_live.py",
+    "bin/proof_5family_integration_master.py",
+    "bin/proof_aftermarket_broad_replay_materialization.py",
+    "bin/proof_aftermarket_full_replay_dry_run.py",
+    "bin/proof_aftermarket_strong_replay_sample.py",
+    "bin/proof_batch26a_current_repo_truth.py",
+    "bin/proof_batch26d_strategy_leaf_required_surface_failclosed.py",
+    "bin/proof_config_runtime_truth.py",
+    "bin/proof_contract_field_registry.py",
+    "bin/proof_controlled_paper_runtime_wiring.py",
+    "bin/proof_core_codec_transport.py",
+    "bin/proof_dhan_execution_fallback_policy.py",
+    "bin/proof_execution_entry_contract_dryrun.py",
+    "bin/proof_execution_family_entry_safety.py",
+    "bin/proof_family_features_canonical_support.py",
+    "bin/proof_family_features_offline.py",
+    "bin/proof_feature_family_shared_core_guards.py",
+    "bin/proof_feature_family_strategy_surfaces.py",
+    "bin/proof_feeds_lock_refresh_pre_poll.py",
+    "bin/proof_feeds_provider_surface_strictness.py",
+    "bin/proof_integrations_batch5_freeze.py",
+    "bin/proof_legacy_baseline_quarantine.py",
+    "bin/proof_legacy_quarantine_contracts.py",
+    "bin/proof_lock_refresh_contract.py",
+    "bin/proof_main_batch4_freeze.py",
+    "bin/proof_market_session_no_order_sent.py",
+    "bin/proof_market_session_strategy_activation.py",
+    "bin/proof_miso_doctrine_offline.py",
+    "bin/proof_miso_provider_doctrine_alignment.py",
+    "bin/proof_models_batch2_freeze.py",
+    "bin/proof_names_alias_lifecycle.py",
+    "bin/proof_names_hardening.py",
+    "bin/proof_order_intent_adapter_disabled.py",
+    "bin/proof_paper_armed_readiness_gate.py",
+    "bin/proof_provider_runtime_contract_seam.py",
+    "bin/proof_replay_batch16_freeze.py",
+    "bin/proof_replay_engine_contracts.py",
+    "bin/proof_repo_hygiene_quarantine.py",
+    "bin/proof_risk_batch14_freeze.py",
+    "bin/proof_risk_controlled_paper_veto.py",
+    "bin/proof_risk_gate_execution_integration.py",
+    "bin/proof_runtime_config_alignment.py",
+    "bin/proof_runtime_truth_authority.py",
+    "bin/proof_strategy_activation_report_only.py",
+    "bin/proof_strategy_activation_report_redis_smoke.py",
+    "bin/proof_strategy_candidate_metadata_contract.py",
+    "bin/proof_strategy_family_activation_bridge.py",
+    "bin/proof_strategy_family_compat_offline.py",
+    "bin/proof_strategy_family_consumer_offline.py",
+    "bin/proof_strategy_family_doctrine_leaves.py",
+    "bin/proof_strategy_family_doctrine_package.py",
+    "bin/proof_strategy_family_reverse_coverage.py",
+    "bin/proof_strategy_family_shared_layer_contracts.py",
+    "bin/proof_strategy_hold_bridge_contract.py",
+    "bin/proof_strategy_hold_bridge_offline.py",
+    "bin/proof_systemd_runtime_alignment.py",
+    "bin/record_live_capture.sh",
+    "bin/replay_build_comparison_summary.py",
+    "bin/replay_export_frames_real.py",
+    "bin/replay_run.py",
+    "bin/research_capture_archive_integration_doctor.py",
+    "bin/research_capture_prove_optional_audit_roundtrip.py",
+    "bin/research_capture_raw_capture_smoke.py",
+    "bin/research_capture_run.py",
+    "bin/research_capture_verify.py",
+    "bin/research_capture_verify_integration.py",
+    "bin/run_5family_closed_market_dryrun.py",
+    "bin/run_final_freeze_bundle.py",
+    "bin/start_mme.sh",
+    "bin/top20.sh",
+    "docs/contracts/compatibility_alias_registry.md",
+    "docs/milestones/2026-04-24_misb_doctrine_leaf_freeze.md",
+    "docs/milestones/2026-04-24_misc_doctrine_leaf_freeze.md",
+    "docs/milestones/2026-04-24_miso_doctrine_leaf_freeze.md",
+    "docs/milestones/2026-04-24_misr_doctrine_leaf_freeze.md",
+    "docs/milestones/2026-04-24_mist_doctrine_leaf_freeze.md",
+    "docs/milestones/2026-04-24_strategy_family_activation_bridge_freeze.md",
+    "docs/milestones/2026-04-24_strategy_family_compat_offline_proof.md",
+    "docs/milestones/2026-04-24_strategy_family_consumer_offline_proof.md",
+    "docs/milestones/2026-04-24_strategy_family_doctrine_package_freeze.md",
+    "docs/milestones/2026-04-24_strategy_hold_bridge_freeze.md",
+    "docs/milestones/2026-04-25_batch10_strategy_hold_bridge_contract_freeze_final.md",
+    "docs/milestones/2026-04-25_batch11_activation_candidate_action_corrective.md",
+    "docs/milestones/2026-04-25_batch13_execution_proof_expectation_fix.md",
+    "docs/milestones/2026-04-25_batch1_names_freeze_pass.md",
+    "docs/milestones/2026-04-25_batch1_strategy_family_leaf_candidate_contract_freeze_final.md",
+    "docs/milestones/2026-04-25_batch20_legacy_quarantine_freeze.md",
+    "docs/milestones/2026-04-25_batch2_models_freeze_final.md",
+    "docs/milestones/2026-04-25_batch4_main_freeze_final.md",
+    "docs/milestones/2026-04-25_batch6_domain_instruments_freeze_final.md",
+    "docs/milestones/2026-04-25_batch7_feeds_features_corrective_freeze_final.md",
+    "docs/milestones/2026-04-25_batch9_feature_family_surfaces_corrective_freeze_final.md",
+    "docs/milestones/2026-04-25_fix_batch16_integrity_override_20260425_154320.md",
+    "docs/milestones/2026-04-25_group_a_runtime_provider_proofs_20260425_132959.md",
+    "docs/milestones/2026-04-25_group_a_runtime_provider_proofs_20260425_133305.md",
+    "docs/milestones/2026-04-25_integrations_batch5_freeze_final.md",
+    "docs/milestones/2026-04-25_recorded_live_data_clean_inventory_20260425_150300.md",
+    "docs/milestones/2026-04-25_replay_compatibility_audit_20260425_150508.md",
+    "docs/milestones/2026-04-25_replay_quote_compat_20260425_150651.md",
+    "docs/milestones/2026-04-25_replay_zero_injection_diagnosis_20260425_151003.md",
+    "docs/milestones/2026-04-25_session_export_schema_audit_20260425_150405.md",
+    "docs/milestones/2026-04-26_batch25g_corrective_proof_import_validation.md",
+    "docs/milestones/2026-04-26_batch25h_corrective_provider_runtime_contract_surface.md",
+    "docs/milestones/2026-04-26_batch25h_provider_runtime_seam_repair.md",
+    "docs/milestones/2026-04-26_batch25j_dhan_oi_ladder_context_freeze.md",
+    "docs/milestones/2026-04-26_batch25k_j_runtime_wrapper_exact_builder.md",
+    "docs/milestones/2026-04-26_batch25m_canonical_family_features_repair.md",
+    "docs/milestones/2026-04-26_batch25o_strategy_family_reverse_coverage.md",
+    "docs/milestones/2026-04-26_batch25p_candidate_metadata_standardization.md",
+    "docs/milestones/2026-04-26_batch25p_proof_top_level_verdict_normalizer.md",
+    "docs/milestones/2026-04-26_batch25s_config_systemd_alignment.md",
+    "docs/milestones/2026-04-26_batch25u_closed_market_nonlive_dryrun.md",
+    "docs/milestones/2026-04-26_master_mme_scalpx_freeze_progress.md",
+    "docs/milestones/2026-04-27_batch25v_market_session_hold_observation.md",
+    "docs/milestones/2026-04-27_batch26g_miso_burst_microstructure_repair.md",
+    "docs/milestones/2026-04-27_batch26i_proof_layer_upgrade.md",
+    "docs/milestones/2026-04-29_batch26d_strategy_leaf_required_surface_failclosed.md",
+    "docs/milestones/2026-04-29_batch26g_legacy_quarantine_import_graph.md",
+    "docs/milestones/MME_RUNTIME_STABILIZATION_20260424.md",
+    "docs/systemd_runtime_unit_registry.md",
+    "etc/brokers/dhan.yaml",
+    "etc/brokers/provider_roles.yaml",
+    "etc/brokers/runtime.yaml",
+    "etc/brokers/zerodha.yaml",
+    "etc/config_registry.yaml",
+    "etc/project.env.example",
+    "etc/strategy_family/family_runtime.yaml",
+    "etc/strategy_family/frozen/miso_call.yaml",
+    "etc/strategy_family/frozen/miso_put.yaml",
+    "etc/strategy_family/rollout/controlled_paper_trial_enablement_from_25v25w.yaml",
+    "etc/strategy_family/rollout/controlled_paper_trial_scope_from_25v25w.yaml",
+    "etc/strategy_family/rollout/paper_armed_readiness_gate.yaml"
+  ],
+  "REMOVE_AFTER_PROOF": [
+    "bin/_batch25v_market_observation_common.py",
+    "bin/audit_dhan_context_completeness_25v.py",
+    "bin/audit_recorded_live_replay_readiness.py",
+    "bin/batch26m_enable_controlled_paper_from_25v25w.sh",
+    "bin/observe_strategy_activation_report_live.py",
+    "bin/patch_batch26b_execution_hard_arming_guard_thin.py",
+    "bin/patch_batch26c_risk_controlled_paper_veto.py",
+    "bin/patch_batch26d_strategy_leaf_required_surface_failclosed.py",
+    "bin/proof_5family_integration_master.py",
+    "bin/proof_5family_producer_consumer_matrix.py",
+    "bin/proof_aftermarket_broad_replay_materialization.py",
+    "bin/proof_aftermarket_full_replay_dry_run.py",
+    "bin/proof_aftermarket_historical_replay_readiness.py",
+    "bin/proof_aftermarket_strong_replay_sample.py",
+    "bin/proof_batch26a_current_repo_truth.py",
+    "bin/proof_batch26b_execution_hard_arming_guard_thin.py",
+    "bin/proof_batch26d_strategy_leaf_required_surface_failclosed.py",
+    "bin/proof_clock_session_policy.py",
+    "bin/proof_contract_field_registry.py",
+    "bin/proof_core_codec_transport.py",
+    "bin/proof_core_infra_batch18_freeze.py",
+    "bin/proof_dhan_context_adapter_ladder_payload.py",
+    "bin/proof_dhan_oi_ladder_persistence.py",
+    "bin/proof_domain_instruments_batch6_freeze.py",
+    "bin/proof_execution_entry_contract_dryrun.py",
+    "bin/proof_feature_family_strategy_surfaces.py",
+    "bin/proof_feature_family_surfaces_batch9_freeze.py",
+    "bin/proof_feeds_features_batch7_freeze.py",
+    "bin/proof_integrations_batch5_freeze.py",
+    "bin/proof_lock_refresh_contract.py",
+    "bin/proof_main_batch4_freeze.py",
+    "bin/proof_market_session_family_surfaces.py",
+    "bin/proof_market_session_feature_payload.py",
+    "bin/proof_market_session_feed_snapshot.py",
+    "bin/proof_market_session_no_order_sent.py",
+    "bin/proof_market_session_provider_runtime.py",
+    "bin/proof_market_session_strategy_activation.py",
+    "bin/proof_miso_provider_doctrine_alignment.py",
+    "bin/proof_models_batch2_freeze.py",
+    "bin/proof_monitor_redis_attr_contract.py",
+    "bin/proof_monitor_report_ops_contracts.py",
+    "bin/proof_paper_armed_readiness_gate.py",
+    "bin/proof_paper_armed_readiness_gate_v2.py",
+    "bin/proof_paper_armed_readiness_gate_v3.py",
+    "bin/proof_provider_runtime_roles.py",
+    "bin/proof_redisx_typed_stream_helpers.py",
+    "bin/proof_replay_batch16_freeze.py",
+    "bin/proof_replay_engine_contracts.py",
+    "bin/proof_research_capture_contracts.py",
+    "bin/proof_risk_batch14_freeze.py",
+    "bin/proof_risk_controlled_paper_veto.py",
+    "bin/proof_risk_controlled_paper_veto_v3.py",
+    "bin/proof_risk_exit_never_blocked.py",
+    "bin/proof_risk_gate_execution_integration.py",
+    "bin/proof_runtime_effective_config.py",
+    "bin/proof_selected_option_active_bridge.py",
+    "bin/proof_strategy_candidate_metadata_contract.py",
+    "bin/proof_strategy_family_leaf_candidate_contract.py",
+    "bin/proof_strategy_family_reverse_coverage.py",
+    "bin/proof_strategy_family_shared_layer_contracts.py",
+    "bin/replay_compare.py",
+    "bin/replay_run.py",
+    "bin/research_capture_prove_optional_audit_roundtrip.py",
+    "bin/research_capture_run.py",
+    "bin/run_5family_closed_market_dryrun.py",
+    "bin/start_mme.sh",
+    "docs/milestones/2026-04-25_after_hours_structural_paper_armed_ready.md",
+    "docs/milestones/2026-04-25_batch10_strategy_hold_bridge_contract_freeze_final.md",
+    "docs/milestones/2026-04-25_batch18_core_infra_spine_freeze_final.md",
+    "docs/milestones/2026-04-25_batch20_legacy_quarantine_freeze.md",
+    "docs/milestones/2026-04-25_batch21_aftermarket_runtime_truth_replay_start.md",
+    "docs/milestones/2026-04-25_batch23_recovery_clean_hygiene_replay_gate.md",
+    "docs/milestones/2026-04-25_batch24_broad_historical_replay_gate.md",
+    "docs/milestones/2026-04-25_batch25D_clean_fresh_proof_bundle.md",
+    "docs/milestones/2026-04-25_batch25R1_replay_integrity_and_redis_matrix_scope_fix.md",
+    "docs/milestones/2026-04-25_batch25R_closed_market_proof_hygiene_corrective.md",
+    "docs/milestones/2026-04-25_batch2_models_freeze_final.md",
+    "docs/milestones/2026-04-25_batch4_main_freeze_final.md",
+    "docs/milestones/2026-04-25_batch6_domain_instruments_freeze_final.md",
+    "docs/milestones/2026-04-25_batch7_feeds_features_corrective_freeze_final.md",
+    "docs/milestones/2026-04-25_batch9_feature_family_surfaces_corrective_freeze_final.md",
+    "docs/milestones/2026-04-25_fix_batch16_integrity_override_20260425_154320.md",
+    "docs/milestones/2026-04-25_fix_batch16_integrity_override_ast_20260425_154756.md",
+    "docs/milestones/2026-04-25_integrations_batch5_freeze_final.md",
+    "docs/milestones/2026-04-26_batch25g_corrective_proof_import_validation.md",
+    "docs/milestones/2026-04-26_batch25h_corrective_provider_runtime_contract_surface.md",
+    "docs/milestones/2026-04-26_batch25i_feed_snapshot_feature_adapter.md",
+    "docs/milestones/2026-04-26_batch25k_corrective_proof_import_root.md",
+    "docs/milestones/2026-04-26_batch25k_j_runtime_wrapper_exact_builder.md",
+    "docs/milestones/2026-04-26_batch25s_ancillary_completeness_audit.md",
+    "docs/milestones/2026-04-26_batch26a_main_bootstrap_provider_report_contract.md",
+    "docs/milestones/2026-04-26_batch26b_fail_closed_gate_repair.md",
+    "docs/milestones/2026-04-26_batch26c_runtime_mode_provider_readiness.md",
+    "docs/milestones/2026-04-26_batch26d_canonical_field_surface_alias_settlement.md",
+    "docs/milestones/2026-04-26_master_mme_scalpx_freeze_progress.md",
+    "docs/milestones/2026-04-27_batch25v_market_session_hold_observation.md",
+    "docs/milestones/2026-04-27_batch26e_classic_structural_surface_repair.md",
+    "docs/milestones/2026-04-27_batch26f_misr_trap_event_lifecycle_repair.md",
+    "docs/milestones/2026-04-27_batch26g_miso_burst_microstructure_repair.md",
+    "docs/milestones/2026-04-27_batch26h_runtime_structural_cleanup.md",
+    "docs/milestones/2026-04-27_batch26i_proof_layer_upgrade.md",
+    "docs/milestones/2026-04-29_batch26a_current_repo_truth.md",
+    "docs/milestones/2026-04-29_batch26b_execution_hard_arming_guard_thin.md",
+    "docs/milestones/2026-04-29_batch26c_risk_controlled_paper_veto.md",
+    "docs/milestones/2026-04-29_batch26d_strategy_leaf_required_surface_failclosed.md",
+    "docs/milestones/2026-04-29_batch26e_misr_trap_event_consumption_registry.md",
+    "docs/milestones/2026-04-29_batch26f_miso_burst_event_consumption_registry.md",
+    "docs/milestones/2026-04-29_batch26g_legacy_quarantine_import_graph.md",
+    "etc/proof_registry.yaml"
+  ],
+  "TEMP_ALIAS_WITH_EXPIRY": [
+    "app/mme_scalpx/core/clock.py",
+    "app/mme_scalpx/core/codec.py",
+    "app/mme_scalpx/core/models.py",
+    "app/mme_scalpx/core/names.py",
+    "app/mme_scalpx/core/redisx.py",
+    "app/mme_scalpx/domain/instruments.py",
+    "app/mme_scalpx/integrations/bootstrap_provider.py",
+    "app/mme_scalpx/integrations/broker_api.py",
+    "app/mme_scalpx/integrations/broker_auth.py",
+    "app/mme_scalpx/integrations/dhan_execution.py",
+    "app/mme_scalpx/integrations/dhan_marketdata.py",
+    "app/mme_scalpx/integrations/instrument_master_sync.py",
+    "app/mme_scalpx/integrations/login.py",
+    "app/mme_scalpx/integrations/provider_runtime.py",
+    "app/mme_scalpx/main.py",
+    "app/mme_scalpx/ops/start_session.py",
+    "app/mme_scalpx/research_capture/contracts.py",
+    "app/mme_scalpx/research_capture/enricher.py",
+    "app/mme_scalpx/research_capture/normalizer.py",
+    "app/mme_scalpx/research_capture/raw_capture_bridge.py",
+    "app/mme_scalpx/research_capture/router.py",
+    "app/mme_scalpx/research_capture/runtime_bridge.py",
+    "app/mme_scalpx/research_capture/utils.py",
+    "app/mme_scalpx/services/feature_family/__init__.py",
+    "app/mme_scalpx/services/feature_family/common.py",
+    "app/mme_scalpx/services/feature_family/contracts.py",
+    "app/mme_scalpx/services/feature_family/futures_core.py",
+    "app/mme_scalpx/services/feature_family/misb_surface.py",
+    "app/mme_scalpx/services/feature_family/misc_surface.py",
+    "app/mme_scalpx/services/feature_family/miso_surface.py",
+    "app/mme_scalpx/services/feature_family/misr_surface.py",
+    "app/mme_scalpx/services/feature_family/mist_surface.py",
+    "app/mme_scalpx/services/feature_family/option_core.py",
+    "app/mme_scalpx/services/feature_family/regime.py",
+    "app/mme_scalpx/services/feature_family/strike_selection.py",
+    "app/mme_scalpx/services/features.py",
+    "app/mme_scalpx/services/feeds.py",
+    "app/mme_scalpx/services/report.py",
+    "app/mme_scalpx/services/risk.py",
+    "app/mme_scalpx/services/strategy.py",
+    "app/mme_scalpx/services/strategy_family/activation.py",
+    "app/mme_scalpx/services/strategy_family/common.py",
+    "app/mme_scalpx/services/strategy_family/cooldowns.py",
+    "app/mme_scalpx/services/strategy_family/decisions.py",
+    "app/mme_scalpx/services/strategy_family/doctrine_contracts.py",
+    "app/mme_scalpx/services/strategy_family/doctrine_runtime.py",
+    "app/mme_scalpx/services/strategy_family/eligibility.py",
+    "app/mme_scalpx/services/strategy_family/misb.py",
+    "app/mme_scalpx/services/strategy_family/misc.py",
+    "app/mme_scalpx/services/strategy_family/miso.py",
+    "app/mme_scalpx/services/strategy_family/misr.py",
+    "app/mme_scalpx/services/strategy_family/mist.py",
+    "app/mme_scalpx/services/strategy_family/registry.py",
+    "etc/params_mme.yaml",
+    "etc/project.env.example",
+    "etc/symbols.yaml"
+  ]
+}
+```
+
+## Top Paths by Hit Count
+
+```json
+[
+  [
+    "app/mme_scalpx/services/features.py",
+    259
+  ],
+  [
+    "app/mme_scalpx/services/risk.py",
+    165
+  ],
+  [
+    "app/mme_scalpx/services/strategy_family/miso.py",
+    157
+  ],
+  [
+    "app/mme_scalpx/core/names.py",
+    151
+  ],
+  [
+    "app/mme_scalpx/services/strategy_family/misr.py",
+    142
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/miso_surface.py",
+    135
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/misr_surface.py",
+    103
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/contracts.py",
+    89
+  ],
+  [
+    "docs/milestones/2026-04-26_master_mme_scalpx_freeze_progress.md",
+    89
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/misc_surface.py",
+    84
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/misb_surface.py",
+    81
+  ],
+  [
+    "bin/patch_batch26c_risk_controlled_paper_veto.py",
+    81
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/mist_surface.py",
+    79
+  ],
+  [
+    "app/mme_scalpx/services/strategy_family/misc.py",
+    62
+  ],
+  [
+    "app/mme_scalpx/services/execution.py",
+    50
+  ],
+  [
+    "app/mme_scalpx/services/strategy.py",
+    48
+  ],
+  [
+    "app/mme_scalpx/services/strategy_family/mist.py",
+    48
+  ],
+  [
+    "app/mme_scalpx/services/strategy_family/misb.py",
+    46
+  ],
+  [
+    "app/mme_scalpx/core/codec.py",
+    43
+  ],
+  [
+    "app/mme_scalpx/services/strategy_family/activation.py",
+    43
+  ],
+  [
+    "app/mme_scalpx/services/feeds.py",
+    35
+  ],
+  [
+    "app/mme_scalpx/services/strategy_family/decisions.py",
+    35
+  ],
+  [
+    "bin/_batch25v_market_observation_common.py",
+    33
+  ],
+  [
+    "app/mme_scalpx/integrations/dhan_runtime_clients.py",
+    31
+  ],
+  [
+    "app/mme_scalpx/research_capture/raw_capture_bridge.py",
+    30
+  ],
+  [
+    "app/mme_scalpx/core/models.py",
+    29
+  ],
+  [
+    "app/mme_scalpx/core/clock.py",
+    28
+  ],
+  [
+    "app/mme_scalpx/services/report.py",
+    28
+  ],
+  [
+    "bin/proof_strategy_family_reverse_coverage.py",
+    25
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/strike_selection.py",
+    23
+  ],
+  [
+    "app/mme_scalpx/main.py",
+    22
+  ],
+  [
+    "bin/replay_run.py",
+    21
+  ],
+  [
+    "app/mme_scalpx/services/strategy_family/doctrine_runtime.py",
+    20
+  ],
+  [
+    "bin/proof_batch26a_current_repo_truth.py",
+    20
+  ],
+  [
+    "docs/milestones/2026-04-27_batch25v_market_session_hold_observation.md",
+    20
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/option_core.py",
+    19
+  ],
+  [
+    "bin/proof_risk_controlled_paper_veto.py",
+    19
+  ],
+  [
+    "app/mme_scalpx/replay/overrides.py",
+    18
+  ],
+  [
+    "bin/proof_names_alias_lifecycle.py",
+    18
+  ],
+  [
+    "app/mme_scalpx/core/settings.py",
+    17
+  ],
+  [
+    "app/mme_scalpx/research_capture/utils.py",
+    17
+  ],
+  [
+    "app/mme_scalpx/services/monitor.py",
+    17
+  ],
+  [
+    "bin/batch26m_enable_controlled_paper_from_25v25w.sh",
+    17
+  ],
+  [
+    "app/mme_scalpx/replay/injector.py",
+    16
+  ],
+  [
+    "app/mme_scalpx/research_capture/models.py",
+    16
+  ],
+  [
+    "bin/proof_batch26d_strategy_leaf_required_surface_failclosed.py",
+    16
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/regime.py",
+    15
+  ],
+  [
+    "app/mme_scalpx/services/strategy_legacy_single.py",
+    15
+  ],
+  [
+    "bin/proof_research_capture_contracts.py",
+    15
+  ],
+  [
+    "docs/milestones/2026-04-25_batch20_legacy_quarantine_freeze.md",
+    15
+  ],
+  [
+    "docs/milestones/2026-04-29_batch26c_risk_controlled_paper_veto.md",
+    15
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/tradability.py",
+    14
+  ],
+  [
+    "bin/proof_batch26b_execution_hard_arming_guard_thin.py",
+    14
+  ],
+  [
+    "bin/proof_risk_controlled_paper_veto_v3.py",
+    14
+  ],
+  [
+    "app/mme_scalpx/research_capture/contracts.py",
+    13
+  ],
+  [
+    "app/mme_scalpx/research_capture/runtime_bridge.py",
+    13
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/common.py",
+    13
+  ],
+  [
+    "bin/patch_batch26d_strategy_leaf_required_surface_failclosed.py",
+    13
+  ],
+  [
+    "app/mme_scalpx/research_capture/archive_writer.py",
+    12
+  ],
+  [
+    "bin/patch_batch26b_execution_hard_arming_guard_thin.py",
+    12
+  ],
+  [
+    "app/mme_scalpx/replay/contracts.py",
+    11
+  ],
+  [
+    "app/mme_scalpx/replay/integrity.py",
+    11
+  ],
+  [
+    "app/mme_scalpx/services/feature_family/futures_core.py",
+    11
+  ],
+  [
+    "app/mme_scalpx/services/strategy_family/common.py",
+    11
+  ],
+  [
+    "bin/proof_strategy_family_doctrine_package.py",
+    11
+  ],
+  [
+    "docs/milestones/2026-04-26_batch26b_fail_closed_gate_repair.md",
+    11
+  ],
+  [
+    "app/mme_scalpx/integrations/dhan_marketdata.py",
+    10
+  ],
+  [
+    "app/mme_scalpx/integrations/provider_runtime.py",
+    10
+  ],
+  [
+    "app/mme_scalpx/research_capture/reader.py",
+    10
+  ],
+  [
+    "bin/proof_models_batch2_freeze.py",
+    10
+  ],
+  [
+    "bin/proof_repo_hygiene_quarantine.py",
+    10
+  ],
+  [
+    "bin/proof_strategy_family_compat_offline.py",
+    10
+  ],
+  [
+    "bin/proof_strategy_family_leaf_candidate_contract.py",
+    10
+  ],
+  [
+    "bin/research_capture_prove_optional_audit_roundtrip.py",
+    10
+  ],
+  [
+    "docs/milestones/2026-04-24_strategy_family_activation_bridge_freeze.md",
+    10
+  ],
+  [
+    "app/mme_scalpx/integrations/broker_api.py",
+    9
+  ],
+  [
+    "app/mme_scalpx/integrations/broker_auth.py",
+    9
+  ],
+  [
+    "app/mme_scalpx/research_capture/normalizer.py",
+    9
+  ],
+  [
+    "bin/proof_aftermarket_broad_replay_materialization.py",
+    9
+  ],
+  [
+    "bin/proof_main_batch4_freeze.py",
+    9
+  ]
+]
+```
+
+## Unbalanced Batch Markers
+
+```json
+[]
+```
+
+## Required Classifications
+
+- `KEEP_PERMANENT_ALIAS`: centralized or explicitly permanent compatibility surface.
+- `TEMP_ALIAS_WITH_EXPIRY`: runtime/config alias that needs ownership and expiry.
+- `PROOF_ONLY_EXEMPTION`: proof/docs/tests-only reference.
+- `REMOVE_AFTER_PROOF`: helper/proof batch scaffolding removable after closure.
+- `PATCH_REQUIRED`: runtime override/legacy/raw-name item needing patch review.
+
+## Artifacts
+
+- `run/proofs/proof_alias_and_override_inventory.json`
+- `run/proofs/proof_alias_and_override_inventory_manifest.sha256`
+
+## Safety
+
+- source code patched: `False`
+- services started: `False`
+- Redis writes: `False`
+- paper_armed enabled: `False`
+- real live enabled: `False`
+
+## Continuation
+
+Review `PATCH_REQUIRED` paths first. Do not rewrite broadly; convert the inventory into small proof-backed cleanup batches.

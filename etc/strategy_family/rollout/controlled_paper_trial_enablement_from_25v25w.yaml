@@ -1,0 +1,42 @@
+schema_version: 1
+gate_id: controlled_paper_trial_enablement_from_existing_25v25w
+created_at_ist: "2026-04-29T14:16:24+05:30"
+
+source_basis:
+  batch25v: PASS_FREEZE_FINAL
+  batch25w: READY_FOR_CONTROLLED_PAPER_PREP
+
+paper_trial_enabled: true
+paper_armed_enabled: true
+real_live_allowed: false
+real_live_enabled: false
+
+selection:
+  selected_family: "MIST"
+  selected_side: "CALL"
+  quantity_lots: 1
+  max_family_count: 1
+  max_side_count: 1
+  max_quantity_lots: 1
+
+provider_safety:
+  broker_path: PAPER_OR_SANDBOX_ONLY
+  broker_paper_path_verified: true
+  automatic_broker_failover_allowed: false
+  fallback_execution_allowed: false
+  mid_position_provider_migration_allowed: false
+
+order_safety:
+  paper_orders_allowed: true
+  real_orders_allowed: false
+  max_trial_orders_before_auto_stop: 1
+  auto_stop_after_first_paper_order: true
+
+risk_safety:
+  forced_flatten_active: true
+  kill_switch_active: true
+
+reporting:
+  trial_report_mandatory: true
+  required_trial_report_dir: reports/paper_trials
+  expected_report_name_prefix: controlled_paper_MIST_CALL_20260429_141624

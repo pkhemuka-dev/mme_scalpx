@@ -1,0 +1,182 @@
+{
+  "accepted_for": "TOPOLOGY_NOTES_CONSTRUCTION_PRESERVATION_RESCUE_ONLY",
+  "after_sha256": "82b99bd4af46f2de2c8a3eee67dc14cb4b92a208186ddbd66ee70a74fc0f4f52",
+  "backup_dir": "run/_code_backups/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230",
+  "backups": [
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230/app/mme_scalpx/replay/offline_context_shim.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/offline_context_shim.py",
+      "present": true,
+      "sha256": "e9eb2224fa887816d17ae57508a506bac04ca2b603cc923d4bc9fb1bb49fa9b4",
+      "size_bytes": 21190
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230/app/mme_scalpx/replay/engine.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/engine.py",
+      "present": true,
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8",
+      "size_bytes": 20518
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230/app/mme_scalpx/replay/topology.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "app/mme_scalpx/replay/topology.py",
+      "present": true,
+      "sha256": "448cf6bd7f34f13d02768684a0807dc8b5993f493e91bff503f0d1b34e589e0c",
+      "size_bytes": 12432
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230/bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "is_dir": false,
+      "is_file": true,
+      "path": "bin/guarded_replay_engine_execute_dry_run_29g.py",
+      "present": true,
+      "sha256": "9ad2b5b9cb48b0e323bdd733768b5dd10d430fd7529e73bf73f43300a92331c8",
+      "size_bytes": 27919
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230/run/proofs/proof_topology_notes_object_shape_audit_29ag_r3_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_topology_notes_object_shape_audit_29ag_r3_latest.json",
+      "present": true,
+      "sha256": "f4e14d60508d6164768bf384cb39057840c32c5014980d4f936b0042bb34e414",
+      "size_bytes": 7939
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230/run/proofs/proof_topology_notes_values_preservation_repair_29ag_r2_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_topology_notes_values_preservation_repair_29ag_r2_latest.json",
+      "present": true,
+      "sha256": "bb63c8f2dfdad84343f67789378194d7182400231402e07fddf03e5f64899d90",
+      "size_bytes": 6811
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230/run/proofs/proof_topology_notes_probe_failure_audit_29ag_r1_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_topology_notes_probe_failure_audit_29ag_r1_latest.json",
+      "present": true,
+      "sha256": "aa1b4d3e1305af89149ac1143d0f6dabdaf16079706b1222b22aaae3f3cb279e",
+      "size_bytes": 7071
+    },
+    {
+      "backed_up": true,
+      "backup_path": "run/_code_backups/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230/run/proofs/proof_topology_notes_runtime_gap_audit_29af_latest.json",
+      "is_dir": false,
+      "is_file": true,
+      "path": "run/proofs/proof_topology_notes_runtime_gap_audit_29af_latest.json",
+      "present": true,
+      "sha256": "8ee397eff2d47629ee3bede62aac6fff85579a41fbfa837d121fc3ca2a4d6a19",
+      "size_bytes": 10086
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "etc/replay/parity/topology_notes_construction_preservation_rescue_29ag_r4_r1.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/proof_topology_notes_construction_preservation_rescue_29ag_r4_r1.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/proof_topology_notes_construction_preservation_rescue_29ag_r4_r1_latest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "run/proofs/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230_driver_proof.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    },
+    {
+      "backed_up": false,
+      "is_dir": false,
+      "is_file": false,
+      "path": "docs/milestones/BATCH29AG_R4_R1_TOPOLOGY_NOTES_CONSTRUCTION_RESCUE.md",
+      "present": false,
+      "sha256": null,
+      "size_bytes": null
+    }
+  ],
+  "batch": "29AG-R4-R1",
+  "before_sha256": "e9eb2224fa887816d17ae57508a506bac04ca2b603cc923d4bc9fb1bb49fa9b4",
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": null,
+  "comparison_completed": false,
+  "compile_after_ok": true,
+  "compile_before_ok": true,
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "execution_arming_created": false,
+  "execution_ok": true,
+  "files_changed": [
+    "app/mme_scalpx/replay/offline_context_shim.py"
+  ],
+  "full_live_replay_parity": "NOT_PROVEN_IN_29AG_R4_R1",
+  "generated_at_utc": "2026-05-02T06:52:31.035537+00:00",
+  "inspection_manifest": "run/proofs/batch29ag_r4_r1_topology_notes_construction_rescue_20260502_122230_inspection/inspection_manifest.json",
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Batch 29AH \u2014 inspect guarded ReplayEngine dry-run outputs and classify replay/live observe_only parity comparison step, still not paper/live enablement.",
+  "paper_armed_approved": false,
+  "patch_applied": true,
+  "patch_changes": [
+    "inserted 29AG-R4-R1 helpers after module imports/top-level docstring",
+    "replaced OfflineReplayTopologyPlan.notes with construction-registry-aware property",
+    "registered input values notes before 2 ensure_offline_topology_plan tuple return path(s)"
+  ],
+  "production_doctrine_changed": false,
+  "proof": "run/proofs/proof_topology_notes_construction_preservation_rescue_29ag_r4_r1.json",
+  "proof_29ag_r3_valid": true,
+  "proof_latest": "run/proofs/proof_topology_notes_construction_preservation_rescue_29ag_r4_r1_latest.json",
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "repair_path": "REPLAY_ENGINE_DRY_RUN_OUTPUT_INSPECTION_READY",
+  "repair_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/topology_notes_construction_preservation_rescue_29ag_r4_r1",
+  "replay_core_executed": true,
+  "replay_run_completed": true,
+  "retry_artifacts_ok": true,
+  "retry_execute_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29ag_r4_r1",
+  "retry_returncode": 0,
+  "retry_runtime_error": null,
+  "safety_ok": true,
+  "schema_version": "topology_notes_construction_preservation_rescue_29ag_r4_r1_v1",
+  "starts_services": false,
+  "target_file": "app/mme_scalpx/replay/offline_context_shim.py",
+  "topology_notes_alias_present": true,
+  "topology_notes_gap_resolved": true,
+  "topology_notes_probe_ok": true,
+  "verdict": "PASS_TOPOLOGY_NOTES_CONSTRUCTION_PRESERVATION_RESCUE_29AG_R4_R1",
+  "writes_live_redis": false
+}

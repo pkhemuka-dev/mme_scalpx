@@ -1,0 +1,28 @@
+{
+  "broker_io_allowed": false,
+  "execution_override_allowed": false,
+  "law": [
+    "Unknown values must remain UNKNOWN or null; do not invent evidence.",
+    "Candidate rows and executed trades must be distinguished.",
+    "Closed-trade truth must be explicit when available.",
+    "OI-wall state remains slow-context evidence, not trigger truth."
+  ],
+  "non_live": true,
+  "non_mutating": true,
+  "order_sending_allowed": false,
+  "outputs": [
+    "enriched_replay_records.jsonl",
+    "enrichment_summary.json",
+    "enrichment_manifest.json"
+  ],
+  "owner": "replay_raw_artifact_enrichment_stage",
+  "paper_live_enablement_allowed": false,
+  "purpose": "Emit enriched copies of replay/trade/candidate artifacts with RAW-K frozen fields.",
+  "redis_live_write_allowed": false,
+  "replay_engine_mutation_allowed": false,
+  "replay_output_enrichment_allowed": true,
+  "required_field_source": "RAW-K artifact_enrichment_contract.json",
+  "risk_override_allowed": false,
+  "schema_version": "RAW-L.1",
+  "strategy_mutation_allowed": false
+}

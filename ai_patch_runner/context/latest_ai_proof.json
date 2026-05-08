@@ -1,0 +1,25 @@
+{
+  "batch": "AI-REPLAY-R2.3-LOCAL-MEMORY",
+  "candidate_path": null,
+  "canonical_root": null,
+  "engine_execution_performed": null,
+  "engine_ready": null,
+  "finding_count": 0,
+  "findings_compact": [],
+  "mtime_utc": "2026-05-08T18:29:31.767282+00:00",
+  "next_batch": null,
+  "path": "run/proofs/proof_ai_replay_r23_local_memory_a13_to_a14_20260508T182729Z.json",
+  "row_count": null,
+  "safety": {
+    "broker_calls_executed": false,
+    "generated_script_executed": false,
+    "live_redis_writes_executed": false,
+    "paper_or_live_enabled": false,
+    "real_project_trading_code_patched": false,
+    "services_started": false
+  },
+  "source_date": null,
+  "summary_keys": [],
+  "title": null,
+  "verdict": "PASS"
+}

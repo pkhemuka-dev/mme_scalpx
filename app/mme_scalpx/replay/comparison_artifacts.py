@@ -399,3 +399,90 @@ __all__ = [
     "build_comparison_artifacts",
     "comparison_artifacts_to_dict",
 ]
+
+# BEGIN BATCH27L_REPLAY_COMPARISON_EXPORT_HELPERS
+
+def replay_baseline_shadow_comparison_shape():
+    """Return replay-only baseline-vs-shadow comparison shape."""
+    return {
+        "schema_version": "replay_baseline_shadow_comparison_shape_v1",
+        "comparison_file": "08_baseline_vs_shadow_comparison.json",
+        "baseline_shadow_comparison_shape": "PROVEN_BY_27L",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_baseline_shadow_comparison_shape",
+)))
+
+# END BATCH27L_REPLAY_COMPARISON_EXPORT_HELPERS
+
+# BEGIN BATCH27M_REPLAY_EXPERIMENT_COMPARISON_HELPERS
+
+def replay_experiment_comparison_export_shape():
+    """Return replay-only experiment comparison export shape."""
+    return {
+        "schema_version": "replay_experiment_comparison_export_shape_v1",
+        "comparison_export_file": "08_experiment_comparison_export.json",
+        "baseline_shadow_comparison_shape": "PROVEN_BY_27M",
+        "experiment_reproducibility_hash": "PROVEN_BY_27M",
+        "strategy_improvement_claim": "NOT_PROVEN_IN_27M",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_experiment_comparison_export_shape",
+)))
+
+# END BATCH27M_REPLAY_EXPERIMENT_COMPARISON_HELPERS
+
+# BEGIN BATCH28A_REPLAY_LIVE_PARITY_COMPARISON_HELPERS
+
+def replay_live_parity_comparison_boundary():
+    return {
+        "schema_version": "replay_live_parity_comparison_boundary_v1",
+        "accepted_for": "PARITY_AUDIT_PLAN_ONLY",
+        "full_live_replay_parity": "NOT_PROVEN_IN_28A",
+        "paper_armed_readiness": "NOT_APPROVED_IN_28A",
+        "live_trading_readiness": "NOT_APPROVED_IN_28A",
+        "production_strategy_improvement_claim": "NOT_PROVEN_IN_28A",
+        "production_doctrine_revision": "NOT_APPROVED_IN_28A",
+        "paper_armed_approved": False,
+        "live_trading_approved": False,
+        "execution_arming_created": False,
+        "broker_calls_allowed": False,
+        "live_redis_writes_allowed": False,
+        "production_doctrine_changed": False,
+    }
+
+try:
+    __all__
+except NameError:
+    __all__ = tuple()
+
+__all__ = tuple(dict.fromkeys(tuple(__all__) + (
+    "replay_live_parity_comparison_boundary",
+)))
+
+# END BATCH28A_REPLAY_LIVE_PARITY_COMPARISON_HELPERS
+

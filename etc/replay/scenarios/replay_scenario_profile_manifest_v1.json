@@ -1,0 +1,608 @@
+{
+  "broker_calls_allowed": false,
+  "execution_arming_created": false,
+  "full_replay_scenario_outcome_parity": "NOT_PROVEN_IN_27J",
+  "live_redis_writes_allowed": false,
+  "live_trading_approved": false,
+  "paper_armed_approved": false,
+  "production_doctrine_changed": false,
+  "profiles": [
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate futures feed missing from replay row.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "feed_availability",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "missing_futures_feed",
+        "feed_availability"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "data_valid": false,
+        "fut_best_ask": null,
+        "fut_best_bid": null,
+        "fut_local_ts": null,
+        "fut_ltp": null,
+        "fut_missing": true,
+        "scenario_blocker": "missing_futures_feed"
+      },
+      "scenario_id": "missing_futures_feed",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate selected option feed missing from replay row.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "feed_availability",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "missing_selected_option_feed",
+        "feed_availability"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "data_valid": false,
+        "opt_best_ask": null,
+        "opt_best_bid": null,
+        "opt_local_ts": null,
+        "opt_ltp": null,
+        "scenario_blocker": "missing_selected_option_feed",
+        "selected_option_missing": true
+      },
+      "scenario_id": "missing_selected_option_feed",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate stale futures feed.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "feed_freshness",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "stale_futures_feed",
+        "feed_freshness"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "fut_age_ms": 999999,
+        "fut_local_ts": 0,
+        "fut_stale": true,
+        "scenario_blocker": "stale_futures_feed"
+      },
+      "scenario_id": "stale_futures_feed",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate stale selected option feed.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "feed_freshness",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "stale_selected_option_feed",
+        "feed_freshness"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "opt_age_ms": 999999,
+        "opt_local_ts": 0,
+        "scenario_blocker": "stale_selected_option_feed",
+        "selected_option_stale": true
+      },
+      "scenario_id": "stale_selected_option_feed",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate unavailable Dhan context.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "provider_context",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "dhan_context_unavailable",
+        "provider_context"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "chain_context_fresh": false,
+        "dhan_context_ready": false,
+        "dhan_context_stale_reason": "scenario_dhan_context_unavailable",
+        "dhan_context_status": "UNAVAILABLE",
+        "provider_ready_miso": false
+      },
+      "scenario_id": "dhan_context_unavailable",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate stale Dhan context.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "provider_context",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "dhan_context_stale",
+        "provider_context"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "chain_context_fresh": false,
+        "dhan_context_age_ms": 999999,
+        "dhan_context_stale_reason": "scenario_dhan_context_stale",
+        "dhan_context_status": "STALE",
+        "provider_ready_miso": false
+      },
+      "scenario_id": "dhan_context_stale",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate missing OI ladder context.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "oi_context",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "oi_ladder_missing",
+        "oi_context"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "call_oi_ladder_json": null,
+        "nearest_call_wall": null,
+        "nearest_put_wall": null,
+        "oi_context_fresh": false,
+        "oi_wall_strength": 0.0,
+        "put_oi_ladder_json": null,
+        "scenario_blocker": "oi_ladder_missing"
+      },
+      "scenario_id": "oi_ladder_missing",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate sudden OI wall shock.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "oi_context",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "oi_wall_shock",
+        "oi_context"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "nearest_call_wall": 22600,
+        "nearest_put_wall": 22400,
+        "oi_context_fresh": true,
+        "oi_wall_blocking_side": "CALL",
+        "oi_wall_context": {
+          "nearest_call_wall": 22600,
+          "nearest_put_wall": 22400,
+          "oi_wall_strength": 9.99,
+          "shock": true
+        },
+        "oi_wall_shock": true,
+        "oi_wall_strength": 9.99
+      },
+      "scenario_id": "oi_wall_shock",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate wide selected option spread.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "liquidity",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "wide_spread",
+        "liquidity"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "opt_best_ask": 110.0,
+        "opt_best_bid": 100.0,
+        "opt_spread": 10.0,
+        "spread_quality_ok": false,
+        "wide_spread": true
+      },
+      "scenario_id": "wide_spread",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate low selected option depth.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "liquidity",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "low_depth",
+        "liquidity"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "depth_quality_ok": false,
+        "low_depth": true,
+        "opt_ask_qty_1": 1,
+        "opt_bid_qty_1": 1
+      },
+      "scenario_id": "low_depth",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate high slippage assumption.",
+      "execution_arming_created": false,
+      "execution_effects": {
+        "fill_policy": "FULL_FILL",
+        "slippage_points": 5.0
+      },
+      "explicit_assumption": true,
+      "family": "execution_assumption",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "high_slippage",
+        "execution_assumption"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {},
+      "scenario_id": "high_slippage",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate packet gaps.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "event_integrity",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "packet_gaps",
+        "event_integrity"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "event_integrity_ok": false,
+        "packet_gap_detected": true,
+        "sequence_gap": 5
+      },
+      "scenario_id": "packet_gaps",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate timestamp skew.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "event_integrity",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "timestamp_skew",
+        "event_integrity"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "event_integrity_ok": false,
+        "exchange_ts_ns": 1,
+        "local_ts_ns": 999999999999,
+        "timestamp_skew_detected": true
+      },
+      "scenario_id": "timestamp_skew",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate event burst.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "event_integrity",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "event_burst",
+        "event_integrity"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "event_burst": true,
+        "event_burst_intensity": "HIGH",
+        "events_in_window": 250
+      },
+      "scenario_id": "event_burst",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate sudden liquidity shock.",
+      "execution_arming_created": false,
+      "execution_effects": {
+        "fill_policy": "PARTIAL_FILL",
+        "partial_fill_ratio": 0.25,
+        "slippage_points": 8.0
+      },
+      "explicit_assumption": true,
+      "family": "liquidity",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "liquidity_shock",
+        "liquidity"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {
+        "depth_quality_ok": false,
+        "liquidity_shock": true,
+        "low_depth": true,
+        "opt_ask_qty_1": 1,
+        "opt_bid_qty_1": 1,
+        "opt_spread": 20.0,
+        "spread_quality_ok": false,
+        "wide_spread": true
+      },
+      "scenario_id": "liquidity_shock",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Force replay risk veto.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "risk",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "forced_risk_veto",
+        "risk"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {
+        "force_veto_reasons": [
+          "forced_replay_scenario_veto"
+        ]
+      },
+      "row_effects": {},
+      "scenario_id": "forced_risk_veto",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Force replay full-fill assumption.",
+      "execution_arming_created": false,
+      "execution_effects": {
+        "fill_policy": "FULL_FILL"
+      },
+      "explicit_assumption": true,
+      "family": "execution_assumption",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "full_fill",
+        "execution_assumption"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {},
+      "scenario_id": "full_fill",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Force replay partial-fill assumption.",
+      "execution_arming_created": false,
+      "execution_effects": {
+        "fill_policy": "PARTIAL_FILL",
+        "partial_fill_ratio": 0.4
+      },
+      "explicit_assumption": true,
+      "family": "execution_assumption",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "partial_fill",
+        "execution_assumption"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {},
+      "scenario_id": "partial_fill",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Force replay no-fill assumption.",
+      "execution_arming_created": false,
+      "execution_effects": {
+        "fill_policy": "NO_FILL"
+      },
+      "explicit_assumption": true,
+      "family": "execution_assumption",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "no_fill",
+        "execution_assumption"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {},
+      "scenario_id": "no_fill",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Force replay rejected-fill assumption.",
+      "execution_arming_created": false,
+      "execution_effects": {
+        "fill_policy": "REJECTED",
+        "reject_reason": "scenario_rejected"
+      },
+      "explicit_assumption": true,
+      "family": "execution_assumption",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "rejected",
+        "execution_assumption"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {},
+      "row_effects": {},
+      "scenario_id": "rejected",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate forced flatten scenario.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "session_control",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "forced_flatten",
+        "session_control"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {
+        "force_veto_reasons": [
+          "forced_flatten_replay_only"
+        ]
+      },
+      "row_effects": {
+        "flatten_reason": "scenario_forced_flatten",
+        "forced_flatten_requested": true
+      },
+      "scenario_id": "forced_flatten",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    },
+    {
+      "broker_calls_allowed": false,
+      "description": "Simulate session close scenario.",
+      "execution_arming_created": false,
+      "execution_effects": {},
+      "explicit_assumption": true,
+      "family": "session_control",
+      "live_redis_writes_allowed": false,
+      "live_trading_approved": false,
+      "manifest_tags": [
+        "session_close",
+        "session_control"
+      ],
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "risk_effects": {
+        "force_veto_reasons": [
+          "session_close_replay_only"
+        ]
+      },
+      "row_effects": {
+        "flatten_reason": "scenario_session_close",
+        "last_fresh_entry_block": true,
+        "session_close": true,
+        "session_close_lock": true
+      },
+      "scenario_id": "session_close",
+      "schema_version": "replay_scenario_profile_engine_v1"
+    }
+  ],
+  "required_scenarios": [
+    "missing_futures_feed",
+    "missing_selected_option_feed",
+    "stale_futures_feed",
+    "stale_selected_option_feed",
+    "dhan_context_unavailable",
+    "dhan_context_stale",
+    "oi_ladder_missing",
+    "oi_wall_shock",
+    "wide_spread",
+    "low_depth",
+    "high_slippage",
+    "packet_gaps",
+    "timestamp_skew",
+    "event_burst",
+    "liquidity_shock",
+    "forced_risk_veto",
+    "full_fill",
+    "partial_fill",
+    "no_fill",
+    "rejected",
+    "forced_flatten",
+    "session_close"
+  ],
+  "scenario_application_shape": "PROVEN_BY_27J",
+  "scenario_count": 22,
+  "scenario_profile_shape": "PROVEN_BY_27J",
+  "schema_version": "replay_scenario_profile_manifest_v1"
+}

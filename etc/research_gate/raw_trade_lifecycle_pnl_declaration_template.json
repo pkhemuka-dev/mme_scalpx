@@ -1,0 +1,23 @@
+{
+  "authorization_status": "NOT_AUTHORIZED_TEMPLATE_ONLY",
+  "authorized_at_utc": "",
+  "authorized_by": "",
+  "backfill_allowed": "",
+  "costs_source": "",
+  "created_at_utc": "2026-05-02T07:27:29.257383+00:00",
+  "entry_price_source": "",
+  "entry_ts_source": "",
+  "exit_price_source": "",
+  "exit_reason_source": "",
+  "exit_ts_source": "",
+  "gross_pnl_formula": "",
+  "missing_context_behavior": "",
+  "net_pnl_after_costs_interpretation": "",
+  "non_promotion_statement": "This declaration, even when filled, does not enable paper/live and does not mutate production doctrine.",
+  "operator_notes": "",
+  "qty_source": "",
+  "schema_version": "raw_trade_lifecycle_pnl_declaration_template_v1",
+  "source_of_truth_doc_or_config": "",
+  "trade_lifecycle_model_id": "",
+  "trade_lifecycle_model_version": ""
+}

@@ -1,0 +1,25 @@
+{
+  "batch": "29BC-R3",
+  "generated_at_utc": "2026-05-05T08:41:28.478645+00:00",
+  "mode": "exact_line_patch_from_29bc_r2_snippets",
+  "safety": {
+    "batch": "29BC-R3",
+    "broker_execution_path_used": false,
+    "exact_line_patch_from_snippets": true,
+    "features_restarted": false,
+    "live_redis_write_performed_by_batch": false,
+    "order_sending_performed": false,
+    "paper_live_enablement_performed": false,
+    "production_code_patched": false,
+    "raw_patch_performed": false,
+    "redis_read_only_sampling": true,
+    "replay_patch_performed": false,
+    "strategy_restarted": false
+  },
+  "schema_version": "batch29bc_r3_config_v1",
+  "site_count": 19,
+  "target_files": [
+    "app/mme_scalpx/services/features.py",
+    "app/mme_scalpx/services/strategy.py"
+  ]
+}

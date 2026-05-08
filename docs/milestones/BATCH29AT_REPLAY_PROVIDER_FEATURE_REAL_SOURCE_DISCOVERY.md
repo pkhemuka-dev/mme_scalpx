@@ -1,0 +1,34 @@
+BATCH 29AT REPLAY PROVIDER-FEATURE REAL SOURCE DISCOVERY
+
+generated_at_utc: 2026-05-02T07:19:07.831182+00:00
+verdict: PASS_REPLAY_PROVIDER_FEATURE_REAL_SOURCE_DISCOVERY_NO_REAL_BOOL_SOURCES_29AT
+source_discovery_report_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_real_source_discovery_29at/00_replay_provider_feature_real_source_discovery_report.json
+candidate_table_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_real_source_discovery_29at/01_replay_provider_feature_source_candidates.csv
+field_resolution_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_provider_feature_real_source_discovery_29at/03_replay_provider_feature_field_resolution.csv
+provider_feature_field_count: 4
+candidate_count: 329
+usable_boolean_candidate_count: 0
+fields_with_real_replay_boolean_count: 0
+fields_missing_real_replay_boolean_count: 4
+real_source_discovery_completed: True
+provider_feature_value_comparison_ready: False
+full_live_replay_parity: NOT_PROVEN_IN_29AT
+repair_path: REPLAY_PROVIDER_FEATURE_SOURCE_ENRICHMENT_CONTRACT_READY
+next_batch: Batch 29AU — freeze replay provider-feature source-enrichment contract for missing real boolean sources; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_replay_provider_feature_real_source_discovery_29at.json
+- run/proofs/proof_replay_provider_feature_real_source_discovery_29at_latest.json
+- run/proofs/batch29at_replay_provider_feature_real_source_discovery_20260502_124907_driver_proof.json
+- etc/replay/parity/replay_provider_feature_real_source_discovery_29at.json

@@ -1,0 +1,274 @@
+{
+  "accepted_for": "GUARDED_REPLAY_ENGINE_HOOK_EXECUTION_ONLY",
+  "artifact_states": {
+    "00_replay_engine_hook_execution_manifest.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_guarded_execution_28z/00_replay_engine_hook_execution_manifest.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": 0
+    },
+    "01_argument_binding_report.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_guarded_execution_28z/01_argument_binding_report.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": 0
+    },
+    "02_candidate_execution_result.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_guarded_execution_28z/02_candidate_execution_result.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": 0
+    },
+    "03_no_broker_no_live_redis_boundary.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_guarded_execution_28z/03_no_broker_no_live_redis_boundary.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": 0
+    },
+    "04_next_replay_output_inspection_contract.json": {
+      "path": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_guarded_execution_28z/04_next_replay_output_inspection_contract.json",
+      "present": false,
+      "sha256": null,
+      "size_bytes": 0
+    }
+  },
+  "artifacts_ok": false,
+  "batch": "28Z",
+  "broker_call_reachable": false,
+  "broker_calls_executed": false,
+  "callable_output_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/explicit_offline_replay_callable_execution_28v",
+  "calls_broker_api": false,
+  "candidate_executed": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "compile_engine": {
+    "args": [
+      "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+      "-m",
+      "py_compile",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/app/mme_scalpx/replay/engine.py"
+    ],
+    "ok": true,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "",
+    "timeout": false
+  },
+  "compile_exec": {
+    "args": [
+      "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+      "-m",
+      "py_compile",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/bin/execute_replay_engine_hook_guarded_28z.py"
+    ],
+    "ok": true,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "",
+    "timeout": false
+  },
+  "compile_offline_callable": {
+    "args": [
+      "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+      "-m",
+      "py_compile",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/app/mme_scalpx/replay/offline_callable.py"
+    ],
+    "ok": true,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "",
+    "timeout": false
+  },
+  "dataset_candidate_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "engine_static": {
+    "broker_or_enablement_hits": [],
+    "ok": true,
+    "path": "app/mme_scalpx/replay/engine.py",
+    "redis_surface_hits": [],
+    "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8"
+  },
+  "exec_result": {},
+  "exec_static": {
+    "broker_or_enablement_hits": [
+      "KiteConnect(",
+      "place_order(",
+      "modify_order(",
+      "cancel_order("
+    ],
+    "ok": false,
+    "path": "bin/execute_replay_engine_hook_guarded_28z.py",
+    "redis_surface_hits": [
+      ".xadd(",
+      ".hset(",
+      ".set(",
+      "StrictRedis(",
+      "Redis("
+    ],
+    "sha256": "8467ac2bad0005d178690da6f341aff38ceefb096ad0fb1831ac237d7c896804"
+  },
+  "execution_arming_created": false,
+  "execution_ok": false,
+  "execution_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/replay_engine_hook_guarded_execution_28z",
+  "execution_root_replay_safe": true,
+  "full_live_replay_parity": "NOT_PROVEN_IN_28Z",
+  "generated_at_utc": "2026-05-01T13:37:06.017565+00:00",
+  "live_redis_write_reachable": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Repair 28Z guarded execution before replay-output inspection.",
+  "observed_no_enablement": {
+    "bridge_28y": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28m": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28n": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28u_r1": {
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28v": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28w": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28x": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    },
+    "proof_28y": {
+      "broker_call_reachable": false,
+      "broker_calls_executed": false,
+      "calls_broker_api": false,
+      "execution_arming_created": false,
+      "live_redis_write_reachable": false,
+      "live_redis_writes_executed": false,
+      "live_trading_approved": false,
+      "paper_armed_approved": false,
+      "production_doctrine_changed": false,
+      "reads_live_redis": false,
+      "real_order_sent": false,
+      "runtime_promotion_reachable": false,
+      "starts_services": false,
+      "writes_live_redis": false
+    }
+  },
+  "paper_armed_approved": false,
+  "preflight_ok": false,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "replay_core_executed": false,
+  "replay_run_completed": false,
+  "run_result": {
+    "ok": false,
+    "reason": "preflight_not_ok",
+    "skipped": true
+  },
+  "runtime_promotion_reachable": false,
+  "schema_version": "replay_engine_hook_guarded_execution_28z_v1",
+  "selected_candidate": {
+    "kind": "class",
+    "methods": [
+      "__call__"
+    ],
+    "module_file": "app/mme_scalpx/replay/engine.py",
+    "name": "ReplayEngineHook",
+    "score": 9
+  },
+  "starts_services": false,
+  "verdict": "FAIL_REPLAY_ENGINE_HOOK_GUARDED_EXECUTION_28Z",
+  "writes_live_redis": false
+}

@@ -1,0 +1,30 @@
+BATCH 29BH CORRECTED STRATEGY ACTIVATION COMPARISON
+
+generated_at_utc: 2026-05-02T10:02:26.760090+00:00
+verdict: PASS_29BH_CORRECTED_STRATEGY_ACTIVATION_COMPARISON_MATCH
+proof_29bg_valid: True
+contract_valid: True
+compile_ok: True
+safety_ok: True
+comparison_status: CORRECTED_COMPARISON_EXECUTED_MATCH
+selected_reference_artifact: etc/replay/parity/observe_only_replay_live_parity_manifest_28i.json
+approved_comparable_fields: ['replay_run_completed']
+excluded_fields: ['activation', 'family']
+comparable_field_count: 1
+match_count: 1
+mismatch_count: 0
+not_comparable_count: 0
+strategy_activation_value_parity: PROVEN_FOR_CORRECTED_COMPARABLE_FIELDS_ONLY
+full_live_replay_parity: NOT_PROVEN_IN_29BH
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BI — consolidate corrected strategy activation surface parity and continue broader replay parity index; still no paper/live enablement.
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_strategy_activation_comparison_29bh/00_corrected_strategy_activation_comparison_report.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_strategy_activation_comparison_29bh/01_corrected_strategy_activation_comparison_summary.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_strategy_activation_comparison_29bh/02_corrected_contract_application.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/corrected_strategy_activation_comparison_29bh/03_next_batch_29bi_contract.json
+- run/proofs/proof_corrected_strategy_activation_comparison_29bh.json
+- run/proofs/proof_corrected_strategy_activation_comparison_29bh_latest.json
+
+Files changed: none

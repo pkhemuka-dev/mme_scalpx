@@ -1,0 +1,307 @@
+{
+  "accepted_for": "REPLAY_LIVE_PARITY_COMPARISON_MANIFEST_ONLY",
+  "artifact_root": "run/replay/parity/live_evidence/pstrategy_20260430_094557",
+  "artifact_root_replay_safe": true,
+  "batch": "28I",
+  "broker_call_reachable": false,
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "closed_28f_ok": true,
+  "closed_package_proof": "run/proofs/proof_observe_only_market_session_package_collection_28f_latest.json",
+  "closed_package_proof_sha256": "7532e19042ef69f6ab8473f039b13befb039368912dfaf89c1c0c77d65cdac90",
+  "comparison_dimensions": [
+    {
+      "dimension": "package_integrity",
+      "live_source": "closed 28F package hashes and copied evidence index",
+      "replay_source_required": "same package read-only input validation",
+      "required_result": "all expected files present and hashes stable",
+      "status": "MANIFESTED_NOT_COMPARED"
+    },
+    {
+      "dimension": "provider_runtime_boundary",
+      "live_source": "provider_runtime.json and provider_health_snapshot.json",
+      "replay_source_required": "replay runtime input surface derived from package only",
+      "required_result": "replay must not require live provider access and must preserve observe_only provider facts",
+      "status": "MANIFESTED_NOT_COMPARED"
+    },
+    {
+      "dimension": "feed_snapshot_surface",
+      "live_source": "feed_snapshot.json, live_stream_inventory.json, live_hash_inventory.json",
+      "replay_source_required": "replay dataset/feed reconstruction preflight",
+      "required_result": "replay input coverage must match captured live surface inventory",
+      "status": "MANIFESTED_NOT_COMPARED"
+    },
+    {
+      "dimension": "feature_payload_surface",
+      "live_source": "feature_payload.json",
+      "replay_source_required": "replay-generated feature payload from captured evidence",
+      "required_result": "feature keys, family_features, family_surfaces, side separation, and canonical fields must be comparable",
+      "status": "MANIFESTED_NOT_COMPARED"
+    },
+    {
+      "dimension": "strategy_activation_surface",
+      "live_source": "strategy_activation.json and family_surfaces.json",
+      "replay_source_required": "replay strategy activation/report-only output",
+      "required_result": "five-family activation shape must be comparable and replay must remain HOLD/report-only unless explicitly proven otherwise",
+      "status": "MANIFESTED_NOT_COMPARED"
+    },
+    {
+      "dimension": "no_order_boundary",
+      "live_source": "no_order_sent.json and 04_no_enablement_boundary.json",
+      "replay_source_required": "replay execution-shadow/no-order proof",
+      "required_result": "no real order, no broker call, no live Redis write, no runtime promotion",
+      "status": "MANIFESTED_NOT_COMPARED"
+    },
+    {
+      "dimension": "miso_context_boundary",
+      "live_source": "selected_option_context.json and dhan_oi_ladder_context_if_available.json",
+      "replay_source_required": "replay context-consumption evidence only",
+      "required_result": "Dhan/OI context remains selection/evidence context only; no live trigger or production promotion claim",
+      "status": "MANIFESTED_NOT_COMPARED"
+    },
+    {
+      "dimension": "parity_verdict",
+      "live_source": "closed observe_only package",
+      "replay_source_required": "future replay run output",
+      "required_result": "parity may only be marked proven after replay outputs are generated and compared",
+      "status": "NOT_PROVEN_IN_28I"
+    }
+  ],
+  "copied_evidence_states": {
+    "dhan_oi_ladder_context_if_available": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/dhan_oi_ladder_context_if_available.json",
+      "present": true,
+      "sha256": "475cd2c688973e3dfc3e8e1590de8fc7409ae503b35dfe020ee6f0ef843e3d33",
+      "size_bytes": 2049
+    },
+    "family_surfaces": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/family_surfaces.json",
+      "present": true,
+      "sha256": "6f2846e28d109b39823644a1f293e561b88ee904a8ade3a5103baaa65ce25a98",
+      "size_bytes": 27094
+    },
+    "feature_payload": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/feature_payload.json",
+      "present": true,
+      "sha256": "f3373fbcb5f376135b5f9390968dc80dc3b691f7cc98539600f02609dd9fe4d0",
+      "size_bytes": 35133
+    },
+    "feed_snapshot": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/feed_snapshot.json",
+      "present": true,
+      "sha256": "2b097ab684961b6279ef44e258b577f0aa9a3b32ec7da91b564e978c30073dc4",
+      "size_bytes": 1459
+    },
+    "live_capture_log": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/live_capture_log.log",
+      "present": true,
+      "sha256": "3218a8a79d3fb3de90261550e92648276f42cc47abc3ee18d3a5a8f7310075b1",
+      "size_bytes": 2858160
+    },
+    "live_hash_inventory": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/live_hash_inventory.json",
+      "present": true,
+      "sha256": "7f8396d3f4572b9b81484b5f6704fd6b9ae248861a6fe7e8d054333996705f0e",
+      "size_bytes": 3626
+    },
+    "live_stream_inventory": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/live_stream_inventory.json",
+      "present": true,
+      "sha256": "237297be9d47bf0a15b3798040896b578e7dea5949d33f4ea3c0a1f3c7ca5066",
+      "size_bytes": 2476
+    },
+    "no_order_sent": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/no_order_sent.json",
+      "present": true,
+      "sha256": "3d3f2036b2e9e96b029a70de48f41778cdaf38c50f65aa24053bb8ebe2a818a8",
+      "size_bytes": 21788
+    },
+    "provider_health_snapshot": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/provider_health_snapshot.json",
+      "present": true,
+      "sha256": "148f7908fa574697893f4726116986c18b5d1801f0f10bf54a6f3651e37a2e4e",
+      "size_bytes": 4371
+    },
+    "provider_runtime": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/provider_runtime.json",
+      "present": true,
+      "sha256": "13c3ca67e83a2b37159712babd8f99fee13afc575b76056b240494348e47f41e",
+      "size_bytes": 21543
+    },
+    "selected_option_context": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/selected_option_context.json",
+      "present": true,
+      "sha256": "50741c83ae23b35722f4e103f23c7c8b4451285d6512026e8a8f19cbebabfbee",
+      "size_bytes": 4403
+    },
+    "strategy_activation": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/evidence_files/strategy_activation.json",
+      "present": true,
+      "sha256": "59844a4939fa236d22fd61916f17cf8c2639d627c945f3f04c638adaf817a9dd",
+      "size_bytes": 1354
+    }
+  },
+  "execution_arming_created": false,
+  "full_live_replay_parity": "NOT_PROVEN_IN_28I",
+  "generated_at_utc": "2026-05-01T12:23:14.194171+00:00",
+  "live_redis_write_reachable": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "live_trading_readiness": "NOT_APPROVED_IN_28I",
+  "manifest_ready": true,
+  "missing_copied_keys": [],
+  "missing_package_artifacts": [],
+  "missing_source_keys": [],
+  "next_batch": "Batch 28J \u2014 materialize a replay input/dataset preflight from the closed observe_only package, still not paper/live enablement.",
+  "package_artifact_states": {
+    "00_collection_manifest.json": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/00_collection_manifest.json",
+      "present": true,
+      "sha256": "9a309acba930434d35173b3e0c1c2f9c8e93aece9048837213b4ebff62ea4f06",
+      "size_bytes": 1121
+    },
+    "01_evidence_map_validation.json": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/01_evidence_map_validation.json",
+      "present": true,
+      "sha256": "6cdbc9b1c25a7a61ce2e0a45716e06e18996732453f5a6082306eeb883d7d588",
+      "size_bytes": 1271
+    },
+    "02_copied_evidence_index.json": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/02_copied_evidence_index.json",
+      "present": true,
+      "sha256": "d056f59aea99768510f83a7f12c915ba432c1a66aae2a6e12b91bc97547fa42c",
+      "size_bytes": 4588
+    },
+    "03_capture_completeness.json": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/03_capture_completeness.json",
+      "present": true,
+      "sha256": "ee773b6222ea685b9749bf9129eec74d8c4fd387619fea71ff53bdda757aedc7",
+      "size_bytes": 88
+    },
+    "04_no_enablement_boundary.json": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/04_no_enablement_boundary.json",
+      "present": true,
+      "sha256": "7d0c451c12736e9a85f83e585b4f506a1f68c126bd1dc18bb759d882efe44f15",
+      "size_bytes": 635
+    },
+    "05_reproducibility.json": {
+      "path": "run/replay/parity/live_evidence/pstrategy_20260430_094557/05_reproducibility.json",
+      "present": true,
+      "sha256": "32df98575cf2eeae19bed531711cc05342f0cb277aa0e5842ce0956bd772e86c",
+      "size_bytes": 400
+    }
+  },
+  "paper_armed_approved": false,
+  "paper_armed_readiness": "NOT_APPROVED_IN_28I",
+  "parity_status": {
+    "comparison_completed": false,
+    "full_live_replay_parity": "NOT_PROVEN_IN_28I",
+    "manifest_built": true,
+    "package_closed": true,
+    "replay_run_completed": false
+  },
+  "production_doctrine_changed": false,
+  "production_doctrine_revision": "NOT_APPROVED_IN_28I",
+  "production_strategy_improvement_claim": "NOT_PROVEN_IN_28I",
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "replay_inputs_required_next": {
+    "allowed_runtime_mode": "observe_only_or_offline_replay_only",
+    "comparison_report_required": true,
+    "dataset_materialization_required": true,
+    "forbidden": [
+      "paper_armed approval",
+      "live trading approval",
+      "broker API call",
+      "live Redis write",
+      "runtime promotion",
+      "production doctrine mutation"
+    ],
+    "read_only_live_package_root": "run/replay/parity/live_evidence/pstrategy_20260430_094557",
+    "replay_output_required": true,
+    "replay_run_required": true
+  },
+  "runtime_promotion_reachable": false,
+  "schema_version": "observe_only_replay_live_parity_manifest_28i_v1",
+  "source_evidence_count": 12,
+  "source_evidence_states": {
+    "dhan_oi_ladder_context_if_available": {
+      "path": "run/proofs/proof_market_session_dhan_oi_ladder_context.json",
+      "present": true,
+      "sha256": "475cd2c688973e3dfc3e8e1590de8fc7409ae503b35dfe020ee6f0ef843e3d33",
+      "size_bytes": 2049
+    },
+    "family_surfaces": {
+      "path": "run/proofs/proof_market_session_family_surfaces.json",
+      "present": true,
+      "sha256": "6f2846e28d109b39823644a1f293e561b88ee904a8ade3a5103baaa65ce25a98",
+      "size_bytes": 27094
+    },
+    "feature_payload": {
+      "path": "run/proofs/proof_market_session_feature_payload.json",
+      "present": true,
+      "sha256": "f3373fbcb5f376135b5f9390968dc80dc3b691f7cc98539600f02609dd9fe4d0",
+      "size_bytes": 35133
+    },
+    "feed_snapshot": {
+      "path": "run/proofs/proof_market_session_feed_snapshot.json",
+      "present": true,
+      "sha256": "2b097ab684961b6279ef44e258b577f0aa9a3b32ec7da91b564e978c30073dc4",
+      "size_bytes": 1459
+    },
+    "live_capture_log": {
+      "path": "run/live_capture/pstrategy_20260430_094557.log",
+      "present": true,
+      "sha256": "3218a8a79d3fb3de90261550e92648276f42cc47abc3ee18d3a5a8f7310075b1",
+      "size_bytes": 2858160
+    },
+    "live_hash_inventory": {
+      "path": "run/proofs/proof_market_session_live_hash_inventory.json",
+      "present": true,
+      "sha256": "7f8396d3f4572b9b81484b5f6704fd6b9ae248861a6fe7e8d054333996705f0e",
+      "size_bytes": 3626
+    },
+    "live_stream_inventory": {
+      "path": "run/proofs/proof_market_session_live_stream_inventory.json",
+      "present": true,
+      "sha256": "237297be9d47bf0a15b3798040896b578e7dea5949d33f4ea3c0a1f3c7ca5066",
+      "size_bytes": 2476
+    },
+    "no_order_sent": {
+      "path": "run/proofs/proof_market_session_no_order_sent.json",
+      "present": true,
+      "sha256": "3d3f2036b2e9e96b029a70de48f41778cdaf38c50f65aa24053bb8ebe2a818a8",
+      "size_bytes": 21788
+    },
+    "provider_health_snapshot": {
+      "path": "run/proofs/proof_market_session_provider_health_snapshot.json",
+      "present": true,
+      "sha256": "148f7908fa574697893f4726116986c18b5d1801f0f10bf54a6f3651e37a2e4e",
+      "size_bytes": 4371
+    },
+    "provider_runtime": {
+      "path": "run/proofs/proof_market_session_provider_runtime.json",
+      "present": true,
+      "sha256": "13c3ca67e83a2b37159712babd8f99fee13afc575b76056b240494348e47f41e",
+      "size_bytes": 21543
+    },
+    "selected_option_context": {
+      "path": "run/proofs/proof_market_session_selected_option_context.json",
+      "present": true,
+      "sha256": "50741c83ae23b35722f4e103f23c7c8b4451285d6512026e8a8f19cbebabfbee",
+      "size_bytes": 4403
+    },
+    "strategy_activation": {
+      "path": "run/proofs/proof_market_session_strategy_activation.json",
+      "present": true,
+      "sha256": "59844a4939fa236d22fd61916f17cf8c2639d627c945f3f04c638adaf817a9dd",
+      "size_bytes": 1354
+    }
+  },
+  "source_final_evidence_map": "etc/replay/parity/observe_only_actual_generated_evidence_map.json",
+  "source_final_evidence_map_sha256": "bb54ece3138e42d0114525676ab8c9f69547ab8de92a5f7d6fad6516d4cbeb4b",
+  "source_final_evidence_map_shape": "direct_top_level_path_map",
+  "starts_services": false,
+  "writes_live_redis": false
+}

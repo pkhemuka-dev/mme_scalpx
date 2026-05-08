@@ -1,0 +1,209 @@
+{
+  "batch": "29AL",
+  "comparison_columns": [
+    "field_name",
+    "offline_value",
+    "live_observe_value",
+    "match_status",
+    "mismatch_kind",
+    "severity",
+    "promotion_impact",
+    "notes"
+  ],
+  "comparison_identity": {
+    "comparison_execution_allowed_in_29al": false,
+    "comparison_id_fields": [
+      "comparison_id",
+      "offline_run_id",
+      "offline_output_root",
+      "live_observe_bundle_id",
+      "live_observe_session_date",
+      "contract_version",
+      "created_at_utc"
+    ],
+    "comparison_scope": "offline_guarded_replay_output_vs_live_observe_report_only_outputs"
+  },
+  "contract_status": "CONTRACT_ONLY_NOT_COMPARISON_EXECUTION",
+  "created_at_utc": "2026-05-02T06:49:33.606843+00:00",
+  "hard_fail_mismatches": [
+    "SAFETY_BOUNDARY_MISMATCH",
+    "MISSING_OFFLINE_SURFACE",
+    "MISSING_LIVE_SURFACE"
+  ],
+  "live_observe_candidates": {
+    "candidate_count": 16,
+    "candidate_proofs": [
+      {
+        "path": "run/proofs/proof_offline_replay_output_parity_audit_29ak_freeze_final.json",
+        "sha256": "18e4fa9e7043e2126d74e6acac30e1842213b5d85ebe84b91d5b3aa9653e6c35",
+        "size_bytes": 1472
+      },
+      {
+        "path": "run/proofs/proof_offline_replay_output_parity_audit_29ak_latest.json",
+        "sha256": "c0fc0de0704ff6aa9ea2951c03608afd4f00e3570df63dd235a100418d08d723",
+        "size_bytes": 27959
+      },
+      {
+        "path": "run/proofs/proof_offline_replay_output_parity_audit_29ak.json",
+        "sha256": "c0fc0de0704ff6aa9ea2951c03608afd4f00e3570df63dd235a100418d08d723",
+        "size_bytes": 27959
+      },
+      {
+        "path": "run/proofs/proof_bounded_guarded_retry_after_topology_fingerprint_29aj_freeze_final.json",
+        "sha256": "73d317c861e3d00b02b0b61ac5136b0e7cd470a96fed88d3fb9874182d29c168",
+        "size_bytes": 1077
+      },
+      {
+        "path": "run/proofs/proof_bounded_guarded_retry_after_topology_fingerprint_29aj_latest.json",
+        "sha256": "7ae8293ce10cb6649fa6d5c9dceeb21045a9523a68b56f5c196a6b1e84db966d",
+        "size_bytes": 13109
+      },
+      {
+        "path": "run/proofs/proof_bounded_guarded_retry_after_topology_fingerprint_29aj.json",
+        "sha256": "7ae8293ce10cb6649fa6d5c9dceeb21045a9523a68b56f5c196a6b1e84db966d",
+        "size_bytes": 13109
+      },
+      {
+        "path": "run/proofs/proof_bounded_guarded_replay_retry_after_29af_29ag_latest.json",
+        "sha256": "4eff5fd68034885a95e75535b8326a13aecb2be44acb4cf082ca214435277b80",
+        "size_bytes": 12555
+      },
+      {
+        "path": "run/proofs/proof_bounded_guarded_replay_retry_after_29af_29ag.json",
+        "sha256": "4eff5fd68034885a95e75535b8326a13aecb2be44acb4cf082ca214435277b80",
+        "size_bytes": 12555
+      },
+      {
+        "path": "run/proofs/proof_bounded_guarded_replay_retry_29ab_latest.json",
+        "sha256": "eb92f5750514bebb6ae35850cf8503fdc342171177d40717f5556c018e64c904",
+        "size_bytes": 38999
+      },
+      {
+        "path": "run/proofs/proof_bounded_guarded_replay_retry_29ab.json",
+        "sha256": "eb92f5750514bebb6ae35850cf8503fdc342171177d40717f5556c018e64c904",
+        "size_bytes": 38999
+      },
+      {
+        "path": "run/proofs/proof_market_session_no_order_sent.json",
+        "sha256": "3d3f2036b2e9e96b029a70de48f41778cdaf38c50f65aa24053bb8ebe2a818a8",
+        "size_bytes": 21788
+      },
+      {
+        "path": "run/proofs/proof_market_session_strategy_activation.json",
+        "sha256": "59844a4939fa236d22fd61916f17cf8c2639d627c945f3f04c638adaf817a9dd",
+        "size_bytes": 1354
+      },
+      {
+        "path": "run/proofs/proof_market_session_family_surfaces.json",
+        "sha256": "6f2846e28d109b39823644a1f293e561b88ee904a8ade3a5103baaa65ce25a98",
+        "size_bytes": 27094
+      },
+      {
+        "path": "run/proofs/proof_market_session_feature_payload.json",
+        "sha256": "f3373fbcb5f376135b5f9390968dc80dc3b691f7cc98539600f02609dd9fe4d0",
+        "size_bytes": 35133
+      },
+      {
+        "path": "run/proofs/proof_market_session_feed_snapshot.json",
+        "sha256": "2b097ab684961b6279ef44e258b577f0aa9a3b32ec7da91b564e978c30073dc4",
+        "size_bytes": 1459
+      },
+      {
+        "path": "run/proofs/proof_market_session_provider_runtime.json",
+        "sha256": "13c3ca67e83a2b37159712babd8f99fee13afc575b76056b240494348e47f41e",
+        "size_bytes": 21543
+      }
+    ]
+  },
+  "live_observe_columns": [
+    "market_session_provider_runtime_ok",
+    "market_session_feed_snapshot_ok",
+    "market_session_feature_payload_ok",
+    "market_session_family_surfaces_ok",
+    "market_session_strategy_activation_ok",
+    "market_session_no_order_sent_ok",
+    "strategy_action",
+    "orders_sent_count",
+    "paper_armed_enabled",
+    "live_trading_enabled",
+    "broker_calls_executed",
+    "live_redis_writes_executed"
+  ],
+  "mismatch_taxonomy": {
+    "EXECUTION_SEMANTIC_MISMATCH": "Offline execution result cannot be mapped to live observe report-only result.",
+    "MATCH": "Values agree or both prove safe false boundary.",
+    "MISSING_LIVE_SURFACE": "Live observe proof bundle lacks required field.",
+    "MISSING_OFFLINE_SURFACE": "Offline replay proof lacks required field.",
+    "SAFETY_BOUNDARY_MISMATCH": "Offline/live disagree on broker/order/live Redis/paper/live safety.",
+    "TEXT_MARKER_ONLY": "Text mentions live/broker marker but structured boundary proves no live mutation."
+  },
+  "next_allowed_batch": "29AM comparison executor may be written only after selecting exact live-observe proof bundle authority.",
+  "offline_columns": [
+    "context_reconstruction_ready",
+    "engine_instance_ready",
+    "execution_attempted",
+    "candidate_executed",
+    "execution_ok",
+    "replay_run_completed",
+    "calls_broker_api",
+    "reads_live_redis",
+    "writes_live_redis",
+    "real_order_sent",
+    "paper_armed_approved",
+    "live_trading_approved",
+    "artifact_count",
+    "json_report_count",
+    "marker_review_classification"
+  ],
+  "offline_truth": {
+    "artifact_count": 9,
+    "calls_broker_api": false,
+    "candidate_executed": true,
+    "context_reconstruction_ready": true,
+    "engine_instance_ready": true,
+    "execution_attempted": true,
+    "execution_ok": true,
+    "json_report_count": 7,
+    "live_trading_approved": false,
+    "marker_review": {
+      "boundary_safe": true,
+      "broker_or_live_markers_in_output": true,
+      "classification": "TEXT_MARKER_FALSE_POSITIVE_OR_SAFETY_ECHO"
+    },
+    "not_proven": [
+      "full_live_replay_parity",
+      "paper_armed_readiness",
+      "live_trading_readiness",
+      "production equivalence"
+    ],
+    "output_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_engine_execute_retry_29aj",
+    "paper_armed_approved": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_run_completed": true,
+    "source_contract": "etc/replay/parity/offline_replay_output_parity_contract_29ak.json",
+    "source_proof": "run/proofs/proof_offline_replay_output_parity_audit_29ak_latest.json",
+    "verdict": "PASS_OFFLINE_REPLAY_OUTPUT_PARITY_AUDIT_29AK",
+    "writes_live_redis": false
+  },
+  "promotion_firewall": {
+    "broker_io_allowed": false,
+    "live_redis_write_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "production_mutation_allowed": false,
+    "reason": "29AL defines comparison contract only; it does not prove full live replay parity."
+  },
+  "required_live_observe_surfaces_for_future_comparison": [
+    "provider_runtime_status",
+    "feed_snapshot_status",
+    "feature_payload_status",
+    "family_surface_status",
+    "strategy_activation_status",
+    "no_order_sent_status",
+    "decision_stream_report_only_status",
+    "broker_boundary_status",
+    "redis_live_write_boundary_status"
+  ],
+  "schema_version": "offline_live_observe_parity_comparison_contract_29al_v1",
+  "source_offline_batch": "29AK"
+}

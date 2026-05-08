@@ -1,0 +1,37 @@
+BATCH 29AL STRICT SEMANTIC MISMATCH TABLE EXECUTION
+
+generated_at_utc: 2026-05-02T07:01:38.396865+00:00
+verdict: PASS_STRICT_SEMANTIC_MISMATCH_TABLE_EXECUTION_29AL
+strict_contract: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strict_semantic_parity_contract_29ak/00_strict_semantic_parity_contract.json
+semantic_report: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/semantic_replay_live_parity_review_29aj/00_semantic_replay_live_parity_review_report.json
+mismatch_table_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strict_semantic_mismatch_table_execution_29al/00_strict_semantic_mismatch_rows.json
+mismatch_table_csv: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strict_semantic_mismatch_table_execution_29al/01_strict_semantic_mismatch_rows.csv
+summary_json: run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/strict_semantic_mismatch_table_execution_29al/02_strict_semantic_summary.json
+strict_mismatch_table_executed: True
+row_count: 12
+hard_fail_count: 0
+soft_fail_count: 3
+required_unknown_count: 0
+strict_safety_parity_pass: True
+strict_strategy_hold_parity_pass: True
+strict_provider_feature_parity_pass: False
+full_live_replay_parity: NOT_PROVEN_IN_29AL
+repair_path: STRICT_HARD_PARITY_PASSED_SOFT_MISMATCH_REVIEW_READY
+next_batch: Batch 29AM — review strict semantic soft mismatches and decide whether optional provider-feature fields need stronger live/replay mapping; still not paper/live enablement.
+
+Safety:
+paper_armed_approved: false
+live_trading_approved: false
+real_order_sent: false
+calls_broker_api: false
+reads_live_redis: false
+writes_live_redis: false
+
+Files changed in this batch:
+- none
+
+Proofs:
+- run/proofs/proof_strict_semantic_mismatch_table_execution_29al.json
+- run/proofs/proof_strict_semantic_mismatch_table_execution_29al_latest.json
+- run/proofs/batch29al_execute_strict_semantic_mismatch_table_20260502_123138_driver_proof.json
+- etc/replay/parity/strict_semantic_mismatch_table_execution_29al.json

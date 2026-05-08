@@ -1,0 +1,204 @@
+{
+  "accepted_for": "GUARDED_OFFLINE_REPLAY_DRY_RUN_EXECUTION_ONLY",
+  "batch": "28P",
+  "broker_call_reachable": false,
+  "broker_calls_executed": false,
+  "calls_broker_api": false,
+  "capture_id": "pstrategy_20260430_094557",
+  "comparison_completed": false,
+  "contract_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_dry_run_contract",
+  "dataset_candidate_root": "run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/dataset_candidate",
+  "dataset_id": "observe_only_replay_input_9c50b37fb4782fb0",
+  "dataset_materialized_for_replay_run": false,
+  "entrypoint_blocking_hits": {},
+  "entrypoint_inventory": {
+    "app/mme_scalpx/replay/contracts.py": {
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only; execution allowed only through 28O guarded command",
+      "present": true,
+      "redis_write_tokens": [],
+      "sha256": "b50ef9e3a139b14c998eb13ac9d74bb9a975718a213b55f9298eb4b2ed6081b7",
+      "size_bytes": 97130
+    },
+    "app/mme_scalpx/replay/dataset.py": {
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only; execution allowed only through 28O guarded command",
+      "present": true,
+      "redis_write_tokens": [],
+      "sha256": "e4b32c93c44875b75297de99eb92de1a24cdbd93141c7bd53edd511545c42bd3",
+      "size_bytes": 54560
+    },
+    "app/mme_scalpx/replay/engine.py": {
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only; execution allowed only through 28O guarded command",
+      "present": true,
+      "redis_write_tokens": [],
+      "sha256": "922ec33c80195eed8ac9557f895fe7c2a6f553d60905183e1ab88a85f4ed93b8",
+      "size_bytes": 20518
+    },
+    "app/mme_scalpx/replay/fill_model.py": {
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only; execution allowed only through 28O guarded command",
+      "present": true,
+      "redis_write_tokens": [],
+      "sha256": "eb4b12690bb05adfcc0dbf2effc6ec4504c3a81a0220b69fe8fb3ee3ea65e009",
+      "size_bytes": 10599
+    },
+    "app/mme_scalpx/replay/injector.py": {
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only; execution allowed only through 28O guarded command",
+      "present": true,
+      "redis_write_tokens": [],
+      "sha256": "d32ba362be759083c4b3bfe0cc4afcbbdfcfb502e1b84539cad9f15cf565ee54",
+      "size_bytes": 14523
+    },
+    "app/mme_scalpx/replay/integrity.py": {
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only; execution allowed only through 28O guarded command",
+      "present": true,
+      "redis_write_tokens": [],
+      "sha256": "36eebdc84fcef136e9a006046578dc8a24e15c4d47ede543f5d7934dacf03576",
+      "size_bytes": 20539
+    },
+    "app/mme_scalpx/replay/runner.py": {
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only; execution allowed only through 28O guarded command",
+      "present": true,
+      "redis_write_tokens": [],
+      "sha256": "de39439819e44abed86b218493658d9ea49e6d8ebf783c2ea756df5db1ce9f35",
+      "size_bytes": 25284
+    },
+    "app/mme_scalpx/replay/safety.py": {
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only; execution allowed only through 28O guarded command",
+      "present": true,
+      "redis_write_tokens": [
+        ".set("
+      ],
+      "sha256": "381644eb6e5424f9e37406af6b468145a8b272d506c0fb75eca25572b4bd49d3",
+      "size_bytes": 15171
+    },
+    "app/mme_scalpx/replay/topology.py": {
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only; execution allowed only through 28O guarded command",
+      "present": true,
+      "redis_write_tokens": [],
+      "sha256": "448cf6bd7f34f13d02768684a0807dc8b5993f493e91bff503f0d1b34e589e0c",
+      "size_bytes": 12432
+    },
+    "bin/replay_run.py": {
+      "broker_or_enablement_tokens": [],
+      "note": "inventory_only; execution allowed only through 28O guarded command",
+      "present": true,
+      "redis_write_tokens": [],
+      "sha256": "cbda5ec8be7b18dc31cc99ae2c1af67ceda10bf84997e5af4e0beb2a16dc628d",
+      "size_bytes": 97072
+    }
+  },
+  "exec_artifact_states": {
+    "00_execution_manifest.json": {
+      "path": "run/replay/parity/offline_replay_dry_run/observe_only_replay_input_9c50b37fb4782fb0/00_execution_manifest.json",
+      "present": true,
+      "sha256": "cf691bc17bdba2b1546c3e40ae2a2383589e9acd29a07643c14723154685fd8f",
+      "size_bytes": 1858
+    },
+    "01_command_validation.json": {
+      "path": "run/replay/parity/offline_replay_dry_run/observe_only_replay_input_9c50b37fb4782fb0/01_command_validation.json",
+      "present": true,
+      "sha256": "6f6e24ce5cd622499371cd297970bc8bccc37c6122557e390eec08202910733a",
+      "size_bytes": 2413
+    },
+    "02_process_result.json": {
+      "path": "run/replay/parity/offline_replay_dry_run/observe_only_replay_input_9c50b37fb4782fb0/02_process_result.json",
+      "present": true,
+      "sha256": "be47c0cf4d7890d5725419c6f3feda3b9b014c36436899015a4b136373a85422",
+      "size_bytes": 2262
+    },
+    "03_output_root_inventory.json": {
+      "path": "run/replay/parity/offline_replay_dry_run/observe_only_replay_input_9c50b37fb4782fb0/03_output_root_inventory.json",
+      "present": true,
+      "sha256": "c57eddc992eeb0e9e94e10fc5abdbfd62da5361673d030d4ab8d6048f2f8ce45",
+      "size_bytes": 445
+    },
+    "04_no_broker_no_live_redis_boundary.json": {
+      "path": "run/replay/parity/offline_replay_dry_run/observe_only_replay_input_9c50b37fb4782fb0/04_no_broker_no_live_redis_boundary.json",
+      "present": true,
+      "sha256": "0a33b4f34cc3c3693524fd94f9d75eaa2439f0f660794002294ee179cefdb31c",
+      "size_bytes": 599
+    },
+    "05_next_comparison_contract.json": {
+      "path": "run/replay/parity/offline_replay_dry_run/observe_only_replay_input_9c50b37fb4782fb0/05_next_comparison_contract.json",
+      "present": true,
+      "sha256": "849660684dbe4d4ca59bb9c32bc2789a2a46cac7e5894d7ab5f767d5028e2459",
+      "size_bytes": 546
+    }
+  },
+  "exec_result": {
+    "accepted_for": "GUARDED_OFFLINE_REPLAY_DRY_RUN_EXECUTION_ONLY",
+    "calls_broker_api": false,
+    "comparison_completed": false,
+    "contract_valid": true,
+    "execution_arming_created": false,
+    "execution_ok": false,
+    "full_live_replay_parity": "NOT_PROVEN_IN_28P",
+    "future_command_executed": true,
+    "live_trading_approved": false,
+    "next_batch": "Repair guarded replay dry-run command/interface before comparison.",
+    "output_root": "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_replay_dry_run/observe_only_replay_input_9c50b37fb4782fb0",
+    "paper_armed_approved": false,
+    "process_returncode": 2,
+    "process_timeout": false,
+    "production_doctrine_changed": false,
+    "reads_live_redis": false,
+    "real_order_sent": false,
+    "replay_run_completed": false,
+    "schema_version": "guarded_offline_replay_dry_run_execution_result_28p_v1",
+    "starts_services": false,
+    "writes_live_redis": false,
+    "written_count": 6
+  },
+  "exec_script": "bin/execute_guarded_offline_replay_dry_run_28p.py",
+  "exec_script_sha256": "39be43f8e376a7953da10f48d67112fbcf8730be5621662703ae1db646d7030c",
+  "execution_arming_created": false,
+  "execution_ok": false,
+  "full_live_replay_parity": "NOT_PROVEN_IN_28P",
+  "future_command_executed": true,
+  "future_output_root": "run/replay/parity/offline_replay_dry_run/observe_only_replay_input_9c50b37fb4782fb0",
+  "future_output_root_replay_safe": true,
+  "generated_at_utc": "2026-05-01T12:36:27.395806+00:00",
+  "live_redis_write_reachable": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "next_batch": "Repair guarded offline replay dry-run command/interface before comparison.",
+  "paper_armed_approved": false,
+  "preflight_ok": true,
+  "production_doctrine_changed": false,
+  "reads_live_redis": false,
+  "real_order_sent": false,
+  "replay_run_completed": false,
+  "run_result": {
+    "args": [
+      "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/bin/execute_guarded_offline_replay_dry_run_28p.py",
+      "--project-root",
+      "/home/Lenovo/scalpx/projects/mme_scalpx",
+      "--contract-root",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/guarded_replay_dry_run_contract",
+      "--output-root",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_replay_dry_run/observe_only_replay_input_9c50b37fb4782fb0",
+      "--proof-28o",
+      "/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/proof_guarded_offline_replay_dry_run_contract_28o_latest.json",
+      "--timeout-sec",
+      "120"
+    ],
+    "ok": false,
+    "returncode": 1,
+    "stderr": "",
+    "stdout": "{\n  \"accepted_for\": \"GUARDED_OFFLINE_REPLAY_DRY_RUN_EXECUTION_ONLY\",\n  \"calls_broker_api\": false,\n  \"comparison_completed\": false,\n  \"contract_valid\": true,\n  \"execution_arming_created\": false,\n  \"execution_ok\": false,\n  \"full_live_replay_parity\": \"NOT_PROVEN_IN_28P\",\n  \"future_command_executed\": true,\n  \"live_trading_approved\": false,\n  \"next_batch\": \"Repair guarded replay dry-run command/interface before comparison.\",\n  \"output_root\": \"/home/Lenovo/scalpx/projects/mme_scalpx/run/replay/parity/offline_replay_dry_run/observe_only_replay_input_9c50b37fb4782fb0\",\n  \"paper_armed_approved\": false,\n  \"process_returncode\": 2,\n  \"process_timeout\": false,\n  \"production_doctrine_changed\": false,\n  \"reads_live_redis\": false,\n  \"real_order_sent\": false,\n  \"replay_run_completed\": false,\n  \"schema_version\": \"guarded_offline_replay_dry_run_execution_result_28p_v1\",\n  \"starts_services\": false,\n  \"writes_live_redis\": false,\n  \"written_count\": 6\n}\n",
+    "timeout": false
+  },
+  "runtime_promotion_reachable": false,
+  "schema_version": "guarded_offline_replay_dry_run_execution_28p_v1",
+  "starts_services": false,
+  "writes_live_redis": false
+}

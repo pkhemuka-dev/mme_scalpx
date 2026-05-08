@@ -1,0 +1,124 @@
+{
+  "apply_eligibility_version": "v0.4.1",
+  "bundle": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/review_bundles/ai_patch_runner_v04_review_bundle_20260508T165206Z",
+  "bundle_time_policy_check": {
+    "command_result": {
+      "cmd": [
+        "/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python",
+        "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/check_policy.py",
+        "--command-file",
+        "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/review_bundles/ai_patch_runner_v04_review_bundle_20260508T165206Z/sandbox.diff",
+        "--json"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "{\n  \"command\": {\n    \"command_allowed\": true,\n    \"findings\": []\n  },\n  \"ok\": true,\n  \"paths\": [],\n  \"policy_path\": \"/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json\",\n  \"policy_version\": \"ai_patch_runner_policy_v0.2.2\",\n  \"self_test\": null\n}\n"
+    },
+    "payload": {
+      "command": {
+        "command_allowed": true,
+        "findings": []
+      },
+      "ok": true,
+      "paths": [],
+      "policy_path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/policy/ai_patch_policy.json",
+      "policy_version": "ai_patch_runner_policy_v0.2.2",
+      "self_test": null
+    }
+  },
+  "created_at_utc": "2026-05-08T16:54:07.856732+00:00",
+  "diff_paths": {
+    "forbidden_paths": [],
+    "only_low_risk_paths": true,
+    "paths": [
+      "ai_patch_runner/SANDBOX_AI_PATCH_NOTE.md"
+    ]
+  },
+  "eligibility": "ELIGIBLE_FOR_MANUAL_APPLY",
+  "forbidden_diff_commands": [],
+  "reason": "review bundle is eligible for future human-approved low-risk manual apply only",
+  "required_files": {
+    "ai_classification.json": {
+      "exists": true,
+      "path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/review_bundles/ai_patch_runner_v04_review_bundle_20260508T165206Z/ai_classification.json",
+      "sha256": "38f44c54b58aa4bd00c2ea289444fbfc7ab1d300579827ebb11598c9a8efed3c",
+      "size_bytes": 1449
+    },
+    "ai_patch_plan.json": {
+      "exists": true,
+      "path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/review_bundles/ai_patch_runner_v04_review_bundle_20260508T165206Z/ai_patch_plan.json",
+      "sha256": "4695ab1a03c4a0bc5ceca1ad1b65e180f1ad342549a9fe269d445c957c2ec1ae",
+      "size_bytes": 1464
+    },
+    "compile_summary.json": {
+      "exists": true,
+      "path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/review_bundles/ai_patch_runner_v04_review_bundle_20260508T165206Z/compile_summary.json",
+      "sha256": "fd7e91e99fb56c5cfc2e33621e568e1642ccd73c42788fe683b987ce67231452",
+      "size_bytes": 2255
+    },
+    "human_approval_checklist.md": {
+      "exists": true,
+      "path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/review_bundles/ai_patch_runner_v04_review_bundle_20260508T165206Z/human_approval_checklist.md",
+      "sha256": "efc60f1425dabb420db43c0db8935eb5d7b4fdf592f8cc8ca8d45be15d9d5b6c",
+      "size_bytes": 1949
+    },
+    "policy_snapshot.json": {
+      "exists": true,
+      "path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/review_bundles/ai_patch_runner_v04_review_bundle_20260508T165206Z/policy_snapshot.json",
+      "sha256": "a28e1717c72c8f0b97debea28ffe32124f253a8dad6861eb873dc410823c7535",
+      "size_bytes": 5494
+    },
+    "review_bundle_manifest.json": {
+      "exists": true,
+      "path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/review_bundles/ai_patch_runner_v04_review_bundle_20260508T165206Z/review_bundle_manifest.json",
+      "sha256": "a2fbb8cb5f3007c8f84bdd234934854844ada3b9aea7d9b30dc042f7950c1125",
+      "size_bytes": 3962
+    },
+    "sandbox.diff": {
+      "exists": true,
+      "path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/review_bundles/ai_patch_runner_v04_review_bundle_20260508T165206Z/sandbox.diff",
+      "sha256": "d314f54f22c5b143395cb5f450caa24c90a7f877fb42b007cb94ff0823a4e238",
+      "size_bytes": 374
+    },
+    "sandbox_report.json": {
+      "exists": true,
+      "path": "/home/Lenovo/scalpx/projects/mme_scalpx/ai_patch_runner/review_bundles/ai_patch_runner_v04_review_bundle_20260508T165206Z/sandbox_report.json",
+      "sha256": "c7e18c923507f963d9ded0967aa76d6e59cd5951f73d3060359b2f69b65495b6",
+      "size_bytes": 26136
+    }
+  },
+  "safety": {
+    "applies_patch": false,
+    "calls_broker": false,
+    "enables_paper_or_live": false,
+    "patches_real_project": false,
+    "starts_services": false,
+    "writes_live_redis": false
+  },
+  "validations": {
+    "ai_classification_pass": true,
+    "ai_plan_no_real_touch": true,
+    "ai_plan_sandbox_only": true,
+    "ai_plan_target_low_risk": true,
+    "ai_plan_validation_ok": true,
+    "bundle_time_policy_check_ok": true,
+    "checklist_contains_no_direct_auto_patch_warning": true,
+    "compile_summary_ok": true,
+    "diff_no_forbidden_commands": true,
+    "diff_nonempty": true,
+    "diff_only_low_risk_paths": true,
+    "manifest_bundle_only": true,
+    "manifest_no_broker": true,
+    "manifest_no_execution": true,
+    "manifest_no_paper_live": true,
+    "manifest_no_redis": true,
+    "manifest_no_services": true,
+    "manifest_not_applied": true,
+    "manifest_verdict_pass": true,
+    "policy_snapshot_diff_check_ok": true,
+    "sandbox_report_not_applied": true,
+    "sandbox_report_pass": true,
+    "sandbox_report_real_project_not_patched": true,
+    "sandbox_report_real_target_absent": true
+  }
+}

@@ -1,0 +1,40 @@
+BATCH 29BP FEATURE PAYLOAD NOT_COMPARABLE CONSOLIDATION
+
+generated_at_utc: 2026-05-03T06:39:28.554959+00:00
+verdict: PASS_29BP_FEATURE_PAYLOAD_NOT_COMPARABLE_CONSOLIDATED_NEXT_SURFACE_SELECTED
+proof_29bo_valid: True
+compile_ok: True
+safety_ok: True
+readiness_status: FEATURE_PAYLOAD_CLOSED_NOT_COMPARABLE_NEXT_SURFACE_SELECTED
+feature_payload_surface_closed: True
+feature_payload_parity: NOT_PROVEN_NOT_COMPARABLE_METADATA_SUMMARY_ONLY
+contract_status_from_29bo: NO_RUNTIME_FEATURE_COMPARABLE_FIELDS_AFTER_METADATA_EXCLUSION
+approved_comparable_fields_from_29bo: []
+strict_comparable_field_count_from_29bo: 0
+weak_context_field_count_from_29bo: 0
+next_surface: family_surface_payload_parity
+full_live_replay_parity: NOT_PROVEN_IN_29BP
+paper_live_status: BLOCKED_NOT_IN_SCOPE
+next_batch: Batch 29BQ — audit next replay/live parity surface: family_surface_payload_parity; still no paper/live enablement.
+
+Artifacts:
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_not_comparable_consolidation_29bp/00_feature_payload_not_comparable_consolidation.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_not_comparable_consolidation_29bp/01_replay_parity_readiness_index_after_feature_payload.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_not_comparable_consolidation_29bp/02_surface_matrix_after_feature_payload.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_not_comparable_consolidation_29bp/03_next_surface_29bq_contract.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_not_comparable_consolidation_29bp/04_evidence_chain_snapshot.json
+- run/replay/parity/offline_materialization/observe_only_replay_input_9c50b37fb4782fb0/feature_payload_not_comparable_consolidation_29bp/05_operator_summary.md
+- run/proofs/proof_feature_payload_not_comparable_consolidation_29bp.json
+- run/proofs/proof_feature_payload_not_comparable_consolidation_29bp_latest.json
+- etc/replay/parity/feature_payload_not_comparable_consolidation_29bp.json
+
+Boundary:
+- code_patch_applied: false
+- files_changed: []
+- starts_services: false
+- reads_live_redis: false
+- writes_live_redis: false
+- calls_broker_api: false
+- paper_armed_approved: false
+- live_trading_approved: false
+- full_live_replay_parity: NOT_PROVEN_IN_29BP

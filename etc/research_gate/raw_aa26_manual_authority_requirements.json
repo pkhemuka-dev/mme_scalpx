@@ -1,0 +1,48 @@
+{
+  "created_at_utc": "2026-05-02T07:44:44.412989+00:00",
+  "hard_blocks": [
+    "No reward_cost_ratio derivation without authorized cost model.",
+    "No OI wall derivation without authorized OI wall formula/context.",
+    "No PnL reconstruction without authorized trade lifecycle/PnL declaration.",
+    "No RAW promotion to paper/live.",
+    "No production mutation from RAW."
+  ],
+  "required_before_gated_derivation": {
+    "cost_model_declaration": {
+      "required_contract": "etc/research_gate/raw_cost_model_required_surface_contract.json",
+      "required_for": [
+        "reward_cost_ratio",
+        "cost-adjusted economics",
+        "cost ticks"
+      ],
+      "status": "missing_or_not_authorized",
+      "template": "etc/research_gate/raw_cost_model_declaration_template.json"
+    },
+    "oi_wall_formula_declaration": {
+      "required_contract": "etc/research_gate/raw_oi_wall_required_surface_contract.json",
+      "required_for": [
+        "oi_wall_strength",
+        "oi_wall_distance_points"
+      ],
+      "status": "missing_or_not_authorized",
+      "template": "etc/research_gate/raw_oi_wall_formula_declaration_template.json"
+    },
+    "trade_lifecycle_pnl_declaration": {
+      "required_contract": "etc/research_gate/raw_trade_lifecycle_pnl_required_surface_contract.json",
+      "required_for": [
+        "entry_price",
+        "exit_price",
+        "qty",
+        "gross_pnl",
+        "costs",
+        "exit_reason",
+        "entry_ts",
+        "exit_ts",
+        "reconstructed_pnl"
+      ],
+      "status": "missing_or_not_authorized",
+      "template": "etc/research_gate/raw_trade_lifecycle_pnl_declaration_template.json"
+    }
+  },
+  "schema_version": "raw_aa26_manual_authority_requirements_v1"
+}
