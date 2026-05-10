@@ -1,0 +1,24 @@
+# 26-O23-Q-R5 — exact surface extraction mapping audit
+
+- generated_at_utc: `2026-05-10T06:19:14.307425+00:00`
+- final_verdict: `FAIL_O23_Q_R5_SURFACE_EXTRACTION_MAPPING_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- classification: `SURFACE_CANDIDATE_PATHS_EXIST_IN_PAYLOAD_EXTRACTOR_MAPPING_TOO_STRICT`
+- classification_supported: `True`
+- surface_candidate_count: `16`
+- exact_family_hit_count: `16`
+- exact_family_side_hit_count: `16`
+- metadata_only_family_hit_count: `0`
+- non_metadata_family_hit_count: `16`
+- source_has_family_evaluator: `True`
+- active_has_payload_publisher: `True`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- paper_start_attempted: `False`
+- real_live_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- manual_extract: `run/live_capture/batch26o23_q_r5_exact_surface_extraction_mapping_audit_20260510_114914/o23q_r5_manual_surface_mapping_extract.txt`
+- next_recommended_batch: `26-O23-Q-R6 exact extractor mapping patch plan from Q-R5 surface_candidate paths; compile only first; no service start, no paper/live.`

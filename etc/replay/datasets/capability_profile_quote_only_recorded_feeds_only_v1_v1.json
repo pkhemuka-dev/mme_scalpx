@@ -1,0 +1,79 @@
+{
+  "admissibility": {
+    "broker_calls_allowed": false,
+    "economics_pnl_evaluation_allowed": false,
+    "execution_replay_allowed": false,
+    "feeds_only_replay_allowed": true,
+    "full_engine_replay_allowed": false,
+    "live_redis_writes_allowed": false,
+    "live_trading_allowed": false,
+    "paper_trading_allowed": false,
+    "risk_replay_allowed": false,
+    "selector_only_replay_allowed": true,
+    "service_start_allowed": false,
+    "strategy_replay_allowed": false
+  },
+  "capability_profile_id": "quote_only_recorded_feeds_only_v1",
+  "capability_profile_version": "v1",
+  "created_at_utc": "2026-05-10T04:43:45.304585+00:00",
+  "created_by_batch": "REPLAY-DATA-A40",
+  "dataset_id": "session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z",
+  "dataset_root": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z",
+  "notes": [
+    "Capability profile is quote-only and feeds_only only.",
+    "This profile does not approve full replay engine, strategy/risk/execution replay, PnL, paper, or live."
+  ],
+  "optional_file_stems": [
+    "features_rows_candidate",
+    "strategy_decisions_candidate",
+    "risk_outputs_candidate",
+    "execution_shadow_candidate",
+    "source_manifest",
+    "health_features"
+  ],
+  "required_file_stems": [
+    "quote_ticks_mme_fut_stream",
+    "quote_ticks_mme_opt_stream"
+  ],
+  "safety_laws": {
+    "no_broker": true,
+    "no_live_redis": true,
+    "no_orders": true,
+    "no_paper_live": true,
+    "no_runtime_promotion": true,
+    "no_service_start": true
+  },
+  "schema": "mme_scalpx.replay_dataset_capability_profile",
+  "selected_days": [
+    "2026-04-17"
+  ],
+  "source_mode": {
+    "economics_comparison_ready": false,
+    "economics_evaluable": false,
+    "feed_input_source_mode": "quote_only_recorded",
+    "missing_required_economics_fields": [
+      "economics_reason",
+      "entry_mode",
+      "reward_cost_ratio",
+      "reward_ticks",
+      "selected_leg",
+      "source_frame_id",
+      "stop_ticks",
+      "target_ticks",
+      "tick_size"
+    ],
+    "never_invent_missing_economics_fields": true
+  },
+  "supported_suffixes": [
+    ".csv",
+    ".json",
+    ".jsonl"
+  ],
+  "validated_scope": {
+    "current_validated_scope": "feeds_only",
+    "next_scope_expansion_proven": false,
+    "validated_stage_names": [
+      "feeds"
+    ]
+  }
+}

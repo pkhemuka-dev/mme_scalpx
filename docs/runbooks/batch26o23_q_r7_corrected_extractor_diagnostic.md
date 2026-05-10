@@ -1,0 +1,23 @@
+# 26-O23-Q-R7 — corrected extractor diagnostic / discrimination check
+
+- generated_at_utc: `2026-05-10T06:25:24.664286+00:00`
+- final_verdict: `FAIL_O23_Q_R7_CORRECTED_EXTRACTOR_DIAGNOSTIC_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- classification: `CORRECTED_EXTRACTOR_OVERMATCHES_GENERIC_PAYLOAD_NO_DISCRIMINATING_FAMILY_SIDE_SCOPE`
+- classification_supported: `True`
+- candidate_count: `16`
+- all_scope_candidate_count: `16`
+- discriminating_candidate_count: `0`
+- scope_symmetry: `True`
+- evidence_backed_count: `0`
+- best_evidence_backed_scope: `None`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- paper_start_attempted: `False`
+- real_live_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- manual_extract: `run/live_capture/batch26o23_q_r7_corrected_extractor_diagnostic_20260510_115524/o23q_r7_manual_discrimination_extract.txt`
+- next_recommended_batch: `26-O23-Q-R8 exact overmatch source audit: inspect candidate paths/values and revise extractor to require discriminating family-side ownership, no service start, no paper/live.`

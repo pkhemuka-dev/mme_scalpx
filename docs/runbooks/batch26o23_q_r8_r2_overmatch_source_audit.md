@@ -1,0 +1,23 @@
+# 26-O23-Q-R8-R2 — overmatch source audit R2 / difflib import fix
+
+- generated_at_utc: `2026-05-10T06:30:04.474796+00:00`
+- final_verdict: `FAIL_O23_Q_R8_R2_OVERMATCH_OWNERSHIP_EXTRACTOR_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- classification: `OVERMATCH_CONFIRMED_ALL_CANDIDATES_ARE_GENERIC_SCOPE_CARRIERS_REQUIRE_OWNERSHIP_EXTRACTOR`
+- classification_supported: `True`
+- candidate_count: `16`
+- generic_carrier_count: `16`
+- discriminating_owner_count: `0`
+- local_segment_scope_count: `0`
+- value_all_scope_count: `16`
+- owner_nonzero_scopes: `{}`
+- proposed_diff: `run/live_capture/batch26o23_q_r8_r2_overmatch_source_audit_20260510_120004/o23q_r8_r2_proposed_q_r9_discriminating_extractor.diff`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- paper_start_attempted: `False`
+- real_live_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- next_recommended_batch: `26-O23-Q-R9 apply discriminating ownership extractor in diagnostic/ranking script only and rerun from existing payload; no production source patch, no service start, no paper/live.`

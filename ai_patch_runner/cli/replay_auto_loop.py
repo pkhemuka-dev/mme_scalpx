@@ -1,6 +1,62 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+# ===== MAUTO_R3_R3_GENERIC_LATEST_PROOF_START =====
+def _r3r3_load_json(path):
+    import json
+    from pathlib import Path
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+def _r3r3_latest_replay_proof_from_context():
+    from pathlib import Path
+    state = _r3r3_load_json("ai_patch_runner/context/replay_current_state.json")
+    if not isinstance(state, dict):
+        return None, None
+    proof = state.get("latest_replay_proof")
+    if not proof:
+        return None, None
+    p = Path(proof)
+    if not p.exists():
+        return None, None
+    data = _r3r3_load_json(p)
+    if not isinstance(data, dict):
+        return None, None
+    return str(p), data
+
+def _r3r3_compact_latest_replay_proof():
+    proof_path, data = _r3r3_latest_replay_proof_from_context()
+    if not proof_path or not isinstance(data, dict):
+        return None
+    s = data.get("summary") or {}
+    return {
+        "path": proof_path,
+        "batch": data.get("batch"),
+        "next_batch": s.get("next_batch") or data.get("next_batch"),
+        "verdict": data.get("verdict"),
+        "engine_ready": s.get("engine_ready", data.get("engine_ready")),
+        "engine_ready_candidate": s.get("engine_ready_candidate", data.get("engine_ready_candidate")),
+        "engine_execution_performed": s.get("engine_execution_performed", data.get("engine_execution_performed", False)),
+        "blocker_count": s.get("blocker_count"),
+        "cleaned_dataset_ready": s.get("cleaned_dataset_ready"),
+        "cleaned_dataset_id": s.get("cleaned_dataset_id"),
+        "cleaned_dataset_root": s.get("cleaned_dataset_root"),
+        "selected_day": s.get("selected_day"),
+        "selector_only_execution_ok": s.get("selector_only_execution_ok"),
+        "selector_only_execution_performed": s.get("selector_only_execution_performed"),
+        "selector_only_execution_allowed": s.get("selector_only_execution_allowed"),
+        "full_engine_execution_allowed": s.get("full_engine_execution_allowed"),
+        "planned_command_safe": s.get("planned_command_safe"),
+        "broker_calls_executed": s.get("broker_calls_executed", False),
+        "live_redis_writes_executed": s.get("live_redis_writes_executed", False),
+        "paper_or_live_enabled": s.get("paper_or_live_enabled", False),
+        "orders_sent": s.get("orders_sent", False),
+    }
+# ===== MAUTO_R3_R3_GENERIC_LATEST_PROOF_END =====
+
+
 import argparse
 import json
 import os
@@ -100,8 +156,26 @@ def latest_from_patterns(patterns: list[str]) -> Path | None:
 
 
 def latest_replay_proof() -> Path | None:
-    return latest_from_patterns(REPLAY_PROOF_PATTERNS)
+    """Return latest replay proof from generic memory state first.
 
+    MAUTO-R3-R6-R2 law:
+    - mremember owns generic latest REPLAY-DATA-A* discovery.
+    - mauto must not rely on stale hardcoded REPLAY_PROOF_PATTERNS.
+    - fallback to old pattern discovery only if memory state is missing/broken.
+    """
+    try:
+        import json
+        state_path = Path("ai_patch_runner/context/replay_current_state.json")
+        if state_path.exists():
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            proof = state.get("latest_replay_proof")
+            if proof:
+                pp = Path(proof)
+                if pp.exists():
+                    return pp
+    except Exception:
+        pass
+    return latest_from_patterns(REPLAY_PROOF_PATTERNS)
 
 def compact_proof(path: Path | None) -> dict[str, Any]:
     if not path:
@@ -487,3 +561,18 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+
+
+
+
+# ===== MAUTO_R3_R3_COMPACT_PROOF_MONKEYPATCH_START =====
+try:
+    _r3r3_original_compact_latest_replay_proof = compact_latest_replay_proof
+    def compact_latest_replay_proof():
+        return _r3r3_compact_latest_replay_proof() or _r3r3_original_compact_latest_replay_proof()
+except Exception:
+    pass
+# ===== MAUTO_R3_R3_COMPACT_PROOF_MONKEYPATCH_END =====
+

@@ -1,0 +1,22 @@
+# 26-O23-Q-R3 — family payload shape / surface extraction classifier
+
+- generated_at_utc: `2026-05-10T06:13:52.813018+00:00`
+- final_verdict: `FAIL_O23_Q_R3_PAYLOAD_SHAPE_SURFACE_EXTRACTION_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- classification: `VALID_PAYLOAD_PRESENT_BUT_NO_FAMILY_SURFACE_CONTENT`
+- classification_supported: `True`
+- payload_object_count: `4`
+- total_family_mentions: `0`
+- family_side_mention_count: `0`
+- qr2_surface_present_count: `0`
+- qr2_evidence_backed_count: `0`
+- qr2_best_scope: `None`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- paper_start_attempted: `False`
+- real_live_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- next_recommended_batch: `26-O23-Q-R4 exact producer-content audit: activation/family payload exists but contains no family surface content; no service start, no paper/live.`

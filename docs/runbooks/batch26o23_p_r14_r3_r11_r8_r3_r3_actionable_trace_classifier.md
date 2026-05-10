@@ -1,0 +1,23 @@
+# 26-O23-P-R14-R3-R11-R8-R3-R3 — actionable trace / current error stream classifier
+
+- generated_at_utc: `2026-05-10T06:04:20.947457+00:00`
+- final_verdict: `FAIL_O23_P_R14_R3_R11_R8_R3_R3_ACTIONABLE_TRACE_CLASSIFICATION_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- classification: `MANUAL_TRACE_AMBIGUOUS_AND_CURRENT_ERROR_STREAM_SEVERE`
+- classification_supported: `True`
+- r8_material_pass: `True`
+- payload_verified: `True`
+- service_liveness: `True`
+- features_growth: `20`
+- decisions_growth: `165`
+- orders_growth: `0`
+- manual_trace_count: `5`
+- current_error_stream_severe_now: `True`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- risk_execution_not_running: `True`
+- manual_extract: `run/live_capture/batch26o23_p_r14_r3_r11_r8_r3_r3_actionable_trace_classifier_20260510_113420/o23p_r14_r3_r11_r8_r3_r3_manual_actionable_extract.txt`
+- next_recommended_batch: `26-O23-P-R14-R3-R11-R8-R4 classify current system:errors stream severe entry; no service start, no paper/live.`

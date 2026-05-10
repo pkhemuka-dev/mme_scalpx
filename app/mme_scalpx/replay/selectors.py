@@ -122,6 +122,48 @@ class ReplaySelectionPlan:
     selection_notes: tuple[str, ...] = field(default_factory=tuple)
 
 
+
+_FINGERPRINT_VOLATILE_RUNTIME_KEYS = frozenset({
+    "created_at",
+    "created_at_utc",
+    "generated_at_utc",
+    "snapshot_created_at",
+    "timestamp_utc",
+    "started_at",
+    "finished_at",
+    "completed_at",
+    "duration_sec",
+    "elapsed_sec",
+    "run_id",
+    "run_root",
+    "inner_run",
+    "artifact_root",
+    "output_dir",
+    "absolute_path",
+    "path",
+})
+
+
+def _fingerprint_payload_without_volatile_runtime_fields(value: Any) -> Any:
+    """Return a copy of a fingerprint payload without run-volatile fields.
+
+    This is intentionally used only for stable fingerprint computation.
+    It does not alter serialized reporting artifacts, manifests, or
+    effective input snapshots, where timestamps remain visible evidence.
+    """
+    if isinstance(value, dict):
+        return {
+            key: _fingerprint_payload_without_volatile_runtime_fields(item)
+            for key, item in value.items()
+            if key not in _FINGERPRINT_VOLATILE_RUNTIME_KEYS
+        }
+    if isinstance(value, list):
+        return [_fingerprint_payload_without_volatile_runtime_fields(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_fingerprint_payload_without_volatile_runtime_fields(item) for item in value)
+    return value
+
+
 class ReplaySelector:
     """
     Deterministic replay selector built on dataset truth.
@@ -179,7 +221,9 @@ class ReplaySelector:
             "selected_days": [trading_day_to_dict(day) for day in selected_days],
         }
 
-        selection_fingerprint = _stable_sha256_json(fingerprint_payload)
+        selection_fingerprint = _stable_sha256_json(
+            _fingerprint_payload_without_volatile_runtime_fields(fingerprint_payload)
+        )
 
         return ReplaySelectionPlan(
             selection_mode=request.selection_mode,

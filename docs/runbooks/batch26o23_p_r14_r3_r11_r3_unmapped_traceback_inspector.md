@@ -1,0 +1,21 @@
+# 26-O23-P-R14-R3-R11-R3 — unmapped traceback deep inspector
+
+- generated_at_utc: `2026-05-10T05:10:17.011255+00:00`
+- final_verdict: `FAIL_O23_P_R14_R3_R11_R3_UNMAPPED_TRACEBACK_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- rootcause: `POST_QUOTE_SHAPE_TRACEBACK_STILL_UNMAPPED_AFTER_DEEP_EXTRACT`
+- rootcause_supported: `False`
+- exceptions: `['app.mme_scalpx.domain.instruments.InstrumentValidationError: invalid underlying_ltp: 0.0']`
+- traceback_extracted: `True`
+- exception_line_extracted: `True`
+- source_context_extracted: `True`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- compile_ok: `True`
+- import_ok: `True`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- risk_execution_not_running: `True`
+- manual_extract: `run/live_capture/batch26o23_p_r14_r3_r11_r3_unmapped_traceback_inspector_20260510_104017/o23p_r14_r3_r11_r3_manual_trace_extract.txt`
+- next_recommended_batch: `Inspect R11-R3 manual trace extract before any patch; no service start, no paper/live.`

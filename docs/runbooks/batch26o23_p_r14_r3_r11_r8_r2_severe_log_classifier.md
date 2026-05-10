@@ -1,0 +1,24 @@
+# 26-O23-P-R14-R3-R11-R8-R2 — severe-log source classifier / R8 material pass audit
+
+- generated_at_utc: `2026-05-10T05:57:31.681620+00:00`
+- final_verdict: `FAIL_O23_P_R14_R3_R11_R8_R2_SEVERE_LOG_CLASSIFICATION_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- classification: `R8_MATERIAL_PAYLOAD_PASS_BUT_SERVICE_LOG_TRACEBACK_REMAINS`
+- classification_supported: `True`
+- r8_expected_single_false_key: `True`
+- payload_verified_now: `True`
+- service_liveness_observed: `True`
+- features_growth: `20`
+- decisions_growth: `165`
+- errors_growth: `1`
+- orders_growth: `0`
+- actual_traceback_count: `169`
+- exceptions: `[]`
+- current_error_stream_severe: `False`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- risk_execution_not_running: `True`
+- next_recommended_batch: `26-O23-P-R14-R3-R11-R8-R3 inspect extracted traceback and patch only exact source-proven issue; no service start, no paper/live.`

@@ -1,0 +1,26 @@
+# 26-O23-P-R14-R3-R11-R8-R4 — current error stream severe entry classifier
+
+- generated_at_utc: `2026-05-10T06:06:10.305132+00:00`
+- final_verdict: `FAIL_O23_P_R14_R3_R11_R8_R4_CURRENT_ERROR_STREAM_CLASSIFICATION_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- classification: `CURRENT_ERROR_STREAM_SEVERE_NO_PROJECT_SOURCE_CONTEXT_MATERIAL_PASS_HELD`
+- classification_supported: `True`
+- r8_material_pass: `True`
+- payload_verified: `True`
+- service_liveness: `True`
+- features_growth: `20`
+- decisions_growth: `165`
+- orders_growth: `0`
+- current_error_stream_severe_now: `True`
+- severe_row_count: `80`
+- severe_kinds: `['GENERIC_ERROR_FIELD']`
+- project_ref_count: `0`
+- has_project_context: `False`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- risk_execution_not_running: `True`
+- manual_extract: `run/live_capture/batch26o23_p_r14_r3_r11_r8_r4_current_error_stream_classifier_20260510_113610/o23p_r14_r3_r11_r8_r4_manual_error_stream_extract.txt`
+- next_recommended_batch: `26-O23-P-R14-R3-R11-R8-R5 classify non-project/stale system:error severe entry age/source before deciding advance; no service start, no paper/live.`

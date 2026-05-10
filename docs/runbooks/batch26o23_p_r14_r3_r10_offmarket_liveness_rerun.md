@@ -1,0 +1,21 @@
+# 26-O23-P-R14-R3-R10 — off-market read-only liveness rerun with quote-degrade guard
+
+- generated_at_utc: `2026-05-10T04:34:49.138014+00:00`
+- final_verdict: `FAIL_O23_P_R14_R3_R10_OFFMARKET_READONLY_LIVENESS_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written', 'service_liveness_observed', 'summary_written']`
+- services_started: `['feeds', 'features', 'strategy']`
+- alive_seen_by_service: `{'feeds': False, 'features': False, 'strategy': False}`
+- service_liveness_observed: `False`
+- token_bootstrap_error_seen: `False`
+- severe_error_seen: `True`
+- features_growth: `0`
+- decisions_growth: `0`
+- orders_growth: `0`
+- payload_status: `PAYLOAD_LIVE_SESSION_DEFERRED_NO_OFFMARKET_STREAM_PROOF`
+- payload_verified_now: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids_after_stop: `True`
+- risk_execution_not_running: `True`
+- no paper / no real-live / no risk-execution / no order write: `True`
+- next_recommended_batch: `26-O23-P-R14-R4 live-session read-only R13 decision payload verification; require fresh feature/decision growth and family payload keys; no paper/live.`

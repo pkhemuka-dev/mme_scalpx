@@ -1,0 +1,22 @@
+# 26-O23-P-R14-R3-R11-R6 — selected-LTP severe log rootcause classifier
+
+- generated_at_utc: `2026-05-10T05:25:08.259455+00:00`
+- final_verdict: `FAIL_O23_P_R14_R3_R11_R6_SELECTED_LTP_SEVERE_LOG_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- rootcause: `SELECTED_LTP_STILL_REJECTED_BY_INSTRUMENT_VALIDATION`
+- rootcause_supported: `True`
+- selected_ltp: `22350.0`
+- exceptions: `["TypeError: unsupported operand type(s) for /: 'float' and 'decimal.Decimal'"]`
+- traceback_extracted: `True`
+- exception_line_extracted: `True`
+- source_context_extracted: `True`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- compile_ok: `True`
+- import_ok: `True`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- risk_execution_not_running: `True`
+- manual_extract: `run/live_capture/batch26o23_p_r14_r3_r11_r6_selected_ltp_severe_log_classifier_20260510_105508/o23p_r14_r3_r11_r6_manual_trace_extract.txt`
+- next_recommended_batch: `26-O23-P-R14-R3-R11-R7 inspect selected fallback propagation into runtime instruments; patch only exact source-proven conversion path; no service start, no paper/live.`

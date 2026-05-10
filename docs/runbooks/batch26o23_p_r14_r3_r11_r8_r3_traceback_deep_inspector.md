@@ -1,0 +1,23 @@
+# 26-O23-P-R14-R3-R11-R8-R3 — traceback deep inspector
+
+- generated_at_utc: `2026-05-10T06:00:12.575568+00:00`
+- final_verdict: `FAIL_O23_P_R14_R3_R11_R8_R3_TRACEBACK_DEEP_CLASSIFICATION_NOT_PROVEN`
+- false_keys: `['classification_supported', 'manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- classification: `POST_R8_TRACEBACK_BLOCKS_WITHOUT_EXCEPTION_LINE_NEED_MANUAL_CONTEXT`
+- classification_supported: `False`
+- r8r2_payload_verified: `True`
+- r8r2_service_liveness: `True`
+- r8r2_features_growth: `20`
+- r8r2_decisions_growth: `165`
+- raw_trace_count: `40`
+- dedup_trace_count: `5`
+- exception_lines: `[]`
+- source_context_count: `0`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- risk_execution_not_running: `True`
+- manual_extract: `run/live_capture/batch26o23_p_r14_r3_r11_r8_r3_traceback_deep_inspector_20260510_113012/o23p_r14_r3_r11_r8_r3_manual_trace_extract.txt`
+- next_recommended_batch: `Inspect R8-R3 manual_trace_extract before patching; no service start, no paper/live.`

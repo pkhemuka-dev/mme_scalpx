@@ -1,0 +1,27 @@
+# 26-O23-P-R14-R3-R11-R8-R3-R2 — manual trace classifier / material pass freeze
+
+- generated_at_utc: `2026-05-10T06:01:43.657228+00:00`
+- final_verdict: `FAIL_O23_P_R14_R3_R11_R8_R3_R2_MANUAL_TRACE_CLASSIFICATION_NOT_PROVEN`
+- false_keys: `['classification_supported', 'current_error_stream_severe_false', 'manifest_written', 'manual_non_actionable', 'milestone_written', 'proof_written', 'runbook_written']`
+- classification: `R8_R3_MANUAL_TRACE_REMAINS_ACTIONABLE_OR_AMBIGUOUS`
+- classification_supported: `False`
+- manual_non_actionable: `False`
+- r8_material_pass_preserved: `True`
+- current_error_stream_severe: `True`
+- manual_trace_count: `5`
+- manual_has_exception_line: `True`
+- manual_has_project_frame: `True`
+- manual_has_real_exception_word: `False`
+- manual_has_source_context: `False`
+- payload_verified: `True`
+- service_liveness: `True`
+- features_growth: `20`
+- decisions_growth: `165`
+- orders_growth: `0`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- risk_execution_not_running: `True`
+- next_recommended_batch: `Inspect R8-R3-R2 manual_trace_audit before patching; no service start, no paper/live.`

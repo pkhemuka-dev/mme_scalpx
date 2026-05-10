@@ -1,6 +1,56 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+# ===== MAUTO_R3_R4_CONTEXT_LATEST_PROOF_START =====
+def _r3r4_load_json(path):
+    import json
+    from pathlib import Path
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+def _r3r4_latest_replay_proof_from_context_compact():
+    from pathlib import Path
+    state = _r3r4_load_json("ai_patch_runner/context/replay_current_state.json")
+    if not isinstance(state, dict):
+        return None
+    proof_path = state.get("latest_replay_proof")
+    if not proof_path:
+        return None
+    p = Path(proof_path)
+    if not p.exists():
+        return None
+    data = _r3r4_load_json(p)
+    if not isinstance(data, dict):
+        return None
+    s = data.get("summary") or {}
+    return {
+        "path": str(p),
+        "batch": data.get("batch"),
+        "next_batch": s.get("next_batch") or data.get("next_batch"),
+        "verdict": data.get("verdict"),
+        "engine_ready": s.get("engine_ready", data.get("engine_ready")),
+        "engine_ready_candidate": s.get("engine_ready_candidate", data.get("engine_ready_candidate", False)),
+        "engine_execution_performed": s.get("engine_execution_performed", data.get("engine_execution_performed", False)),
+        "blocker_count": s.get("blocker_count"),
+        "cleaned_dataset_ready": s.get("cleaned_dataset_ready"),
+        "cleaned_dataset_id": s.get("cleaned_dataset_id"),
+        "cleaned_dataset_root": s.get("cleaned_dataset_root"),
+        "selected_day": s.get("selected_day"),
+        "planned_command_safe": s.get("planned_command_safe"),
+        "selector_only_execution_ok": s.get("selector_only_execution_ok"),
+        "selector_only_execution_performed": s.get("selector_only_execution_performed"),
+        "selector_only_execution_allowed": s.get("selector_only_execution_allowed"),
+        "full_engine_execution_allowed": s.get("full_engine_execution_allowed"),
+        "broker_calls_executed": s.get("broker_calls_executed", False),
+        "live_redis_writes_executed": s.get("live_redis_writes_executed", False),
+        "paper_or_live_enabled": s.get("paper_or_live_enabled", False),
+        "orders_sent": s.get("orders_sent", False),
+    }
+# ===== MAUTO_R3_R4_CONTEXT_LATEST_PROOF_END =====
+
+
 import argparse
 import glob
 import hashlib
@@ -741,3 +791,34 @@ Generate only this expected batch. Do not generate any other batch.
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# ===== MAUTO_R3_R4_MONKEYPATCH_GENERATOR_LATEST_PROOF_START =====
+try:
+    _r3r4_original_compact_latest_replay_proof = compact_latest_replay_proof
+    def compact_latest_replay_proof():
+        return _r3r4_latest_replay_proof_from_context_compact() or _r3r4_original_compact_latest_replay_proof()
+except Exception:
+    pass
+
+try:
+    _r3r4_original_find_latest_replay_proof = find_latest_replay_proof
+    def find_latest_replay_proof(*args, **kwargs):
+        c = _r3r4_latest_replay_proof_from_context_compact()
+        if c:
+            return c
+        return _r3r4_original_find_latest_replay_proof(*args, **kwargs)
+except Exception:
+    pass
+
+try:
+    _r3r4_original_latest_replay_proof = latest_replay_proof
+    def latest_replay_proof(*args, **kwargs):
+        c = _r3r4_latest_replay_proof_from_context_compact()
+        if c:
+            return c
+        return _r3r4_original_latest_replay_proof(*args, **kwargs)
+except Exception:
+    pass
+# ===== MAUTO_R3_R4_MONKEYPATCH_GENERATOR_LATEST_PROOF_END =====
+

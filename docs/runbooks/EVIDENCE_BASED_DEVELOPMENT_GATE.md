@@ -1,6 +1,6 @@
 # Evidence-Based Development Gate
 
-Every batch must include:
+Every future batch must include:
 1. Files inspected
 2. Files patched
 3. Backup path
@@ -10,19 +10,28 @@ Every batch must include:
 7. Known gaps
 8. Next safe step
 
-RAW minimum proofs:
-- config parse
-- manifest
-- archive writer
-- runtime bridge
-- no-live-side-effect
-- replay boundary
+RAW / research_capture gate:
+- config parse proof
+- manifest proof
+- archive writer proof
+- runtime bridge proof
+- no-live-side-effect proof
+- replay boundary proof
 
-Replay minimum proofs:
-- dataset selector
-- clock/reset
-- injector
-- topology
-- experiment profile
-- artifact/report
-- no-live-namespace-contamination
+Replay gate:
+- dataset selector proof
+- clock/reset proof
+- injector proof
+- topology proof
+- experiment profile proof
+- artifact/report proof
+- no-live-namespace-contamination proof
+
+OpenAI / AI / ML gate:
+- config parse proof
+- provider/key absence proof in bundle
+- prompt/template inventory
+- model/feature interface inventory
+- no-live-side-effect proof
+- no broker/execution dependency proof
+- no secret material in committed files proof

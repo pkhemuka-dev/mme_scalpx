@@ -1,0 +1,26 @@
+# 26-O23-Q-R2 — family surface materialization / evidence-backed ranking rerun
+
+- generated_at_utc: `2026-05-10T06:10:54.099965+00:00`
+- final_verdict: `FAIL_O23_Q_R2_FAMILY_SURFACE_MATERIALIZATION_RANKING_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- service_start_allowed: `True`
+- services_started: `['feeds', 'features', 'strategy']`
+- service_liveness_observed: `True`
+- selected_ltp: `22350.0`
+- features_growth: `12`
+- decisions_growth: `83`
+- orders_growth: `0`
+- family_payload_seen: `True`
+- family_payload_json_valid: `True`
+- surface_present_count: `0`
+- evidence_backed_count: `0`
+- best_evidence_backed_scope: `None`
+- no_forced_candidate: `True`
+- no_threshold_relaxation: `True`
+- source_patch_applied: `False`
+- paper_start_attempted: `False`
+- real_live_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- risk_execution_not_running: `True`

@@ -270,7 +270,7 @@ def build_runtime_instruments(
     )
     runtime = resolve_runtime_instruments(
         config=config,
-        underlying_ltp=quote.ltp,
+        underlying_ltp=Decimal(str(quote.ltp))  # BATCH26O23P_R14_R3_R11_R7_DECIMAL_FLOAT_REPAIR: normalize observe-only/bootstrap LTP to Decimal before instrument tick math,
     )
     return RuntimeInstrumentsBuildResult(
         quote=quote,

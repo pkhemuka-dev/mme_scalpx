@@ -1,0 +1,21 @@
+# 26-O23-P-R14-R3-R11-R7 — Decimal/float conversion repair
+
+- generated_at_utc: `2026-05-10T05:27:37.591848+00:00`
+- final_verdict: `FAIL_O23_P_R14_R3_R11_R7_DECIMAL_FLOAT_REPAIR_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- r6_rootcause: `SELECTED_LTP_STILL_REJECTED_BY_INSTRUMENT_VALIDATION`
+- float_decimal_exception: `True`
+- source_proven_conversion_path: `True`
+- patch_applied: `True`
+- already_present: `False`
+- patch_reason: `patched_runtime_instruments_underlying_ltp_decimal_conversion:{'pattern': '(?P<indent>^[ \\t]*underlying_ltp\\s*=\\s*)(?P<expr>[A-Za-z0-9_\\.]+\\.ltp)(?P<tail>[^\\n]*$)', 'expr': 'quote.ltp'}`
+- patched_file: `app/mme_scalpx/integrations/runtime_instruments_factory.py`
+- patch_marker_present_after: `True`
+- compile_ok: `True`
+- import_ok: `True`
+- service_start_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- risk_execution_not_running: `True`
+- next_recommended_batch: `26-O23-P-R14-R3-R11-R8 off-market selected-LTP read-only service liveness rerun after Decimal/float repair; no paper/live.`

@@ -1,0 +1,153 @@
+{
+  "admissibility": {
+    "broker_calls_allowed": false,
+    "economics_pnl_evaluation_allowed": false,
+    "execution_replay_allowed": false,
+    "feeds_only_replay_allowed": true,
+    "full_engine_replay_allowed": false,
+    "live_redis_writes_allowed": false,
+    "live_trading_allowed": false,
+    "paper_trading_allowed": false,
+    "risk_replay_allowed": false,
+    "selector_only_replay_allowed": true,
+    "service_start_allowed": false,
+    "strategy_replay_allowed": false
+  },
+  "capability_profile_id": "quote_only_recorded_feeds_only_v1",
+  "capability_profile_path": "etc/replay/datasets/quote_only_recorded_feeds_only_v1.json",
+  "capability_profile_sha256": "3f19abe492914293501ce5f7deafcc13175a2e69cc56cc9870c42cb055bba2fc",
+  "capability_profile_version": "v1",
+  "created_at_utc": "2026-05-10T04:19:38.362840+00:00",
+  "created_by_batch": "REPLAY-DATA-A32-R2",
+  "dataset_capability_profile_id": "quote_only_recorded_feeds_only_v1",
+  "dataset_capability_profile_path": "etc/replay/datasets/quote_only_recorded_feeds_only_v1.json",
+  "dataset_capability_profile_sha256": "3f19abe492914293501ce5f7deafcc13175a2e69cc56cc9870c42cb055bba2fc",
+  "dataset_capability_profile_version": "v1",
+  "dataset_id": "session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z",
+  "dataset_root": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z",
+  "declaration_version": "v1",
+  "declared_capability_profile_id": "quote_only_recorded_feeds_only_v1",
+  "declared_capability_profile_version": "v1",
+  "file_inventory": {
+    "execution_shadow_candidate.csv": {
+      "exists": true,
+      "path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z/2026-04-17/execution_shadow_candidate.csv",
+      "row_count": 33130,
+      "sha256": "2118aa8c23dc59eafecc0985ea0cb3b28e1f8710b04d17d7331af9b20349f425",
+      "size_bytes": 12093460
+    },
+    "features_rows_candidate.csv": {
+      "exists": true,
+      "path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z/2026-04-17/features_rows_candidate.csv",
+      "row_count": 33130,
+      "sha256": "88ebeff00b222eea1d9e65582a1437cfc4e98a9e4ca4645a7a993cd948ebdc3d",
+      "size_bytes": 9280603
+    },
+    "health_features.json": {
+      "exists": true,
+      "path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z/2026-04-17/health_features.json",
+      "row_count": null,
+      "sha256": "41c9c361070f575dfa34b532da87ab9020465367d5663e2fb48bfc83d477b68c",
+      "size_bytes": 161
+    },
+    "quote_ticks_mme_fut_stream.csv": {
+      "exists": true,
+      "path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z/2026-04-17/quote_ticks_mme_fut_stream.csv",
+      "row_count": 8125,
+      "sha256": "58b27e8518e22220189a9fbd27bc0680a2444e3dca6cff73b8afa98bd83bea65",
+      "size_bytes": 1770628
+    },
+    "quote_ticks_mme_opt_stream.csv": {
+      "exists": true,
+      "path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z/2026-04-17/quote_ticks_mme_opt_stream.csv",
+      "row_count": 25005,
+      "sha256": "c34ff0859176c8c7249ecc5a6b92b3fb0b7587a9748965afc6ccd6d1f42378ed",
+      "size_bytes": 5217596
+    },
+    "risk_outputs_candidate.csv": {
+      "exists": true,
+      "path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z/2026-04-17/risk_outputs_candidate.csv",
+      "row_count": 33130,
+      "sha256": "385554bb40d59ef63e569eeb7a72ba908b7eb90d0705ca4c8a77e16d7463c074",
+      "size_bytes": 10635614
+    },
+    "source_manifest.json": {
+      "exists": true,
+      "path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z/2026-04-17/source_manifest.json",
+      "row_count": null,
+      "sha256": "a08985898d699651ec040c035bf83fa9aa3365a56423e21b5daa3889deee8b89",
+      "size_bytes": 12327
+    },
+    "strategy_decisions_candidate.csv": {
+      "exists": true,
+      "path": "run/replay/parity/offline_materialization/session_exports_canonical_candidate_20260417_a7_20260508T173739Z_cleaned_selected_day_a29_20260508T194132Z/2026-04-17/strategy_decisions_candidate.csv",
+      "row_count": 33130,
+      "sha256": "5a9b8650cced23334ffedac6800fff3cadae215e3aa608426c3f7863d460f0f7",
+      "size_bytes": 12240377
+    }
+  },
+  "notes": [
+    "Declaration admits cleaned dataset for feeds_only replay only.",
+    "Declaration does not make dataset PnL-ready.",
+    "Declaration does not approve full replay engine, all-strategy replay, paper trading, or live trading."
+  ],
+  "optional_file_stems": [
+    "features_rows_candidate",
+    "strategy_decisions_candidate",
+    "risk_outputs_candidate",
+    "execution_shadow_candidate",
+    "source_manifest",
+    "health_features"
+  ],
+  "required_file_stems": [
+    "quote_ticks_mme_fut_stream",
+    "quote_ticks_mme_opt_stream"
+  ],
+  "safety_laws": {
+    "no_broker": true,
+    "no_live_redis": true,
+    "no_orders": true,
+    "no_paper_live": true,
+    "no_runtime_promotion": true,
+    "no_service_start": true
+  },
+  "schema": "mme_scalpx.replay_dataset_declaration",
+  "schema_version": "v1",
+  "selected_days": [
+    "2026-04-17"
+  ],
+  "source_mode": {
+    "economics_comparison_ready": false,
+    "economics_evaluable": false,
+    "feed_input_source_mode": "quote_only_recorded",
+    "missing_required_economics_fields": [
+      "economics_reason",
+      "entry_mode",
+      "reward_cost_ratio",
+      "reward_ticks",
+      "selected_leg",
+      "source_frame_id",
+      "stop_ticks",
+      "target_ticks",
+      "tick_size"
+    ],
+    "never_invent_missing_economics_fields": true
+  },
+  "source_proofs": {
+    "a29_cleaned_dataset": "run/proofs/proof_replay_data_a29_cleaned_selected_day_dataset_20260508T194132Z.json",
+    "a30_selector_execution": "run/proofs/proof_replay_data_a30_guarded_selector_only_cleaned_dataset_20260510T040904Z.json",
+    "a31_artifact_audit": "run/proofs/proof_replay_data_a31_a30_artifact_audit_20260510T041512Z.json"
+  },
+  "supported_suffixes": [
+    ".csv",
+    ".json",
+    ".jsonl"
+  ],
+  "validated_scope": {
+    "current_validated_scope": "feeds_only",
+    "next_scope_expansion_proven": false,
+    "validated_stage_names": [
+      "feeds"
+    ]
+  }
+}

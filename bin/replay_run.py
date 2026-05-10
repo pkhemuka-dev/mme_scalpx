@@ -2116,6 +2116,12 @@ def build_persisted_feature_rows(feature_frames):
     for feature_frame in feature_frames:
         row = dict(feature_frame)
 
+        metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+        if "source_file" not in row and metadata.get("source_file") is not None:
+            row["source_file"] = metadata.get("source_file")
+        if "source_stem" not in row and metadata.get("source_stem") is not None:
+            row["source_stem"] = metadata.get("source_stem")
+
         frame_id = _coalesce(
             row.get("frame_id"),
             row.get("source_frame_id"),

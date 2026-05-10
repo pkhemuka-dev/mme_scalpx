@@ -1,0 +1,23 @@
+# 26-O23-Q-R9 — strict ownership extractor diagnostic rerun
+
+- generated_at_utc: `2026-05-10T06:32:48.359950+00:00`
+- final_verdict: `FAIL_O23_Q_R9_STRICT_OWNERSHIP_EXTRACTOR_NOT_PROVEN`
+- false_keys: `['manifest_written', 'milestone_written', 'proof_written', 'runbook_written']`
+- classification: `STRICT_OWNERSHIP_EXTRACTOR_YIELDS_NO_EVIDENCE_BACKED_SCOPE_GENERIC_OVERMATCH_BLOCKED`
+- classification_supported: `True`
+- input_owner_audit_count: `16`
+- strict_row_count: `16`
+- blocked_generic_count: `16`
+- discriminating_pass_count: `0`
+- evidence_backed_count: `0`
+- best_evidence_backed_scope: `None`
+- blocked_reason_counts: `{'generic_all_scope_carrier': 16, 'no_discriminating_owner_scope': 16, 'q_r7_mapped_to_all_scopes': 16}`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- paper_start_attempted: `False`
+- real_live_attempted: `False`
+- orders_zero: `True`
+- position_flat: `True`
+- runtime_no_mme_service_pids: `True`
+- runtime_no_risk_execution_pids: `True`
+- next_recommended_batch: `26-O23-Q-R10 freeze no evidence-backed family/side scope and return to producer-content audit or live-session real payload verification; no paper/live.`

@@ -1,0 +1,15 @@
+[Unit]
+Description=ScalpX MME safe feed watchdog one-shot
+Wants=redis-server.service
+After=redis-server.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/Lenovo/scalpx/projects/mme_scalpx
+ExecStart=/home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python /home/Lenovo/scalpx/projects/mme_scalpx/bin/pwatch_safe.py --once --repair-safe
+User=Lenovo
+Group=Lenovo
+Environment=PYTHONPATH=/home/Lenovo/scalpx/projects/mme_scalpx
+Environment=SCALPX_WATCHDOG_FEED_ONLY=1
+Environment=SCALPX_REAL_LIVE_ALLOWED=0
+Environment=SCALPX_ALLOW_REAL_LIVE=0
