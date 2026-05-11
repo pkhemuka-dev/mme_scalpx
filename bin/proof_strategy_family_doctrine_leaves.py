@@ -1,16 +1,34 @@
 #!/usr/bin/env python3
-"""Compatibility wrapper.
+"""Disabled migration stub.
 
-The proof implementation was moved to bin/proofs/proof_strategy_family_doctrine_leaves.py.
-This wrapper preserves the old bin/proof_strategy_family_doctrine_leaves.py command path.
+This proof script was excluded from automated bin/proofs migration.
+
+Reason:
+- Migration inspection proved the moved target was not a real implementation.
+- No safe real implementation was found in R8 backup or git HEAD during R8F.
+
+Source:
+- bin/proof_strategy_family_doctrine_leaves.py
+
+Invalid target:
+- bin/proofs/proof_strategy_family_doctrine_leaves.py
+
+Safety:
+- This stub performs no runtime action.
+- This stub performs no broker call.
+- This stub performs no Redis write.
+- This stub performs no paper/live enablement.
 """
 
 from __future__ import annotations
 
-import runpy
-from pathlib import Path
+import sys
 
-_TARGET = Path(__file__).resolve().parent / "proofs" / "proof_strategy_family_doctrine_leaves.py"
+MESSAGE = (
+    "DISABLED: bin/proof_strategy_family_doctrine_leaves.py is excluded from automated bin/proofs migration. "
+    "No real implementation was found. Locate the real proof implementation before running."
+)
 
 if __name__ == "__main__":
-    runpy.run_path(str(_TARGET), run_name="__main__")
+    print(MESSAGE, file=sys.stderr)
+    raise SystemExit(2)
