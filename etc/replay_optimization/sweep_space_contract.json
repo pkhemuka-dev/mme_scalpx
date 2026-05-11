@@ -1,0 +1,38 @@
+{
+  "schema_name": "MME-ScalpX Replay Optimization Sweep Space Contract",
+  "contract_version": "replay_optimization_d1_contract_v1",
+  "accepted_for": "CONTRACT_ONLY",
+  "strategy_families": ["MIST", "MISB", "MISC", "MISR", "MISO"],
+  "sides": ["CALL", "PUT"],
+  "regimes": ["LOWVOL", "NORMAL", "FAST"],
+  "sweep_dimensions": {
+    "entry_filters": [
+      "volume_thresholds",
+      "spread_thresholds",
+      "option_liquidity_thresholds",
+      "futures_context_thresholds",
+      "raw_oi_wall_filters",
+      "microstructure_filters"
+    ],
+    "exit_controls": [
+      "target_points",
+      "hard_stop_points",
+      "profit_stall_points",
+      "time_stall_seconds",
+      "max_hold_seconds"
+    ],
+    "risk_controls": [
+      "daily_loss_limit_research_only",
+      "trade_count_cap_research_only",
+      "drawdown_cutoff_research_only"
+    ]
+  },
+  "candidate_statuses": ["PROPOSED_ONLY", "READY_FOR_REPLAY", "REPLAYED", "REJECTED"],
+  "doctrine_policy": {
+    "do_not_modify_frozen_strategy_yaml": true,
+    "do_not_mutate_live_strategy_code": true,
+    "sweep_candidates_are_research_overrides_only": true,
+    "promotion_requires_separate_human_review_and_future_contract": true
+  },
+  "required_candidate_row_columns_ref": "app/mme_scalpx/replay_optimization/contracts.py::SWEEP_CANDIDATE_COLUMNS"
+}

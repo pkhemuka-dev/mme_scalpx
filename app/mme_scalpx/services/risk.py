@@ -2322,3 +2322,73 @@ RiskService._build_snapshot = _batch26c_build_snapshot
 
 # END BATCH26C_RISK_CONTROLLED_PAPER_VETO
 
+# === LANE F F6 RISK EVIDENCE SURFACE BEGIN ===
+# Lane F evidence-surface helper only.
+# This block is append-only and side-effect-free:
+# - no broker calls
+# - no Redis writes
+# - no service start
+# - no doctrine / threshold / approval behavior mutation
+# - no paper/live enablement
+def _lane_f_risk_evidence_list(value):
+    """Normalize risk evidence reason fields without changing risk decisions."""
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        return [str(item) for item in value if item is not None and str(item) != ""]
+    if isinstance(value, str):
+        if not value:
+            return []
+        return [value]
+    return [str(value)]
+
+
+def _lane_f_risk_evidence_bool(value, default=False):
+    """Normalize evidence booleans for reporting only."""
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "y", "pass", "allowed", "approved", "ok"}:
+        return True
+    if text in {"0", "false", "no", "n", "blocked", "vetoed", "reject", "rejected"}:
+        return False
+    return default
+
+
+def lane_f_build_risk_evidence_surface(record=None):
+    """Return canonical Lane F risk evidence fields from an existing risk record.
+
+    This helper does not approve trades, does not veto trades, and does not
+    change runtime behavior. It only exposes canonical field names for future
+    dataset-admission / audit joins.
+    """
+    src = dict(record or {})
+    risk_status = src.get("risk_status", src.get("source_risk_status", src.get("status", "")))
+    order_allowed = _lane_f_risk_evidence_bool(
+        src.get("order_allowed", src.get("research_trade_allowed", src.get("risk_approved"))),
+        default=False,
+    )
+    entry_vetoed = _lane_f_risk_evidence_bool(src.get("entry_vetoed"), default=not order_allowed)
+    risk_veto_reasons = _lane_f_risk_evidence_list(
+        src.get("risk_veto_reasons", src.get("veto_reasons", src.get("risk_blocker_reasons")))
+    )
+    risk_blocker_reasons = _lane_f_risk_evidence_list(
+        src.get("risk_blocker_reasons", src.get("risk_veto_reasons", src.get("veto_reasons")))
+    )
+    return {
+        "lane_f_schema_version": "risk_evidence_surface_v1",
+        "risk_decision_id": src.get("risk_decision_id", src.get("risk_eval_id", src.get("decision_id", ""))),
+        "candidate_id": src.get("candidate_id", src.get("setup_id", src.get("signal_id", ""))),
+        "decision_id": src.get("decision_id", src.get("strategy_decision_id", "")),
+        "source_risk_status": risk_status,
+        "risk_status": risk_status,
+        "risk_approved": order_allowed and not entry_vetoed,
+        "order_allowed": order_allowed,
+        "research_trade_allowed": order_allowed,
+        "entry_vetoed": entry_vetoed,
+        "risk_veto_reasons": risk_veto_reasons,
+        "risk_blocker_reasons": risk_blocker_reasons,
+    }
+# === LANE F F6 RISK EVIDENCE SURFACE END ===

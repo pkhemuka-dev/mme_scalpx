@@ -1,0 +1,41 @@
+{
+  "schema_name": "MME-ScalpX Lane D Nonzero Result Pack Verification Audit Contract",
+  "contract_version": "replay_optimization_d19_nonzero_pack_verification_contract_v1",
+  "accepted_for": "NONZERO_RESULT_PACK_VERIFICATION_AUDIT_ONLY",
+  "allowed_inputs": {
+    "nonzero_discovery_report": "D18 nonzero result pack discovery report"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "22_nonzero_result_pack_verification.json",
+    "09_optimizer_verdict.json"
+  ],
+  "verification_policy": {
+    "d19_is_audit_only": true,
+    "selected_pack_must_be_equal_positive": true,
+    "selected_pack_integrity_must_be_pass_like": true,
+    "candidate_trade_matching_allowed_in_d19": false,
+    "label_binding_allowed_in_d19": false,
+    "real_pnl_calculation_allowed_in_d19": false,
+    "model_training_allowed_in_d19": false,
+    "model_prediction_allowed_in_d19": false,
+    "requires_future_candidate_trade_matching_contract": true
+  },
+  "safety": {
+    "audit_only": true,
+    "replay_execution_allowed": false,
+    "result_pack_assembly_allowed": false,
+    "candidate_trade_matching_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "schema_name": "MME-ScalpX Lane D Result Binding Implementation Gate",
+  "contract_version": "replay_optimization_d10_result_binding_gate_contract_v1",
+  "accepted_for": "RESULT_BINDING_IMPLEMENTATION_GATE_AUDIT_ONLY",
+  "allowed_inputs": {
+    "replay_index": "D3 read-only replay index",
+    "result_binding_rows": "D8 unbound result-binding rows",
+    "sample_size_report": "D9 sample-size report",
+    "overfit_risk_report": "D9 overfit-risk report"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "13_result_binding_implementation_gate.json",
+    "09_optimizer_verdict.json"
+  ],
+  "gate_policy": {
+    "d10_is_audit_only": true,
+    "implementation_allowed_in_d10": false,
+    "label_binding_allowed_in_d10": false,
+    "real_pnl_calculation_allowed_in_d10": false,
+    "model_training_allowed_in_d10": false,
+    "model_prediction_allowed_in_d10": false,
+    "requires_future_replay_result_source_map": true,
+    "requires_future_integrity_pass_filter": true,
+    "requires_future_candidate_to_trade_mapping": true
+  },
+  "safety": {
+    "audit_only": true,
+    "replay_execution_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

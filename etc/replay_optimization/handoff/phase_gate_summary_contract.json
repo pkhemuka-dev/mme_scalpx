@@ -1,0 +1,45 @@
+{
+  "schema_name": "MME-ScalpX Lane D Replay Optimization Phase Gate Summary Contract",
+  "contract_version": "replay_optimization_d38_phase_gate_summary_contract_v1",
+  "accepted_for": "REPLAY_OPTIMIZATION_PHASE_GATE_SUMMARY_NO_EXECUTION",
+  "allowed_inputs": {
+    "required_gate_proofs": "D31 through D37 latest proofs"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "41_replay_optimization_phase_gate_schema.json",
+    "41_replay_optimization_phase_gate_summary.json",
+    "41_replay_optimization_phase_gate_rows.json",
+    "41_replay_optimization_phase_gate_rows.csv",
+    "09_optimizer_verdict.json"
+  ],
+  "phase_policy": {
+    "d38_is_summary_only": true,
+    "lane_d_execution_allowed": false,
+    "future_execution_owner_must_be_lane_c_or_lane_e_compatible": true,
+    "next_step_must_not_be_lane_d_execution": true,
+    "candidate_replay_materialization_requires_handoff": true,
+    "label_binding_requires_future_verified_candidate_result_packs": true
+  },
+  "safety": {
+    "summary_only": true,
+    "lane_d_execution_allowed": false,
+    "lane_c_or_e_execution_required": true,
+    "replay_execution_allowed": false,
+    "result_pack_creation_allowed": false,
+    "artifact_file_creation_allowed": false,
+    "candidate_context_attachment_allowed": false,
+    "candidate_trade_matching_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

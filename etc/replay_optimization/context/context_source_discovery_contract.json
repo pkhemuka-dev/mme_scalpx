@@ -1,0 +1,43 @@
+{
+  "schema_name": "MME-ScalpX Lane D Candidate Context Source Discovery Audit Contract",
+  "contract_version": "replay_optimization_d26_context_source_discovery_contract_v1",
+  "accepted_for": "CANDIDATE_CONTEXT_SOURCE_DISCOVERY_AUDIT_ONLY",
+  "allowed_inputs": {
+    "context_rows": "D25 candidate-context enrichment rows",
+    "nonzero_verification_report": "D19 verified nonzero result pack"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "29_candidate_context_source_discovery.json",
+    "29_candidate_context_source_discovery_rows.csv",
+    "09_optimizer_verdict.json"
+  ],
+  "discovery_policy": {
+    "d26_is_audit_only": true,
+    "source_discovery_only": true,
+    "candidate_context_inference_allowed_in_d26": false,
+    "candidate_trade_matching_allowed_in_d26": false,
+    "label_binding_allowed_in_d26": false,
+    "real_pnl_calculation_allowed_in_d26": false,
+    "model_training_allowed_in_d26": false,
+    "future_context_enrichment_mapping_required": true
+  },
+  "safety": {
+    "audit_only": true,
+    "replay_execution_allowed": false,
+    "result_pack_assembly_allowed": false,
+    "candidate_context_inference_allowed": false,
+    "candidate_trade_matching_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "schema_name": "MME-ScalpX Lane D Base Research Sweep Space",
+  "contract_version": "replay_optimization_d2_sweep_space_contract_v1",
+  "accepted_for": "CONTRACT_ONLY",
+  "generation_mode": "ONE_FACTOR_AT_A_TIME",
+  "strategy_families": ["MIST", "MISB", "MISC", "MISR", "MISO"],
+  "sides": ["CALL", "PUT"],
+  "regimes": ["LOWVOL", "NORMAL", "FAST"],
+  "generation_policy": {
+    "research_only": true,
+    "max_candidate_contract_rows": 10000,
+    "cartesian_runtime_execution_allowed": false,
+    "replay_execution_allowed": false,
+    "ml_training_allowed": false,
+    "requires_verified_replay_source_before_real_sweep": true,
+    "requires_raw_source_index_before_raw_join": true
+  },
+  "entry_filter_parameters": [
+    {
+      "parameter_name": "FUT_VOL_NORM_MIN",
+      "baseline_value": "1.10",
+      "candidate_values": ["0.95", "1.10", "1.25", "1.40"],
+      "value_type": "float",
+      "unit": "ratio"
+    },
+    {
+      "parameter_name": "SPREAD_RATIO_MAX",
+      "baseline_value": "1.70",
+      "candidate_values": ["1.45", "1.60", "1.70", "1.85"],
+      "value_type": "float",
+      "unit": "ratio"
+    }
+  ],
+  "exit_control_parameters": [
+    {
+      "parameter_name": "target_points",
+      "baseline_value": "5.0",
+      "candidate_values": ["4.0", "5.0", "6.0", "8.0"],
+      "value_type": "float",
+      "unit": "option_points"
+    },
+    {
+      "parameter_name": "hard_stop_points",
+      "baseline_value": "4.0",
+      "candidate_values": ["3.0", "4.0", "5.0"],
+      "value_type": "float",
+      "unit": "option_points"
+    },
+    {
+      "parameter_name": "profit_stall_points",
+      "baseline_value": "3.0",
+      "candidate_values": ["2.0", "3.0", "4.0"],
+      "value_type": "float",
+      "unit": "option_points"
+    },
+    {
+      "parameter_name": "time_stall_seconds",
+      "baseline_value": "12.0",
+      "candidate_values": ["8.0", "12.0", "16.0", "20.0"],
+      "value_type": "float",
+      "unit": "seconds"
+    }
+  ],
+  "raw_filter_parameters": [
+    {
+      "feature_family": "oi_wall",
+      "feature_name": "oi_wall_strength_min",
+      "threshold_values": ["0.50", "0.65", "0.80"],
+      "comparator": ">=",
+      "required_source": "research_gate"
+    },
+    {
+      "feature_family": "microstructure",
+      "feature_name": "tape_speed_score_min",
+      "threshold_values": ["0.50", "0.70"],
+      "comparator": ">=",
+      "required_source": "research_capture"
+    }
+  ],
+  "doctrine_policy": {
+    "frozen_strategy_yaml_mutation_allowed": false,
+    "live_strategy_code_mutation_allowed": false,
+    "sweep_candidates_are_research_overrides_only": true,
+    "promotion_requires_separate_human_review": true
+  },
+  "safety": {
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false
+  }
+}

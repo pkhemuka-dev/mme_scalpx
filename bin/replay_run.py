@@ -264,6 +264,14 @@ def build_parser() -> argparse.ArgumentParser:
         default="replay:file",
         help="Logical replay channel prefix for feed injections",
     )
+    parser.add_argument(
+        "--allow-option-only-fut-context",
+        action="store_true",
+        help=(
+            "Replay staging-only compatibility: allow opt_ticks rows carrying fut_ltp "
+            "as disabled-by-default synthetic futures context when fut_ticks is absent/empty."
+        ),
+    )
     return parser
 
 
@@ -353,7 +361,102 @@ def build_run_config(args: argparse.Namespace) -> ReplayRunConfig:
     )
 
 
-def build_placeholder_checks() -> dict[str, Any]:
+
+REPLAY_INTEGRITY_STEM_EQUIVALENCE_ALIASES = {
+    "opt_ticks": (
+        "opt_ticks",
+        "option_ticks",
+        "selected_option_ticks",
+        "selected_opt_ticks",
+        "option_quote_stream",
+        "selected_option_quote_stream",
+        "opt_quote_stream",
+        "selected_option_quotes",
+        "opt_quotes",
+    ),
+    "fut_ticks": (
+        "fut_ticks",
+        "future_ticks",
+        "futures_ticks",
+        "fut_quote_stream",
+        "future_quote_stream",
+        "futures_quote_stream",
+        "fut_quotes",
+        "future_quotes",
+        "futures_quotes",
+    ),
+}
+
+
+def _normalize_replay_integrity_stem_token(raw_stem) -> str:
+    stem = str(raw_stem or "").strip()
+    if not stem:
+        return ""
+    for suffix in (".jsonl", ".json", ".csv", ".parquet"):
+        if stem.lower().endswith(suffix):
+            stem = stem[: -len(suffix)]
+            break
+    return stem.strip().lower()
+
+
+def normalize_replay_dataset_stems_for_integrity(raw_stems) -> dict[str, object]:
+    """Normalize replay dataset stems before stale-leg missing-stem checks.
+
+    This is an integrity contract only. It does not enable replay execution,
+    full-system replay, economics/PnL, paper, or live promotion.
+    """
+    raw_clean = sorted({
+        str(stem).strip()
+        for stem in (raw_stems or [])
+        if str(stem or "").strip()
+    })
+
+    reverse_aliases: dict[str, set[str]] = {}
+    for canonical, aliases in REPLAY_INTEGRITY_STEM_EQUIVALENCE_ALIASES.items():
+        tokens = set(aliases) | {canonical}
+        for token in tokens:
+            norm = _normalize_replay_integrity_stem_token(token)
+            if norm:
+                reverse_aliases.setdefault(norm, set()).add(canonical)
+
+    canonical_stems: set[str] = set()
+    equivalence_map: dict[str, str] = {}
+    unknown_stems: list[str] = []
+    ambiguous_stems: list[str] = []
+
+    for raw in raw_clean:
+        norm = _normalize_replay_integrity_stem_token(raw)
+        matches = reverse_aliases.get(norm)
+        if not matches:
+            canonical_stems.add(norm)
+            equivalence_map[raw] = norm
+            if norm not in REPLAY_INTEGRITY_STEM_EQUIVALENCE_ALIASES:
+                unknown_stems.append(raw)
+            continue
+        if len(matches) > 1:
+            ambiguous_stems.append(raw)
+            continue
+        canonical = next(iter(matches))
+        canonical_stems.add(canonical)
+        equivalence_map[raw] = canonical
+
+    return {
+        "raw_stems": raw_clean,
+        "canonical_stems": sorted(canonical_stems),
+        "stem_equivalence_map": equivalence_map,
+        "equivalence_used": any(
+            _normalize_replay_integrity_stem_token(raw) != canonical
+            for raw, canonical in equivalence_map.items()
+        ),
+        "unknown_stems": sorted(unknown_stems),
+        "ambiguous_stems": sorted(ambiguous_stems),
+        "alias_registry": {
+            key: list(value)
+            for key, value in REPLAY_INTEGRITY_STEM_EQUIVALENCE_ALIASES.items()
+        },
+    }
+
+def build_placeholder_checks(*, allow_option_only_fut_context: bool = False) -> dict[str, Any]:
     """Build evidence-backed replay integrity checks.
 
     Historical name retained for CLI compatibility, but this no longer emits
@@ -451,13 +554,40 @@ def build_placeholder_checks() -> dict[str, Any]:
         files = _dataset_files(rc)
         stems = {str(getattr(f, "stem", "") or "").lower() for f in files}
         required = {"fut_ticks", "opt_ticks"}
+        stem_integrity = normalize_replay_dataset_stems_for_integrity(stems)
+        raw_stems = set(stem_integrity.get("raw_stems", []))
+        canonical_stems = set(stem_integrity.get("canonical_stems", []))
+        stems = canonical_stems
         missing = sorted(required - stems)
         details = {
             "required_stems": sorted(required),
             "present_stems": sorted(stems),
             "missing_stems": missing,
         }
+        details["raw_stems"] = sorted(raw_stems)
+        details["canonical_stems"] = sorted(canonical_stems)
+        details["stem_equivalence_map"] = stem_integrity.get("stem_equivalence_map", {})
+        details["stem_equivalence_used"] = bool(stem_integrity.get("equivalence_used", False))
+        details["unknown_stems"] = stem_integrity.get("unknown_stems", [])
+        details["ambiguous_stems"] = stem_integrity.get("ambiguous_stems", [])
+        if stem_integrity.get("ambiguous_stems"):
+            details["stem_equivalence_fail_closed"] = True
+            return _fail(
+                INTEGRITY_CHECK_STALE_LEG,
+                "stale_leg_detection ambiguous stem equivalence fail-closed",
+                details,
+            )
+
         if missing:
+            if allow_option_only_fut_context and missing == ["fut_ticks"] and "opt_ticks" in stems:
+                details["option_only_fut_context"] = True
+                details["synthetic_context_source"] = "opt_ticks.row.fut_ltp"
+                details["synthetic_context_scope"] = "R5BE_staging_only_disabled_by_default"
+                return _pass(
+                    INTEGRITY_CHECK_STALE_LEG,
+                    "stale_leg_detection option_only_fut_context compatibility pass",
+                    details,
+                )
             return _fail(INTEGRITY_CHECK_STALE_LEG, "stale_leg_detection real check failed", details)
         return _pass(INTEGRITY_CHECK_STALE_LEG, "stale_leg_detection real check pass", details)
 
@@ -717,11 +847,163 @@ def _build_replay_event_metadata(
     return metadata
 
 
+
+from pathlib import Path as _R5BEPath
+from collections.abc import Mapping as _R5BEMapping
+import json as _r5be_json
+import re as _r5be_re
+
+
+def _r5be_path_is_relative_to(path, parent) -> bool:
+    try:
+        _R5BEPath(path).resolve().relative_to(_R5BEPath(parent).resolve())
+        return True
+    except Exception:
+        return False
+
+
+def _r5be_find_day_file(day_dir, stem: str):
+    day_path = _R5BEPath(day_dir)
+    for suffix in (".jsonl", ".json", ".csv"):
+        direct = day_path / f"{stem}{suffix}"
+        if direct.exists():
+            return direct
+    matches = sorted(day_path.rglob(f"{stem}.jsonl"))
+    return matches[0] if matches else None
+
+
+def _r5be_jsonl_sample(path, limit: int = 25) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    with _R5BEPath(path).open("r", encoding="utf-8") as f:
+        for line in f:
+            if len(rows) >= limit:
+                break
+            raw = line.strip()
+            if not raw:
+                continue
+            item = _r5be_json.loads(raw)
+            if isinstance(item, _R5BEMapping):
+                rows.append(dict(item))
+    return rows
+
+
+def validate_option_only_fut_context_preconditions(args) -> dict[str, object]:
+    """Fail-closed validation for the R5BE disabled-by-default staging compatibility seam."""
+    enabled = bool(getattr(args, "allow_option_only_fut_context", False))
+    if not enabled:
+        return {
+            "enabled": False,
+            "status": "disabled",
+            "guard": "allow_option_only_fut_context",
+        }
+
+    dataset_root = resolve_dataset_root(str(getattr(args, "dataset_root", "")), getattr(args, "dataset_id", None))
+    dataset_root = _R5BEPath(dataset_root).resolve()
+    staging_root = (PROJECT_ROOT / "run" / "replay" / "staging").resolve()
+    single_day = str(getattr(args, "single_day", "") or "").strip()
+    selection_mode = str(getattr(args, "selection_mode", "") or "").strip()
+
+    details: dict[str, object] = {
+        "enabled": True,
+        "guard": "allow_option_only_fut_context",
+        "dataset_root": str(dataset_root),
+        "staging_root": str(staging_root),
+        "single_day": single_day,
+        "selection_mode": selection_mode,
+    }
+
+    if not _r5be_path_is_relative_to(dataset_root, staging_root):
+        raise ReplayRunCliError("allow_option_only_fut_context requires dataset_root under run/replay/staging/")
+    if selection_mode != "single_day":
+        raise ReplayRunCliError("allow_option_only_fut_context requires --selection-mode single_day")
+    if not _r5be_re.fullmatch(r"\d{4}-\d{2}-\d{2}", single_day):
+        raise ReplayRunCliError("allow_option_only_fut_context requires --single-day YYYY-MM-DD")
+
+    final_day_dir = (PROJECT_ROOT / "run" / "replay" / single_day).resolve()
+    details["final_day_dir"] = str(final_day_dir)
+    if final_day_dir.exists():
+        raise ReplayRunCliError(f"allow_option_only_fut_context forbidden because final replay repository date exists: {final_day_dir}")
+
+    day_dir = dataset_root / single_day
+    if not day_dir.exists() and dataset_root.name == single_day:
+        day_dir = dataset_root
+    details["day_dir"] = str(day_dir)
+    if not day_dir.exists() or not day_dir.is_dir():
+        raise ReplayRunCliError(f"allow_option_only_fut_context requires staging day directory: {day_dir}")
+
+    opt_file = _r5be_find_day_file(day_dir, "opt_ticks")
+    if opt_file is None or not opt_file.exists() or opt_file.stat().st_size <= 0:
+        raise ReplayRunCliError("allow_option_only_fut_context requires non-empty opt_ticks.jsonl")
+    details["opt_ticks_file"] = str(opt_file)
+    details["opt_ticks_size_bytes"] = opt_file.stat().st_size
+
+    fut_file = _r5be_find_day_file(day_dir, "fut_ticks")
+    details["fut_ticks_file"] = str(fut_file) if fut_file else None
+    if fut_file is not None and fut_file.exists() and fut_file.stat().st_size > 0:
+        raise ReplayRunCliError("allow_option_only_fut_context requires fut_ticks.jsonl absent or empty; real futures ticks must not be mixed with synthetic context")
+
+    sample_rows = _r5be_jsonl_sample(opt_file, limit=25)
+    if not sample_rows:
+        raise ReplayRunCliError("allow_option_only_fut_context requires parseable opt_ticks sample rows")
+
+    bad_dates = []
+    missing_fut_ltp = []
+    for index, row in enumerate(sample_rows, start=1):
+        if str(row.get("session_date") or "") != single_day:
+            bad_dates.append(index)
+        value = row.get("fut_ltp")
+        if value is None or str(value).strip() == "":
+            missing_fut_ltp.append(index)
+
+    details["sample_count"] = len(sample_rows)
+    details["bad_session_date_rows"] = bad_dates
+    details["missing_fut_ltp_rows"] = missing_fut_ltp
+
+    if bad_dates:
+        raise ReplayRunCliError(f"allow_option_only_fut_context sampled option rows do not match single_day: {bad_dates[:10]}")
+    if missing_fut_ltp:
+        raise ReplayRunCliError(f"allow_option_only_fut_context sampled option rows missing fut_ltp: {missing_fut_ltp[:10]}")
+
+    details["status"] = "pass"
+    details["synthetic_context_source"] = "opt_ticks.row.fut_ltp"
+    details["synthetic_context_scope"] = "staging_only_no_final_repo_date"
+    return details
+
+
+def _apply_option_only_fut_context_to_event_payload(*, payload: dict[str, object], metadata: dict[str, object], source_stem: str) -> bool:
+    if str(source_stem or "") != "opt_ticks":
+        return False
+    fut_ltp = payload.get("fut_ltp")
+    if fut_ltp is None or str(fut_ltp).strip() == "":
+        return False
+
+    futures_context = payload.get("futures_context")
+    if not isinstance(futures_context, _R5BEMapping):
+        futures_context = {}
+    futures_context = dict(futures_context)
+    futures_context.setdefault("ltp", fut_ltp)
+    futures_context.setdefault("fut_ltp", fut_ltp)
+    futures_context.setdefault("event_time", payload.get("exchange_ts") or payload.get("ts_utc") or payload.get("event_time"))
+    futures_context.setdefault("source", "synthetic_context_from_option_fut_ltp")
+    futures_context.setdefault("synthetic_context", True)
+
+    payload["futures_context"] = futures_context
+    payload.setdefault("futures_context_ltp", fut_ltp)
+    payload.setdefault("underlying_ltp", fut_ltp)
+
+    metadata["synthetic_context"] = True
+    metadata["synthetic_context_reason"] = "No real fut_ticks.jsonl available; option rows include fut_ltp."
+    metadata["futures_context_source"] = "synthetic_context_from_option_fut_ltp"
+    metadata["futures_context_ltp"] = fut_ltp
+    metadata["synthetic_context_scope"] = "R5BE_staging_only_disabled_by_default"
+    return True
+
 def build_feed_events_for_day(
     *,
     repository: ReplayDatasetRepository,
     trading_day,
     channel_prefix: str,
+    allow_option_only_fut_context: bool = False,
 ) -> list[ReplayInjectionEvent]:
     raw_events: list[dict[str, Any]] = []
 
@@ -758,6 +1040,13 @@ def build_feed_events_for_day(
                 source_stem=file_summary.stem,
                 payload=normalized_payload,
             )
+            if allow_option_only_fut_context:
+                _apply_option_only_fut_context_to_event_payload(
+                    payload=normalized_payload,
+                    metadata=normalized_metadata,
+                    source_stem=file_summary.stem,
+                )
+
             raw_events.append(
                 {
                     "event_time": event_time,
@@ -1248,6 +1537,23 @@ def build_feature_frames_from_feed_requests(
             leg,
         )
 
+        futures_context = _to_mapping(
+            _coalesce(
+                payload.get("futures_context"),
+                _read(event_payload_obj, "futures_context"),
+            )
+        )
+        fut_ltp = _to_float(
+            _coalesce(
+                _read(event_payload_obj, "fut_ltp", "futures_context_ltp", "underlying_ltp"),
+                payload.get("fut_ltp"),
+                payload.get("futures_context_ltp"),
+                payload.get("underlying_ltp"),
+                futures_context.get("ltp"),
+                futures_context.get("fut_ltp"),
+            )
+        )
+
         source_surface = {
             "request_type": type(request).__name__,
             "request_dict_keys": _object_dict_keys(request),
@@ -1308,6 +1614,8 @@ def build_feature_frames_from_feed_requests(
                 "bid": bid,
                 "ask": ask,
                 "ltp": ltp,
+                "fut_ltp": fut_ltp,
+                "futures_context": futures_context,
                 "mid_price": mid_price,
                 "spread": spread,
                 "healthy": healthy,
@@ -1331,6 +1639,8 @@ def build_feature_frames_from_feed_requests(
             "source_sequence_id": source_sequence_id,
             "symbol": raw_symbol if raw_symbol is not None else symbol_norm,
             "ltp": ltp,
+            "fut_ltp": fut_ltp,
+            "futures_context": futures_context,
             "bid": bid,
             "ask": ask,
             "mid_price": mid_price,
@@ -2304,6 +2614,7 @@ def make_stage_executor(
     channel_prefix: str,
     fill_model_name: str | None,
     doctrine_mode: DoctrineMode,
+    allow_option_only_fut_context: bool = False,
 ):
     def stage_executor(context, stage):
         if stage.stage_name == "feeds":
@@ -2315,6 +2626,7 @@ def make_stage_executor(
                     repository=repository,
                     trading_day=trading_day,
                     channel_prefix=channel_prefix,
+                    allow_option_only_fut_context=allow_option_only_fut_context,
                 )
 
                 if events:
@@ -2478,6 +2790,8 @@ def main(argv: list[str]) -> int:
         dataset_id=args.dataset_id,
     )
 
+    option_only_fut_context_precheck = validate_option_only_fut_context_preconditions(args)
+
     runner = ReplayRunner(run_root=args.run_root)
     run_context = runner.build_run_context(
         selection_plan=selection_plan,
@@ -2508,12 +2822,15 @@ def main(argv: list[str]) -> int:
             channel_prefix=args.channel_prefix,
             fill_model_name=args.fill_model,
             doctrine_mode=DoctrineMode(args.doctrine_mode),
+            allow_option_only_fut_context=bool(args.allow_option_only_fut_context),
         ),
     )
 
     integrity_bundle = ReplayIntegrityEvaluator().evaluate(
         run_context,
-        checks=build_placeholder_checks(),
+        checks=build_placeholder_checks(
+            allow_option_only_fut_context=bool(args.allow_option_only_fut_context),
+        ),
     )
 
     report_bundle = build_report_bundle(

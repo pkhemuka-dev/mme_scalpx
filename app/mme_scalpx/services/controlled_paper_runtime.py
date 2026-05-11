@@ -253,3 +253,131 @@ def controlled_execution_entry_allowed() -> bool:
     return False
 # END BATCH26B_CONTROLLED_EXECUTION_ENTRY_ARMING_CONTRACT
 
+# --- BEGIN LANE A6-R3 CONTROLLED PAPER SANDBOX ROUTE ---
+
+import time as _a6_r3_rt_time
+from typing import Any as _A6R3RtAny, Iterable as _A6R3RtIterable, Mapping as _A6R3RtMapping
+
+_A6_R3_SUPPORTED_FAMILIES = frozenset(("MIST", "MISB", "MISC", "MISR", "MISO"))
+_A6_R3_SUPPORTED_SIDES = frozenset(("CALL", "PUT"))
+
+
+def _a6_r3_rt_truthy(value: _A6R3RtAny) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on", "allow", "allowed", "eligible"}
+
+
+def select_one_active_controlled_paper_scope(
+    candidates: _A6R3RtIterable[_A6R3RtMapping[str, _A6R3RtAny]],
+    *,
+    approved_scopes: _A6R3RtIterable[_A6R3RtMapping[str, _A6R3RtAny]] = (),
+) -> dict[str, _A6R3RtAny]:
+    """Select exactly one approved controlled-paper candidate.
+
+    This function is side-effect free. It never starts services, never writes Redis,
+    never creates orders, and never calls brokers.
+    """
+
+    approved_pairs = {
+        (
+            str(scope.get("family_id", "") or "").upper(),
+            str(scope.get("side", "") or "").upper(),
+        )
+        for scope in approved_scopes
+    }
+
+    eligible = []
+    for raw in candidates:
+        c = dict(raw)
+        family_id = str(c.get("family_id", c.get("family", "")) or "").upper()
+        side = str(c.get("side", "") or "").upper()
+        action = str(c.get("action", c.get("activation_action", "")) or "").upper()
+        eligible_flag = _a6_r3_rt_truthy(c.get("eligible", c.get("scope_eligible", c.get("activation_safe_to_promote", False))))
+
+        if family_id not in _A6_R3_SUPPORTED_FAMILIES:
+            continue
+        if side not in _A6_R3_SUPPORTED_SIDES:
+            continue
+        if approved_pairs and (family_id, side) not in approved_pairs:
+            continue
+        if action in {"HOLD", "NO_TRADE", "NONE", ""}:
+            continue
+        if not eligible_flag:
+            continue
+
+        c["family_id"] = family_id
+        c["side"] = side
+        c["_a6_r3_score"] = float(c.get("score", c.get("activation_selected_score", 0.0)) or 0.0)
+        eligible.append(c)
+
+    if not eligible:
+        return {
+            "ok": False,
+            "status": "NO_TRADE",
+            "reason": "NO_APPROVED_SCOPED_SIGNAL",
+            "selected": None,
+            "candidate_count": 0,
+            "order_sent": False,
+            "broker_calls_executed": False,
+        }
+
+    eligible.sort(key=lambda x: (x.get("_a6_r3_score", 0.0), str(x.get("family_id")), str(x.get("side"))), reverse=True)
+
+    if len(eligible) > 1:
+        return {
+            "ok": False,
+            "status": "FAIL_CLOSED",
+            "reason": "MULTIPLE_APPROVED_SCOPED_SIGNALS",
+            "selected": None,
+            "candidate_count": len(eligible),
+            "order_sent": False,
+            "broker_calls_executed": False,
+            "candidates": [
+                {"family_id": x.get("family_id"), "side": x.get("side"), "score": x.get("_a6_r3_score")}
+                for x in eligible
+            ],
+        }
+
+    selected = dict(eligible[0])
+    selected.pop("_a6_r3_score", None)
+    return {
+        "ok": True,
+        "status": "ONE_ACTIVE_SCOPE_SELECTED",
+        "reason": "exactly_one_approved_scoped_signal",
+        "selected": selected,
+        "candidate_count": 1,
+        "order_sent": False,
+        "broker_calls_executed": False,
+    }
+
+
+def build_controlled_paper_order_cycle_request(
+    selected_scope: _A6R3RtMapping[str, _A6R3RtAny],
+    *,
+    route: str = "sandbox",
+    qty_lots: int = 1,
+) -> dict[str, _A6R3RtAny]:
+    """Build a preflight/order-cycle request shape without creating any order."""
+
+    scope = dict(selected_scope or {})
+    family_id = str(scope.get("family_id", scope.get("family", "")) or "").upper()
+    side = str(scope.get("side", "") or "").upper()
+    scope_id = str(scope.get("scope_id", f"{family_id}_{side}") or "")
+    symbol = str(scope.get("symbol", scope.get("tradingsymbol", "")) or "")
+
+    return {
+        "lane": "A6-R3",
+        "route": str(route or "sandbox").lower(),
+        "family_id": family_id,
+        "side": side,
+        "scope_id": scope_id,
+        "symbol": symbol,
+        "qty_lots": int(qty_lots),
+        "order_side": "BUY",
+        "order_type": "MARKET",
+        "dry_run": True,
+        "created_epoch": _a6_r3_rt_time.time(),
+        "order_sent": False,
+        "broker_calls_executed": False,
+        "real_live_forbidden": True,
+    }
+# --- END LANE A6-R3 CONTROLLED PAPER SANDBOX ROUTE ---

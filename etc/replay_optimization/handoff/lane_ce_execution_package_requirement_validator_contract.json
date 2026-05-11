@@ -1,0 +1,52 @@
+{
+  "contract_version": "replay_optimization_d40_execution_package_requirement_validator_contract_v1",
+  "contract_name": "Lane D1 execution package requirement validator contract",
+  "lane": "D1",
+  "purpose": "Validate the D39 Lane C/E execution package requirement surfaces without executing replay, creating result packs, binding labels, calculating PnL, training models, predicting, or changing runtime.",
+  "required_inputs": [
+    "run/proofs/proof_lane_d_d39_lane_ce_execution_package_requirement_latest.json"
+  ],
+  "required_d39_outputs": [
+    "42_lane_ce_execution_package_requirement_schema.json",
+    "42_lane_ce_execution_package_requirement_summary.json",
+    "42_lane_ce_execution_package_requirement_rows.json",
+    "42_lane_ce_execution_package_requirement_rows.csv",
+    "09_optimizer_verdict.json"
+  ],
+  "required_output_files": [
+    "43_lane_ce_execution_package_requirement_validation_schema.json",
+    "43_lane_ce_execution_package_requirement_validation_summary.json",
+    "43_lane_ce_execution_package_requirement_validation_rows.json",
+    "43_lane_ce_execution_package_requirement_validation_verdict.json"
+  ],
+  "expected_candidate_count": 810,
+  "expected_package_requirement_ready_count": 810,
+  "expected_requirement_status": "LANE_CE_EXECUTION_PACKAGE_REQUIREMENTS_READY_NO_EXECUTION",
+  "expected_row_status": "PACKAGE_REQUIREMENT_READY_NO_EXECUTION",
+  "validation_status": "EXECUTION_PACKAGE_REQUIREMENT_VALIDATED_NO_EXECUTION",
+  "safety": {
+    "lane_d_execution_allowed": false,
+    "lane_c_or_e_execution_required": true,
+    "replay_execution_allowed": false,
+    "replay_execution_performed": false,
+    "result_pack_creation_allowed_in_lane_d": false,
+    "result_pack_created": false,
+    "candidate_context_attached": false,
+    "candidate_trade_matching_allowed": false,
+    "candidate_trade_matching_performed": false,
+    "label_binding_allowed": false,
+    "labels_bound": false,
+    "real_pnl_calculation_allowed": false,
+    "real_pnl_calculation_performed": false,
+    "model_training_allowed": false,
+    "model_training_performed": false,
+    "model_prediction_allowed": false,
+    "model_prediction_performed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "runtime_services_allowed": false,
+    "paper_live_enablement_allowed": false
+  },
+  "important_limitation": "D40 validates D39 package requirements only. It does not create or verify candidate replay result packs.",
+  "next_recommended_batch": "LANE-D1-D41_CANDIDATE_SUBSET_SELECTION_EXECUTION_HANDOFF_MANIFEST_NO_EXECUTION"
+}

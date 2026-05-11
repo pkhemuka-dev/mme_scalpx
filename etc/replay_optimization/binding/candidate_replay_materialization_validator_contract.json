@@ -1,0 +1,48 @@
+{
+  "schema_name": "MME-ScalpX Lane D Candidate Replay Materialization Validator Contract",
+  "contract_version": "replay_optimization_d35_candidate_replay_materialization_validator_contract_v1",
+  "accepted_for": "CANDIDATE_REPLAY_MATERIALIZATION_VALIDATOR_NO_EXECUTION",
+  "allowed_inputs": {
+    "materialization_rows": "D34 candidate replay materialization rows"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "38_candidate_replay_materialization_validation_report.json",
+    "38_candidate_replay_materialization_validation_rows.json",
+    "38_candidate_replay_materialization_validation_rows.csv",
+    "09_optimizer_verdict.json"
+  ],
+  "validation_policy": {
+    "d35_is_validator_only": true,
+    "validates_artifact_plan_rows_only": true,
+    "replay_execution_allowed_in_d35": false,
+    "result_pack_creation_allowed_in_d35": false,
+    "artifact_file_creation_allowed_in_d35": false,
+    "candidate_context_attachment_allowed_in_d35": false,
+    "candidate_trade_matching_allowed_in_d35": false,
+    "label_binding_allowed_in_d35": false,
+    "real_pnl_calculation_allowed_in_d35": false,
+    "model_training_allowed_in_d35": false,
+    "future_execution_owner_must_be_lane_c_or_lane_e_compatible": true,
+    "future_materialization_preflight_required": true
+  },
+  "safety": {
+    "validator_only": true,
+    "replay_execution_allowed": false,
+    "result_pack_creation_allowed": false,
+    "artifact_file_creation_allowed": false,
+    "candidate_context_attachment_allowed": false,
+    "candidate_trade_matching_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

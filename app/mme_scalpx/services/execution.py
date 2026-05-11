@@ -2425,3 +2425,209 @@ ExecutionService._apply_broker_order_update = _batch13_apply_broker_order_update
 
 
 _validate_name_surface_or_die()
+
+# === LANE F F6 EXECUTION RISK EVIDENCE SURFACE BEGIN ===
+# Lane F execution evidence-surface helper only.
+# This block is append-only and side-effect-free:
+# - no broker calls
+# - no order sends
+# - no Redis writes
+# - no position truth mutation
+# - no execution arming
+def _lane_f_execution_evidence_list(value):
+    """Normalize execution/risk evidence reason fields without changing execution behavior."""
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        return [str(item) for item in value if item is not None and str(item) != ""]
+    if isinstance(value, str):
+        if not value:
+            return []
+        return [value]
+    return [str(value)]
+
+
+def _lane_f_execution_evidence_bool(value, default=False):
+    """Normalize evidence booleans for reporting only."""
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "y", "pass", "allowed", "approved", "ok"}:
+        return True
+    if text in {"0", "false", "no", "n", "blocked", "vetoed", "reject", "rejected"}:
+        return False
+    return default
+
+
+def lane_f_preserve_execution_risk_evidence_surface(record=None):
+    """Return canonical consumed-risk fields for execution-shadow lifecycle evidence.
+
+    This helper does not route orders, does not send broker calls, and does not
+    change position truth. It only preserves risk-decision provenance fields for
+    future Lane F dataset admission audits.
+    """
+    src = dict(record or {})
+    risk_status = src.get("risk_status", src.get("source_risk_status", src.get("status", "")))
+    order_allowed = _lane_f_execution_evidence_bool(
+        src.get("order_allowed", src.get("research_trade_allowed", src.get("risk_approved"))),
+        default=False,
+    )
+    entry_vetoed = _lane_f_execution_evidence_bool(src.get("entry_vetoed"), default=not order_allowed)
+    risk_veto_reasons = _lane_f_execution_evidence_list(
+        src.get("risk_veto_reasons", src.get("veto_reasons", src.get("risk_blocker_reasons")))
+    )
+    return {
+        "lane_f_schema_version": "execution_consumed_risk_surface_v1",
+        "risk_decision_id": src.get("risk_decision_id", src.get("risk_eval_id", src.get("decision_id", ""))),
+        "candidate_id": src.get("candidate_id", src.get("setup_id", src.get("signal_id", ""))),
+        "decision_id": src.get("decision_id", src.get("strategy_decision_id", "")),
+        "source_risk_status": risk_status,
+        "risk_status": risk_status,
+        "risk_approved": order_allowed and not entry_vetoed,
+        "order_allowed": order_allowed,
+        "research_trade_allowed": order_allowed,
+        "entry_vetoed": entry_vetoed,
+        "risk_veto_reasons": risk_veto_reasons,
+        "risk_blocker_reasons": _lane_f_execution_evidence_list(
+            src.get("risk_blocker_reasons", risk_veto_reasons)
+        ),
+    }
+# === LANE F F6 EXECUTION RISK EVIDENCE SURFACE END ===
+
+# --- BEGIN LANE A6-R3 CONTROLLED PAPER SANDBOX ROUTE ---
+
+import os as _a6_r3_exec_os
+import time as _a6_r3_exec_time
+from typing import Any as _A6R3ExecAny, Mapping as _A6R3ExecMapping
+
+CONTROLLED_PAPER_REAL_LIVE_FORBIDDEN = "CONTROLLED_PAPER_REAL_LIVE_FORBIDDEN"
+CONTROLLED_PAPER_SANDBOX_BACKEND_REQUIRED = "CONTROLLED_PAPER_SANDBOX_BACKEND_REQUIRED"
+CONTROLLED_PAPER_SCOPE_REQUIRED = "CONTROLLED_PAPER_SCOPE_REQUIRED"
+CONTROLLED_PAPER_SCOPE_MISMATCH = "CONTROLLED_PAPER_SCOPE_MISMATCH"
+CONTROLLED_PAPER_QTY_CAP_FAIL = "CONTROLLED_PAPER_QTY_CAP_FAIL"
+CONTROLLED_PAPER_POSITION_NOT_FLAT = "CONTROLLED_PAPER_POSITION_NOT_FLAT"
+CONTROLLED_PAPER_INVALID_ROUTE = "CONTROLLED_PAPER_INVALID_ROUTE"
+CONTROLLED_PAPER_PREFLIGHT_OK = "CONTROLLED_PAPER_PREFLIGHT_OK"
+
+_A6_R3_EXEC_REAL_LIVE_ENV_KEYS = (
+    "SCALPX_REAL_LIVE_ALLOWED",
+    "SCALPX_ALLOW_REAL_LIVE",
+    "SCALPX_ALLOW_BROKER_ORDERS",
+)
+_A6_R3_EXEC_ALLOWED_ROUTES = frozenset(("paper", "sandbox"))
+
+
+def _a6_r3_exec_truthy(value: _A6R3ExecAny) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on", "allow", "allowed"}
+
+
+def _a6_r3_position_is_flat(position_state: _A6R3ExecAny) -> bool:
+    if position_state is None:
+        return True
+    if isinstance(position_state, dict):
+        has_position = _a6_r3_exec_truthy(position_state.get("has_position"))
+        side = str(position_state.get("position_side", position_state.get("side", "FLAT")) or "FLAT").upper()
+        return (not has_position) and side in {"", "FLAT", "NONE", "0"}
+    side = str(position_state or "FLAT").upper()
+    return side in {"", "FLAT", "NONE", "0"}
+
+
+def controlled_paper_order_cycle_preflight(
+    request: _A6R3ExecMapping[str, _A6R3ExecAny] | None = None,
+    *,
+    approved_scope: _A6R3ExecMapping[str, _A6R3ExecAny] | None = None,
+    position_state: _A6R3ExecAny = None,
+    paper_backend_available: bool = False,
+) -> dict[str, _A6R3ExecAny]:
+    """A6-R3 hard entry preflight.
+
+    This is deliberately fail-closed and side-effect free.
+    It does not create orders, does not write Redis, and does not call brokers.
+    """
+
+    req = dict(request or {})
+    approved = dict(approved_scope or {})
+    route = str(req.get("route", "sandbox") or "").strip().lower()
+    family_id = str(req.get("family_id", "") or "").upper()
+    side = str(req.get("side", "") or "").upper()
+    qty_lots = int(req.get("qty_lots", 0) or 0)
+    scope_id = str(req.get("scope_id", "") or "")
+
+    base = {
+        "lane": "A6-R3",
+        "ok": False,
+        "controlled_paper": True,
+        "entry_allowed": False,
+        "order_sent": False,
+        "order_created": False,
+        "broker_calls_executed": False,
+        "redis_trading_stream_write_attempted": False,
+        "real_live_forbidden": True,
+        "route": route,
+        "family_id": family_id,
+        "side": side,
+        "qty_lots": qty_lots,
+        "scope_id": scope_id,
+        "timestamp_epoch": _a6_r3_exec_time.time(),
+    }
+
+    live_env_present = {
+        key: _a6_r3_exec_os.environ.get(key)
+        for key in _A6_R3_EXEC_REAL_LIVE_ENV_KEYS
+        if _a6_r3_exec_truthy(_a6_r3_exec_os.environ.get(key))
+    }
+    if live_env_present:
+        return {
+            **base,
+            "status": "FAIL_CLOSED",
+            "reason": CONTROLLED_PAPER_REAL_LIVE_FORBIDDEN,
+            "live_env_present": live_env_present,
+        }
+
+    if route not in _A6_R3_EXEC_ALLOWED_ROUTES:
+        return {**base, "status": "FAIL_CLOSED", "reason": CONTROLLED_PAPER_INVALID_ROUTE}
+
+    if not family_id or not side:
+        return {**base, "status": "FAIL_CLOSED", "reason": CONTROLLED_PAPER_SCOPE_REQUIRED}
+
+    approved_family = str(approved.get("family_id", family_id) or "").upper()
+    approved_side = str(approved.get("side", side) or "").upper()
+    if approved and (family_id != approved_family or side != approved_side):
+        return {
+            **base,
+            "status": "FAIL_CLOSED",
+            "reason": CONTROLLED_PAPER_SCOPE_MISMATCH,
+            "approved_family_id": approved_family,
+            "approved_side": approved_side,
+        }
+
+    if qty_lots != 1:
+        return {**base, "status": "FAIL_CLOSED", "reason": CONTROLLED_PAPER_QTY_CAP_FAIL}
+
+    if not _a6_r3_position_is_flat(position_state):
+        return {**base, "status": "FAIL_CLOSED", "reason": CONTROLLED_PAPER_POSITION_NOT_FLAT}
+
+    if not paper_backend_available:
+        return {
+            **base,
+            "status": "FAIL_CLOSED",
+            "reason": CONTROLLED_PAPER_SANDBOX_BACKEND_REQUIRED,
+            "paper_backend_available": False,
+        }
+
+    # A6-R3 does not send orders. Returning preflight-ok only proves all static checks pass
+    # when a paper backend is declared available by a future approved proof harness.
+    return {
+        **base,
+        "ok": True,
+        "status": CONTROLLED_PAPER_PREFLIGHT_OK,
+        "reason": "preflight_only_no_order_sent",
+        "paper_backend_available": True,
+        "entry_allowed": True,
+        "order_sent": False,
+        "order_created": False,
+        "broker_calls_executed": False,
+    }
+# --- END LANE A6-R3 CONTROLLED PAPER SANDBOX ROUTE ---

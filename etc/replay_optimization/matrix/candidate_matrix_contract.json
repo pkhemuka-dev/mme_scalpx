@@ -1,0 +1,34 @@
+{
+  "schema_name": "MME-ScalpX Lane D Candidate Matrix Builder Contract",
+  "contract_version": "replay_optimization_d5_candidate_matrix_contract_v1",
+  "accepted_for": "CANDIDATE_MATRIX_CONTRACT_ONLY",
+  "allowed_inputs": {
+    "sweep_candidates": "D2 proposed-only sweep candidate rows",
+    "replay_index": "D3 read-only replay input index",
+    "raw_index": "D4 read-only RAW feature index"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "02_candidate_matrix.json",
+    "09_optimizer_verdict.json"
+  ],
+  "readiness_policy": {
+    "missing_replay_index": "NOT_READY_REPLAY_SOURCE_MISSING",
+    "missing_raw_index": "NOT_READY_RAW_SOURCE_MISSING",
+    "indexes_present_but_unapproved": "NOT_READY_UNVERIFIED_REPLAY_SOURCE",
+    "d5_does_not_approve_execution": true,
+    "d5_does_not_approve_model_training": true
+  },
+  "safety": {
+    "read_only_reference_build": true,
+    "replay_execution_allowed": false,
+    "model_training_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

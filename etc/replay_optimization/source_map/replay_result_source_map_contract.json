@@ -1,0 +1,42 @@
+{
+  "schema_name": "MME-ScalpX Lane D Replay Result Source Map Contract",
+  "contract_version": "replay_optimization_d11_source_map_contract_v1",
+  "accepted_for": "REPLAY_RESULT_SOURCE_MAP_CONTRACT_ONLY",
+  "allowed_inputs": {
+    "replay_index": "D3 read-only replay index",
+    "result_binding_rows": "D8 unbound result-binding rows"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "14_replay_result_source_map.json",
+    "14_replay_result_source_map.csv",
+    "09_optimizer_verdict.json"
+  ],
+  "source_map_policy": {
+    "d11_is_reference_map_only": true,
+    "candidate_to_trade_matching_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "production_profit_claim_allowed": false,
+    "requires_future_verified_candidate_trade_mapping": true,
+    "requires_future_integrity_pass_filter": true,
+    "requires_future_label_binding_batch": true
+  },
+  "safety": {
+    "source_map_only": true,
+    "replay_execution_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

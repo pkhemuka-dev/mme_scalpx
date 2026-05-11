@@ -28,3 +28,13 @@ secrets
 secrets/
 /home/Lenovo/scalpx/common/secrets/
 *.env
+
+# MME-ScalpX generated AI patch artifacts
+ai_patch_runner/outputs/
+ai_patch_runner/prompts/
+ai_patch_runner/reports/
+ai_patch_runner/sandbox/
+ai_patch_runner/state/
+ai_patch_runner/review_bundles/
+
+# MME-ScalpX runtime/proof/generated artifacts

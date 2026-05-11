@@ -1,0 +1,46 @@
+{
+  "schema_name": "MME-ScalpX Lane D Sample Size + Overfit Risk Contract",
+  "contract_version": "replay_optimization_d9_sample_size_overfit_contract_v1",
+  "accepted_for": "SAMPLE_SIZE_OVERFIT_RISK_CONTRACT_ONLY",
+  "allowed_inputs": {
+    "result_binding_rows": "D8 result-binding rows"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "11_sample_size_report.json",
+    "12_overfit_risk_report.json",
+    "09_optimizer_verdict.json"
+  ],
+  "minimum_research_gates": {
+    "min_sample_days": 20,
+    "min_source_verified_labeled_trades": 100,
+    "min_strategy_families": 5,
+    "min_sides": 2,
+    "requires_integrity_pass_before_training": true,
+    "requires_walk_forward_split_before_training": true,
+    "requires_out_of_sample_report_before_training": true
+  },
+  "risk_policy": {
+    "d9_is_gate_only": true,
+    "labels_required_for_training": true,
+    "training_allowed_in_d9": false,
+    "prediction_allowed_in_d9": false,
+    "profit_claim_allowed_in_d9": false,
+    "paper_live_approval_allowed_in_d9": false
+  },
+  "safety": {
+    "report_build_only": true,
+    "replay_execution_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

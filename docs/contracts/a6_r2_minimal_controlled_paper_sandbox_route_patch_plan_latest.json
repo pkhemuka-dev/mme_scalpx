@@ -1,0 +1,133 @@
+{
+  "a6_r3_acceptance_criteria": [
+    "explicit paper/sandbox backend seam exists and is discoverable",
+    "execution real-live-forbidden guard exists and is discoverable",
+    "with no paper backend active, route returns fail-closed before broker call",
+    "broker_calls_executed=false",
+    "order_sent=false",
+    "orders:mme:stream=0",
+    "position remains flat",
+    "compile_ok=true"
+  ],
+  "a6_r3_patch_gate": {
+    "may_patch_only_if_user_explicitly_approves": true,
+    "must_create": [
+      "source backups",
+      "proof JSON",
+      "milestone",
+      "runbook",
+      "sha256",
+      "py_compile proof",
+      "fail-closed dry-run proof"
+    ],
+    "must_preserve": [
+      "no real live",
+      "no broker call during patch/proof",
+      "no order placement",
+      "orders:mme:stream remains 0",
+      "state:position:mme remains flat",
+      "risk/execution services not started"
+    ]
+  },
+  "based_on": {
+    "a6_r1_final_verdict": "BLOCKED_A6_R1_ROUTE_AUDIT_CONFIRMS_PATCH_PLAN_REQUIRED_NO_ORDER_NO_BROKER",
+    "a6_r1_missing_components": [
+      "EXPLICIT_PAPER_SANDBOX_BROKER_BACKEND_NOT_DISCOVERED",
+      "EXECUTION_REAL_LIVE_FORBIDDEN_GUARD_NOT_CONFIRMED"
+    ],
+    "a6_r1_route_classification": "ROUTE_MISSING_OR_INCOMPLETE_STATICALLY_CONFIRMED",
+    "expected_a6_r1_blockers_present": true
+  },
+  "minimal_patch_targets_for_a6_r3_if_approved": [
+    {
+      "file": "app/mme_scalpx/integrations/broker_api.py",
+      "forbidden_behavior": [
+        "No fallback to Dhan real execution.",
+        "No fallback to Zerodha real execution.",
+        "No environment-only live enablement.",
+        "No silent conversion from sandbox to real broker."
+      ],
+      "owner": "broker/integration boundary",
+      "planned_change_type": "add explicit controlled-paper sandbox backend seam",
+      "planned_public_surface": [
+        "ControlledPaperOrderRequest",
+        "ControlledPaperOrderResult",
+        "submit_controlled_paper_sandbox_order"
+      ],
+      "required_behavior": [
+        "Never call Zerodha or Dhan real-live order APIs.",
+        "Accept only route='paper' or route='sandbox'.",
+        "Return fail-closed result when paper/sandbox backend is absent.",
+        "Include broker_calls_executed=false in result metadata.",
+        "Include real_live_forbidden=true in result metadata.",
+        "Include order_sent=false unless a verified paper/sandbox backend is explicitly active."
+      ]
+    },
+    {
+      "file": "app/mme_scalpx/services/execution.py",
+      "forbidden_behavior": [
+        "No all-family order fan-out.",
+        "No auto strategy switching into execution.",
+        "No old approval phrase reuse.",
+        "No threshold relaxation.",
+        "No forced candidate."
+      ],
+      "owner": "execution boundary / sole order boundary",
+      "planned_change_type": "add hard controlled-paper real-live-forbidden guard before any order route",
+      "planned_public_surface": [
+        "CONTROLLED_PAPER_REAL_LIVE_FORBIDDEN",
+        "CONTROLLED_PAPER_SANDBOX_BACKEND_REQUIRED",
+        "controlled_paper_order_cycle_preflight"
+      ],
+      "required_behavior": [
+        "Fail closed if SCALPX_REAL_LIVE_ALLOWED or SCALPX_ALLOW_REAL_LIVE is set.",
+        "Fail closed if SCALPX_ALLOW_BROKER_ORDERS is set without explicit paper/sandbox route.",
+        "Fail closed if position is not flat before entry.",
+        "Fail closed if scope is not exactly one approved family/side.",
+        "Fail closed if qty exceeds 1 lot.",
+        "Fail closed if paper/sandbox backend is not discoverable.",
+        "Exits/flatten safety paths must remain allowed and must not be blocked by entry veto."
+      ]
+    },
+    {
+      "file": "app/mme_scalpx/services/controlled_paper_runtime.py",
+      "forbidden_behavior": [
+        "No broker call in route selection.",
+        "No Redis trading-stream write in dry-run mode.",
+        "No live service start from patch helpers."
+      ],
+      "owner": "trial coordinator / one-active-scope control",
+      "planned_change_type": "wire one-active-scope coordinator to execution preflight only",
+      "planned_public_surface": [
+        "select_one_active_controlled_paper_scope",
+        "build_controlled_paper_order_cycle_request"
+      ],
+      "required_behavior": [
+        "Monitor all five strategies as candidates.",
+        "Select exactly one approved scoped signal.",
+        "No simultaneous all-five execution.",
+        "If no valid signal, return NO_TRADE.",
+        "If backend or guard is missing, return fail-closed route status."
+      ]
+    }
+  ],
+  "non_patch_targets": [
+    {
+      "file": "app/mme_scalpx/services/risk.py",
+      "reason": "A6-R1 already confirmed controlled-paper risk surfaces; keep as audit-only unless A6-R3 source inspection proves missing veto integration."
+    },
+    {
+      "file": "app/mme_scalpx/core/names.py",
+      "reason": "Do not add names unless A6-R3 needs a new canonical paper/sandbox route status key. Prefer local constants first if no stream/key contract changes are required."
+    }
+  ],
+  "plan_id": "lane_a6_r2_patch_plan_20260511_224947",
+  "plan_status": "PLAN_ONLY_NO_SOURCE_PATCH",
+  "target_problem": {
+    "canonical_route_blocker": "EXPLICIT_CONTROLLED_PAPER_ORDER_TOOL_NOT_FOUND_FAIL_CLOSED",
+    "static_missing_components": [
+      "EXPLICIT_PAPER_SANDBOX_BROKER_BACKEND_NOT_DISCOVERED",
+      "EXECUTION_REAL_LIVE_FORBIDDEN_GUARD_NOT_CONFIRMED"
+    ]
+  }
+}

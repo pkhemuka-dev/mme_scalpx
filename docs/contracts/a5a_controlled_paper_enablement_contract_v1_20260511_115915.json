@@ -1,0 +1,82 @@
+{
+  "approval_does_not_allow_broker_failover": true,
+  "approval_does_not_allow_mid_position_provider_migration": true,
+  "approval_does_not_bypass_execution_safety": true,
+  "approval_does_not_bypass_risk": true,
+  "approval_does_not_enable_real_live": true,
+  "approval_phrase_case_sensitive": true,
+  "approval_phrase_single_use_for_next_preflight_only": true,
+  "broker_failover_forbidden": true,
+  "contract_id": "A5A_CONTROLLED_PAPER_ENABLEMENT_CONTRACT_V1",
+  "contract_status": "FROZEN_CONTRACT_ONLY_NOT_ENABLED",
+  "controlled_paper_contract_scope": "MIST_CALL_ONLY",
+  "controlled_paper_qty_cap": "1_LOT_ONLY",
+  "created_at_ist": "2026-05-11T11:59:15.240432+05:30",
+  "created_at_utc": "2026-05-11T06:29:15.240124+00:00",
+  "entry_scope": {
+    "all_scope_carrier_not_tradable_scope": true,
+    "family": "MIST",
+    "misb_forbidden": true,
+    "misc_forbidden": true,
+    "miso_forbidden": true,
+    "misr_forbidden": true,
+    "producer_only_observation_field_not_sufficient_for_approval": true,
+    "put_forbidden": true,
+    "side": "CALL"
+  },
+  "explicit_user_approval_phrase_exact": "I APPROVE CONTROLLED PAPER: MIST CALL ONLY, 1 LOT ONLY, PAPER/SANDBOX ONLY, REAL LIVE FORBIDDEN, NO BROKER FAILOVER, NO MID-POSITION PROVIDER MIGRATION",
+  "forbidden_in_this_batch": {
+    "broker_call": true,
+    "forced_candidate": true,
+    "order_placement": true,
+    "paper_start": true,
+    "real_live_start": true,
+    "redis_trading_stream_write": true,
+    "risk_execution_start": true,
+    "service_start": true,
+    "source_patch": true,
+    "threshold_relaxation": true
+  },
+  "future_enablement_requires": [
+    "A5A_R1_R1_CONTRACT_PASS",
+    "A5A_R2_GOVERNANCE_CHECKLIST_PASS",
+    "A5B_SAFETY_PREFLIGHT_PASS",
+    "EXACT_USER_APPROVAL_PHRASE",
+    "POSITION_FLAT",
+    "ORDERS_STREAM_ZERO",
+    "REAL_LIVE_FLAGS_FALSE",
+    "BROKER_ORDER_FLAGS_FALSE_UNTIL_PAPER_ROUTE_CONFIRMED",
+    "RISK_EXECUTION_START_ALLOWED_ONLY_IN_LATER_EXPLICIT_CONTROLLED_PAPER_STEP"
+  ],
+  "lane": "A5A",
+  "mid_position_provider_migration_forbidden": true,
+  "paper_route_only": true,
+  "position_truth_and_safety": {
+    "execution_remains_sole_position_truth": true,
+    "forced_flatten_must_be_available": true,
+    "kill_switch_must_be_available": true,
+    "orders_stream_must_be_zero_before_future_entry": true,
+    "position_must_be_flat_before_future_entry": true,
+    "reconciliation_safety_must_be_available": true,
+    "risk_may_block_entries": true,
+    "risk_must_never_block_exits": true
+  },
+  "quantity_scope": {
+    "max_lots": 1,
+    "min_lots": 1,
+    "multi_position_forbidden": true,
+    "qty_must_equal_one_lot": true,
+    "scale_in_forbidden": true
+  },
+  "real_live_forbidden": true,
+  "require_explicit_user_approval_phrase": true,
+  "require_flat_position_before_entry": true,
+  "require_orders_zero_before_entry": true,
+  "route_scope": {
+    "automatic_broker_failover_forbidden": true,
+    "manual_real_live_override_forbidden": true,
+    "paper_or_sandbox_only": true,
+    "real_broker_live_order_forbidden": true
+  },
+  "sandbox_or_paper_required": true
+}

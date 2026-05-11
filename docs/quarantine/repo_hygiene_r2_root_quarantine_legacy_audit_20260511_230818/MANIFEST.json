@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "action": "GIT_MV_TO_DOC_QUARANTINE",
+      "backup_path": "run/_code_backups/repo_hygiene_r2_root_quarantine_legacy_audit_20260511_230818/=",
+      "exists_after": false,
+      "exists_before": true,
+      "git_mv": {
+        "cmd": [
+          "git",
+          "mv",
+          "--",
+          "=",
+          "docs/quarantine/repo_hygiene_r2_root_quarantine_legacy_audit_20260511_230818/="
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": ""
+      },
+      "git_tracked_before": true,
+      "is_file": true,
+      "path": "=",
+      "quarantine_exists": true,
+      "quarantine_path": "docs/quarantine/repo_hygiene_r2_root_quarantine_legacy_audit_20260511_230818/=",
+      "size_bytes": 0
+    },
+    {
+      "action": "GIT_MV_TO_DOC_QUARANTINE",
+      "backup_path": "run/_code_backups/repo_hygiene_r2_root_quarantine_legacy_audit_20260511_230818/metrics_dict[baseline_put_candidate_count]",
+      "exists_after": false,
+      "exists_before": true,
+      "git_mv": {
+        "cmd": [
+          "git",
+          "mv",
+          "--",
+          "metrics_dict[baseline_put_candidate_count]",
+          "docs/quarantine/repo_hygiene_r2_root_quarantine_legacy_audit_20260511_230818/metrics_dict[baseline_put_candidate_count]"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": ""
+      },
+      "git_tracked_before": true,
+      "is_file": true,
+      "path": "metrics_dict[baseline_put_candidate_count]",
+      "quarantine_exists": true,
+      "quarantine_path": "docs/quarantine/repo_hygiene_r2_root_quarantine_legacy_audit_20260511_230818/metrics_dict[baseline_put_candidate_count]",
+      "size_bytes": 0
+    }
+  ],
+  "note": "Files were moved, not deleted. Backup copies are under run/_code_backups.",
+  "purpose": "Quarantine zero-byte suspicious root files that were git-tracked.",
+  "tag": "repo_hygiene_r2_root_quarantine_legacy_audit_20260511_230818"
+}

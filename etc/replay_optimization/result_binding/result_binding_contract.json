@@ -1,0 +1,50 @@
+{
+  "schema_name": "MME-ScalpX Lane D Result Binding Schema Contract",
+  "contract_version": "replay_optimization_d8_result_binding_contract_v1",
+  "accepted_for": "RESULT_BINDING_SCHEMA_CONTRACT_ONLY",
+  "allowed_inputs": {
+    "candidate_matrix": "D5 candidate matrix rows",
+    "ml_dataset": "D7 unlabeled ML dataset rows",
+    "replay_index": "D3 read-only replay index"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "10_result_binding_schema.json",
+    "10_result_binding_rows.json",
+    "10_result_binding_rows.csv",
+    "09_optimizer_verdict.json"
+  ],
+  "binding_policy": {
+    "d8_is_schema_only": true,
+    "labels_bound_in_d8": false,
+    "real_pnl_calculation_allowed": false,
+    "manual_label_injection_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "strategy_ranking_claim_allowed": false,
+    "production_profit_claim_allowed": false,
+    "requires_future_verified_replay_result_binding": true,
+    "requires_future_integrity_pass": true,
+    "requires_future_sample_size_report": true,
+    "requires_future_overfit_risk_report": true
+  },
+  "label_fields": {
+    "label_pnl": "NULL_UNTIL_VERIFIED_REPLAY_RESULT_BINDING",
+    "label_profitable": "NULL_UNTIL_VERIFIED_REPLAY_RESULT_BINDING",
+    "label_exit_reason": "NULL_UNTIL_VERIFIED_REPLAY_RESULT_BINDING"
+  },
+  "safety": {
+    "schema_export_only": true,
+    "replay_execution_allowed": false,
+    "label_binding_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

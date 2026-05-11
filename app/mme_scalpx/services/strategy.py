@@ -947,6 +947,98 @@ class StrategyService:
                     fields['o23p_r13_decision_family_payload_patch'] = '1'
         except Exception:
             pass
+        # BATCH26O23Q_R13_EXACT_PRODUCER_PROJECTION_PATCH
+        # Serialization-only projection from activation_report_json into the active decision XADD field object.
+        # No strategy decision, candidate, threshold, risk, execution, position, broker, paper, or live behavior is changed.
+        try:
+            if isinstance(fields, dict) and fields.get("activation_report_json"):
+                _o23q_r13_activation_raw = fields.get("activation_report_json")
+                _o23q_r13_activation_obj = (
+                    json.loads(_o23q_r13_activation_raw)
+                    if isinstance(_o23q_r13_activation_raw, str)
+                    else _o23q_r13_activation_raw
+                )
+                if isinstance(_o23q_r13_activation_obj, dict):
+                    def _o23q_r13_norm(_item):
+                        if not isinstance(_item, dict):
+                            return {}
+                        _family_id = _safe_str(_item.get("family_id"))
+                        _branch_id = _safe_str(_item.get("branch_id"))
+                        _side = _safe_str(_item.get("side"))
+                        _action = _safe_str(_item.get("action"))
+                        _owner_parts = [
+                            _part
+                            for _part in (_family_id, _branch_id, _side)
+                            if _part
+                        ]
+                        return {
+                            "family_id": _family_id,
+                            "branch_id": _branch_id,
+                            "side": _side,
+                            "owner_scope": "|".join(_owner_parts),
+                            "action": _action,
+                            "score": _item.get("score"),
+                            "priority": _item.get("priority"),
+                            "eligible": _safe_bool(_item.get("eligible"), False),
+                            "is_candidate": _safe_bool(_item.get("is_candidate"), False),
+                            "is_blocked": _safe_bool(_item.get("is_blocked"), False),
+                            "blocker": _safe_str(_item.get("blocker")),
+                            "reason": _safe_str(_item.get("reason")),
+                        }
+
+                    def _o23q_r13_norm_list(_value):
+                        if isinstance(_value, tuple):
+                            _value = list(_value)
+                        if not isinstance(_value, list):
+                            return []
+                        return [
+                            _o23q_r13_norm(_entry)
+                            for _entry in _value
+                            if isinstance(_entry, dict)
+                        ]
+
+                    _o23q_r13_selected_raw = _o23q_r13_activation_obj.get("selected")
+                    _o23q_r13_selected = (
+                        _o23q_r13_norm(_o23q_r13_selected_raw)
+                        if isinstance(_o23q_r13_selected_raw, dict)
+                        else None
+                    )
+                    _o23q_r13_candidates = _o23q_r13_norm_list(
+                        _o23q_r13_activation_obj.get("candidates")
+                    )
+                    _o23q_r13_blocked = _o23q_r13_norm_list(
+                        _o23q_r13_activation_obj.get("blocked")
+                    )
+                    _o23q_r13_no_signal = _o23q_r13_norm_list(
+                        _o23q_r13_activation_obj.get("no_signal")
+                    )
+
+                    _o23q_r13_projection = {
+                        "schema": "o23q_family_scope_candidates_v1",
+                        "projection_source": "activation_report_json",
+                        "strategy_report_only": True,
+                        "live_orders_allowed": False,
+                        "activation_mode": _safe_str(
+                            _o23q_r13_activation_obj.get("activation_mode")
+                        ),
+                        "action": _safe_str(_o23q_r13_activation_obj.get("action")),
+                        "reason": _safe_str(_o23q_r13_activation_obj.get("reason")),
+                        "selected": _o23q_r13_selected,
+                        "candidates": _o23q_r13_candidates,
+                        "blocked": _o23q_r13_blocked,
+                        "no_signal": _o23q_r13_no_signal,
+                        "candidate_count": len(_o23q_r13_candidates),
+                        "blocked_count": len(_o23q_r13_blocked),
+                        "no_signal_count": len(_o23q_r13_no_signal),
+                    }
+                    fields["family_scope_candidates_json"] = json.dumps(
+                        _o23q_r13_projection,
+                        sort_keys=True,
+                        default=str,
+                    )
+                    fields["o23q_r13_family_scope_candidates_projection_patch"] = "1"
+        except Exception:
+            pass
         self.redis.xadd(
             STREAM_DECISIONS,
             fields=fields,

@@ -1,0 +1,34 @@
+{
+  "schema_name": "MME-ScalpX Replay Optimization ML Export Contract",
+  "contract_version": "replay_optimization_d1_contract_v1",
+  "accepted_for": "CONTRACT_ONLY",
+  "ml_usage_class": "research_only",
+  "allowed_export_formats": ["csv", "json", "parquet"],
+  "required_labels": [
+    "label_pnl",
+    "label_profitable",
+    "label_exit_reason"
+  ],
+  "required_governance_labels": [
+    "usage_class",
+    "compute_stage",
+    "storage_target",
+    "source_verified"
+  ],
+  "forbidden_ml_routes": {
+    "live_order_decisioning": true,
+    "paper_armed_enablement": true,
+    "risk_override": true,
+    "execution_override": true,
+    "strategy_doctrine_auto_mutation": true,
+    "production_truth_without_review": true
+  },
+  "allowed_training_scope": {
+    "offline_replay_only": true,
+    "requires_verified_replay_results": true,
+    "requires_source_verified_raw_features": true,
+    "requires_sample_size_report": true,
+    "requires_overfit_risk_report": true
+  },
+  "required_ml_dataset_columns_ref": "app/mme_scalpx/replay_optimization/contracts.py::ML_DATASET_COLUMNS"
+}

@@ -1,0 +1,61 @@
+{
+  "schema_name": "MME-ScalpX Lane D Replay Optimization Policy",
+  "contract_version": "replay_optimization_d1_contract_v1",
+  "lane": "LANE_D_REPLAY_OPTIMIZATION",
+  "accepted_for": "CONTRACT_ONLY",
+  "governance": {
+    "offline_only": true,
+    "requires_verified_lane_c_replay_artifacts": true,
+    "may_read_replay_artifacts": true,
+    "may_read_research_gate_artifacts": true,
+    "may_read_research_capture_artifacts": true,
+    "may_write_replay_optimization_outputs": true,
+    "may_write_live_redis": false,
+    "may_call_broker": false,
+    "may_start_runtime_services": false,
+    "may_enable_paper_or_live": false,
+    "may_mutate_strategy_doctrine": false,
+    "may_mutate_replay_engine": false,
+    "may_make_production_profit_claim": false
+  },
+  "allowed_input_roots": [
+    "run/replay",
+    "run/research_gate",
+    "run/research_capture",
+    "run/proofs",
+    "run/reports"
+  ],
+  "allowed_output_root": "run/replay_optimization",
+  "not_ready_conditions": [
+    "replay_source_missing",
+    "raw_source_missing",
+    "replay_source_unverified",
+    "integrity_verdict_failed",
+    "sample_too_small",
+    "overfit_risk_unresolved"
+  ],
+  "allowed_verdicts": [
+    "NOT_READY_REPLAY_SOURCE_MISSING",
+    "NOT_READY_RAW_SOURCE_MISSING",
+    "NOT_READY_UNVERIFIED_REPLAY_SOURCE",
+    "READY_FOR_SINGLE_DAY_SWEEP",
+    "READY_FOR_MULTIDAY_SWEEP",
+    "READY_FOR_ML_DATASET_EXPORT",
+    "READY_FOR_RESEARCH_ONLY_MODEL_TRAINING",
+    "REJECT_OVERFIT_RISK",
+    "REJECT_INSUFFICIENT_SAMPLE",
+    "RESEARCH_ONLY_FINDING"
+  ],
+  "forbidden_ownership": [
+    "broker_io",
+    "order_placement",
+    "position_truth",
+    "risk_veto",
+    "execution_routing",
+    "live_redis_truth",
+    "strategy_doctrine_mutation",
+    "paper_live_enablement",
+    "service_start_stop",
+    "replay_engine_mutation"
+  ]
+}

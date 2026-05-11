@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
+"""Compatibility wrapper.
+
+The proof implementation was moved to bin/proofs/proof_provider_runtime_roles.py.
+This wrapper preserves the old bin/proof_provider_runtime_roles.py command path.
+"""
+
 from __future__ import annotations
 
-"""
-Compatibility proof wrapper for Batch 5 provider-runtime role hardening.
-
-Canonical proof artifact:
-  run/proofs/integrations_batch5_freeze.json
-"""
-
-from pathlib import Path
 import runpy
+from pathlib import Path
 
-SCRIPT = Path(__file__).with_name("proof_integrations_batch5_freeze.py")
-runpy.run_path(str(SCRIPT), run_name="__main__")
+_TARGET = Path(__file__).resolve().parent / "proofs" / "proof_provider_runtime_roles.py"
+
+if __name__ == "__main__":
+    runpy.run_path(str(_TARGET), run_name="__main__")

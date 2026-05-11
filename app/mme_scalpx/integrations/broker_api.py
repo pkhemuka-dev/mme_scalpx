@@ -1421,3 +1421,163 @@ __all__ = [
     "build_null_broker_adapter",
     "build_real_broker_adapter",
 ]
+
+# --- BEGIN LANE A6-R3 CONTROLLED PAPER SANDBOX ROUTE ---
+
+import os as _a6_r3_os
+import time as _a6_r3_time
+from dataclasses import dataclass as _a6_r3_dataclass, field as _a6_r3_field
+from typing import Any as _A6R3Any, Mapping as _A6R3Mapping
+
+_A6_R3_REAL_LIVE_ENV_KEYS = (
+    "SCALPX_REAL_LIVE_ALLOWED",
+    "SCALPX_ALLOW_REAL_LIVE",
+    "SCALPX_ALLOW_BROKER_ORDERS",
+)
+_A6_R3_ALLOWED_CONTROLLED_PAPER_ROUTES = frozenset(("paper", "sandbox"))
+
+
+@_a6_r3_dataclass(frozen=True)
+class ControlledPaperOrderRequest:
+    """A6-R3 explicit paper/sandbox request shape. Never represents real-live approval."""
+
+    route: str = "sandbox"
+    family_id: str = ""
+    side: str = ""
+    symbol: str = ""
+    qty_lots: int = 1
+    qty_units: int = 0
+    order_side: str = "BUY"
+    order_type: str = "MARKET"
+    price: float | None = None
+    scope_id: str = ""
+    dry_run: bool = True
+    metadata: dict[str, _A6R3Any] = _a6_r3_field(default_factory=dict)
+
+
+@_a6_r3_dataclass(frozen=True)
+class ControlledPaperOrderResult:
+    """A6-R3 fail-closed result shape for controlled-paper order-route discovery."""
+
+    ok: bool
+    status: str
+    reason: str
+    route: str
+    order_sent: bool = False
+    order_created: bool = False
+    broker_calls_executed: bool = False
+    real_live_forbidden: bool = True
+    paper_backend_active: bool = False
+    backend_name: str = ""
+    order_id: str = ""
+    metadata: dict[str, _A6R3Any] = _a6_r3_field(default_factory=dict)
+
+
+def _a6_r3_truthy(value: _A6R3Any) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on", "allow", "allowed"}
+
+
+def _a6_r3_request_from_any(request: ControlledPaperOrderRequest | _A6R3Mapping[str, _A6R3Any]) -> ControlledPaperOrderRequest:
+    if isinstance(request, ControlledPaperOrderRequest):
+        return request
+    if isinstance(request, dict):
+        allowed = {
+            "route", "family_id", "side", "symbol", "qty_lots", "qty_units", "order_side",
+            "order_type", "price", "scope_id", "dry_run", "metadata",
+        }
+        return ControlledPaperOrderRequest(**{k: v for k, v in request.items() if k in allowed})
+    raise TypeError("controlled-paper request must be ControlledPaperOrderRequest or dict")
+
+
+def submit_controlled_paper_sandbox_order(
+    request: ControlledPaperOrderRequest | _A6R3Mapping[str, _A6R3Any],
+    *,
+    paper_backend: _A6R3Any = None,
+) -> ControlledPaperOrderResult:
+    """Explicit A6-R3 paper/sandbox seam.
+
+    Safety law:
+    - This function must never call real Zerodha/Dhan broker order APIs.
+    - Without an explicit injected paper_backend, it fails closed.
+    - A6-R3 proof must observe order_sent=false and broker_calls_executed=false.
+    """
+
+    req = _a6_r3_request_from_any(request)
+    route = str(req.route or "").strip().lower()
+    now = _a6_r3_time.time()
+
+    base_meta = {
+        "lane": "A6-R3",
+        "controlled_paper": True,
+        "real_live_forbidden": True,
+        "proof_safe_default": True,
+        "timestamp_epoch": now,
+        "request_family_id": req.family_id,
+        "request_side": req.side,
+        "request_scope_id": req.scope_id,
+        "request_dry_run": req.dry_run,
+    }
+
+    live_env_present = {
+        key: _a6_r3_os.environ.get(key)
+        for key in _A6_R3_REAL_LIVE_ENV_KEYS
+        if _a6_r3_truthy(_a6_r3_os.environ.get(key))
+    }
+    if live_env_present:
+        return ControlledPaperOrderResult(
+            ok=False,
+            status="FAIL_CLOSED_REAL_LIVE_FORBIDDEN",
+            reason="real_live_or_broker_order_env_present",
+            route=route,
+            order_sent=False,
+            order_created=False,
+            broker_calls_executed=False,
+            real_live_forbidden=True,
+            paper_backend_active=False,
+            metadata={**base_meta, "live_env_present": live_env_present},
+        )
+
+    if route not in _A6_R3_ALLOWED_CONTROLLED_PAPER_ROUTES:
+        return ControlledPaperOrderResult(
+            ok=False,
+            status="FAIL_CLOSED_INVALID_CONTROLLED_PAPER_ROUTE",
+            reason="route_must_be_paper_or_sandbox",
+            route=route,
+            order_sent=False,
+            order_created=False,
+            broker_calls_executed=False,
+            real_live_forbidden=True,
+            paper_backend_active=False,
+            metadata=base_meta,
+        )
+
+    if paper_backend is None:
+        return ControlledPaperOrderResult(
+            ok=False,
+            status="FAIL_CLOSED_NO_EXPLICIT_PAPER_SANDBOX_BACKEND",
+            reason="explicit_paper_sandbox_backend_required",
+            route=route,
+            order_sent=False,
+            order_created=False,
+            broker_calls_executed=False,
+            real_live_forbidden=True,
+            paper_backend_active=False,
+            metadata=base_meta,
+        )
+
+    # A6-R3 intentionally does not call the backend. Future live-session paper proof may
+    # add a separate backend-call path only with fresh approval and paper/sandbox evidence.
+    return ControlledPaperOrderResult(
+        ok=False,
+        status="FAIL_CLOSED_BACKEND_CALL_DISABLED_IN_A6_R3",
+        reason="a6_r3_no_order_no_broker_call_patch_proof",
+        route=route,
+        order_sent=False,
+        order_created=False,
+        broker_calls_executed=False,
+        real_live_forbidden=True,
+        paper_backend_active=True,
+        backend_name=paper_backend.__class__.__name__,
+        metadata=base_meta,
+    )
+# --- END LANE A6-R3 CONTROLLED PAPER SANDBOX ROUTE ---

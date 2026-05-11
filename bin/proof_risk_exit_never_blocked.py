@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
+"""Compatibility wrapper.
+
+The proof implementation was moved to bin/proofs/proof_risk_exit_never_blocked.py.
+This wrapper preserves the old bin/proof_risk_exit_never_blocked.py command path.
+"""
+
 from __future__ import annotations
 
-"""
-Compatibility wrapper for the Batch 14 risk freeze proof.
-
-Canonical artifact:
-  run/proofs/risk_batch14_freeze.json
-"""
-
-from pathlib import Path
 import runpy
+from pathlib import Path
 
-SCRIPT = Path(__file__).with_name("proof_risk_batch14_freeze.py")
-runpy.run_path(str(SCRIPT), run_name="__main__")
+_TARGET = Path(__file__).resolve().parent / "proofs" / "proof_risk_exit_never_blocked.py"
+
+if __name__ == "__main__":
+    runpy.run_path(str(_TARGET), run_name="__main__")

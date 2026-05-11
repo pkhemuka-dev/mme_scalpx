@@ -1,0 +1,43 @@
+{
+  "schema_name": "MME-ScalpX Lane D Source Map Grouping Repair Contract",
+  "contract_version": "replay_optimization_d13_source_map_grouping_contract_v1",
+  "accepted_for": "SOURCE_MAP_GROUPING_REPAIR_CONTRACT_ONLY",
+  "allowed_inputs": {
+    "replay_index": "D3 read-only replay index",
+    "result_binding_rows": "D8 unbound result-binding rows"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "16_source_map_grouping_report.json",
+    "16_grouped_replay_result_source_map.json",
+    "16_grouped_replay_result_source_map.csv",
+    "09_optimizer_verdict.json"
+  ],
+  "grouping_policy": {
+    "d13_repairs_source_map_grouping_only": true,
+    "one_replay_root_per_grouped_row_required": true,
+    "candidate_to_trade_matching_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "production_profit_claim_allowed": false,
+    "requires_future_grouped_precondition_audit": true,
+    "requires_future_candidate_to_trade_matching": true
+  },
+  "safety": {
+    "source_map_grouping_only": true,
+    "replay_execution_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

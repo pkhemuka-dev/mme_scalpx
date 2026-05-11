@@ -1,0 +1,30 @@
+{
+  "schema_name": "MME-ScalpX Lane D Offline Contract Profile",
+  "contract_version": "replay_optimization_d2_profile_generator_contract_v1",
+  "accepted_for": "CONTRACT_ONLY_PROFILE_GENERATION",
+  "mode": "PROFILE_GENERATION_ONLY",
+  "output_root": "run/replay_optimization",
+  "profile_generation": {
+    "max_profiles_per_contract_probe": 100,
+    "write_candidate_matrix": true,
+    "write_profile_catalog": true,
+    "execute_replay": false,
+    "train_ml": false,
+    "join_raw_features": false
+  },
+  "source_requirements_for_future_batches": {
+    "requires_verified_lane_c_replay_artifacts": true,
+    "requires_integrity_verdict_pass": true,
+    "requires_raw_or_research_gate_feature_index": true,
+    "requires_sample_size_report_before_ml": true
+  },
+  "safety": {
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

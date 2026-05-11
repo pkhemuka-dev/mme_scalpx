@@ -1,0 +1,45 @@
+{
+  "schema_name": "MME-ScalpX Lane D ML Dataset Export Contract",
+  "contract_version": "replay_optimization_d7_ml_dataset_export_contract_v1",
+  "accepted_for": "ML_DATASET_SCHEMA_EXPORT_CONTRACT_ONLY",
+  "allowed_inputs": {
+    "candidate_matrix": "D5 candidate matrix rows"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "07_ml_dataset_schema.json",
+    "07_ml_dataset_rows.json",
+    "07_ml_dataset_rows.csv",
+    "08_ml_training_manifest.json",
+    "09_optimizer_verdict.json"
+  ],
+  "dataset_policy": {
+    "d7_is_schema_only": true,
+    "labels_bound_in_d7": false,
+    "training_allowed_in_d7": false,
+    "prediction_allowed_in_d7": false,
+    "strategy_ranking_claim_allowed": false,
+    "production_profit_claim_allowed": false,
+    "requires_future_verified_replay_result_binding": true,
+    "requires_future_sample_size_report": true,
+    "requires_future_overfit_risk_report": true
+  },
+  "label_policy": {
+    "label_pnl": "NULL_UNTIL_VERIFIED_REPLAY_RESULT_BINDING",
+    "label_profitable": "NULL_UNTIL_VERIFIED_REPLAY_RESULT_BINDING",
+    "label_exit_reason": "NULL_UNTIL_VERIFIED_REPLAY_RESULT_BINDING"
+  },
+  "safety": {
+    "schema_export_only": true,
+    "replay_execution_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

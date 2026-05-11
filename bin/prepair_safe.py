@@ -100,12 +100,16 @@ def main() -> int:
         print(json.dumps(proof, indent=2, sort_keys=True))
         return 3
 
-    # Stop all MME main processes except do not special-case features/strategy:
-    # stale features/strategy are stopped too because this repair is restoring feed-only hygiene.
-    kill_pattern("app.mme_scalpx.main", "all_mme_main_processes", actions)
+    # Stop feed processes only. This watchdog is feed-only; it must not manage
+    # features/strategy/risk/execution lifecycle.
+    kill_pattern("app.mme_scalpx.main --service feeds", "feeds_processes_only", actions)
 
-    # Clear stale runtime locks.
-    for key in ["lock:feeds", "lock:strategy", "lock:execution"]:
+    # Clear feed lock. Clear execution lock only if execution process is absent.
+    keys_to_clear = ["lock:feeds"]
+    if not execution_pids:
+        keys_to_clear.append("lock:execution")
+
+    for key in keys_to_clear:
         rc, before = redis("GET", key)
         rc_ttl, ttl = redis("PTTL", key)
         rc_del, deleted = redis("DEL", key)
@@ -117,8 +121,8 @@ def main() -> int:
             "deleted": deleted,
         })
 
-    # Remove stale pidfiles.
-    for f in PIDFILES:
+    # Remove stale feed pidfile only. Do not manage feature/strategy pidfiles here.
+    for f in [ROOT / "run/live_capture/pfeeds.pid"]:
         if f.exists():
             try:
                 raw = f.read_text().strip()
@@ -132,11 +136,17 @@ def main() -> int:
     actions.append({"action": "pfeeds_force_all", "returncode": rc_start, "output_tail": out_start[-4000:]})
 
     # Read back state after repair.
+    time.sleep(10)
     rc_feed_ps, feed_ps = sh(["bash", "-lc", "ps -ef | grep -E 'app.mme_scalpx.main --service feeds' | grep -v grep || true"])
     rc_exec_ps, exec_ps = sh(["bash", "-lc", "ps -ef | grep -E 'app.mme_scalpx.main --service execution' | grep -v grep || true"])
     rc_lf, lock_feeds = redis("GET", "lock:feeds")
     rc_le, lock_execution = redis("GET", "lock:execution")
     rc_err, err_len = redis("XLEN", "system:errors:stream")
+
+    feed_started_ok = bool(feed_ps.strip()) and bool(lock_feeds.strip())
+    proof["feed_started_ok"] = feed_started_ok
+    if not feed_started_ok:
+        proof["verdict"] = "REPAIR_START_FAILED"
 
     proof["readback"] = {
         "feed_processes": feed_ps,
@@ -151,8 +161,11 @@ def main() -> int:
     proof["post_health_returncode"] = rc_h
     proof["post_health"] = out_h[-8000:]
 
-    proof["verdict"] = "REPAIR_ATTEMPTED"
+    if proof.get("verdict") != "REPAIR_START_FAILED":
+        proof["verdict"] = "REPAIR_ATTEMPTED"
     print(json.dumps(proof, indent=2, sort_keys=True))
+    if proof.get("verdict") == "REPAIR_START_FAILED":
+        return 2
     return 0 if rc_start == 0 else 2
 
 

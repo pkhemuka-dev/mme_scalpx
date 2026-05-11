@@ -1,0 +1,40 @@
+{
+  "schema_name": "MME-ScalpX Lane D Match Key Discovery Audit Contract",
+  "contract_version": "replay_optimization_d22_match_key_discovery_contract_v1",
+  "accepted_for": "MATCH_KEY_DISCOVERY_AUDIT_ONLY",
+  "allowed_inputs": {
+    "matching_rows": "D20 candidate-trade matching schema rows",
+    "nonzero_verification_report": "D19 verified nonzero result pack"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "25_match_key_discovery_audit.json",
+    "09_optimizer_verdict.json"
+  ],
+  "discovery_policy": {
+    "d22_is_audit_only": true,
+    "key_inventory_only": true,
+    "candidate_trade_matching_allowed_in_d22": false,
+    "label_binding_allowed_in_d22": false,
+    "real_pnl_calculation_allowed_in_d22": false,
+    "model_training_allowed_in_d22": false,
+    "future_dry_run_matching_contract_required": true
+  },
+  "safety": {
+    "audit_only": true,
+    "replay_execution_allowed": false,
+    "result_pack_assembly_allowed": false,
+    "candidate_trade_matching_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schema_name": "MME-ScalpX Lane D Result Binding Precondition Audit Contract",
+  "contract_version": "replay_optimization_d12_precondition_audit_contract_v1",
+  "accepted_for": "RESULT_BINDING_PRECONDITION_AUDIT_ONLY",
+  "allowed_inputs": {
+    "source_map": "D11 replay result source map"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "15_result_binding_precondition_audit.json",
+    "09_optimizer_verdict.json"
+  ],
+  "audit_policy": {
+    "d12_is_audit_only": true,
+    "label_binding_allowed_in_d12": false,
+    "real_pnl_calculation_allowed_in_d12": false,
+    "model_training_allowed_in_d12": false,
+    "model_prediction_allowed_in_d12": false,
+    "mixed_replay_artifact_roots_block_binding": true,
+    "reference_only_source_map_blocks_binding": true,
+    "requires_future_source_map_repair": true,
+    "requires_future_candidate_to_trade_matching": true
+  },
+  "safety": {
+    "audit_only": true,
+    "replay_execution_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

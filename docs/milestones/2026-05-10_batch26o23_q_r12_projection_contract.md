@@ -1,6 +1,6 @@
 # 2026-05-10 — 26-O23-Q-R12
 
-Verdict: `FAIL_O23_Q_R12_PROJECTION_CONTRACT_NOT_PROVEN`
+Verdict: `PASS_O23_Q_R12_PROJECTION_CONTRACT_READY_NO_SOURCE_PATCH_NO_START_NO_PAPER_NO_REAL_LIVE`
 
 ## Projection contract
 - classification: `DISCRIMINATING_PROJECTION_CONTRACT_READY_TARGET_PROVEN_NO_SOURCE_PATCH`
@@ -22,3 +22,26 @@ Verdict: `FAIL_O23_Q_R12_PROJECTION_CONTRACT_NOT_PROVEN`
 - runtime_no_risk_execution_pids: `True`
 
 Next: 26-O23-Q-R13 apply exact minimal producer projection patch to publish family_scope_candidates_json; compile/import only first, then read-only verify; no paper/live.
+
+---
+
+## 26-O23-Q-R12C reconciliation note
+
+This `milestone` was reconciled because the authoritative Q-R12 proof says:
+
+- final_verdict: `PASS_O23_Q_R12_PROJECTION_CONTRACT_READY_NO_SOURCE_PATCH_NO_START_NO_PAPER_NO_REAL_LIVE`
+- false_keys: `[]`
+- source_target_proven: `True`
+- contract_complete: `True`
+- recommended_projection_target: `app/mme_scalpx/services/strategy.py:decision_stream_payload`
+- target_stream: `decisions:mme:stream`
+- source_patch_applied: `False`
+- service_start_attempted: `False`
+- paper_start_attempted: `False`
+- real_live_attempted: `False`
+- q12_proof_sha256: `01c888ad613aa3519eea1fcee59d15c72dcacd6328b5b6b24f430c823249b65f`
+
+Correction type: documentation/artifact verdict reconciliation only.
+
+No source patch, service start, paper start, real-live start, or broker call was performed by Q-R12C.
+

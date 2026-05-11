@@ -1,0 +1,66 @@
+{
+  "approval_phrase_before_A5B_is_not_sufficient": true,
+  "approval_phrase_case_sensitive": true,
+  "approval_phrase_does_not_enable_real_live": true,
+  "approval_phrase_does_not_permit_broker_failover": true,
+  "approval_phrase_does_not_permit_mid_position_provider_migration": true,
+  "approval_phrase_must_be_user_typed_after_A5B_pass": true,
+  "checklist_id": "A5A_CONTROLLED_PAPER_GOVERNANCE_CHECKLIST_V1",
+  "checklist_status": "FROZEN_CHECKLIST_ONLY_NOT_ENABLED",
+  "controlled_paper_scope": {
+    "family": "MIST",
+    "max_lots": 1,
+    "paper_or_sandbox_route_only": true,
+    "qty_must_equal_one_lot": true,
+    "real_live_forbidden": true,
+    "side": "CALL"
+  },
+  "created_at_ist": "2026-05-11T12:01:02.397321+05:30",
+  "created_at_utc": "2026-05-11T06:31:02.397100+00:00",
+  "explicit_approval_phrase": "I APPROVE CONTROLLED PAPER: MIST CALL ONLY, 1 LOT ONLY, PAPER/SANDBOX ONLY, REAL LIVE FORBIDDEN, NO BROKER FAILOVER, NO MID-POSITION PROVIDER MIGRATION",
+  "hard_forbidden": {
+    "automatic_broker_failover": true,
+    "forced_candidate": true,
+    "generic_all_scope_carrier_as_tradable_scope": true,
+    "mid_position_provider_migration": true,
+    "multi_lot": true,
+    "non_mist_family": true,
+    "producer_only_observation_as_approval": true,
+    "put_side": true,
+    "real_broker_live_order": true,
+    "real_live": true,
+    "threshold_relaxation": true
+  },
+  "lane": "A5A",
+  "must_pass_before_any_future_controlled_paper_enablement": {
+    "a5a_r1_r1_contract_pass": true,
+    "a5a_r2_governance_checklist_pass": true,
+    "a5b_safety_preflight_pass": true,
+    "broker_order_flags_unset_until_paper_route_confirmed": true,
+    "exact_user_approval_phrase_after_a5b": true,
+    "paper_sandbox_route_confirmed": true,
+    "position_flat": true,
+    "real_live_flags_unset": true,
+    "redis_orders_stream_zero": true,
+    "risk_execution_start_only_in_later_explicit_controlled_paper_step": true
+  },
+  "purpose": "Prepare exact explicit approval phrase and controlled-paper governance checklist without enabling paper/live.",
+  "safety_doctrine": {
+    "execution_remains_sole_position_truth": true,
+    "forced_flatten_must_be_available": true,
+    "kill_switch_must_be_available": true,
+    "reconciliation_safety_must_be_available": true,
+    "risk_may_block_entries": true,
+    "risk_must_never_block_exits": true
+  },
+  "this_batch_did_not": {
+    "broker_call": true,
+    "order_placement": true,
+    "paper_start": true,
+    "real_live_start": true,
+    "redis_trading_stream_write": true,
+    "risk_execution_start": true,
+    "service_start": true,
+    "source_patch": true
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "schema_name": "MME-ScalpX Lane D Grouped Source Map Precondition Audit Contract",
+  "contract_version": "replay_optimization_d14_grouped_precondition_audit_contract_v1",
+  "accepted_for": "GROUPED_SOURCE_MAP_PRECONDITION_AUDIT_ONLY",
+  "allowed_inputs": {
+    "grouped_source_map": "D13 grouped replay result source map",
+    "grouping_report": "D13 source map grouping report"
+  },
+  "allowed_output_root": "run/replay_optimization",
+  "output_files": [
+    "17_grouped_source_map_precondition_audit.json",
+    "09_optimizer_verdict.json"
+  ],
+  "audit_policy": {
+    "d14_is_audit_only": true,
+    "candidate_trade_matching_allowed_in_d14": false,
+    "label_binding_allowed_in_d14": false,
+    "real_pnl_calculation_allowed_in_d14": false,
+    "model_training_allowed_in_d14": false,
+    "model_prediction_allowed_in_d14": false,
+    "mixed_roots_must_be_zero": true,
+    "complete_group_required_before_candidate_trade_matching": true,
+    "requires_future_complete_group_selection_or_replay_result_pack": true
+  },
+  "safety": {
+    "audit_only": true,
+    "replay_execution_allowed": false,
+    "candidate_trade_matching_allowed": false,
+    "label_binding_allowed": false,
+    "real_pnl_calculation_allowed": false,
+    "model_training_allowed": false,
+    "model_prediction_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

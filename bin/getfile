@@ -1,0 +1,589 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd /home/Lenovo/scalpx/projects/mme_scalpx
+
+echo "===== GETFILE: MME-SCALPX DEV-PHASE EVIDENCE BUNDLE ====="
+date -Is
+
+ROOT="$(pwd)"
+TS="$(date +%Y%m%d_%H%M%S)"
+NAME="mme_scalpx_getfile_bundle_${TS}"
+BROOT="run/evidence_bundles/$NAME"
+STAGE="$BROOT/stage"
+REPORTS="$BROOT/reports"
+ARCHIVE="$BROOT.tar.gz"
+
+MAX_TOTAL_FILES="${GETFILE_MAX_TOTAL_FILES:-12000}"
+MAX_FILE_SIZE="${GETFILE_MAX_FILE_SIZE:-5M}"
+MAX_PROOFS="${GETFILE_MAX_PROOFS:-600}"
+MAX_BACKUPS="${GETFILE_MAX_BACKUPS:-300}"
+
+mkdir -p "$STAGE" "$REPORTS" docs/milestones docs/runbooks run/evidence_bundles
+
+PYBIN=".venv/bin/python"
+if [ ! -x "$PYBIN" ]; then
+  PYBIN="$(command -v python3)"
+fi
+
+echo
+echo "===== SAFETY ====="
+echo "NO_SERVICE_START"
+echo "NO_BROKER_CALL"
+echo "NO_REDIS_MUTATION"
+echo "NO_PAPER_LIVE_ENABLEMENT"
+echo "NO_SECRET_FILE_COPY"
+echo "NO_LARGE_DATA_MODEL_COPY"
+
+LEDGER="docs/milestones/DEVELOPMENT_EVIDENCE_LEDGER.md"
+GATE="docs/runbooks/EVIDENCE_BASED_DEVELOPMENT_GATE.md"
+
+if [ ! -f "$LEDGER" ]; then
+cat > "$LEDGER" <<'EOF'
+# MME-ScalpX Development Evidence Ledger
+
+Rules:
+- No patch without inspection.
+- No patch without backup.
+- No patch without proof.
+- Proofs must be saved under run/proofs/.
+- RAW / research_capture / replay / OpenAI / ML work must not create live trading side effects.
+- observe_only / HOLD remains default unless separately gated.
+EOF
+fi
+
+if [ ! -f "$GATE" ]; then
+cat > "$GATE" <<'EOF'
+# Evidence-Based Development Gate
+
+Every batch must include:
+1. Files inspected
+2. Files patched
+3. Backup path
+4. Proofs run
+5. Proof output paths
+6. Pass/fail verdict
+7. Known gaps
+8. Next safe step
+
+RAW / research_capture gate:
+- config parse proof
+- manifest proof
+- archive writer proof
+- runtime bridge proof
+- no-live-side-effect proof
+- replay boundary proof
+
+Replay gate:
+- dataset selector proof
+- clock/reset proof
+- injector proof
+- topology proof
+- experiment profile proof
+- artifact/report proof
+- no-live-namespace-contamination proof
+
+OpenAI / AI / ML gate:
+- prompt/template inventory
+- model/feature interface inventory
+- config parse proof
+- no-live-side-effect proof
+- no broker/execution dependency proof
+- no secret material proof
+EOF
+fi
+
+cat >> "$LEDGER" <<EOF
+
+---
+
+## getfile evidence bundle — ${TS}
+
+Purpose:
+- Create capped evidence bundle for audit/development continuity.
+- Includes core, services, integrations, replay, research_capture, RAW/research_gate, OpenAI/AI/ML/model folders if present, configs, docs, tests, recent proofs, recent patch backups.
+
+Safety:
+- NO_SERVICE_START
+- NO_BROKER_CALL
+- NO_REDIS_MUTATION
+- NO_PAPER_LIVE_ENABLEMENT
+
+Archive:
+- ${ARCHIVE}
+EOF
+
+FILELIST="$REPORTS/filelist.txt"
+MISSING="$REPORTS/missing_paths.txt"
+: > "$FILELIST"
+: > "$MISSING"
+
+add_tree() {
+  local p="$1"
+  local cap="${2:-2000}"
+
+  if [ ! -e "$p" ]; then
+    echo "MISSING: $p" >> "$MISSING"
+    return 0
+  fi
+
+  if [ -f "$p" ]; then
+    case "$p" in
+      *.py|*.pyi|*.yaml|*.yml|*.json|*.md|*.txt|*.toml|*.ini|*.cfg|*.service|*.sh|*.csv|*.ipynb|README.md|pyproject.toml|Makefile)
+        if [ "$(wc -c < "$p")" -le 5000000 ]; then
+          echo "$p" >> "$FILELIST"
+        fi
+        ;;
+    esac
+    return 0
+  fi
+
+  find "$p" -type f -size -"${MAX_FILE_SIZE}" \
+    \( -name '*.py' -o -name '*.pyi' -o -name '*.yaml' -o -name '*.yml' -o -name '*.json' -o -name '*.md' -o -name '*.txt' -o -name '*.toml' -o -name '*.ini' -o -name '*.cfg' -o -name '*.service' -o -name '*.sh' -o -name '*.csv' -o -name '*.ipynb' \) \
+    ! -path '*/__pycache__/*' \
+    ! -path '*/.git/*' \
+    ! -path '*/.venv/*' \
+    ! -path '*/venv/*' \
+    ! -path '*/env/*' \
+    ! -path '*/node_modules/*' \
+    ! -path '*/run/evidence_bundles/*' \
+    ! -path '*/run/live_capture/*' \
+    ! -path '*/run/_code_backups/*' \
+    ! -path '*/data/raw/*' \
+    ! -path '*/data/ticks/*' \
+    ! -path '*/data/parquet/*' \
+    ! -path '*/reports/html/*' \
+    ! -iname '*secret*' \
+    ! -iname '*secrets*' \
+    ! -iname '*token*' \
+    ! -iname '*credential*' \
+    ! -iname '*credentials*' \
+    ! -iname '*.env' \
+    ! -iname '.env.*' \
+    ! -iname '*.pem' \
+    ! -iname '*.key' \
+    ! -iname '*.crt' \
+    ! -iname '*.p12' \
+    ! -iname '*.pfx' \
+    ! -iname '*.log' \
+    ! -iname '*.parquet' \
+    ! -iname '*.pkl' \
+    ! -iname '*.pickle' \
+    ! -iname '*.sqlite' \
+    ! -iname '*.db' \
+    ! -iname '*.tar' \
+    ! -iname '*.tar.gz' \
+    ! -iname '*.zip' \
+    | sort | head -n "$cap" >> "$FILELIST" || true
+}
+
+echo
+echo "===== ADD CORE SYSTEM ====="
+for p in \
+  pyproject.toml README.md \
+  app/mme_scalpx/__init__.py \
+  app/mme_scalpx/main.py \
+  app/mme_scalpx/core \
+  app/mme_scalpx/domain \
+  app/mme_scalpx/integrations \
+  app/mme_scalpx/services \
+  app/mme_scalpx/replay \
+  app/mme_scalpx/research_capture \
+  app/mme_scalpx/ops \
+  bin \
+  config \
+  etc \
+  deploy \
+  docs \
+  ops \
+  tests
+do
+  add_tree "$p" 4000
+done
+
+echo
+echo "===== ADD OPENAI / AI / ML / RAW / RESEARCH-GATE / EXPERIMENT FOLDERS IF PRESENT ====="
+for p in \
+  app/mme_scalpx/openai \
+  app/mme_scalpx/ai \
+  app/mme_scalpx/ml \
+  app/mme_scalpx/models \
+  app/mme_scalpx/modeling \
+  app/mme_scalpx/analytics \
+  app/mme_scalpx/research_gate \
+  app/mme_scalpx/raw \
+  app/mme_scalpx/raw_gate \
+  app/mme_scalpx/services/openai \
+  app/mme_scalpx/services/ai \
+  app/mme_scalpx/services/ml \
+  app/mme_scalpx/services/models \
+  app/mme_scalpx/services/research_gate \
+  app/mme_scalpx/services/raw \
+  openai ai ml models modeling analytics research_gate raw raw_gate prompts prompt_templates notebooks experiments \
+  etc/openai etc/ai etc/ml etc/models etc/research_gate etc/raw etc/experiments \
+  docs/openai docs/ai docs/ml docs/research_gate docs/raw docs/replay docs/experiments
+do
+  if [ -e "$p" ]; then
+    add_tree "$p" 800
+  fi
+done
+
+echo
+echo "===== ADD LATEST PATCH BACKUPS ONLY ====="
+if [ -d run/_code_backups ]; then
+  find run/_code_backups -maxdepth 3 -type f -size -"${MAX_FILE_SIZE}" \
+    \( -name '*.py' -o -name '*.yaml' -o -name '*.yml' -o -name '*.json' -o -name '*.md' -o -name '*.txt' -o -name '*.toml' -o -name '*.ini' -o -name '*.cfg' -o -name '*.sh' \) \
+    ! -iname '*secret*' \
+    ! -iname '*token*' \
+    ! -iname '*credential*' \
+    -printf '%T@ %p\n' \
+    | sort -nr \
+    | head -n "$MAX_BACKUPS" \
+    | cut -d' ' -f2- >> "$FILELIST" || true
+fi
+
+echo
+echo "===== ADD LATEST PROOFS / AUDITS ONLY ====="
+for d in run/proofs run/proof_bundles run/final_freeze_bundles run/audit run/audits run/reports; do
+  if [ -d "$d" ]; then
+    find "$d" -maxdepth 3 -type f -size -2M \
+      \( -name '*.json' -o -name '*.txt' -o -name '*.md' -o -name '*.yaml' -o -name '*.yml' -o -name '*.csv' \) \
+      ! -iname '*secret*' \
+      ! -iname '*token*' \
+      ! -iname '*credential*' \
+      -printf '%T@ %p\n' \
+      | sort -nr \
+      | head -n "$MAX_PROOFS" \
+      | cut -d' ' -f2- >> "$FILELIST" || true
+  fi
+done
+
+sort -u "$FILELIST" -o "$FILELIST"
+
+SELECTED_COUNT="$(wc -l < "$FILELIST" | tr -d ' ')"
+echo "files_selected=$SELECTED_COUNT"
+
+if [ "$SELECTED_COUNT" -gt "$MAX_TOTAL_FILES" ]; then
+  echo "ERROR: too many files selected: $SELECTED_COUNT > $MAX_TOTAL_FILES"
+  echo "Inspect file list: $FILELIST"
+  exit 1
+fi
+
+if [ "$SELECTED_COUNT" -lt 20 ]; then
+  echo "ERROR: too few files selected: $SELECTED_COUNT"
+  exit 1
+fi
+
+echo
+echo "===== COPY SELECTED FILES ====="
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  if [ -f "$f" ]; then
+    mkdir -p "$STAGE/$(dirname "$f")"
+    cp -a "$f" "$STAGE/$f"
+  fi
+done < "$FILELIST"
+
+echo
+echo "===== REDACT SECRET-LIKE LINES IN STAGED COPY ====="
+"$PYBIN" - <<PY
+from pathlib import Path
+import re
+
+stage = Path("$STAGE")
+text_exts = {".py",".pyi",".yaml",".yml",".json",".md",".txt",".toml",".ini",".cfg",".service",".sh",".csv",".ipynb"}
+secret_re = re.compile(r"(secret|token|password|passwd|api[_-]?key|apikey|access[_-]?key|refresh[_-]?token|access[_-]?token|client[_-]?secret|authorization|bearer|totp|pin)", re.I)
+
+redacted = []
+for p in stage.rglob("*"):
+    if not p.is_file() or p.suffix.lower() not in text_exts:
+        continue
+    try:
+        s = p.read_text(encoding="utf-8")
+    except Exception:
+        continue
+    out = []
+    changed = False
+    for line in s.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if secret_re.search(line) and not stripped.startswith("#"):
+            if "=" in line:
+                line = line.split("=", 1)[0] + "=<REDACTED>\\n"
+                changed = True
+            elif ":" in line:
+                line = line.split(":", 1)[0] + ": <REDACTED>\\n"
+                changed = True
+        out.append(line)
+    if changed:
+        p.write_text("".join(out), encoding="utf-8")
+        redacted.append(str(p.relative_to(stage)))
+
+(stage / "REDACTIONS_APPLIED.txt").write_text("\\n".join(redacted) + "\\n", encoding="utf-8")
+PY
+
+echo
+echo "===== PROJECT TREE / STAGE TREE ====="
+find . \
+  -path './.git' -prune -o \
+  -path './.venv' -prune -o \
+  -path './venv' -prune -o \
+  -path './env' -prune -o \
+  -path './run/evidence_bundles' -prune -o \
+  -path './run/live_capture' -prune -o \
+  -path './data/raw' -prune -o \
+  -path './data/ticks' -prune -o \
+  -type f \
+  | sed 's#^\./##' \
+  | sort > "$REPORTS/project_tree_metadata.txt"
+
+(
+  cd "$STAGE"
+  find . -type f | sed 's#^\./##' | sort
+) > "$REPORTS/staged_tree.txt"
+
+cp -a "$REPORTS/project_tree_metadata.txt" "$STAGE/PROJECT_TREE_METADATA.txt"
+cp -a "$REPORTS/staged_tree.txt" "$STAGE/STAGED_TREE.txt"
+
+echo
+echo "===== COMPILE CHECK ====="
+(
+  cd "$STAGE"
+  echo "python=$PYBIN"
+  "$PYBIN" --version || true
+  for d in app bin tests openai ai ml models modeling analytics research_gate raw raw_gate experiments; do
+    if [ -d "$d" ]; then
+      echo "compileall $d"
+      "$PYBIN" -m compileall -q "$d" && echo "PASS $d" || echo "FAIL $d"
+    fi
+  done
+) > "$REPORTS/python_compile_check.txt" 2>&1 || true
+cp -a "$REPORTS/python_compile_check.txt" "$STAGE/PYTHON_COMPILE_CHECK.txt"
+
+echo
+echo "===== CONFIG PARSE CHECK ====="
+(
+  cd "$STAGE"
+  "$PYBIN" - <<'PY'
+from pathlib import Path
+import json
+
+errors = []
+
+print("JSON CHECK")
+for p in sorted(Path(".").rglob("*.json")):
+    try:
+        json.loads(p.read_text(encoding="utf-8"))
+        print("PASS JSON", p)
+    except Exception as e:
+        errors.append(("JSON", str(p), str(e)))
+        print("FAIL JSON", p, e)
+
+print()
+print("YAML CHECK")
+try:
+    import yaml
+except Exception as e:
+    print("SKIP YAML PyYAML unavailable:", e)
+else:
+    for p in sorted(list(Path(".").rglob("*.yaml")) + list(Path(".").rglob("*.yml"))):
+        try:
+            yaml.safe_load(p.read_text(encoding="utf-8"))
+            print("PASS YAML", p)
+        except Exception as e:
+            errors.append(("YAML", str(p), str(e)))
+            print("FAIL YAML", p, e)
+
+print()
+print("total_parse_errors=", len(errors))
+PY
+) > "$REPORTS/config_parse_check.txt" 2>&1 || true
+cp -a "$REPORTS/config_parse_check.txt" "$STAGE/CONFIG_PARSE_CHECK.txt"
+
+echo
+echo "===== INVENTORIES ====="
+(
+  cd "$STAGE"
+  find . -type f -name '*.py' | sed 's#^\./##' | sort
+) > "$REPORTS/python_file_inventory.txt"
+
+(
+  cd "$STAGE"
+  find . -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.json' -o -name '*.toml' -o -name '*.ini' -o -name '*.cfg' \) \
+    | sed 's#^\./##' | sort
+) > "$REPORTS/config_file_inventory.txt"
+
+(
+  cd "$STAGE"
+  find . -type f \( -name 'proof_*.py' -o -name '*proof*.py' -o -path './run/proofs/*' -o -path './run/audit/*' -o -path './run/audits/*' \) \
+    | sed 's#^\./##' | sort
+) > "$REPORTS/proof_patch_inventory.txt"
+
+(
+  cd "$STAGE"
+  find . -type f | grep -Ei '(openai|llm|gpt|ai|ml|model|research_gate|raw|replay|experiment)' | sort || true
+) > "$REPORTS/openai_ml_raw_replay_inventory.txt"
+
+cp -a "$REPORTS/python_file_inventory.txt" "$STAGE/PYTHON_FILE_INVENTORY.txt"
+cp -a "$REPORTS/config_file_inventory.txt" "$STAGE/CONFIG_FILE_INVENTORY.txt"
+cp -a "$REPORTS/proof_patch_inventory.txt" "$STAGE/PROOF_PATCH_INVENTORY.txt"
+cp -a "$REPORTS/openai_ml_raw_replay_inventory.txt" "$STAGE/OPENAI_ML_RAW_REPLAY_INVENTORY.txt"
+
+echo
+echo "===== SURFACE DRIFT / GAP INDEX ====="
+(
+  cd "$STAGE"
+
+  echo "===== PROVIDER / BROKER / RUNTIME ====="
+  grep -RInE 'provider_runtime|provider_ready|active_.*provider|dhan|zerodha|option_context|oi_ladder|selected_option|fallback_execution|runtime_mode|observe_only|paper_armed|family_live_only' . 2>/dev/null || true
+
+  echo
+  echo "===== STRATEGY FAMILY ====="
+  grep -RInE 'MIST|MISB|MISC|MISR|MISO|family_features|family_surfaces|trend_confirmed|pullback_detected|resume_confirmed|shelf_confirmed|breakout_triggered|breakout_accepted|compression_detected|directional_breakout_triggered|active_zone|trap_event_id|burst_detected|aggression_ok|tape_speed_ok|queue_reload' . 2>/dev/null || true
+
+  echo
+  echo "===== RAW / RESEARCH_CAPTURE / REPLAY ====="
+  grep -RInE 'research_capture|research_gate|raw_capture|RAW|raw_gate|replay|dataset|injector|topology|experiment|differential|integrity|manifest|artifact|archive_writer|runtime_bridge' . 2>/dev/null || true
+
+  echo
+  echo "===== OPENAI / LLM / GPT / AI / ML ====="
+  grep -RInE 'openai|OpenAI|llm|LLM|gpt|GPT|chat_completion|responses|embedding|embeddings|prompt|model_name|model_id|inference|classifier|regressor|training|feature_importance|backtest_optimizer|optimization|ml|machine_learning' . 2>/dev/null || true
+
+  echo
+  echo "===== RISK / EXECUTION / ORDER SAFETY ====="
+  grep -RInE 'order_intent|STREAM_ORDERS|send_order|place_order|broker_call|risk_veto|execution|POSITION|position|HOLD|ENTRY|EXIT|paper_armed|live' . 2>/dev/null || true
+
+  echo
+  echo "===== GAP TERMS ====="
+  grep -RInE 'TODO|FIXME|NotImplemented|raise NotImplementedError|placeholder|stub|pass[[:space:]]*$' . 2>/dev/null || true
+) > "$REPORTS/surface_drift_gap_openai_ml_raw_replay_index.txt"
+
+cp -a "$REPORTS/surface_drift_gap_openai_ml_raw_replay_index.txt" "$STAGE/SURFACE_DRIFT_GAP_OPENAI_ML_RAW_REPLAY_INDEX.txt"
+
+echo
+echo "===== SECRET SCANS ====="
+(
+  cd "$STAGE"
+  find . -type f | grep -Ei '(\.env|secret|secrets|token|credential|credentials|\.pem|\.key|\.p12|\.pfx)' || true
+) > "$REPORTS/secret_like_filename_scan.txt"
+
+(
+  cd "$STAGE"
+  grep -RInE '(api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|password|passwd|authorization:|bearer[[:space:]]+[A-Za-z0-9._-]+)' . 2>/dev/null || true
+) > "$REPORTS/secret_like_content_scan.txt"
+
+cp -a "$REPORTS/secret_like_filename_scan.txt" "$STAGE/SECRET_LIKE_FILENAME_SCAN.txt"
+cp -a "$REPORTS/secret_like_content_scan.txt" "$STAGE/SECRET_LIKE_CONTENT_SCAN.txt"
+
+echo
+echo "===== GIT STATUS ====="
+if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  git rev-parse HEAD > "$REPORTS/git_head.txt" || true
+  git status --short > "$REPORTS/git_status_short.txt" || true
+  git diff --stat > "$REPORTS/git_diff_stat.txt" || true
+  git diff -- app bin etc config docs tests > "$REPORTS/git_diff_app_bin_etc_docs_tests.patch" || true
+else
+  echo "git unavailable or not a git repo" > "$REPORTS/git_status_short.txt"
+fi
+cp -a "$REPORTS"/git_* "$STAGE/" 2>/dev/null || true
+
+echo
+echo "===== CHECKSUMS ====="
+(
+  cd "$STAGE"
+  find . -type f -print0 | sort -z | xargs -0 sha256sum
+) > "$REPORTS/checksums.sha256"
+cp -a "$REPORTS/checksums.sha256" "$STAGE/CHECKSUMS.sha256"
+
+echo
+echo "===== README ====="
+cat > "$STAGE/README_BUNDLE_PURPOSE.md" <<EOF
+# MME-ScalpX getfile Evidence Bundle
+
+Created: $(date -Is)
+
+Purpose:
+- integrity audit
+- surface drift audit
+- gap/inconsistency audit
+- RAW / research_capture development continuity
+- replay development continuity
+- OpenAI / LLM / AI / ML development continuity
+- patch-backup and proof continuity
+
+Safety:
+- no service started
+- no broker call
+- no Redis mutation
+- no paper/live enablement
+- secret-like paths skipped
+- secret-like staged lines redacted
+- capped file selection
+EOF
+
+echo
+echo "===== SUMMARY ====="
+FILES_STAGED="$(find "$STAGE" -type f | wc -l | tr -d ' ')"
+SECRET_FILE_HITS="$(wc -l < "$REPORTS/secret_like_filename_scan.txt" | tr -d ' ')"
+SECRET_CONTENT_HITS="$(wc -l < "$REPORTS/secret_like_content_scan.txt" | tr -d ' ')"
+OPENAI_ML_COUNT="$(wc -l < "$REPORTS/openai_ml_raw_replay_inventory.txt" | tr -d ' ')"
+
+cat > "$REPORTS/bundle_summary.json" <<EOF
+{
+  "bundle_name": "$NAME",
+  "created_at": "$(date -Is)",
+  "archive": "$ARCHIVE",
+  "files_selected": $SELECTED_COUNT,
+  "files_staged": $FILES_STAGED,
+  "openai_ml_raw_replay_inventory_lines": $OPENAI_ML_COUNT,
+  "secret_like_filename_hits_after_filter": $SECRET_FILE_HITS,
+  "secret_like_content_hits_after_redaction": $SECRET_CONTENT_HITS,
+  "max_total_files": $MAX_TOTAL_FILES,
+  "max_proofs": $MAX_PROOFS,
+  "max_backups": $MAX_BACKUPS,
+  "safety": "NO_SERVICE_STARTED_NO_BROKER_CALL_NO_REDIS_MUTATION_NO_TRADING_ENABLEMENT"
+}
+EOF
+
+cp -a "$REPORTS"/* "$STAGE"/
+cp -a "$REPORTS/bundle_summary.json" "$STAGE/bundle_summary.json"
+
+echo
+echo "===== CREATE ARCHIVE ====="
+rm -f "$ARCHIVE" "$ARCHIVE.sha256"
+tar -czf "$ARCHIVE" -C "$STAGE" .
+sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+tar -tzf "$ARCHIVE" >/dev/null
+
+cat > run/evidence_bundles/LATEST_EVIDENCE_BUNDLE.txt <<EOF
+latest_archive=$ARCHIVE
+latest_sha256=$ARCHIVE.sha256
+latest_bundle_root=$BROOT
+created_at=$(date -Is)
+EOF
+
+echo
+echo "===== COPY TO WINDOWS DOWNLOADS IF AVAILABLE ====="
+if [ -d "/mnt/c/Users/Lenovo/Downloads" ]; then
+  cp -f "$ARCHIVE" "/mnt/c/Users/Lenovo/Downloads/"
+  cp -f "$ARCHIVE.sha256" "/mnt/c/Users/Lenovo/Downloads/"
+  echo "copied_to=/mnt/c/Users/Lenovo/Downloads/$(basename "$ARCHIVE")"
+  echo "copied_sha=/mnt/c/Users/Lenovo/Downloads/$(basename "$ARCHIVE.sha256")"
+else
+  echo "Windows Downloads path not found. Archive remains in project."
+fi
+
+echo
+echo "===== CREATED ====="
+ls -lh "$ARCHIVE" "$ARCHIVE.sha256"
+
+echo
+echo "===== SUMMARY ====="
+cat "$REPORTS/bundle_summary.json"
+
+echo
+echo "===== LATEST POINTER ====="
+cat run/evidence_bundles/LATEST_EVIDENCE_BUNDLE.txt
+
+echo
+echo "UPLOAD THIS:"
+echo "$ARCHIVE"

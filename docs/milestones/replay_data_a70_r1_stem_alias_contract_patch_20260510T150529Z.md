@@ -1,0 +1,32 @@
+# REPLAY-DATA-A70-R1 stem-alias dataset declaration/profile contract patch only
+
+{
+  "backup_dir": "run/_code_backups/replay_data_a70_r1_stem_alias_contract_patch_20260510T150529Z",
+  "batch": "REPLAY-DATA-A70-R1",
+  "blocker_count": 0,
+  "blockers": [],
+  "broker_calls_executed": false,
+  "classification": "DATASET_DECLARATION_CONTRACT_PATCHED_FULL_SYSTEM_ECONOMICS_STILL_BLOCKED",
+  "code_patch_applied": false,
+  "command_executed": false,
+  "contract_patch_applied": true,
+  "dataset_contract_patch_applied": true,
+  "economics_pnl_evaluation_allowed": false,
+  "economics_pnl_evaluation_authorized": false,
+  "economics_preview_generated": false,
+  "full_engine_replay_allowed": false,
+  "full_system_execution_authorized": false,
+  "full_system_preview_generated": false,
+  "live_redis_writes_executed": false,
+  "live_trading_approved": false,
+  "new_replay_execution_started": false,
+  "next_batch": "REPLAY-DATA-A71 economics field availability audit only",
+  "orders_sent": false,
+  "paper_armed_approved": false,
+  "paper_or_live_enabled": false,
+  "source_a70": "run/proofs/proof_replay_data_a70_dataset_declaration_stem_alias_audit_20260510T143624Z.json",
+  "target": "etc/replay/datasets/stem_alias_contract_v1.json",
+  "verdict": "PASS_A70_R1_STEM_ALIAS_CONTRACT_PATCHED_NO_EXECUTION",
+  "warning_count": 0,
+  "warnings": []
+}

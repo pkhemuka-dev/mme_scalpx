@@ -29,9 +29,8 @@ Replay gate:
 
 OpenAI / AI / ML gate:
 - config parse proof
-- provider/key absence proof in bundle
 - prompt/template inventory
 - model/feature interface inventory
 - no-live-side-effect proof
 - no broker/execution dependency proof
-- no secret material in committed files proof
+- no secret material proof

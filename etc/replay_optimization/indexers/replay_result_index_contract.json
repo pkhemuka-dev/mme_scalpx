@@ -1,0 +1,43 @@
+{
+  "schema_name": "MME-ScalpX Lane D Replay Result Indexer Contract",
+  "contract_version": "replay_optimization_d3_replay_result_indexer_contract_v1",
+  "accepted_for": "READ_ONLY_INDEX_CONTRACT",
+  "allowed_input_roots": ["run/replay"],
+  "allowed_output_root": "run/replay_optimization",
+  "known_artifacts": [
+    "features_rows.json",
+    "strategy_decisions.json",
+    "risk_outputs.json",
+    "execution_shadow_results.json",
+    "execution_results.json",
+    "result_summary.json",
+    "replay_manifest.json",
+    "manifest.json",
+    "03_integrity_report.json",
+    "integrity_report.json"
+  ],
+  "index_output": "03_replay_input_index.json",
+  "future_consumers": [
+    "leaderboard_builder",
+    "raw_joiner",
+    "ml_dataset_exporter",
+    "optimizer_verdict_builder"
+  ],
+  "not_ready_policy": {
+    "no_artifacts": "NOT_READY_REPLAY_SOURCE_MISSING",
+    "unverified_artifacts": "NOT_READY_UNVERIFIED_REPLAY_SOURCE",
+    "d3_does_not_approve_replay_source_for_execution": true
+  },
+  "safety": {
+    "read_only": true,
+    "replay_execution_allowed": false,
+    "ml_training_allowed": false,
+    "broker_calls_allowed": false,
+    "live_redis_writes_allowed": false,
+    "paper_live_enablement_allowed": false,
+    "runtime_service_start_allowed": false,
+    "strategy_doctrine_mutation_allowed": false,
+    "replay_engine_mutation_allowed": false,
+    "production_claim_allowed": false
+  }
+}

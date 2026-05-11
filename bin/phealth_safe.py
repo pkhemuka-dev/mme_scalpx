@@ -21,6 +21,7 @@ SAFE_TO_AUTOREPAIR_REASONS = {
     "PIDFILE_PROCESS_MISSING",
     "PIDFILE_LOCK_OWNER_MISMATCH",
     "FEEDS_PROCESS_LOCK_OWNER_MISMATCH",
+    "FEEDS_LOCK_REFRESH_FAILED_LOG",
     "STALE_EXECUTION_LOCK",
     "ERROR_STREAM_ADVANCED_WITH_LOCK_MISMATCH",
 }
@@ -29,7 +30,6 @@ UNSAFE_REASONS = {
     "REDIS_UNAVAILABLE",
     "REDIS_LOADING",
     "REDIS_BLOCKED_CLIENTS",
-    "REDIS_MEMORY_HIGH",
     "EXECUTION_PROCESS_RUNNING",
     "RISK_PROCESS_RUNNING",
     "ORDERS_STREAM_NONZERO",
@@ -97,6 +97,21 @@ def parse_info(section: str) -> dict[str, str]:
     return d
 
 
+
+def env_enabled(value: str | None) -> bool:
+    """Interpret environment feature flags safely.
+
+    Empty, 0, false, no, off, none are disabled.
+    Only explicit truthy values are enabled.
+    """
+    if value is None:
+        return False
+    v = str(value).strip().lower()
+    if v in {"", "0", "false", "no", "off", "none", "null"}:
+        return False
+    return v in {"1", "true", "yes", "on", "enabled", "enable"}
+
+
 def read_pidfile() -> int | None:
     try:
         raw = PIDFILE.read_text().strip()
@@ -162,6 +177,19 @@ def stream_xlen(stream: str) -> int | None:
         return int(out.strip())
     except Exception:
         return None
+
+
+
+def latest_pfeeds_log_contains(pattern: str) -> bool:
+    try:
+        logs = sorted((ROOT / "run/live_capture").glob("pfeeds_live_raw_capture_*.log"), key=lambda x: x.stat().st_mtime, reverse=True)
+        if not logs:
+            return False
+        latest = logs[0]
+        data = latest.read_bytes()[-120000:].decode("utf-8", "replace")
+        return pattern in data
+    except Exception:
+        return False
 
 
 @dataclass
@@ -245,6 +273,9 @@ def main() -> int:
     if lock_execution and not execution_pids:
         reasons.append("STALE_EXECUTION_LOCK")
 
+    if latest_pfeeds_log_contains("feeds singleton lock refresh failed"):
+        reasons.append("FEEDS_LOCK_REFRESH_FAILED_LOG")
+
     # Streams / safety
     stream_names = {
         "fut_zerodha": "ticks:mme:fut:zerodha:stream",
@@ -283,7 +314,11 @@ def main() -> int:
     ]:
         unsafe_env[k] = os.environ.get(k, "")
 
-    if unsafe_env.get("SCALPX_REAL_LIVE_ALLOWED") or unsafe_env.get("SCALPX_ALLOW_REAL_LIVE"):
+    if (
+        env_enabled(unsafe_env.get("SCALPX_REAL_LIVE_ALLOWED"))
+        or env_enabled(unsafe_env.get("SCALPX_ALLOW_REAL_LIVE"))
+        or env_enabled(unsafe_env.get("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"))
+    ):
         reasons.append("PAPER_OR_LIVE_ENABLED")
 
     hard_unsafe = any(r in UNSAFE_REASONS for r in reasons)

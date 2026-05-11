@@ -1,0 +1,47 @@
+{
+  "allowed_use": [
+    "replay dataset declaration/profile audit",
+    "integrity stale-leg interpretation",
+    "quote-only replay admission clarity"
+  ],
+  "canonical_equivalences": {
+    "fut_ticks": "quote_ticks_mme_fut_stream",
+    "opt_ticks": "quote_ticks_mme_opt_stream"
+  },
+  "contract_id": "replay_dataset_stem_alias_v1",
+  "created_at_utc": "2026-05-10T15:05:29.501655+00:00",
+  "created_by_batch": "REPLAY-DATA-A70-R1",
+  "forbidden_use": [
+    "do not authorize full_system_replay",
+    "do not authorize economics_pnl_evaluation",
+    "do not imply PnL/economics eligibility",
+    "do not alter production/live names",
+    "do not waive candidate/trade/fill readiness",
+    "do not enable broker/live/paper paths"
+  ],
+  "legacy_required_stems": [
+    "fut_ticks",
+    "opt_ticks"
+  ],
+  "promotion_boundaries": {
+    "economics_pnl": "blocked until economics fields and nonzero candidate/trade/fill evidence exist",
+    "execution_shadow_audit": "may accept this equivalence only when all other integrity checks pass and no live side effects exist",
+    "full_system_replay": "blocked until dataset integrity is re-issued as pass or separate explicit approval exists"
+  },
+  "purpose": "Dataset declaration/profile integrity stem-alias contract for replay stale-leg interpretation only.",
+  "recognized_present_stems": [
+    "quote_ticks_mme_fut_stream",
+    "quote_ticks_mme_opt_stream"
+  ],
+  "safety": {
+    "broker_calls_executed": false,
+    "economics_pnl_evaluation_allowed": false,
+    "full_engine_replay_allowed": false,
+    "live_redis_writes_executed": false,
+    "orders_sent": false,
+    "paper_or_live_enabled": false
+  },
+  "schema_version": 1,
+  "scope": "dataset_declaration_and_integrity_interpretation_only",
+  "source_a70_proof": "run/proofs/proof_replay_data_a70_dataset_declaration_stem_alias_audit_20260510T143624Z.json"
+}
