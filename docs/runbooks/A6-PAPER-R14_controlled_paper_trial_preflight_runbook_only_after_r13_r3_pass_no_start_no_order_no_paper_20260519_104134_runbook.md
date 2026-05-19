@@ -1,0 +1,6 @@
+# A6-PAPER-R14_controlled_paper_trial_preflight_runbook_only_after_r13_r3_pass_no_start_no_order_no_paper_20260519_104134 Runbook
+
+R14 created the controlled-paper trial plan only.
+
+Trial plan: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/patch_plans/A6-PAPER-R14_controlled_paper_trial_preflight_runbook_only_after_r13_r3_pass_no_start_no_order_no_paper_20260519_104134_controlled_paper_trial_plan.md`
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R14_controlled_paper_trial_preflight_runbook_only_after_r13_r3_pass_no_start_no_order_no_paper_20260519_104134.json`

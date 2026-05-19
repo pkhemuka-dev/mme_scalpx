@@ -1,0 +1,6 @@
+# LANE-F-R4R11R_RECOVER_DIAGNOSTIC_PATCH_NO_START_NO_REPLAY_NO_PNL next route
+
+classification: PASS_LANE_F_R4R11R_DIAGNOSTIC_PATCH_COMPILE_READY_NO_START
+next_route: LANE-F-R4R12_DIAGNOSTIC_PATCH_STATIC_PROOF_NO_START
+
+Next proof must be static only. Do not start services/replay/PnL/order.

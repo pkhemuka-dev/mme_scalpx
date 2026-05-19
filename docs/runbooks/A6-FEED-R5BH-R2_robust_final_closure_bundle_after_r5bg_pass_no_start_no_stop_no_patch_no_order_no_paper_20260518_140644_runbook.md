@@ -1,0 +1,7 @@
+# A6-FEED-R5BH-R2_robust_final_closure_bundle_after_r5bg_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_140644 Runbook
+
+Use this closure bundle as the latest A6-FEED evidence reference.
+
+Archive: `/home/Lenovo/scalpx/projects/mme_scalpx/run/evidence_bundles/A6-FEED-R5BH-R2_robust_final_closure_bundle_after_r5bg_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_140644.tar.gz`
+Manifest: `/home/Lenovo/scalpx/projects/mme_scalpx/run/evidence_bundles/A6-FEED-R5BH-R2_robust_final_closure_bundle_after_r5bg_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_140644/A6-FEED-R5BH-R2_robust_final_closure_bundle_after_r5bg_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_140644_manifest.json`
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-FEED-R5BH-R2_robust_final_closure_bundle_after_r5bg_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_140644.json`

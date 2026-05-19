@@ -1,0 +1,8 @@
+# A6-FEED-R5BE-R8_patch_stage_flag_keys_constant_and_empty_builder_same_live_order_static_validation_no_restart_no_order_no_paper_20260518_103544 Runbook
+
+If PASS, next batch is guarded observe-only live-session recheck for feeds/features/strategy only.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-FEED-R5BE-R8_patch_stage_flag_keys_constant_and_empty_builder_same_live_order_static_validation_no_restart_no_order_no_paper_20260518_103544.json`
+Audit: `/home/Lenovo/scalpx/projects/mme_scalpx/run/audits/A6-FEED-R5BE-R8_patch_stage_flag_keys_constant_and_empty_builder_same_live_order_static_validation_no_restart_no_order_no_paper_20260518_103544_audit.json`
+Milestone: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/milestones/A6-FEED-R5BE-R8_patch_stage_flag_keys_constant_and_empty_builder_same_live_order_static_validation_no_restart_no_order_no_paper_20260518_103544.md`
+Handoff: `/home/Lenovo/scalpx/projects/mme_scalpx/run/handoffs/A6-FEED-R5BE-R8_patch_stage_flag_keys_constant_and_empty_builder_same_live_order_static_validation_no_restart_no_order_no_paper_20260518_103544_handoff.md`

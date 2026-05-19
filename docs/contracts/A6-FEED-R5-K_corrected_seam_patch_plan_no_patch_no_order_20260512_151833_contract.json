@@ -1,0 +1,381 @@
+{
+  "batch": "A6-FEED-R5-K",
+  "chosen_patch_strategy": {
+    "helper_location": "module_tail",
+    "hook_after_line": 1914,
+    "hook_call_name": "xadd_fields",
+    "hook_function": "_publish_dhan_context_event",
+    "hook_score": 48,
+    "hook_score_reasons": [
+      "xadd",
+      "publish",
+      "stream",
+      "tick",
+      "provider",
+      "selected",
+      "dhan",
+      "redis",
+      "inside_function",
+      "runtime_like_function"
+    ],
+    "strategy": "append_helper_and_hook_after_ranked_runtime_publish_seam"
+  },
+  "forbidden": [
+    "no broker/order path change",
+    "no paper/live enablement",
+    "no risk/execution start",
+    "no strategy threshold change",
+    "no all-strategy firing",
+    "no forced candidate",
+    "no Redis trading stream write",
+    "no delete/expire/unlink/flush of canonical hashes"
+  ],
+  "fresh_approval_required_for_next": "I APPROVE A6-FEED-R5-L SOURCE PATCH: CORRECTED DURABLE CANONICAL PROVIDER/FEED HASH OWNER SEAM ONLY, NO PAPER, NO LIVE, NO BROKER ORDER, NO RISK/EXECUTION START, NO STRATEGY THRESHOLD CHANGE",
+  "next_patch_must_prove": [
+    "target backup created",
+    "unified diff created",
+    "compile OK",
+    "import OK",
+    "helper present",
+    "helper direct call OK",
+    "runtime seam present",
+    "all required hashes present",
+    "all required hashes ready/fresh/valid/current/stale=0",
+    "hashes persist through observation window",
+    "fresh feature/decision consumer sample no provider_not_ready/view_data_invalid",
+    "orders:mme:stream remains 0",
+    "position remains FLAT",
+    "no risk/execution PID",
+    "no broker order",
+    "no paper/live enablement",
+    "no strategy threshold change"
+  ],
+  "patch_design": {
+    "dhan_context_rule": "write state:dhan_context:mme only from real Dhan option-context stream; do not fake ready",
+    "helper_location": "module tail",
+    "hook_call_name": "xadd_fields",
+    "hook_function": "_publish_dhan_context_event",
+    "hook_location": 1914,
+    "hook_marker": "A6-FEED-R5-L corrected canonical hash refresh hook",
+    "idempotent": true,
+    "no_delete_no_expire": true,
+    "runtime_boundary": "feeds owns canonical provider/feed hashes; features and strategy consume only",
+    "write_type": "HSET only to required canonical hashes"
+  },
+  "patch_plan_type": "PATCH_FEEDS_PY_HELPER_AND_CORRECTED_RUNTIME_SEAM",
+  "plan_status": "PATCH_PLAN_ONLY_NO_PATCH",
+  "required_hashes": [
+    "state:provider_runtime:mme",
+    "state:feed:futures:active",
+    "state:feed:selected_option:active",
+    "state:feed:option_context:active",
+    "state:dhan_context:mme"
+  ],
+  "root_cause": "CORRECTED_NON_XADD_RUNTIME_SEAM_IDENTIFIED",
+  "target": "app/mme_scalpx/services/feeds.py",
+  "top_recommended_seams": [
+    {
+      "args": [
+        "N.STREAM_TICKS_MME_OPT_CONTEXT_DHAN",
+        "event.to_dict()",
+        "self._redis"
+      ],
+      "call_name": "xadd_fields",
+      "context": [
+        {
+          "line": 1910,
+          "text": "            return tick.provider_id == runtime.futures_marketdata_provider_id"
+        },
+        {
+          "line": 1911,
+          "text": "        return tick.provider_id == runtime.selected_option_marketdata_provider_id"
+        },
+        {
+          "line": 1912,
+          "text": ""
+        },
+        {
+          "line": 1913,
+          "text": "    def _publish_dhan_context_event(self, event: M.DhanContextEvent) -> None:"
+        },
+        {
+          "line": 1914,
+          "text": "        RX.xadd_fields("
+        },
+        {
+          "line": 1915,
+          "text": "            N.STREAM_TICKS_MME_OPT_CONTEXT_DHAN,"
+        },
+        {
+          "line": 1916,
+          "text": "            event.to_dict(),"
+        },
+        {
+          "line": 1917,
+          "text": "            client=self._redis,"
+        },
+        {
+          "line": 1918,
+          "text": "        )"
+        }
+      ],
+      "function": "_publish_dhan_context_event",
+      "line": 1914,
+      "owner": "RX",
+      "score": 48,
+      "score_reasons": [
+        "xadd",
+        "publish",
+        "stream",
+        "tick",
+        "provider",
+        "selected",
+        "dhan",
+        "redis",
+        "inside_function",
+        "runtime_like_function"
+      ]
+    },
+    {
+      "args": [
+        "N.STREAM_SYSTEM_HEALTH",
+        "{\n                \"service_name\": N.SERVICE_FEEDS,\n                \"instance_id\": self._instance_id,\n                \"status\": self._current_health_status,\n                \"event\": event,\n                \"detail\": self._current_health_detail,\n                \"",
+        "HEALTH_STREAM_MAXLEN",
+        "self._redis"
+      ],
+      "call_name": "xadd_fields",
+      "context": [
+        {
+          "line": 2467,
+          "text": "        return N.HEALTH_STATUS_ERROR"
+        },
+        {
+          "line": 2468,
+          "text": ""
+        },
+        {
+          "line": 2469,
+          "text": "    def _publish_health_event(self, *, event: str) -> None:"
+        },
+        {
+          "line": 2470,
+          "text": "        now_ns = self._clock.wall_time_ns()"
+        },
+        {
+          "line": 2471,
+          "text": "        RX.xadd_fields("
+        },
+        {
+          "line": 2472,
+          "text": "            N.STREAM_SYSTEM_HEALTH,"
+        },
+        {
+          "line": 2473,
+          "text": "            {"
+        },
+        {
+          "line": 2474,
+          "text": "                \"service_name\": N.SERVICE_FEEDS,"
+        },
+        {
+          "line": 2475,
+          "text": "                \"instance_id\": self._instance_id,"
+        }
+      ],
+      "function": "_publish_health_event",
+      "line": 2471,
+      "owner": "RX",
+      "score": 46,
+      "score_reasons": [
+        "xadd",
+        "publish",
+        "stream",
+        "tick",
+        "provider",
+        "health",
+        "redis",
+        "inside_function",
+        "runtime_like_function"
+      ]
+    },
+    {
+      "args": [
+        "compat_stream",
+        "tick.to_dict()",
+        "self._redis"
+      ],
+      "call_name": "xadd_fields",
+      "context": [
+        {
+          "line": 1886,
+          "text": "                client=self._redis,"
+        },
+        {
+          "line": 1887,
+          "text": "            )"
+        },
+        {
+          "line": 1888,
+          "text": "        if self._cfg.publish_compatibility_streams and self._tick_matches_active_provider(tick):"
+        },
+        {
+          "line": 1889,
+          "text": "            compat_stream = N.STREAM_TICKS_MME_FUT if tick.instrument_role == M.InstrumentRole.FUTURES else N.STREAM_TICKS_MME_OPT"
+        },
+        {
+          "line": 1890,
+          "text": "            RX.xadd_fields(compat_stream, tick.to_dict(), client=self._redis)"
+        },
+        {
+          "line": 1891,
+          "text": ""
+        },
+        {
+          "line": 1892,
+          "text": "    def _provider_specific_stream_name_for_tick(self, tick: M.FeedTick) -> str:"
+        },
+        {
+          "line": 1893,
+          "text": "        if tick.instrument_role == M.InstrumentRole.FUTURES:"
+        },
+        {
+          "line": 1894,
+          "text": "            return ("
+        }
+      ],
+      "function": "_publish_tick_event",
+      "line": 1890,
+      "owner": "RX",
+      "score": 46,
+      "score_reasons": [
+        "xadd",
+        "publish",
+        "stream",
+        "tick",
+        "provider",
+        "futures",
+        "redis",
+        "inside_function",
+        "runtime_like_function"
+      ]
+    },
+    {
+      "args": [
+        "self._provider_specific_stream_name_for_tick(tick)",
+        "tick.to_dict()",
+        "self._redis"
+      ],
+      "call_name": "xadd_fields",
+      "context": [
+        {
+          "line": 1879,
+          "text": "        cache_entry.anomaly_window.append(cache_entry.ltp)"
+        },
+        {
+          "line": 1880,
+          "text": ""
+        },
+        {
+          "line": 1881,
+          "text": "    def _publish_tick_event(self, *, tick: M.FeedTick) -> None:"
+        },
+        {
+          "line": 1882,
+          "text": "        if self._cfg.publish_provider_specific_streams:"
+        },
+        {
+          "line": 1883,
+          "text": "            RX.xadd_fields("
+        },
+        {
+          "line": 1884,
+          "text": "                self._provider_specific_stream_name_for_tick(tick),"
+        },
+        {
+          "line": 1885,
+          "text": "                tick.to_dict(),"
+        },
+        {
+          "line": 1886,
+          "text": "                client=self._redis,"
+        },
+        {
+          "line": 1887,
+          "text": "            )"
+        }
+      ],
+      "function": "_publish_tick_event",
+      "line": 1883,
+      "owner": "RX",
+      "score": 43,
+      "score_reasons": [
+        "xadd",
+        "publish",
+        "stream",
+        "tick",
+        "provider",
+        "redis",
+        "inside_function",
+        "runtime_like_function"
+      ]
+    },
+    {
+      "args": [
+        "tick"
+      ],
+      "call_name": "_provider_specific_stream_name_for_tick",
+      "context": [
+        {
+          "line": 1880,
+          "text": ""
+        },
+        {
+          "line": 1881,
+          "text": "    def _publish_tick_event(self, *, tick: M.FeedTick) -> None:"
+        },
+        {
+          "line": 1882,
+          "text": "        if self._cfg.publish_provider_specific_streams:"
+        },
+        {
+          "line": 1883,
+          "text": "            RX.xadd_fields("
+        },
+        {
+          "line": 1884,
+          "text": "                self._provider_specific_stream_name_for_tick(tick),"
+        },
+        {
+          "line": 1885,
+          "text": "                tick.to_dict(),"
+        },
+        {
+          "line": 1886,
+          "text": "                client=self._redis,"
+        },
+        {
+          "line": 1887,
+          "text": "            )"
+        },
+        {
+          "line": 1888,
+          "text": "        if self._cfg.publish_compatibility_streams and self._tick_matches_active_provider(tick):"
+        }
+      ],
+      "function": "_publish_tick_event",
+      "line": 1884,
+      "owner": "self",
+      "score": 43,
+      "score_reasons": [
+        "xadd",
+        "publish",
+        "stream",
+        "tick",
+        "provider",
+        "redis",
+        "inside_function",
+        "runtime_like_function"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+# A6-PAPER-R13_live_session_report_only_dry_run_feeds_features_strategy_only_no_risk_execution_no_order_no_paper_20260518_152929 Runbook
+
+Actual live-session dry-run proof generated.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R13_live_session_report_only_dry_run_feeds_features_strategy_only_no_risk_execution_no_order_no_paper_20260518_152929.json`
+Audit: `/home/Lenovo/scalpx/projects/mme_scalpx/run/audits/A6-PAPER-R13_live_session_report_only_dry_run_feeds_features_strategy_only_no_risk_execution_no_order_no_paper_20260518_152929_audit.json`

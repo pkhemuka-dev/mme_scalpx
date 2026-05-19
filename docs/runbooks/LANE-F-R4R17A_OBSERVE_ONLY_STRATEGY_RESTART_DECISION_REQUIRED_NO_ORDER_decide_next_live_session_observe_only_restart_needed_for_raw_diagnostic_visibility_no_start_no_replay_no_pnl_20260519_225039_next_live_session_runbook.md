@@ -1,0 +1,6 @@
+# LANE-F-R4R17A_OBSERVE_ONLY_STRATEGY_RESTART_DECISION_REQUIRED_NO_ORDER next route
+
+classification: PASS_LANE_F_R4R17A_NEXT_LIVE_SESSION_OBSERVE_ONLY_RESTART_REQUIRED_NO_START
+next_route: WAIT_FOR_NEXT_LIVE_SESSION_R4R18_OBSERVE_ONLY_STACK_RESTART_PREFLIGHT
+
+Next live session: preflight, then observe-only restart of feeds/features/strategy only. No risk/execution/order/replay/PnL.

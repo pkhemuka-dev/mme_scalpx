@@ -1,0 +1,8 @@
+# LANE-F-R4R4_DECISION_TAIL_AUDIT_AFTER_NO_LIFECYCLE_NO_PATCH_NO_START
+
+- classification: PASS_LANE_F_R4R4_NO_CANDIDATE_DECISION_ROWS_FOUND_AUDIT_COMPLETE
+- candidate_like_count: 0
+- activation_rows_count: 1
+- blocker_like_count: 1
+- orders_xlen: 0
+- next_route: WAIT_OR_REPEAT_LANE_F_R4R3_DURING_LIVE_SESSION_OR_AUDIT_STRATEGY_BLOCKERS

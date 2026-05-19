@@ -1,0 +1,952 @@
+{
+  "chosen_strategy": {
+    "reason": "Setting context_fields earlier did not win final write. Final option-context HSET mapping must overlay reserved readiness fields at the call site.",
+    "required_mapping_shape": "dict(context_fields, status='ready', ready='1', fresh='1', valid='1', current='1', stale='0', durable_owner='feeds.py', durable_owner_patch='A6-FEED-R5-N-R5')",
+    "target_call": "_a6_r5l_hset_mapping(redis_client, 'state:feed:option_context:active', <mapping>)",
+    "type": "patch_option_context_hset_argument_directly"
+  },
+  "fresh_approval_required_for_next": "I APPROVE A6-FEED-R5-N-R5 SOURCE PATCH: FINAL OPTION-CONTEXT READY OVERWRITE FIX ONLY, NO PAPER, NO LIVE, NO BROKER ORDER, NO RISK/EXECUTION START, NO STRATEGY THRESHOLD CHANGE",
+  "line_evidence": {
+    "dhan_context_hset_sites": [
+      {
+        "context": [
+          {
+            "line": 2982,
+            "text": "        \"fields_sha256\": _a6_r5l_sha256_text(fields_json),"
+          },
+          {
+            "line": 2983,
+            "text": "    }"
+          },
+          {
+            "line": 2984,
+            "text": ""
+          },
+          {
+            "line": 2985,
+            "text": "def _a6_r5l_publish_canonical_provider_feed_hashes(redis_client=None):"
+          },
+          {
+            "line": 2986,
+            "text": "    redis_client = redis_client or _a6_r5l_get_redis_client()"
+          },
+          {
+            "line": 2987,
+            "text": "    if redis_client is None:"
+          },
+          {
+            "line": 2988,
+            "text": "        return {\"ok\": False, \"reason\": \"redis_client_unavailable\", \"hashes_written\": []}"
+          }
+        ],
+        "end_line": 3070,
+        "line": 2985,
+        "text": "def _a6_r5l_publish_canonical_provider_feed_hashes(redis_client=None):\n    redis_client = redis_client or _a6_r5l_get_redis_client()\n    if redis_client is None:\n        return {\"ok\": False, \"reason\": \"redis_client_unavailable\", \"hashes_written\": []}\n\n    fut_z = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:fut:zerodha:stream\"); fut_z[\"provider\"] = \"zerodha\"\n    fut_d = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:fut:dhan:stream\"); fut_d[\"provider\"] = \"dhan\"\n    opt_z = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:opt:selected:zerodha:stream\"); opt_z[\"provider\"] = \"zerodha\"\n    opt_d = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:opt:selected:dhan:stream\"); opt_d[\"provider\"] = \"dhan\"\n    ctx_d = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:opt:context:dhan:stream\"); ctx_d[\"provider\"] = \"dhan\"\n\n    futures = _a6_r5l_pick_latest([fut_z, fut_d])\n    selected = _a6_r5l_pick_latest([opt_z, opt_d])\n    context = ctx_d if ctx_d.get(\"exists\") else None\n\n    if not futures or not selected:\n        return {\n            \"ok\": False,\n            \"reason\": \"missing_latest_futures_or_selected_option_stream\",\n            \"futures_exists\": bool(futures),\n            \"selected_exists\": bool(selected),\n            \"context_exists\": bool(context),\n            \"hashes_written\": [],\n        }\n\n    from datetime import datetime as _datetime, timezone as _timezone\n    provider_runtime = {\n        \"published_by\": \"A6-FEED-R5-L\",\n        \"published_at_utc\": _datetime.now(_timezone.utc).isoformat(),\n        \"status\": \"ready\",\n        \"ready\": \"1\",\n        \"fresh\": \"1\",\n        \"valid\": \"1\",\n        \"current\": \"1\",\n        \"stale\": \"0\",\n        \"futures_provider\": str(futures.get(\"provider\") or \"\"),\n        \"selected_option_provider\": str(selected.get(\"provider\") or \"\"),\n        \"option_context_provider\": \"dhan\" if context else \"\",\n        \"futures_stream\": str(futures.get(\"stream\") or \"\"),\n        \"selected_option_stream\": str(selected.get(\"stream\") or \"\"),\n        \"option_context_stream\": str(context.get(\"stream\") if context else \"\"),\n        \"futures_source_id\": str(futures.get(\"id\") or \"\"),\n        \"selected_option_source_id\": str(selected.get(\"id\") or \"\"),\n        \"option_context_source_id\": str(context.get(\"id\") if context else \"\"),\n        \"durable_owner\": \"feeds.py\",\n        \"durable_owner_patch\": \"A6-FEED-R5-L\",\n    }\n\n    results = {}\n    results[\"state:provider_runtime:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:provider_runtime:mme\", provider_runtime)\n    results[\"state:feed:futures:active\"] = _a6_r5l_hset_mapping(\n        redis_client, \"state:feed:futures:active\",\n        _a6_r5l_feed_hash_fields(futures, futures.get(\"provider\") or \"\", \"futures_active\"),\n    )\n    results[\"state:feed:selected_option:active\"] = _a6_r5l_hset_mapping(\n        redis_client, \"state:feed:selected_option:active\",\n        _a6_r5l_feed_hash_fields(selected, selected.get(\"provider\") or \"\", \"selected_option_active\"),\n    )\n\n    if context:\n        context_fields = _a6_r5l_feed_hash_fields(context, \"dhan\", \"option_context_active\")\n        # A6-FEED-R5-N-R3 SAFE CONTEXT-READY OVERLAY\n        # Reserved readiness/control fields must override any payload field collision.\n        context_fields.update({\n            \"status\": \"ready\",\n            \"ready\": \"1\",\n            \"fresh\": \"1\",\n            \"valid\": \"1\",\n            \"current\": \"1\",\n            \"stale\": \"0\",\n            \"durable_owner\": \"feeds.py\",\n            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\",\n        })\n        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)\n        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))\n    else:\n        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}\n        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}\n\n    ok = all(r.get(\"ok\") for r in results.values())\n    return {\n        \"ok\": ok,\n        \"reason\": \"published\" if ok else \"partial_or_failed_publish\",\n        \"hashes_written\": [k for k, v in results.items() if v.get(\"ok\")],\n        \"results\": results,\n    }"
+      },
+      {
+        "context": [
+          {
+            "line": 3041,
+            "text": "        _a6_r5l_feed_hash_fields(selected, selected.get(\"provider\") or \"\", \"selected_option_active\"),"
+          },
+          {
+            "line": 3042,
+            "text": "    )"
+          },
+          {
+            "line": 3043,
+            "text": ""
+          },
+          {
+            "line": 3044,
+            "text": "    if context:"
+          },
+          {
+            "line": 3045,
+            "text": "        context_fields = _a6_r5l_feed_hash_fields(context, \"dhan\", \"option_context_active\")"
+          },
+          {
+            "line": 3046,
+            "text": "        # A6-FEED-R5-N-R3 SAFE CONTEXT-READY OVERLAY"
+          },
+          {
+            "line": 3047,
+            "text": "        # Reserved readiness/control fields must override any payload field collision."
+          }
+        ],
+        "end_line": 3062,
+        "line": 3044,
+        "text": "if context:\n        context_fields = _a6_r5l_feed_hash_fields(context, \"dhan\", \"option_context_active\")\n        # A6-FEED-R5-N-R3 SAFE CONTEXT-READY OVERLAY\n        # Reserved readiness/control fields must override any payload field collision.\n        context_fields.update({\n            \"status\": \"ready\",\n            \"ready\": \"1\",\n            \"fresh\": \"1\",\n            \"valid\": \"1\",\n            \"current\": \"1\",\n            \"stale\": \"0\",\n            \"durable_owner\": \"feeds.py\",\n            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\",\n        })\n        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)\n        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))\n    else:\n        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}\n        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+      },
+      {
+        "context": [
+          {
+            "line": 3056,
+            "text": "            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\","
+          },
+          {
+            "line": 3057,
+            "text": "        })"
+          },
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          }
+        ],
+        "end_line": 3059,
+        "line": 3059,
+        "text": "results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+      },
+      {
+        "context": [
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3063,
+            "text": ""
+          },
+          {
+            "line": 3064,
+            "text": "    ok = all(r.get(\"ok\") for r in results.values())"
+          },
+          {
+            "line": 3065,
+            "text": "    return {"
+          }
+        ],
+        "end_line": 3062,
+        "line": 3062,
+        "text": "results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+      },
+      {
+        "context": [
+          {
+            "line": 3056,
+            "text": "            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\","
+          },
+          {
+            "line": 3057,
+            "text": "        })"
+          },
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          }
+        ],
+        "end_line": 3059,
+        "line": 3059,
+        "text": "results[\"state:dhan_context:mme\"]"
+      },
+      {
+        "context": [
+          {
+            "line": 3056,
+            "text": "            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\","
+          },
+          {
+            "line": 3057,
+            "text": "        })"
+          },
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          }
+        ],
+        "end_line": 3059,
+        "line": 3059,
+        "text": "_a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+      },
+      {
+        "context": [
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3063,
+            "text": ""
+          },
+          {
+            "line": 3064,
+            "text": "    ok = all(r.get(\"ok\") for r in results.values())"
+          },
+          {
+            "line": 3065,
+            "text": "    return {"
+          }
+        ],
+        "end_line": 3062,
+        "line": 3062,
+        "text": "results[\"state:dhan_context:mme\"]"
+      },
+      {
+        "context": [
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3063,
+            "text": ""
+          },
+          {
+            "line": 3064,
+            "text": "    ok = all(r.get(\"ok\") for r in results.values())"
+          },
+          {
+            "line": 3065,
+            "text": "    return {"
+          }
+        ],
+        "end_line": 3062,
+        "line": 3062,
+        "text": "{\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+      },
+      {
+        "context": [
+          {
+            "line": 3056,
+            "text": "            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\","
+          },
+          {
+            "line": 3057,
+            "text": "        })"
+          },
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          }
+        ],
+        "end_line": 3059,
+        "line": 3059,
+        "text": "\"state:dhan_context:mme\""
+      },
+      {
+        "context": [
+          {
+            "line": 3056,
+            "text": "            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\","
+          },
+          {
+            "line": 3057,
+            "text": "        })"
+          },
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          }
+        ],
+        "end_line": 3059,
+        "line": 3059,
+        "text": "\"state:dhan_context:mme\""
+      },
+      {
+        "context": [
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3063,
+            "text": ""
+          },
+          {
+            "line": 3064,
+            "text": "    ok = all(r.get(\"ok\") for r in results.values())"
+          },
+          {
+            "line": 3065,
+            "text": "    return {"
+          }
+        ],
+        "end_line": 3062,
+        "line": 3062,
+        "text": "\"state:dhan_context:mme\""
+      },
+      {
+        "context": [
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3063,
+            "text": ""
+          },
+          {
+            "line": 3064,
+            "text": "    ok = all(r.get(\"ok\") for r in results.values())"
+          },
+          {
+            "line": 3065,
+            "text": "    return {"
+          }
+        ],
+        "end_line": 3062,
+        "line": 3062,
+        "text": "\"state:dhan_context:mme\""
+      }
+    ],
+    "helper_end": 3070,
+    "helper_line": 2985,
+    "option_context_hset_sites": [
+      {
+        "context": [
+          {
+            "line": 2982,
+            "text": "        \"fields_sha256\": _a6_r5l_sha256_text(fields_json),"
+          },
+          {
+            "line": 2983,
+            "text": "    }"
+          },
+          {
+            "line": 2984,
+            "text": ""
+          },
+          {
+            "line": 2985,
+            "text": "def _a6_r5l_publish_canonical_provider_feed_hashes(redis_client=None):"
+          },
+          {
+            "line": 2986,
+            "text": "    redis_client = redis_client or _a6_r5l_get_redis_client()"
+          },
+          {
+            "line": 2987,
+            "text": "    if redis_client is None:"
+          },
+          {
+            "line": 2988,
+            "text": "        return {\"ok\": False, \"reason\": \"redis_client_unavailable\", \"hashes_written\": []}"
+          }
+        ],
+        "end_line": 3070,
+        "line": 2985,
+        "text": "def _a6_r5l_publish_canonical_provider_feed_hashes(redis_client=None):\n    redis_client = redis_client or _a6_r5l_get_redis_client()\n    if redis_client is None:\n        return {\"ok\": False, \"reason\": \"redis_client_unavailable\", \"hashes_written\": []}\n\n    fut_z = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:fut:zerodha:stream\"); fut_z[\"provider\"] = \"zerodha\"\n    fut_d = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:fut:dhan:stream\"); fut_d[\"provider\"] = \"dhan\"\n    opt_z = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:opt:selected:zerodha:stream\"); opt_z[\"provider\"] = \"zerodha\"\n    opt_d = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:opt:selected:dhan:stream\"); opt_d[\"provider\"] = \"dhan\"\n    ctx_d = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:opt:context:dhan:stream\"); ctx_d[\"provider\"] = \"dhan\"\n\n    futures = _a6_r5l_pick_latest([fut_z, fut_d])\n    selected = _a6_r5l_pick_latest([opt_z, opt_d])\n    context = ctx_d if ctx_d.get(\"exists\") else None\n\n    if not futures or not selected:\n        return {\n            \"ok\": False,\n            \"reason\": \"missing_latest_futures_or_selected_option_stream\",\n            \"futures_exists\": bool(futures),\n            \"selected_exists\": bool(selected),\n            \"context_exists\": bool(context),\n            \"hashes_written\": [],\n        }\n\n    from datetime import datetime as _datetime, timezone as _timezone\n    provider_runtime = {\n        \"published_by\": \"A6-FEED-R5-L\",\n        \"published_at_utc\": _datetime.now(_timezone.utc).isoformat(),\n        \"status\": \"ready\",\n        \"ready\": \"1\",\n        \"fresh\": \"1\",\n        \"valid\": \"1\",\n        \"current\": \"1\",\n        \"stale\": \"0\",\n        \"futures_provider\": str(futures.get(\"provider\") or \"\"),\n        \"selected_option_provider\": str(selected.get(\"provider\") or \"\"),\n        \"option_context_provider\": \"dhan\" if context else \"\",\n        \"futures_stream\": str(futures.get(\"stream\") or \"\"),\n        \"selected_option_stream\": str(selected.get(\"stream\") or \"\"),\n        \"option_context_stream\": str(context.get(\"stream\") if context else \"\"),\n        \"futures_source_id\": str(futures.get(\"id\") or \"\"),\n        \"selected_option_source_id\": str(selected.get(\"id\") or \"\"),\n        \"option_context_source_id\": str(context.get(\"id\") if context else \"\"),\n        \"durable_owner\": \"feeds.py\",\n        \"durable_owner_patch\": \"A6-FEED-R5-L\",\n    }\n\n    results = {}\n    results[\"state:provider_runtime:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:provider_runtime:mme\", provider_runtime)\n    results[\"state:feed:futures:active\"] = _a6_r5l_hset_mapping(\n        redis_client, \"state:feed:futures:active\",\n        _a6_r5l_feed_hash_fields(futures, futures.get(\"provider\") or \"\", \"futures_active\"),\n    )\n    results[\"state:feed:selected_option:active\"] = _a6_r5l_hset_mapping(\n        redis_client, \"state:feed:selected_option:active\",\n        _a6_r5l_feed_hash_fields(selected, selected.get(\"provider\") or \"\", \"selected_option_active\"),\n    )\n\n    if context:\n        context_fields = _a6_r5l_feed_hash_fields(context, \"dhan\", \"option_context_active\")\n        # A6-FEED-R5-N-R3 SAFE CONTEXT-READY OVERLAY\n        # Reserved readiness/control fields must override any payload field collision.\n        context_fields.update({\n            \"status\": \"ready\",\n            \"ready\": \"1\",\n            \"fresh\": \"1\",\n            \"valid\": \"1\",\n            \"current\": \"1\",\n            \"stale\": \"0\",\n            \"durable_owner\": \"feeds.py\",\n            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\",\n        })\n        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)\n        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))\n    else:\n        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}\n        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}\n\n    ok = all(r.get(\"ok\") for r in results.values())\n    return {\n        \"ok\": ok,\n        \"reason\": \"published\" if ok else \"partial_or_failed_publish\",\n        \"hashes_written\": [k for k, v in results.items() if v.get(\"ok\")],\n        \"results\": results,\n    }"
+      },
+      {
+        "context": [
+          {
+            "line": 3041,
+            "text": "        _a6_r5l_feed_hash_fields(selected, selected.get(\"provider\") or \"\", \"selected_option_active\"),"
+          },
+          {
+            "line": 3042,
+            "text": "    )"
+          },
+          {
+            "line": 3043,
+            "text": ""
+          },
+          {
+            "line": 3044,
+            "text": "    if context:"
+          },
+          {
+            "line": 3045,
+            "text": "        context_fields = _a6_r5l_feed_hash_fields(context, \"dhan\", \"option_context_active\")"
+          },
+          {
+            "line": 3046,
+            "text": "        # A6-FEED-R5-N-R3 SAFE CONTEXT-READY OVERLAY"
+          },
+          {
+            "line": 3047,
+            "text": "        # Reserved readiness/control fields must override any payload field collision."
+          }
+        ],
+        "end_line": 3062,
+        "line": 3044,
+        "text": "if context:\n        context_fields = _a6_r5l_feed_hash_fields(context, \"dhan\", \"option_context_active\")\n        # A6-FEED-R5-N-R3 SAFE CONTEXT-READY OVERLAY\n        # Reserved readiness/control fields must override any payload field collision.\n        context_fields.update({\n            \"status\": \"ready\",\n            \"ready\": \"1\",\n            \"fresh\": \"1\",\n            \"valid\": \"1\",\n            \"current\": \"1\",\n            \"stale\": \"0\",\n            \"durable_owner\": \"feeds.py\",\n            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\",\n        })\n        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)\n        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))\n    else:\n        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}\n        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+      },
+      {
+        "context": [
+          {
+            "line": 3055,
+            "text": "            \"durable_owner\": \"feeds.py\","
+          },
+          {
+            "line": 3056,
+            "text": "            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\","
+          },
+          {
+            "line": 3057,
+            "text": "        })"
+          },
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          }
+        ],
+        "end_line": 3058,
+        "line": 3058,
+        "text": "results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+      },
+      {
+        "context": [
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3063,
+            "text": ""
+          },
+          {
+            "line": 3064,
+            "text": "    ok = all(r.get(\"ok\") for r in results.values())"
+          }
+        ],
+        "end_line": 3061,
+        "line": 3061,
+        "text": "results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+      },
+      {
+        "context": [
+          {
+            "line": 3055,
+            "text": "            \"durable_owner\": \"feeds.py\","
+          },
+          {
+            "line": 3056,
+            "text": "            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\","
+          },
+          {
+            "line": 3057,
+            "text": "        })"
+          },
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          }
+        ],
+        "end_line": 3058,
+        "line": 3058,
+        "text": "results[\"state:feed:option_context:active\"]"
+      },
+      {
+        "context": [
+          {
+            "line": 3055,
+            "text": "            \"durable_owner\": \"feeds.py\","
+          },
+          {
+            "line": 3056,
+            "text": "            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\","
+          },
+          {
+            "line": 3057,
+            "text": "        })"
+          },
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          }
+        ],
+        "end_line": 3058,
+        "line": 3058,
+        "text": "_a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+      },
+      {
+        "context": [
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3063,
+            "text": ""
+          },
+          {
+            "line": 3064,
+            "text": "    ok = all(r.get(\"ok\") for r in results.values())"
+          }
+        ],
+        "end_line": 3061,
+        "line": 3061,
+        "text": "results[\"state:feed:option_context:active\"]"
+      },
+      {
+        "context": [
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3063,
+            "text": ""
+          },
+          {
+            "line": 3064,
+            "text": "    ok = all(r.get(\"ok\") for r in results.values())"
+          }
+        ],
+        "end_line": 3061,
+        "line": 3061,
+        "text": "{\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+      },
+      {
+        "context": [
+          {
+            "line": 3055,
+            "text": "            \"durable_owner\": \"feeds.py\","
+          },
+          {
+            "line": 3056,
+            "text": "            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\","
+          },
+          {
+            "line": 3057,
+            "text": "        })"
+          },
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          }
+        ],
+        "end_line": 3058,
+        "line": 3058,
+        "text": "\"state:feed:option_context:active\""
+      },
+      {
+        "context": [
+          {
+            "line": 3055,
+            "text": "            \"durable_owner\": \"feeds.py\","
+          },
+          {
+            "line": 3056,
+            "text": "            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\","
+          },
+          {
+            "line": 3057,
+            "text": "        })"
+          },
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          }
+        ],
+        "end_line": 3058,
+        "line": 3058,
+        "text": "\"state:feed:option_context:active\""
+      },
+      {
+        "context": [
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3063,
+            "text": ""
+          },
+          {
+            "line": 3064,
+            "text": "    ok = all(r.get(\"ok\") for r in results.values())"
+          }
+        ],
+        "end_line": 3061,
+        "line": 3061,
+        "text": "\"state:feed:option_context:active\""
+      },
+      {
+        "context": [
+          {
+            "line": 3058,
+            "text": "        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)"
+          },
+          {
+            "line": 3059,
+            "text": "        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))"
+          },
+          {
+            "line": 3060,
+            "text": "    else:"
+          },
+          {
+            "line": 3061,
+            "text": "        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3062,
+            "text": "        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+          },
+          {
+            "line": 3063,
+            "text": ""
+          },
+          {
+            "line": 3064,
+            "text": "    ok = all(r.get(\"ok\") for r in results.values())"
+          }
+        ],
+        "end_line": 3061,
+        "line": 3061,
+        "text": "\"state:feed:option_context:active\""
+      }
+    ],
+    "r3_overlay_sites": [
+      {
+        "context": [
+          {
+            "line": 2982,
+            "text": "        \"fields_sha256\": _a6_r5l_sha256_text(fields_json),"
+          },
+          {
+            "line": 2983,
+            "text": "    }"
+          },
+          {
+            "line": 2984,
+            "text": ""
+          },
+          {
+            "line": 2985,
+            "text": "def _a6_r5l_publish_canonical_provider_feed_hashes(redis_client=None):"
+          },
+          {
+            "line": 2986,
+            "text": "    redis_client = redis_client or _a6_r5l_get_redis_client()"
+          },
+          {
+            "line": 2987,
+            "text": "    if redis_client is None:"
+          },
+          {
+            "line": 2988,
+            "text": "        return {\"ok\": False, \"reason\": \"redis_client_unavailable\", \"hashes_written\": []}"
+          }
+        ],
+        "end_line": 3070,
+        "line": 2985,
+        "text": "def _a6_r5l_publish_canonical_provider_feed_hashes(redis_client=None):\n    redis_client = redis_client or _a6_r5l_get_redis_client()\n    if redis_client is None:\n        return {\"ok\": False, \"reason\": \"redis_client_unavailable\", \"hashes_written\": []}\n\n    fut_z = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:fut:zerodha:stream\"); fut_z[\"provider\"] = \"zerodha\"\n    fut_d = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:fut:dhan:stream\"); fut_d[\"provider\"] = \"dhan\"\n    opt_z = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:opt:selected:zerodha:stream\"); opt_z[\"provider\"] = \"zerodha\"\n    opt_d = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:opt:selected:dhan:stream\"); opt_d[\"provider\"] = \"dhan\"\n    ctx_d = _a6_r5l_latest_stream_entry(redis_client, \"ticks:mme:opt:context:dhan:stream\"); ctx_d[\"provider\"] = \"dhan\"\n\n    futures = _a6_r5l_pick_latest([fut_z, fut_d])\n    selected = _a6_r5l_pick_latest([opt_z, opt_d])\n    context = ctx_d if ctx_d.get(\"exists\") else None\n\n    if not futures or not selected:\n        return {\n            \"ok\": False,\n            \"reason\": \"missing_latest_futures_or_selected_option_stream\",\n            \"futures_exists\": bool(futures),\n            \"selected_exists\": bool(selected),\n            \"context_exists\": bool(context),\n            \"hashes_written\": [],\n        }\n\n    from datetime import datetime as _datetime, timezone as _timezone\n    provider_runtime = {\n        \"published_by\": \"A6-FEED-R5-L\",\n        \"published_at_utc\": _datetime.now(_timezone.utc).isoformat(),\n        \"status\": \"ready\",\n        \"ready\": \"1\",\n        \"fresh\": \"1\",\n        \"valid\": \"1\",\n        \"current\": \"1\",\n        \"stale\": \"0\",\n        \"futures_provider\": str(futures.get(\"provider\") or \"\"),\n        \"selected_option_provider\": str(selected.get(\"provider\") or \"\"),\n        \"option_context_provider\": \"dhan\" if context else \"\",\n        \"futures_stream\": str(futures.get(\"stream\") or \"\"),\n        \"selected_option_stream\": str(selected.get(\"stream\") or \"\"),\n        \"option_context_stream\": str(context.get(\"stream\") if context else \"\"),\n        \"futures_source_id\": str(futures.get(\"id\") or \"\"),\n        \"selected_option_source_id\": str(selected.get(\"id\") or \"\"),\n        \"option_context_source_id\": str(context.get(\"id\") if context else \"\"),\n        \"durable_owner\": \"feeds.py\",\n        \"durable_owner_patch\": \"A6-FEED-R5-L\",\n    }\n\n    results = {}\n    results[\"state:provider_runtime:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:provider_runtime:mme\", provider_runtime)\n    results[\"state:feed:futures:active\"] = _a6_r5l_hset_mapping(\n        redis_client, \"state:feed:futures:active\",\n        _a6_r5l_feed_hash_fields(futures, futures.get(\"provider\") or \"\", \"futures_active\"),\n    )\n    results[\"state:feed:selected_option:active\"] = _a6_r5l_hset_mapping(\n        redis_client, \"state:feed:selected_option:active\",\n        _a6_r5l_feed_hash_fields(selected, selected.get(\"provider\") or \"\", \"selected_option_active\"),\n    )\n\n    if context:\n        context_fields = _a6_r5l_feed_hash_fields(context, \"dhan\", \"option_context_active\")\n        # A6-FEED-R5-N-R3 SAFE CONTEXT-READY OVERLAY\n        # Reserved readiness/control fields must override any payload field collision.\n        context_fields.update({\n            \"status\": \"ready\",\n            \"ready\": \"1\",\n            \"fresh\": \"1\",\n            \"valid\": \"1\",\n            \"current\": \"1\",\n            \"stale\": \"0\",\n            \"durable_owner\": \"feeds.py\",\n            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\",\n        })\n        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)\n        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))\n    else:\n        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}\n        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}\n\n    ok = all(r.get(\"ok\") for r in results.values())\n    return {\n        \"ok\": ok,\n        \"reason\": \"published\" if ok else \"partial_or_failed_publish\",\n        \"hashes_written\": [k for k, v in results.items() if v.get(\"ok\")],\n        \"results\": results,\n    }"
+      },
+      {
+        "context": [
+          {
+            "line": 3041,
+            "text": "        _a6_r5l_feed_hash_fields(selected, selected.get(\"provider\") or \"\", \"selected_option_active\"),"
+          },
+          {
+            "line": 3042,
+            "text": "    )"
+          },
+          {
+            "line": 3043,
+            "text": ""
+          },
+          {
+            "line": 3044,
+            "text": "    if context:"
+          },
+          {
+            "line": 3045,
+            "text": "        context_fields = _a6_r5l_feed_hash_fields(context, \"dhan\", \"option_context_active\")"
+          },
+          {
+            "line": 3046,
+            "text": "        # A6-FEED-R5-N-R3 SAFE CONTEXT-READY OVERLAY"
+          },
+          {
+            "line": 3047,
+            "text": "        # Reserved readiness/control fields must override any payload field collision."
+          }
+        ],
+        "end_line": 3062,
+        "line": 3044,
+        "text": "if context:\n        context_fields = _a6_r5l_feed_hash_fields(context, \"dhan\", \"option_context_active\")\n        # A6-FEED-R5-N-R3 SAFE CONTEXT-READY OVERLAY\n        # Reserved readiness/control fields must override any payload field collision.\n        context_fields.update({\n            \"status\": \"ready\",\n            \"ready\": \"1\",\n            \"fresh\": \"1\",\n            \"valid\": \"1\",\n            \"current\": \"1\",\n            \"stale\": \"0\",\n            \"durable_owner\": \"feeds.py\",\n            \"durable_owner_patch\": \"A6-FEED-R5-N-R3\",\n        })\n        results[\"state:feed:option_context:active\"] = _a6_r5l_hset_mapping(redis_client, \"state:feed:option_context:active\", context_fields)\n        results[\"state:dhan_context:mme\"] = _a6_r5l_hset_mapping(redis_client, \"state:dhan_context:mme\", dict(context_fields, kind=\"dhan_context_active\"))\n    else:\n        results[\"state:feed:option_context:active\"] = {\"key\": \"state:feed:option_context:active\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}\n        results[\"state:dhan_context:mme\"] = {\"key\": \"state:dhan_context:mme\", \"ok\": False, \"reason\": \"dhan_option_context_stream_absent\"}"
+      }
+    ]
+  },
+  "must_not_do": [
+    "do not use broad regex outside helper",
+    "do not patch strategy/risk/execution",
+    "do not enable paper/live",
+    "do not place broker order",
+    "do not start services",
+    "do not change strategy threshold"
+  ],
+  "must_prove_after_patch": [
+    "temporary candidate compiles before replace",
+    "feeds.py compiles/imports after replace",
+    "helper direct call ok",
+    "state:feed:option_context:active.ready == 1",
+    "state:dhan_context:mme.ready == 1",
+    "all five canonical hashes ready",
+    "orders remain 0",
+    "position remains FLAT",
+    "no risk/execution/order PID"
+  ],
+  "patch_scope": "inside _a6_r5l_publish_canonical_provider_feed_hashes helper only",
+  "plan_status": "PATCH_PLAN_ONLY_NO_PATCH",
+  "root_cause": "R3_OVERLAY_OCCURS_BUT_OPTION_CONTEXT_HSET_STILL_RECEIVES_READY_COLLISION",
+  "target": "app/mme_scalpx/services/feeds.py"
+}

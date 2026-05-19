@@ -1,0 +1,6 @@
+# A6-PAPER-R17B_read_only_risk_fallback_xpending_xclaim_syntax_diagnosis_no_patch_no_start_no_order_no_paper_20260519_141355 Runbook
+
+Use this proof/patch plan for the next fallback syntax patch-plan or source patch gate. Do not retry R17 until fixed/proven.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R17B_read_only_risk_fallback_xpending_xclaim_syntax_diagnosis_no_patch_no_start_no_order_no_paper_20260519_141355.json`
+Patch plan: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/patch_plans/A6-PAPER-R17B_read_only_risk_fallback_xpending_xclaim_syntax_diagnosis_no_patch_no_start_no_order_no_paper_20260519_141355_fallback_syntax_patch_plan.md`

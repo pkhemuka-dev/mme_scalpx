@@ -1,0 +1,8 @@
+# A6-FEED-R5BE-R3_stop_observe_only_feeds_if_running_then_repair_stage_flags_contract_static_validation_no_order_no_paper_20260518_101639 Runbook
+
+If PASS, next batch is observe-only live-session recheck for feeds/features/strategy only.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-FEED-R5BE-R3_stop_observe_only_feeds_if_running_then_repair_stage_flags_contract_static_validation_no_order_no_paper_20260518_101639.json`
+Audit: `/home/Lenovo/scalpx/projects/mme_scalpx/run/audits/A6-FEED-R5BE-R3_stop_observe_only_feeds_if_running_then_repair_stage_flags_contract_static_validation_no_order_no_paper_20260518_101639_audit.json`
+Milestone: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/milestones/A6-FEED-R5BE-R3_stop_observe_only_feeds_if_running_then_repair_stage_flags_contract_static_validation_no_order_no_paper_20260518_101639.md`
+Handoff: `/home/Lenovo/scalpx/projects/mme_scalpx/run/handoffs/A6-FEED-R5BE-R3_stop_observe_only_feeds_if_running_then_repair_stage_flags_contract_static_validation_no_order_no_paper_20260518_101639_handoff.md`

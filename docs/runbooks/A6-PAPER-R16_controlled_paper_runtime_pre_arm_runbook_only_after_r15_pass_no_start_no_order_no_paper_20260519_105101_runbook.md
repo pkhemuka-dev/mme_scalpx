@@ -1,0 +1,6 @@
+# A6-PAPER-R16_controlled_paper_runtime_pre_arm_runbook_only_after_r15_pass_no_start_no_order_no_paper_20260519_105101 Runbook
+
+R16 runtime pre-arm runbook proof created.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R16_controlled_paper_runtime_pre_arm_runbook_only_after_r15_pass_no_start_no_order_no_paper_20260519_105101.json`
+Plan: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/patch_plans/A6-PAPER-R16_controlled_paper_runtime_pre_arm_runbook_only_after_r15_pass_no_start_no_order_no_paper_20260519_105101_runtime_pre_arm_plan.md`

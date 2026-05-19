@@ -4607,7 +4607,13 @@ def _batch7_patch_stage_flags(
 
     futures_present = _batch7_surface_present(active_fut)
     selected_option_present = _batch7_surface_present(selected)
-    snapshot_valid = bool(
+    # A6-FEED-R5D classic/MISO provider mapping separation.
+    #
+    # Keep hard market-data truth visible, but do not let Dhan option-context
+    # DEGRADED/UNSYNCED truth collapse the classic provider path when futures
+    # and selected-option market-data providers are healthy. MISO remains
+    # fail-closed below through provider_ready_miso and dhan_context_fresh.
+    snapshot_sync_valid = bool(
         _safe_bool(snapshot.get("valid"), False)
         and _safe_bool(snapshot.get("sync_ok"), False)
         and _safe_bool(snapshot.get("freshness_ok"), False)
@@ -4615,6 +4621,7 @@ def _batch7_patch_stage_flags(
         and futures_present
         and selected_option_present
     )
+    classic_surface_present = bool(futures_present and selected_option_present)
 
     runtime_modes = dict(shared_core.get("runtime_modes", {}) or {})
     classic = dict(runtime_modes.get("classic", {}) or {})
@@ -4633,9 +4640,15 @@ def _batch7_patch_stage_flags(
 
     provider_ready_classic = bool(
         classic_mode != RUNTIME_DISABLED
-        and snapshot_valid
-        and _batch7_provider_usable(provider_runtime.get("futures_provider_status"))
-        and _batch7_provider_usable(provider_runtime.get("selected_option_provider_status"))
+        and classic_surface_present
+        and _batch7_provider_usable(
+            provider_runtime.get("futures_provider_status")
+            or provider_runtime.get("futures_marketdata_status")
+        )
+        and _batch7_provider_usable(
+            provider_runtime.get("selected_option_provider_status")
+            or provider_runtime.get("selected_option_marketdata_status")
+        )
     )
     provider_ready_miso = _batch26c_miso_provider_ready(
         provider_runtime,
@@ -4646,7 +4659,18 @@ def _batch7_patch_stage_flags(
         dhan_context_fresh=bool(quality.get("fresh")),
     )
 
-    out["data_valid"] = snapshot_valid
+    out["data_valid"] = bool(
+        snapshot_sync_valid
+        or (
+            classic_surface_present
+            and provider_ready_classic
+            and classic_mode != RUNTIME_DISABLED
+        )
+    )
+    out["snapshot_sync_valid"] = snapshot_sync_valid
+    out["classic_provider_degraded_safe"] = bool(
+        out["data_valid"] and not snapshot_sync_valid and provider_ready_classic
+    )
     out["futures_present"] = futures_present
     out["selected_option_present"] = selected_option_present
     out["dhan_context_fresh"] = bool(quality.get("fresh"))
@@ -4679,8 +4703,11 @@ if "_BATCH7_ORIGINAL_FAMILY_FEATURES" not in globals():
             )
             out["stage_flags"] = flags
             snapshot = dict(out.get("snapshot", {}) or {})
-            snapshot["valid"] = bool(flags["data_valid"])
-            snapshot["validity"] = "OK" if flags["data_valid"] else "MARKETDATA_INCOMPLETE_OR_UNSYNCED"
+            # Preserve raw sync truth separately from consumer-view data_valid.
+            # R5D must not pretend UNSYNCED market data is fully synced.
+            snapshot["valid"] = bool(flags.get("snapshot_sync_valid", flags["data_valid"]))
+            snapshot["validity"] = "OK" if snapshot["valid"] else "MARKETDATA_INCOMPLETE_OR_UNSYNCED"
+            # DATAKEEP_C1P_CONTRACT_CLEANUP: keep classic_provider_degraded_safe outside snapshot; snapshot keys remain strict.
             out["snapshot"] = snapshot
 
             families = dict(out.get("families", {}) or {})

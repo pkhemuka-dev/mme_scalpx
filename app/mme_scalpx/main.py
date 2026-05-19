@@ -112,6 +112,65 @@ from app.mme_scalpx.core.clock import (
 )
 from app.mme_scalpx.core.settings import AppSettings, get_settings
 
+# B1-R29 observe-only execution-shadow seam guard.
+# This guard is intentionally narrow:
+# - active only when SCALPX_OBSERVE_ONLY=1
+# - active only when SCALPX_B1_EXECUTION_SHADOW_NO_BROKER=1
+# - never enables broker orders, paper/live, or real broker registration
+def _b1_allow_execution_shadow_no_broker() -> bool:
+    return (
+        os.environ.get("SCALPX_OBSERVE_ONLY") == "1"
+        and os.environ.get("SCALPX_B1_EXECUTION_SHADOW_NO_BROKER") == "1"
+        and not os.environ.get("SCALPX_ALLOW_BROKER_ORDERS")
+        and not os.environ.get("SCALPX_REAL_LIVE_ALLOWED")
+        and not os.environ.get("SCALPX_ALLOW_REAL_LIVE")
+        and not os.environ.get("SCALPX_PAPER_ARMED")
+        and not os.environ.get("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME")
+    )
+
+# B1A-R32 observe-only execution-shadow/no-broker adapter.
+# This adapter exists only to let execution.py start in observe-only lifecycle
+# proof mode without registering a real broker. It must never send, modify,
+# cancel, or flatten a real broker order.
+class _B1ExecutionShadowNoBrokerBroker:
+    broker_id = "b1_execution_shadow_no_broker"
+    provider_id = "b1_execution_shadow_no_broker"
+    is_b1_execution_shadow_no_broker = True
+
+    def healthcheck(self) -> bool:
+        return True
+
+    def reconcile_position(self) -> dict[str, Any]:
+        return {
+            "side": "FLAT",
+            "quantity_lots": 0,
+            "broker_order_id": "",
+            "source": self.broker_id,
+        }
+
+    def reconcile_open_orders(self) -> list[dict[str, Any]]:
+        return []
+
+    def place_entry_order(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        raise RuntimeError("b1_execution_shadow_no_broker_refuses_entry_order")
+
+    def place_exit_order(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        raise RuntimeError("b1_execution_shadow_no_broker_refuses_exit_order")
+
+    def get_order(self, broker_order_id: str) -> dict[str, Any] | None:
+        return None
+
+    def cancel_order(self, broker_order_id: str) -> dict[str, Any]:
+        raise RuntimeError("b1_execution_shadow_no_broker_refuses_cancel_order")
+
+
+def _b1_resolve_execution_shadow_broker(service_name: str, broker: Any | None) -> Any | None:
+    if broker is not None:
+        return broker
+    if service_name == "execution" and _b1_allow_execution_shadow_no_broker():
+        return _B1ExecutionShadowNoBrokerBroker()
+    return broker
+
 LOGGER: Final[logging.Logger] = logging.getLogger("app.mme_scalpx.main")
 
 DEFAULT_SERVICE: Final[str] = "all"
@@ -1031,6 +1090,55 @@ def build_service_identity(app: AppContext, service_name: str) -> ServiceIdentit
     )
 
 
+# A6_PAPER_R17J_R2_EXECUTION_REPORT_ONLY_NO_BROKER_BEGIN
+def _a6_paper_r17j_r2_env_truthy(name):
+    value = str(os.environ.get(name, "")).strip().lower()
+    return value in {"1", "true", "yes", "y", "on"}
+
+
+def _a6_paper_r17j_r2_env_absent_or_false(name):
+    value = os.environ.get(name)
+    if value is None:
+        return True
+    return str(value).strip().lower() in {"", "0", "false", "no", "n", "off"}
+
+
+def _a6_paper_r17j_r2_execution_report_only_no_broker_allowed(app, service_name):
+    """Fail-closed report-only execution bootstrap bypass.
+
+    This does not approve paper trading, does not call a broker, does not place
+    orders, and does not mutate Redis. It only permits the execution dependency
+    preflight to pass without a registered broker during observe-only runtime
+    arming checks where all real-live, broker-order, and paper-arming flags are
+    absent or false.
+    """
+    if str(service_name) != "execution":
+        return False
+
+    if not _a6_paper_r17j_r2_env_truthy("SCALPX_OBSERVE_ONLY"):
+        return False
+
+    forbidden_real_flags = (
+        "SCALPX_REAL_LIVE_ALLOWED",
+        "SCALPX_ALLOW_REAL_LIVE",
+        "SCALPX_ALLOW_BROKER_ORDERS",
+        "SCALPX_ENABLE_LIVE",
+    )
+    if not all(_a6_paper_r17j_r2_env_absent_or_false(name) for name in forbidden_real_flags):
+        return False
+
+    paper_arming_flags = (
+        "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME",
+        "SCALPX_CONTROLLED_PAPER_SCOPE_ACK",
+        "SCALPX_PAPER_ARMED",
+        "SCALPX_ENABLE_PAPER",
+    )
+    if not all(_a6_paper_r17j_r2_env_absent_or_false(name) for name in paper_arming_flags):
+        return False
+
+    return True
+# A6_PAPER_R17J_R2_EXECUTION_REPORT_ONLY_NO_BROKER_END
+
 def _require_service_dependencies(app: AppContext, service_name: str) -> None:
     """
     Enforce only proven service dependency requirements.
@@ -1072,13 +1180,19 @@ def _require_service_dependencies(app: AppContext, service_name: str) -> None:
 
     if service_name == "execution":
         if deps.broker is None:
-            raise DependencyError(
-                "execution service requires registered broker. "
-                "Use register_bootstrap_dependencies(broker=...)."
-            )
-
-
-
+            if _b1_allow_execution_shadow_no_broker():
+                # B1-R29B: observe-only execution-shadow/no-broker route.
+                # This bypasses only the broker-registration gate; it does not enable broker orders.
+                pass
+            elif _a6_paper_r17j_r2_execution_report_only_no_broker_allowed(app, service_name):
+                # A6_PAPER_R17J_R2_REPORT_ONLY_NO_BROKER_GUARD
+                # Report-only preflight bypass; does not enable paper/broker/order execution.
+                pass
+            else:
+                raise DependencyError(
+                    "execution service requires registered broker. "
+                    "Use register_bootstrap_dependencies(broker=...)."
+                )
 def _normalize_runtime_instruments_for_services(runtime_instruments: Any | None) -> Any | None:
     """
     Normalize domain runtime instruments into the exact frozen service-facing
@@ -1135,7 +1249,7 @@ def build_runtime_context(
         zerodha_feed_adapter=feed_surfaces.zerodha_feed_adapter,
         dhan_feed_adapter=feed_surfaces.dhan_feed_adapter,
         dhan_context_adapter=feed_surfaces.dhan_context_adapter,
-        broker=app.dependencies.broker,
+        broker=_b1_resolve_execution_shadow_broker(identity.service_name, app.dependencies.broker),
     )
 
 

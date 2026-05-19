@@ -1,0 +1,7 @@
+# B1A-R38A_STREAM_SYMBOL_DISCOVERY_NO_PATCH_NO_START
+
+- classification: PASS_R38A_CANONICAL_STREAM_SYMBOLS_DISCOVERED_NO_PATCH_NO_START
+- latest_r38_path: /home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/B1A-R38_LIFECYCLE_TRIGGER_PATCH_APPROVAL_REQUIRED_patch_observe_only_lifecycle_publishers_for_risk_execution_no_start_no_replay_no_pnl_20260517_171410.json
+- risk_candidates_count: 5
+- execution_candidates_count: 13
+- next_route: B1A-R38B_RETRY_LIFECYCLE_PATCH_WITH_DISCOVERED_NAMES_SYMBOLS_APPROVAL_REQUIRED

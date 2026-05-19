@@ -236,6 +236,7 @@ STAGE_FLAG_KEYS: Final[tuple[str, ...]] = (
     "data_quality_ok",
     "session_eligible",
     "warmup_complete",
+    "tradability_ok",
     "risk_veto_active",
     "reconciliation_lock_active",
     "active_position_present",
@@ -246,6 +247,8 @@ STAGE_FLAG_KEYS: Final[tuple[str, ...]] = (
     "futures_present",
     "call_present",
     "put_present",
+    "snapshot_sync_valid",
+    "classic_provider_degraded_safe",
 )
 
 COMMON_FUTURES_KEYS: Final[tuple[str, ...]] = (
@@ -875,6 +878,8 @@ def build_empty_stage_flags_block() -> dict[str, Any]:
         "data_quality_ok": False,
         "session_eligible": False,
         "warmup_complete": False,
+        # DATAKEEP_C6E_STAGE_FLAGS_TRADABILITY_OK_REPAIR
+        "tradability_ok": False,
         "risk_veto_active": False,
         "reconciliation_lock_active": False,
         "active_position_present": False,
@@ -885,6 +890,8 @@ def build_empty_stage_flags_block() -> dict[str, Any]:
         "futures_present": False,
         "call_present": False,
         "put_present": False,
+        "snapshot_sync_valid": False,
+        "classic_provider_degraded_safe": False,
     }
 
 

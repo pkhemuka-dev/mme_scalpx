@@ -1,0 +1,8 @@
+# LANE-F-R4R6_DATA_QUALITY_BLOCKER_AUDIT_NO_PATCH_NO_START
+
+- classification: PASS_LANE_F_R4R6_DATA_QUALITY_BLOCKER_CLASSIFIED_NO_PATCH_NO_START
+- candidate_like_count: 0
+- dominant_blocker: MIST:CALL:classic_runtime_disabled
+- suspected_layer: UNKNOWN
+- orders_xlen: 0
+- next_route: AFTER_MARKET_PLAN_STRATEGY_DATA_QUALITY_GATE_REVIEW_OR_REPEAT_LIVE_CAPTURE

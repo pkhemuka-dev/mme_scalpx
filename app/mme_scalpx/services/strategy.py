@@ -1536,3 +1536,225 @@ def _o23h_repair_hold_bridge_decision(decision, local_vars):
     except Exception:
         return decision
 # --- O23-H controlled-paper consumer-view bridge helper END ---
+
+# --- BEGIN A6-LIVE-R2H CONTROLLED PAPER ACTIVATION GATE ---
+
+from typing import Any as _A6R2HAny, Mapping as _A6R2HMapping
+
+_A6_LIVE_R2H_REAL_LIVE_ENV_KEYS = (
+    "SCALPX_REAL_LIVE_ALLOWED",
+    "SCALPX_ALLOW_REAL_LIVE",
+    "SCALPX_ALLOW_BROKER_ORDERS",
+)
+
+_A6_LIVE_R2H_RUNTIME_ENV_KEY = "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"
+_A6_LIVE_R2H_SCOPE_ACK_ENV_KEY = "SCALPX_CONTROLLED_PAPER_SCOPE_ACK"
+
+
+def _a6_live_r2h_truthy(value: _A6R2HAny) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on", "allow", "allowed"}
+
+
+def _a6_live_r2h_real_live_env_present() -> dict[str, str]:
+    import os as _a6_live_r2h_os
+    return {
+        key: str(_a6_live_r2h_os.environ.get(key))
+        for key in _A6_LIVE_R2H_REAL_LIVE_ENV_KEYS
+        if _a6_live_r2h_truthy(_a6_live_r2h_os.environ.get(key))
+    }
+
+
+def a6_live_r2h_parse_scope_ack(scope_ack: str) -> dict[str, _A6R2HAny]:
+    """Parse the future live-session controlled-paper approval phrase.
+
+    This helper is intentionally inert unless the exact runtime env is supplied by a
+    later approved command. A6-LIVE-R2H itself keeps env unset and proves blocked.
+    """
+
+    text = str(scope_ack or "").upper()
+    families = [x for x in ("MIST", "MISB", "MISC", "MISR", "MISO") if x in text]
+    sides = [x for x in ("CALL", "PUT") if x in text]
+    return {
+        "valid_shape": (
+            text.startswith("I APPROVE LIVE-SESSION CONTROLLED PAPER:")
+            and len(families) == 1
+            and len(sides) == 1
+            and "1 LOT ONLY" in text
+            and "PAPER/SANDBOX ONLY" in text
+            and "REAL LIVE FORBIDDEN" in text
+            and "NO BROKER FAILOVER" in text
+            and "NO MID-POSITION PROVIDER MIGRATION" in text
+        ),
+        "family_id": families[0] if len(families) == 1 else "",
+        "side": sides[0] if len(sides) == 1 else "",
+        "raw": scope_ack,
+    }
+
+
+def a6_live_r2h_controlled_paper_activation_gate(
+    activation_view: _A6R2HMapping[str, _A6R2HAny] | None = None,
+    *,
+    selected_scope: _A6R2HMapping[str, _A6R2HAny] | None = None,
+    position_flat: bool = False,
+    orders_zero: bool = False,
+) -> dict[str, _A6R2HAny]:
+    """A6-LIVE-R2H minimal activation gate.
+
+    This does not send orders, does not call brokers, and does not disable observe_only.
+    It only returns whether a report-only HOLD may be interpreted as a controlled-paper
+    candidate by a later approved paper/sandbox order-cycle command.
+
+    Promotion remains blocked unless all existing strategy/readiness facts are already true.
+    """
+
+    import os as _a6_live_r2h_os
+
+    view = dict(activation_view or {})
+    scope = dict(selected_scope or {})
+    live_env = _a6_live_r2h_real_live_env_present()
+    runtime_enabled = _a6_live_r2h_truthy(_a6_live_r2h_os.environ.get(_A6_LIVE_R2H_RUNTIME_ENV_KEY))
+    ack = a6_live_r2h_parse_scope_ack(_a6_live_r2h_os.environ.get(_A6_LIVE_R2H_SCOPE_ACK_ENV_KEY, ""))
+
+    family_id = str(
+        scope.get("family_id")
+        or view.get("activation_selected_family_id")
+        or view.get("family_id")
+        or view.get("strategy_family_id")
+        or ""
+    ).upper()
+    side = str(scope.get("side") or view.get("side") or view.get("option_side") or "").upper()
+    if side == "CE":
+        side = "CALL"
+    if side == "PE":
+        side = "PUT"
+
+    candidate_count = int(view.get("activation_candidate_count") or view.get("candidate_count") or 0)
+    bridge_enabled = _a6_live_r2h_truthy(view.get("activation_bridge_enabled"))
+    safe_to_promote = _a6_live_r2h_truthy(view.get("activation_safe_to_promote") or view.get("safe_to_promote"))
+    provider_ready = not _a6_live_r2h_truthy(view.get("provider_blocked")) and not _a6_live_r2h_truthy(view.get("provider_veto"))
+    data_ready = not _a6_live_r2h_truthy(view.get("data_invalid")) and not _a6_live_r2h_truthy(view.get("warmup_blocked"))
+
+    blockers: list[str] = []
+    if live_env:
+        blockers.append("REAL_LIVE_ENV_PRESENT")
+    if not runtime_enabled:
+        blockers.append("CONTROLLED_PAPER_RUNTIME_NOT_ENABLED")
+    if not ack["valid_shape"]:
+        blockers.append("SCOPE_ACK_INVALID_OR_MISSING")
+    if family_id != ack.get("family_id") or side != ack.get("side"):
+        blockers.append("SCOPE_ACK_MISMATCH")
+    if family_id == "MISO" and side == "PUT" and not _a6_live_r2h_truthy(view.get("dhan_context_fresh")):
+        blockers.append("MISO_PUT_DHAN_CONTEXT_NOT_PROVEN")
+    if not bridge_enabled:
+        blockers.append("ACTIVATION_BRIDGE_NOT_ENABLED")
+    if candidate_count <= 0:
+        blockers.append("NO_ACTIVATION_CANDIDATE")
+    if not safe_to_promote:
+        blockers.append("ACTIVATION_SAFE_TO_PROMOTE_FALSE")
+    if not provider_ready:
+        blockers.append("PROVIDER_READINESS_BLOCKED")
+    if not data_ready:
+        blockers.append("DATA_OR_WARMUP_BLOCKED")
+    if not orders_zero:
+        blockers.append("ORDERS_STREAM_NOT_ZERO")
+    if not position_flat:
+        blockers.append("POSITION_NOT_FLAT")
+
+    ok = len(blockers) == 0
+
+    return {
+        "lane": "A6-LIVE-R2H",
+        "ok": ok,
+        "status": "CONTROLLED_PAPER_ACTIVATION_GATE_PASS" if ok else "CONTROLLED_PAPER_ACTIVATION_GATE_BLOCKED",
+        "blockers": blockers,
+        "family_id": family_id,
+        "side": side,
+        "candidate_count": candidate_count,
+        "activation_bridge_enabled": bridge_enabled,
+        "activation_safe_to_promote": safe_to_promote,
+        "runtime_enabled": runtime_enabled,
+        "scope_ack_valid": ack["valid_shape"],
+        "orders_zero": orders_zero,
+        "position_flat": position_flat,
+        "real_live_forbidden": True,
+        "order_sent": False,
+        "broker_calls_executed": False,
+        "redis_trading_stream_write_attempted": False,
+    }
+# --- END A6-LIVE-R2H CONTROLLED PAPER ACTIVATION GATE ---
+
+
+# A6_PAPER_R10_REPORT_ONLY_STRATEGY_BRIDGE_BEGIN
+CONTROLLED_PAPER_STRATEGY_BRIDGE_VERSION = "a6_paper_r10_report_only_v1"
+
+
+def build_controlled_paper_report_only_strategy_bridge_payload(
+    env,
+    *,
+    orders_zero,
+    position_flat,
+    risk_execution_absent,
+    lock_execution_absent=None,
+):
+    """Build a report-only controlled-paper strategy bridge payload.
+
+    This helper is intentionally inert. It does not publish decisions, write
+    orders:mme:stream, call brokers, start risk/execution, mutate positions, or
+    alter the live strategy action. Runtime loop wiring requires a later
+    approval/proof batch.
+    """
+
+    from app.mme_scalpx.services.controlled_paper_observability import (
+        ControlledPaperSafetyFacts,
+        build_controlled_paper_route_observation,
+    )
+
+    safety = ControlledPaperSafetyFacts(
+        orders_zero=bool(orders_zero),
+        position_flat=bool(position_flat),
+        risk_execution_absent=bool(risk_execution_absent),
+        lock_execution_absent=lock_execution_absent,
+    )
+    observation = build_controlled_paper_route_observation(env or {}, safety=safety)
+    payload = observation.as_dict()
+    payload["strategy_bridge_version"] = CONTROLLED_PAPER_STRATEGY_BRIDGE_VERSION
+    payload["strategy_bridge_report_only"] = True
+    payload["strategy_bridge_runtime_wired"] = False
+    payload["strategy_bridge_order_intent_allowed"] = False
+    payload["strategy_bridge_broker_call_allowed"] = False
+    payload["strategy_bridge_risk_execution_start_allowed"] = False
+    return payload
+# A6_PAPER_R10_REPORT_ONLY_STRATEGY_BRIDGE_END
+
+
+# LANE-F-R4R11R diagnostic-only helper.
+# No candidate eligibility, broker/order, risk approval, execution fill,
+# replay, or PnL behavior is changed by this helper.
+def _lane_f_r4r11_runtime_gate_diagnostics(
+    *,
+    family_id=None,
+    branch_id=None,
+    reason=None,
+    action=None,
+    activation_mode=None,
+    report_only=None,
+    safe_to_promote=None,
+    promoted=None,
+):
+    reason_text = "" if reason is None else str(reason)
+    runtime_enabled = not (
+        "runtime_disabled" in reason_text or "disabled" in reason_text
+    )
+    return {
+        "family_runtime_enabled": bool(runtime_enabled),
+        "family_runtime_gate_reason": reason_text,
+        "family_runtime_family_id": family_id,
+        "family_runtime_branch_id": branch_id,
+        "family_runtime_action": action,
+        "family_runtime_activation_mode": activation_mode,
+        "family_runtime_report_only": report_only,
+        "family_runtime_safe_to_promote": safe_to_promote,
+        "family_runtime_promoted": promoted,
+        "lane_f_r4r11_diagnostic_only": True,
+    }
+

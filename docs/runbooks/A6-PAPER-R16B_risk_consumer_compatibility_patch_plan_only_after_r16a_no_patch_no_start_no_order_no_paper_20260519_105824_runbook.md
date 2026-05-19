@@ -1,0 +1,6 @@
+# A6-PAPER-R16B_risk_consumer_compatibility_patch_plan_only_after_r16a_no_patch_no_start_no_order_no_paper_20260519_105824 Runbook
+
+R16B patch plan proof created.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R16B_risk_consumer_compatibility_patch_plan_only_after_r16a_no_patch_no_start_no_order_no_paper_20260519_105824.json`
+Patch plan: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/patch_plans/A6-PAPER-R16B_risk_consumer_compatibility_patch_plan_only_after_r16a_no_patch_no_start_no_order_no_paper_20260519_105824_compatibility_patch_plan.md`

@@ -1,0 +1,8 @@
+# LANE-F-R3_LIVE_SESSION_CAPTURE_PREFLIGHT_NO_ORDER_NO_PATCH_NO_REPLAY_NO_PNL
+
+- classification: PASS_LANE_F_R3_LIVE_SESSION_CAPTURE_PREFLIGHT_READY_NO_ORDER
+- capture_preflight_ok: True
+- orders_xlen: 0
+- orders_growth_5s: 0
+- feed_or_decision_activity: True
+- next_route: LANE-F-R4_LIVE_SESSION_VALID_LIFECYCLE_CAPTURE_APPROVAL_REQUIRED

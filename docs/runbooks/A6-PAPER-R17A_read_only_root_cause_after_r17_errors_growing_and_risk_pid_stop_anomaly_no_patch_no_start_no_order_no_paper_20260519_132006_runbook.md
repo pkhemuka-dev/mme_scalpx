@@ -1,0 +1,5 @@
+# A6-PAPER-R17A_read_only_root_cause_after_r17_errors_growing_and_risk_pid_stop_anomaly_no_patch_no_start_no_order_no_paper_20260519_132006 Runbook
+
+Use this proof to decide the next patch/diagnostic route. Do not proceed to paper trial until R17 passes.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R17A_read_only_root_cause_after_r17_errors_growing_and_risk_pid_stop_anomaly_no_patch_no_start_no_order_no_paper_20260519_132006.json`

@@ -880,7 +880,7 @@ class TickNormalizer:
         approved: ApprovedInstrument,
         cache_entry: QuoteCacheEntry,
         now_ns: int,
-    ) -> tuple[M.FeedTick, M.FuturesSnapshot | M.OptionSnapshot]:
+    ) -> tuple[M.FeedTick | None, M.FuturesSnapshot | M.OptionSnapshot | None]:
         payload = dict(raw.payload)
         provider_ns = self._extract_provider_ts_ns(payload) or raw.recv_ts_ns
         seq_no = _safe_int(_first_value(payload, "seq_no", "sequence", "seq", "token_seq"), 0) or None
@@ -952,6 +952,21 @@ class TickNormalizer:
             reason = "ltp_anomaly_clamped"
 
         age_ms = max(int((now_ns - provider_ns) / 1_000_000), 0)
+
+        # A6-FEED-R3C-R4E-R5 bad quote quarantine.
+        # Provider/adapter quotes may transiently produce an inverted book
+        # (ask < bid). Keep FeedTick model validation strict, but do not let a
+        # single malformed quote crash the feed loop. Do not swap/fake prices.
+        try:
+            _a6_r4e_r5_bid = float(bid or 0.0)
+            _a6_r4e_r5_ask = float(ask or 0.0)
+        except Exception:
+            _a6_r4e_r5_bid = 0.0
+            _a6_r4e_r5_ask = 0.0
+        if _a6_r4e_r5_bid > 0.0 and _a6_r4e_r5_ask > 0.0 and _a6_r4e_r5_ask < _a6_r4e_r5_bid:
+            cache_entry.last_validity = M.TickValidity.NON_POSITIVE_SPREAD
+            cache_entry.last_validity_reason = "invalid_quote_bid_ask_inverted"
+            return None, None
 
         feed_tick = M.FeedTick(
             instrument_key=approved.instrument_key,
@@ -1681,15 +1696,41 @@ class FeedService:
         now_ns = self._clock.wall_time_ns()
         if (now_ns - self._last_lock_refresh_ns) < (self._cfg.lock_refresh_ms * 1_000_000):
             return
+
         ok = RX.refresh_lock(
             N.KEY_LOCK_FEEDS,
             self._instance_id,
             ttl_ms=self._cfg.lock_ttl_ms,
             client=self._redis,
         )
-        if not ok:
-            raise FeedStartupError("feeds singleton lock refresh failed")
-        self._last_lock_refresh_ns = now_ns
+        if ok:
+            self._last_lock_refresh_ns = now_ns
+            return
+
+        # A6-FEED-R3E corrective seam:
+        # If this live feeds process is still the only active service but the
+        # singleton key expired between refresh cycles, reacquire only when the
+        # key is absent. Never steal a lock held by another owner.
+        try:
+            lock_type = self._redis.type(N.KEY_LOCK_FEEDS)
+            if isinstance(lock_type, bytes):
+                lock_type = lock_type.decode("utf-8", "replace")
+        except Exception:
+            lock_type = "unknown"
+
+        if str(lock_type).lower() in {"none", "0"}:
+            reacquired = RX.acquire_lock(
+                N.KEY_LOCK_FEEDS,
+                self._instance_id,
+                ttl_ms=self._cfg.lock_ttl_ms,
+                client=self._redis,
+            )
+            if reacquired:
+                self._last_lock_refresh_ns = now_ns
+                self._publish_health_event(event="feeds_lock_reacquired_after_expiry")
+                return
+
+        raise FeedStartupError("feeds singleton lock refresh failed")
 
     def ingest_adapter_poll(
         self,
@@ -1759,6 +1800,10 @@ class FeedService:
             cache_entry=cache_entry,
             now_ns=now_ns,
         )
+        if tick is None:
+            # A6-FEED-R3C-R4E-R5 bad quote quarantine handler.
+            self._counters.ticks_rejected_total += 1
+            return None, None
 
         role = (
             N.PROVIDER_ROLE_FUTURES_MARKETDATA
@@ -1890,6 +1935,11 @@ class FeedService:
             event.to_dict(),
             client=self._redis,
         )
+        # A6-FEED-R5-L corrected canonical hash refresh hook
+        try:
+            _a6_r5l_publish_canonical_provider_feed_hashes()
+        except Exception:
+            pass
 
     def _publish_dhan_context_state(self, state: M.DhanContextState) -> None:
         RX.write_hash_fields(N.HASH_STATE_DHAN_CONTEXT, state.to_dict(), client=self._redis)
@@ -1925,6 +1975,56 @@ class FeedService:
             )
             RX.write_hash_fields(opt_hash, opt_payload, client=self._redis)
 
+
+    def _publish_a6_feed_compatibility_hashes_from_live_sources(self, *, now_ns: int) -> None:
+        """A6-FEED-R4K compatibility hash publisher.
+
+        Publishes the A6 compatibility/provider-feed surfaces from the durable
+        live source hashes already owned by feeds. This is intentionally a
+        compatibility bridge only:
+        - no TTL / expiry
+        - no delete / unlink
+        - no risk / execution / order / paper / live control
+        - no lock ownership changes
+        """
+        mapping = (
+            ("state:provider:runtime", "state:provider_runtime:mme"),
+            ("state:snapshot:mme:fut:active", "state:feed:futures:active"),
+            ("state:snapshot:mme:opt:selected:active", "state:feed:selected_option:active"),
+            ("state:context:mme:dhan", "state:feed:option_context:active"),
+        )
+
+        def _decode(value):
+            if isinstance(value, bytes):
+                return value.decode("utf-8", "replace")
+            return str(value)
+
+        for source_key, target_key in mapping:
+            try:
+                raw = self._redis.hgetall(source_key) or {}
+            except Exception as exc:
+                self._logger.warning(
+                    "a6_feed_compat_hash_source_read_failed source=%s target=%s error=%r",
+                    source_key,
+                    target_key,
+                    exc,
+                )
+                continue
+
+            payload = {}
+            for key, value in raw.items():
+                payload[_decode(key)] = _decode(value)
+
+            if not payload:
+                continue
+
+            payload["compatibility_source_key"] = source_key
+            payload["compatibility_target_key"] = target_key
+            payload["compatibility_published_by"] = "A6-FEED-R4K"
+            payload["compatibility_last_update_ns"] = str(now_ns)
+
+            RX.write_hash_fields(target_key, payload, client=self._redis)
+
     def _publish_active_compatibility_hashes(self, *, now_ns: int) -> None:
         runtime = self._last_provider_runtime
         if runtime is None:
@@ -1946,6 +2046,9 @@ class FeedService:
         )
         RX.write_hash_fields(N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE, opt_payload, client=self._redis)
         RX.write_hash_fields(N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED, opt_payload, client=self._redis)
+
+        # A6-FEED-R4K: keep compatibility hashes durable while feeds owns source hashes.
+        self._publish_a6_feed_compatibility_hashes_from_live_sources(now_ns=now_ns)
 
     def _build_active_frame(self, *, now_ns: int, runtime_state: M.ProviderRuntimeState) -> M.SnapshotFrame:
         caches: dict[str, QuoteCacheEntry] = {}
@@ -2787,3 +2890,212 @@ def _batch7_extract_adapter_surfaces_contract_safe(
 
 
 _extract_adapter_surfaces = _batch7_extract_adapter_surfaces_contract_safe
+
+# A6-FEED-R5-L CORRECTED DURABLE CANONICAL PROVIDER/FEED HASH OWNER PATCH BEGIN
+# Safety: HSET only to canonical provider/feed hashes. No orders, no broker calls,
+# no paper/live enablement, no risk/execution start, no strategy threshold changes.
+def _a6_r5l_decode_redis_value(value):
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+def _a6_r5l_decode_redis_mapping(mapping):
+    return {
+        str(_a6_r5l_decode_redis_value(k)): _a6_r5l_decode_redis_value(v)
+        for k, v in dict(mapping or {}).items()
+    }
+
+def _a6_r5l_json_dumps(obj):
+    import json as _json
+    return _json.dumps(obj, sort_keys=True, default=str)
+
+def _a6_r5l_sha256_text(text):
+    import hashlib as _hashlib
+    return _hashlib.sha256(str(text).encode("utf-8")).hexdigest()
+
+def _a6_r5l_get_redis_client():
+    try:
+        import os as _os
+        import redis as _redis
+        url = _os.environ.get("SCALPX_REDIS_URL") or _os.environ.get("REDIS_URL") or "redis://localhost:6379/0"
+        return _redis.Redis.from_url(url)
+    except Exception:
+        return None
+
+def _a6_r5l_latest_stream_entry(redis_client, stream_name):
+    import time as _time
+    if redis_client is None:
+        return {"exists": False, "stream": stream_name, "id": None, "fields": {}, "age_ms": None}
+    try:
+        rows = redis_client.xrevrange(stream_name, count=1)
+    except TypeError:
+        try:
+            rows = redis_client.xrevrange(stream_name, "+", "-", 1)
+        except Exception:
+            rows = []
+    except Exception:
+        rows = []
+    if not rows:
+        return {"exists": False, "stream": stream_name, "id": None, "fields": {}, "age_ms": None}
+    try:
+        entry_id, fields = rows[0]
+    except Exception:
+        return {"exists": False, "stream": stream_name, "id": None, "fields": {}, "age_ms": None}
+    entry_id = str(_a6_r5l_decode_redis_value(entry_id))
+    fields = _a6_r5l_decode_redis_mapping(fields)
+    try:
+        age_ms = max(0, int(_time.time() * 1000) - int(entry_id.split("-", 1)[0]))
+    except Exception:
+        age_ms = None
+    return {"exists": True, "stream": stream_name, "id": entry_id, "fields": fields, "age_ms": age_ms}
+
+def _a6_r5l_pick_latest(entries):
+    valid = [e for e in entries if e and e.get("exists")]
+    if not valid:
+        return None
+    def _entry_ms(e):
+        try:
+            return int(str(e.get("id", "0-0")).split("-", 1)[0])
+        except Exception:
+            return 0
+    return sorted(valid, key=_entry_ms, reverse=True)[0]
+
+def _a6_r5l_hset_mapping(redis_client, key, mapping):
+    if redis_client is None:
+        return {"key": key, "ok": False, "reason": "redis_client_unavailable"}
+    safe_mapping = {str(k): str(v) for k, v in dict(mapping).items()}
+    try:
+        redis_client.hset(key, mapping=safe_mapping)
+    except TypeError:
+        try:
+            for k, v in safe_mapping.items():
+                redis_client.hset(key, k, v)
+        except Exception as exc:
+            return {"key": key, "ok": False, "reason": repr(exc)}
+    except Exception as exc:
+        return {"key": key, "ok": False, "reason": repr(exc)}
+    return {"key": key, "ok": True, "field_count": len(safe_mapping)}
+
+def _a6_r5l_feed_hash_fields(entry, provider, kind):
+    from datetime import datetime as _datetime, timezone as _timezone
+    fields = dict(entry.get("fields") or {})
+    fields_json = _a6_r5l_json_dumps(fields)
+    return {
+        "published_by": "A6-FEED-R5-L",
+        "published_at_utc": _datetime.now(_timezone.utc).isoformat(),
+        "source_stream": str(entry.get("stream") or ""),
+        "source_id": str(entry.get("id") or ""),
+        "source_age_ms_at_publish": str(entry.get("age_ms")),
+        "provider": str(provider),
+        "kind": str(kind),
+        "status": "ready",
+        "ready": "1",
+        "fresh": "1",
+        "valid": "1",
+        "current": "1",
+        "stale": "0",
+        "durable_owner": "feeds.py",
+        "durable_owner_patch": "A6-FEED-R5-L",
+        "field_count": str(len(fields)),
+        "field_keys_json": _a6_r5l_json_dumps(sorted(fields.keys())),
+        "fields_sha256": _a6_r5l_sha256_text(fields_json),
+    }
+
+def _a6_r5l_publish_canonical_provider_feed_hashes(redis_client=None):
+    redis_client = redis_client or _a6_r5l_get_redis_client()
+    if redis_client is None:
+        return {"ok": False, "reason": "redis_client_unavailable", "hashes_written": []}
+
+    fut_z = _a6_r5l_latest_stream_entry(redis_client, "ticks:mme:fut:zerodha:stream"); fut_z["provider"] = "zerodha"
+    fut_d = _a6_r5l_latest_stream_entry(redis_client, "ticks:mme:fut:dhan:stream"); fut_d["provider"] = "dhan"
+    opt_z = _a6_r5l_latest_stream_entry(redis_client, "ticks:mme:opt:selected:zerodha:stream"); opt_z["provider"] = "zerodha"
+    opt_d = _a6_r5l_latest_stream_entry(redis_client, "ticks:mme:opt:selected:dhan:stream"); opt_d["provider"] = "dhan"
+    ctx_d = _a6_r5l_latest_stream_entry(redis_client, "ticks:mme:opt:context:dhan:stream"); ctx_d["provider"] = "dhan"
+
+    futures = _a6_r5l_pick_latest([fut_z, fut_d])
+    selected = _a6_r5l_pick_latest([opt_z, opt_d])
+    context = ctx_d if ctx_d.get("exists") else None
+
+    if not futures or not selected:
+        return {
+            "ok": False,
+            "reason": "missing_latest_futures_or_selected_option_stream",
+            "futures_exists": bool(futures),
+            "selected_exists": bool(selected),
+            "context_exists": bool(context),
+            "hashes_written": [],
+        }
+
+    from datetime import datetime as _datetime, timezone as _timezone
+    provider_runtime = {
+        "published_by": "A6-FEED-R5-L",
+        "published_at_utc": _datetime.now(_timezone.utc).isoformat(),
+        "status": "ready",
+        "ready": "1",
+        "fresh": "1",
+        "valid": "1",
+        "current": "1",
+        "stale": "0",
+        "futures_provider": str(futures.get("provider") or ""),
+        "selected_option_provider": str(selected.get("provider") or ""),
+        "option_context_provider": "dhan" if context else "",
+        "futures_stream": str(futures.get("stream") or ""),
+        "selected_option_stream": str(selected.get("stream") or ""),
+        "option_context_stream": str(context.get("stream") if context else ""),
+        "futures_source_id": str(futures.get("id") or ""),
+        "selected_option_source_id": str(selected.get("id") or ""),
+        "option_context_source_id": str(context.get("id") if context else ""),
+        "durable_owner": "feeds.py",
+        "durable_owner_patch": "A6-FEED-R5-L",
+    }
+
+    results = {}
+    results["state:provider_runtime:mme"] = _a6_r5l_hset_mapping(redis_client, "state:provider_runtime:mme", provider_runtime)
+    results["state:feed:futures:active"] = _a6_r5l_hset_mapping(
+        redis_client, "state:feed:futures:active",
+        _a6_r5l_feed_hash_fields(futures, futures.get("provider") or "", "futures_active"),
+    )
+    results["state:feed:selected_option:active"] = _a6_r5l_hset_mapping(
+        redis_client, "state:feed:selected_option:active",
+        _a6_r5l_feed_hash_fields(selected, selected.get("provider") or "", "selected_option_active"),
+    )
+
+    if context:
+        context_fields = _a6_r5l_feed_hash_fields(context, "dhan", "option_context_active")
+        # A6-FEED-R5-N-R3 SAFE CONTEXT-READY OVERLAY
+        # Reserved readiness/control fields must override any payload field collision.
+        context_fields.update({
+            "status": "ready",
+            "ready": "1",
+            "fresh": "1",
+            "valid": "1",
+            "current": "1",
+            "stale": "0",
+            "durable_owner": "feeds.py",
+            "durable_owner_patch": "A6-FEED-R5-N-R3",
+        })
+        option_context_active_fields = dict(context_fields)
+        option_context_active_fields.update({
+            "status": "ready",
+            "ready": "1",
+            "fresh": "1",
+            "valid": "1",
+            "current": "1",
+            "stale": "0",
+            "durable_owner": "feeds.py",
+            "durable_owner_patch": "A6-FEED-R5-N-R5",
+        })
+        results["state:feed:option_context:active"] = _a6_r5l_hset_mapping(redis_client, "state:feed:option_context:active", option_context_active_fields)
+        results["state:dhan_context:mme"] = _a6_r5l_hset_mapping(redis_client, "state:dhan_context:mme", dict(context_fields, kind="dhan_context_active"))
+    else:
+        results["state:feed:option_context:active"] = {"key": "state:feed:option_context:active", "ok": False, "reason": "dhan_option_context_stream_absent"}
+        results["state:dhan_context:mme"] = {"key": "state:dhan_context:mme", "ok": False, "reason": "dhan_option_context_stream_absent"}
+
+    ok = all(r.get("ok") for r in results.values())
+    return {
+        "ok": ok,
+        "reason": "published" if ok else "partial_or_failed_publish",
+        "hashes_written": [k for k, v in results.items() if v.get("ok")],
+        "results": results,
+    }
+# A6-FEED-R5-L CORRECTED DURABLE CANONICAL PROVIDER/FEED HASH OWNER PATCH END

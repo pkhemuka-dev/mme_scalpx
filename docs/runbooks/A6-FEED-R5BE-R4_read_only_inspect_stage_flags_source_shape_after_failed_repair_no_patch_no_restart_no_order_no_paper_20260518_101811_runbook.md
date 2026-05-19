@@ -1,0 +1,8 @@
+# A6-FEED-R5BE-R4_read_only_inspect_stage_flags_source_shape_after_failed_repair_no_patch_no_restart_no_order_no_paper_20260518_101811 Runbook
+
+Next: inspect proof.source_shape, then issue one narrow source repair patch.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-FEED-R5BE-R4_read_only_inspect_stage_flags_source_shape_after_failed_repair_no_patch_no_restart_no_order_no_paper_20260518_101811.json`
+Audit: `/home/Lenovo/scalpx/projects/mme_scalpx/run/audits/A6-FEED-R5BE-R4_read_only_inspect_stage_flags_source_shape_after_failed_repair_no_patch_no_restart_no_order_no_paper_20260518_101811_audit.json`
+Milestone: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/milestones/A6-FEED-R5BE-R4_read_only_inspect_stage_flags_source_shape_after_failed_repair_no_patch_no_restart_no_order_no_paper_20260518_101811.md`
+Handoff: `/home/Lenovo/scalpx/projects/mme_scalpx/run/handoffs/A6-FEED-R5BE-R4_read_only_inspect_stage_flags_source_shape_after_failed_repair_no_patch_no_restart_no_order_no_paper_20260518_101811_handoff.md`

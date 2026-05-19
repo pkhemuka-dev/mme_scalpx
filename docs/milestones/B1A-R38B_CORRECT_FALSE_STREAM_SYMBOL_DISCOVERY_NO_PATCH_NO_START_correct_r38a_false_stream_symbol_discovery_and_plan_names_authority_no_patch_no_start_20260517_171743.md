@@ -1,0 +1,7 @@
+# B1A-R38B_CORRECT_FALSE_STREAM_SYMBOL_DISCOVERY_NO_PATCH_NO_START
+
+- classification: PASS_R38B_R38A_FALSE_POSITIVE_CONFIRMED_NAMES_AUTHORITY_REQUIRED_NO_PATCH_NO_START
+- r38a_false_positive: True
+- exact_risk_stream_symbols_count: 0
+- exact_execution_stream_symbols_count: 0
+- next_route: B1A-R38C_NAMES_AUTHORITY_AND_LIFECYCLE_PATCH_PLAN_NO_START

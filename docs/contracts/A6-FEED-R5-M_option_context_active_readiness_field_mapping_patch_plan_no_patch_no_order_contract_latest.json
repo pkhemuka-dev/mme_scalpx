@@ -1,0 +1,44 @@
+{
+  "batch": "A6-FEED-R5-M",
+  "current_bad_value": "selected_put_iv",
+  "design": [
+    "Patch only A6-FEED-R5-L helper path in feeds.py.",
+    "For state:feed:option_context:active, write payload-derived fields first if needed, then overlay readiness/control fields last.",
+    "Never allow context payload keys like selected_put_iv to overwrite reserved readiness key ready.",
+    "Reserved readiness/control keys must be: ready=1, fresh=1, valid=1, current=1, stale=0, status=ready.",
+    "Do not change strategy thresholds.",
+    "Do not start risk/execution.",
+    "Do not enable paper/live.",
+    "Do not broker order."
+  ],
+  "expected_value": "1",
+  "fresh_approval_required_for_next": "I APPROVE A6-FEED-R5-N SOURCE PATCH: FIX OPTION-CONTEXT ACTIVE READY FIELD COLLISION ONLY, NO PAPER, NO LIVE, NO BROKER ORDER, NO RISK/EXECUTION START, NO STRATEGY THRESHOLD CHANGE",
+  "patch_must_prove": [
+    "backup created",
+    "diff created",
+    "compile/import OK",
+    "helper direct call OK",
+    "state:feed:option_context:active.ready == 1",
+    "state:feed:option_context:active fresh/valid/current/stale/status OK",
+    "all five canonical hashes ready",
+    "orders:mme:stream remains 0",
+    "position remains FLAT",
+    "no risk/execution/order PID",
+    "no broker order",
+    "no paper/live",
+    "no strategy threshold change"
+  ],
+  "patch_plan_type": "FIX_R5L_OPTION_CONTEXT_HSET_ORDER_SO_READINESS_FIELDS_OVERRIDE_PAYLOAD_FIELDS",
+  "plan_status": "PATCH_PLAN_ONLY_NO_PATCH",
+  "reserved_keys": [
+    "current",
+    "fresh",
+    "ready",
+    "stale",
+    "status",
+    "valid"
+  ],
+  "root_cause": "OPTION_CONTEXT_ACTIVE_READY_FIELD_COLLISION_CONFIRMED",
+  "specific_collision_confirmed": true,
+  "target": "app/mme_scalpx/services/feeds.py"
+}

@@ -303,6 +303,11 @@ class DhanNiftyRuntimeResolver:
         )
 
     def resolve_from_runtime_instruments(self, runtime_instruments: Any) -> ResolvedDhanRuntimeIds:
+        # DATAKEEP_C2W_P_DHAN_MASTER_RUNTIME_RESOLVER
+        # Live-feed SecurityId resolution must not call Dhan /optionchain.
+        # Dhan optionchain remains available only through context/governor paths.
+        from app.mme_scalpx.integrations.dhan_marketdata import resolve_dhan_security_id_from_master
+
         current_future = getattr(runtime_instruments, "current_future", None)
         ce_atm = getattr(runtime_instruments, "ce_atm", None)
         ce_atm1 = getattr(runtime_instruments, "ce_atm1", None)
@@ -312,12 +317,6 @@ class DhanNiftyRuntimeResolver:
         if any(item is None for item in (current_future, ce_atm, ce_atm1, pe_atm, pe_atm1)):
             raise DhanRuntimeValidationError("runtime_instruments missing one or more required NIFTY contracts")
 
-        rows = self.fetch_instrument_rows()
-        future_row = self.resolve_nearest_future(rows, symbol="NIFTY")
-        fut_sid = _security_id(future_row)
-        if fut_sid is None:
-            raise DhanRuntimeUnavailableError("nearest future row missing security id")
-
         expiry_obj = getattr(ce_atm, "expiry", None)
         if isinstance(expiry_obj, date):
             expiry_text = expiry_obj.isoformat()
@@ -326,30 +325,45 @@ class DhanNiftyRuntimeResolver:
         if not expiry_text:
             raise DhanRuntimeValidationError("ce_atm expiry missing")
 
-        option_chain = self.get_option_chain(expiry=expiry_text)
+        fut_resolved = resolve_dhan_security_id_from_master(
+            underlying_symbol="NIFTY",
+            instrument_kind="future",
+        )
+        ce_atm_resolved = resolve_dhan_security_id_from_master(
+            underlying_symbol="NIFTY",
+            expiry=expiry_text,
+            strike=float(getattr(ce_atm, "strike")),
+            option_type="CE",
+            instrument_kind="option",
+        )
+        ce_atm1_resolved = resolve_dhan_security_id_from_master(
+            underlying_symbol="NIFTY",
+            expiry=expiry_text,
+            strike=float(getattr(ce_atm1, "strike")),
+            option_type="CE",
+            instrument_kind="option",
+        )
+        pe_atm_resolved = resolve_dhan_security_id_from_master(
+            underlying_symbol="NIFTY",
+            expiry=expiry_text,
+            strike=float(getattr(pe_atm, "strike")),
+            option_type="PE",
+            instrument_kind="option",
+        )
+        pe_atm1_resolved = resolve_dhan_security_id_from_master(
+            underlying_symbol="NIFTY",
+            expiry=expiry_text,
+            strike=float(getattr(pe_atm1, "strike")),
+            option_type="PE",
+            instrument_kind="option",
+        )
 
         return ResolvedDhanRuntimeIds(
-            current_future_security_id=int(fut_sid),
-            ce_atm_security_id=self.resolve_option_security_id(
-                option_chain=option_chain,
-                strike=float(getattr(ce_atm, "strike")),
-                option_type="CE",
-            ),
-            ce_atm1_security_id=self.resolve_option_security_id(
-                option_chain=option_chain,
-                strike=float(getattr(ce_atm1, "strike")),
-                option_type="CE",
-            ),
-            pe_atm_security_id=self.resolve_option_security_id(
-                option_chain=option_chain,
-                strike=float(getattr(pe_atm, "strike")),
-                option_type="PE",
-            ),
-            pe_atm1_security_id=self.resolve_option_security_id(
-                option_chain=option_chain,
-                strike=float(getattr(pe_atm1, "strike")),
-                option_type="PE",
-            ),
+            current_future_security_id=int(fut_resolved["security_id"]),
+            ce_atm_security_id=int(ce_atm_resolved["security_id"]),
+            ce_atm1_security_id=int(ce_atm1_resolved["security_id"]),
+            pe_atm_security_id=int(pe_atm_resolved["security_id"]),
+            pe_atm1_security_id=int(pe_atm1_resolved["security_id"]),
             selected_expiry=expiry_text,
         )
 

@@ -1,0 +1,8 @@
+# A6-FEED-R5BF-R3_guarded_pfeeds_only_recovery_after_decisions_growing_no_pstack_no_order_no_paper_20260518_132321 Runbook
+
+If PASS, next step can be a pstackcheck/readiness closure. If BLOCKED, inspect pfeedcheck_after and pfeeds_start_result.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-FEED-R5BF-R3_guarded_pfeeds_only_recovery_after_decisions_growing_no_pstack_no_order_no_paper_20260518_132321.json`
+Audit: `/home/Lenovo/scalpx/projects/mme_scalpx/run/audits/A6-FEED-R5BF-R3_guarded_pfeeds_only_recovery_after_decisions_growing_no_pstack_no_order_no_paper_20260518_132321_audit.json`
+Milestone: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/milestones/A6-FEED-R5BF-R3_guarded_pfeeds_only_recovery_after_decisions_growing_no_pstack_no_order_no_paper_20260518_132321.md`
+Handoff: `/home/Lenovo/scalpx/projects/mme_scalpx/run/handoffs/A6-FEED-R5BF-R3_guarded_pfeeds_only_recovery_after_decisions_growing_no_pstack_no_order_no_paper_20260518_132321_handoff.md`

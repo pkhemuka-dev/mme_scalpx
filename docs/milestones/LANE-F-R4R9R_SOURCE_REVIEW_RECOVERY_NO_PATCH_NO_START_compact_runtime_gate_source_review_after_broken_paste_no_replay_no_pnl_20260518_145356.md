@@ -1,0 +1,6 @@
+# LANE-F-R4R9R_SOURCE_REVIEW_RECOVERY_NO_PATCH_NO_START
+
+- classification: PASS_LANE_F_R4R9R_RUNTIME_GATE_SOURCE_REVIEW_READY_NO_PATCH
+- likely_owner: app/mme_scalpx/services/strategy.py
+- runtime_disabled_rows_count: 10
+- next_route: LANE-F-R4R10_RUNTIME_GATE_PATCH_APPROVAL_REQUIRED_OR_STOP_UNTIL_AFTER_MARKET

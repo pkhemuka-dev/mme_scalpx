@@ -1,0 +1,6 @@
+# A6-PAPER-R15_controlled_paper_trial_static_preflight_risk_execution_route_surface_no_start_no_order_no_paper_20260519_104436 Runbook
+
+R15 static preflight proof created.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R15_controlled_paper_trial_static_preflight_risk_execution_route_surface_no_start_no_order_no_paper_20260519_104436.json`
+Plan: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/patch_plans/A6-PAPER-R15_controlled_paper_trial_static_preflight_risk_execution_route_surface_no_start_no_order_no_paper_20260519_104436_static_preflight_plan.md`

@@ -1934,3 +1934,171 @@ __all__ = [
     "DhanMarketdataUnavailableError",
     "DhanMarketdataValidationError",
 ]
+
+
+# DATAKEEP_C2P_DHAN_MASTER_SECURITY_RESOLVER
+# Offline Dhan security-master resolver.
+#
+# Purpose:
+# - Resolve Dhan SECURITY_ID from the cached Dhan instrument master.
+# - Do not call /optionchain.
+# - Do not call any live API.
+# - Do not mutate Redis.
+# - This is intentionally standalone in C2P; bootstrap/live wiring comes later.
+def resolve_dhan_security_id_from_master(
+    *,
+    underlying_symbol: str = "NIFTY",
+    expiry: str | None = None,
+    strike: float | int | str | None = None,
+    option_type: str | None = None,
+    instrument_kind: str = "option",
+    master_path: str | None = None,
+) -> dict[str, object]:
+    """Resolve a Dhan SECURITY_ID from the cached Dhan master CSV.
+
+    Returns the selected master row as a dict with normalized metadata:
+    security_id, expiry, strike, option_type, display_name, source_path.
+
+    This function is deliberately offline/file-only. It must not call Dhan
+    HTTP APIs or depend on option-chain data.
+    """
+    import csv as _csv
+    import pathlib as _pathlib
+    from datetime import date as _date
+    from datetime import datetime as _datetime
+
+    root = _pathlib.Path.cwd()
+    master = _pathlib.Path(master_path) if master_path else root / "data/instruments/dhan/api_scrip_master_detailed.csv"
+    if not master.is_absolute():
+        master = root / master
+
+    if not master.exists():
+        raise FileNotFoundError(f"Dhan security master not found: {master}")
+
+    wanted_underlying = str(underlying_symbol or "NIFTY").upper().strip()
+    wanted_option_type = str(option_type or "").upper().strip()
+    wanted_kind = str(instrument_kind or "option").lower().strip()
+
+    wanted_expiry = str(expiry).strip() if expiry is not None else None
+
+    wanted_strike: float | None
+    if strike is None or str(strike).strip() == "":
+        wanted_strike = None
+    else:
+        wanted_strike = float(str(strike).strip())
+
+    def _plain_underlying_match(row: dict[str, str]) -> bool:
+        hay = " ".join([
+            row.get("UNDERLYING_SYMBOL", ""),
+            row.get("SYMBOL_NAME", ""),
+            row.get("DISPLAY_NAME", ""),
+        ]).upper()
+
+        if wanted_underlying not in hay:
+            return False
+
+        # Avoid treating sibling indices as plain NIFTY.
+        if wanted_underlying == "NIFTY" and any(x in hay for x in ("BANKNIFTY", "FINNIFTY", "MIDCPNIFTY")):
+            return False
+
+        return True
+
+    def _parse_expiry(value: str) -> _date | None:
+        value = (value or "").strip()
+        for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
+            try:
+                return _datetime.strptime(value, fmt).date()
+            except Exception:
+                pass
+        return None
+
+    today = _date.today()
+    candidates: list[tuple[tuple[object, ...], dict[str, str]]] = []
+
+    with master.open("r", encoding="utf-8", errors="ignore", newline="") as f:
+        reader = _csv.DictReader(f)
+        for row in reader:
+            security_id = (row.get("SECURITY_ID") or "").strip()
+            if not security_id:
+                continue
+
+            if not _plain_underlying_match(row):
+                continue
+
+            row_expiry = (row.get("SM_EXPIRY_DATE") or "").strip()
+            row_expiry_date = _parse_expiry(row_expiry)
+            if wanted_expiry and row_expiry != wanted_expiry:
+                continue
+
+            inst = (row.get("INSTRUMENT") or row.get("INSTRUMENT_TYPE") or "").upper().strip()
+            row_option_type = (row.get("OPTION_TYPE") or "").upper().strip()
+            display = (row.get("DISPLAY_NAME") or "").upper().strip()
+
+            if wanted_kind in {"option", "opt"}:
+                if row_option_type not in {"CE", "PE"} and "OPT" not in inst:
+                    continue
+                if wanted_option_type and row_option_type != wanted_option_type:
+                    continue
+            elif wanted_kind in {"future", "fut"}:
+                if "FUT" not in inst and "FUT" not in display:
+                    continue
+            else:
+                raise ValueError(f"Unsupported instrument_kind={instrument_kind!r}")
+
+            row_strike_raw = (row.get("STRIKE_PRICE") or "").strip()
+            row_strike: float | None
+            try:
+                row_strike = float(row_strike_raw)
+            except Exception:
+                row_strike = None
+
+            if wanted_strike is not None:
+                if row_strike is None or abs(row_strike - wanted_strike) > 0.001:
+                    continue
+
+            expiry_rank_date = row_expiry_date or _date.max
+            if expiry is None and expiry_rank_date < today:
+                continue
+
+            strike_rank = abs((row_strike or 0.0) - (wanted_strike or (row_strike or 0.0)))
+
+            candidates.append((
+                (
+                    expiry_rank_date,
+                    strike_rank,
+                    row_option_type,
+                    int(security_id) if security_id.isdigit() else security_id,
+                ),
+                row,
+            ))
+
+    if not candidates:
+        raise LookupError(
+            "No Dhan SECURITY_ID match found for "
+            f"underlying={underlying_symbol!r}, expiry={expiry!r}, strike={strike!r}, "
+            f"option_type={option_type!r}, instrument_kind={instrument_kind!r}, master={master}"
+        )
+
+    candidates.sort(key=lambda x: x[0])
+    selected = candidates[0][1]
+
+    strike_value: float | None
+    try:
+        strike_value = float((selected.get("STRIKE_PRICE") or "").strip())
+    except Exception:
+        strike_value = None
+
+    return {
+        "security_id": int(selected["SECURITY_ID"]) if str(selected["SECURITY_ID"]).isdigit() else selected["SECURITY_ID"],
+        "underlying_symbol": selected.get("UNDERLYING_SYMBOL", ""),
+        "symbol_name": selected.get("SYMBOL_NAME", ""),
+        "display_name": selected.get("DISPLAY_NAME", ""),
+        "instrument": selected.get("INSTRUMENT") or selected.get("INSTRUMENT_TYPE", ""),
+        "expiry": selected.get("SM_EXPIRY_DATE", ""),
+        "strike": strike_value,
+        "option_type": selected.get("OPTION_TYPE", ""),
+        "lot_size": selected.get("LOT_SIZE", ""),
+        "source_path": str(master),
+        "source": "DHAN_SECURITY_MASTER",
+    }
+

@@ -1,0 +1,87 @@
+{
+  "batch": "A6-FEED-R5-I",
+  "forbidden": [
+    "no paper/live enablement",
+    "no broker order path changes",
+    "no risk/execution start",
+    "no strategy threshold change",
+    "no all-strategy firing",
+    "no forced candidate",
+    "no Redis trading stream write",
+    "no deletion/expiry of canonical hashes"
+  ],
+  "fresh_approval_required_for_next": "I APPROVE A6-FEED-R5-J SOURCE PATCH: MINIMAL DURABLE CANONICAL PROVIDER/FEED HASH OWNER ONLY, NO PAPER, NO LIVE, NO BROKER ORDER, NO RISK/EXECUTION START, NO STRATEGY THRESHOLD CHANGE",
+  "minimal_patch_design": {
+    "cadence": "inside feed-service runtime loop or immediately after feed snapshot publish, with low-cost HSET only",
+    "dhan_context_rule": "state:dhan_context:mme must mirror/derive from state:feed:option_context:active when Dhan option-context stream exists; otherwise fail closed, not fake ready",
+    "intent": "publish and refresh canonical provider/feed hashes continuously from existing live feed stream facts",
+    "no_delete_policy": "patch must not delete, expire, unlink, or flush canonical hashes",
+    "no_order_policy": "patch must not touch orders, execution, broker order, paper/live flags, strategy thresholds, or risk/execution startup",
+    "owner": "feeds/provider-runtime path",
+    "provider_runtime_hash_fields": [
+      "futures_provider",
+      "selected_option_provider",
+      "option_context_provider",
+      "futures_stream",
+      "selected_option_stream",
+      "option_context_stream",
+      "futures_source_id",
+      "selected_option_source_id",
+      "option_context_source_id",
+      "ready=1",
+      "fresh=1",
+      "valid=1",
+      "current=1",
+      "stale=0"
+    ],
+    "required_fields_each_hash": [
+      "published_by",
+      "published_at_utc",
+      "published_at_ist",
+      "provider",
+      "kind",
+      "status=ready",
+      "ready=1",
+      "fresh=1",
+      "valid=1",
+      "current=1",
+      "stale=0",
+      "source_stream",
+      "source_id",
+      "field_count",
+      "field_keys_json",
+      "fields_sha256"
+    ]
+  },
+  "patch_batch_must_do": [
+    "backup inspected target files under run/_code_backups/A6-FEED-R5-J_*",
+    "patch only approved target(s)",
+    "compile all patched Python files",
+    "import patched modules",
+    "run no-order safety proof",
+    "prove canonical hashes persist for observation window",
+    "prove all required hashes ready=1/fresh=1/valid=1/current=1/stale=0",
+    "prove provider_not_ready/view_data_invalid gone from fresh feature/decision samples",
+    "prove orders:mme:stream remains 0",
+    "prove state:position:mme remains FLAT",
+    "prove no broker order and no risk/execution start"
+  ],
+  "patch_plan_type": "PATCH_FEEDS_PY_DURABLE_CANONICAL_HASH_OWNER",
+  "plan_status": "PATCH_PLAN_ONLY_NO_PATCH",
+  "preferred_patch_target": "app/mme_scalpx/services/feeds.py",
+  "recommended_next_batch": "A6-FEED-R5-J source patch minimal durable canonical provider/feed hash owner / requires explicit approval",
+  "required_hashes": [
+    "state:provider_runtime:mme",
+    "state:feed:futures:active",
+    "state:feed:selected_option:active",
+    "state:feed:option_context:active",
+    "state:dhan_context:mme"
+  ],
+  "root_cause": "MINIMAL_DURABLE_FEEDS_OWNER_PATCH_PLAN_READY",
+  "secondary_targets_only_if_needed": [
+    "app/mme_scalpx/core/names.py only if required constants are missing",
+    "no runtime logic in names.py",
+    "no domain deletion/publish policy in redisx.py",
+    "features.py and strategy.py should remain consumers unless source audit proves consumer mapping bug"
+  ]
+}

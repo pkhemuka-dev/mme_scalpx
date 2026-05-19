@@ -1,0 +1,9 @@
+# B1B-R3_B1B_WAITING_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_START
+
+Verdict: `PASS_B1B_WAITING_STATE_HANDOFF_BUNDLE_CREATED_STOP_UNTIL_B1A_EVIDENCE`
+
+Archive: `run/evidence_bundles/B1B-R3_B1B_WAITING_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_START_package_b1b_r1_r1a_r2_artifacts_for_b1a_and_lane_e_waiting_state_20260517_165408.tar.gz`
+Pointer: `run/evidence_bundles/LATEST_B1B_WAITING_STATE_HANDOFF_BUNDLE.txt`
+Proof: `run/proofs/B1B-R3_B1B_WAITING_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_START_package_b1b_r1_r1a_r2_artifacts_for_b1a_and_lane_e_waiting_state_20260517_165408.json`
+
+B1B should now stop until B1A provides observe-only lifecycle evidence and runtime diff ownership/clean-tree proof.

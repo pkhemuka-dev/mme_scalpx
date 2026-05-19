@@ -1,0 +1,9 @@
+# LANE-F-R0_VALID_TRADE_LIFECYCLE_EVIDENCE_INVENTORY_NO_PATCH_NO_START
+
+- classification: REVIEW_LANE_F_R0_POSSIBLE_VALID_TRADE_LIFECYCLE_CANDIDATES_FOUND_NO_ADMISSION_YET
+- b1b_r5_wait_state_confirmed: True
+- files_scanned_count: 13493
+- maybe_valid_trade_lifecycle_count: 102
+- backtest_admission: NOT_ADMITTED
+- pnl_status: NOT_READY
+- next_route: LANE-F-R1_VALIDATE_CANDIDATE_LIFECYCLE_FILES_NO_REPLAY_NO_PNL

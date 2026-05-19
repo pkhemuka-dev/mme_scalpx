@@ -1,0 +1,64 @@
+{
+  "allowed_hashes_next": [
+    "state:provider_runtime:mme",
+    "state:feed:futures:active",
+    "state:feed:selected_option:active",
+    "state:feed:option_context:active",
+    "state:dhan_context:mme"
+  ],
+  "allowed_next_batch_if_approved": "A6-FEED-R4H direct-health guarded canonical hash publish / no paper / no live / no broker order",
+  "batch": "A6-FEED-R4G",
+  "direct_health_current_ok": true,
+  "forbidden": [
+    "risk/execution start",
+    "paper order",
+    "real live",
+    "broker order",
+    "source patch",
+    "threshold relaxation",
+    "forced candidate",
+    "A6-PAPER continuation before A6-FEED-R5 PASS"
+  ],
+  "fresh_approval_required_for_next": "I APPROVE A6-FEED-R4H DIRECT-HEALTH GUARDED CANONICAL HASH PUBLISH: NO PAPER, NO LIVE, NO BROKER ORDER, NO RISK/EXECUTION START, NO SOURCE PATCH",
+  "guards_required_in_next": [
+    "fresh approval phrase exact match",
+    "orders:mme:stream == 0",
+    "state:position:mme FLAT",
+    "no risk/execution/order process",
+    "danger paper/live/order env vars unset",
+    "lock:feeds is stable string",
+    "futures stream growing",
+    "selected option stream growing",
+    "latest futures entry exists",
+    "latest selected option entry exists",
+    "features or decisions growing",
+    "write only allowed canonical provider/feed hashes",
+    "backup existing target hashes first",
+    "no source patch",
+    "no service start/stop",
+    "no paper/live enablement",
+    "no broker order"
+  ],
+  "next_publish_source": {
+    "futures_source": {
+      "exists": true,
+      "id": "1778574257549-0",
+      "provider": "dhan",
+      "stream": "ticks:mme:fut:dhan:stream"
+    },
+    "option_context_source": {
+      "exists": true,
+      "id": "1778574257611-0",
+      "provider": "dhan",
+      "stream": "ticks:mme:opt:context:dhan:stream"
+    },
+    "selected_option_source": {
+      "exists": true,
+      "id": "1778574257542-0",
+      "provider": "zerodha",
+      "stream": "ticks:mme:opt:selected:zerodha:stream"
+    }
+  },
+  "plan_status": "PLAN_ONLY_NO_HASH_PUBLISH",
+  "root_cause_from_dependency": "HELPER_DISCOVERY_MISSING_BUT_DIRECT_FEED_HEALTH_OK"
+}

@@ -1,0 +1,6 @@
+# A6-PAPER-R17_runtime_arming_preflight_verify_env_and_risk_execution_start_conditions_no_start_no_order_no_paper_20260519_115218 Runbook
+
+If PASS, next step is a separate no-order risk/execution start probe only, not a paper order.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R17_runtime_arming_preflight_verify_env_and_risk_execution_start_conditions_no_start_no_order_no_paper_20260519_115218.json`
+Arming plan: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/patch_plans/A6-PAPER-R17_runtime_arming_preflight_verify_env_and_risk_execution_start_conditions_no_start_no_order_no_paper_20260519_115218_runtime_arming_preflight_plan.md`

@@ -1,0 +1,6 @@
+# LANE-F-R4R7_RUNTIME_ENABLEMENT_SURFACE_AUDIT_NO_PATCH_NO_START next route
+
+classification: PASS_LANE_F_R4R7_RUNTIME_ENABLEMENT_SURFACE_AUDIT_COMPLETE_NO_PATCH_NO_START
+next_route: AFTER_MARKET_PLAN_RUNTIME_ENABLEMENT_GATE_PATCH_REVIEW_NO_LIVE_CHANGE
+
+Do not patch during live session. After market, inspect runtime enablement gate and plan any patch separately.

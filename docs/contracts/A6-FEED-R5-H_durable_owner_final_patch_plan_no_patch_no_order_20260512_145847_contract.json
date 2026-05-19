@@ -1,0 +1,58 @@
+{
+  "batch": "A6-FEED-R5-H",
+  "consumer_boundary": "features/strategy consume canonical hashes; they must not become delete owners",
+  "consumer_provider_blockers_present": true,
+  "current_hash_presence": {
+    "state:dhan_context:mme": false,
+    "state:feed:futures:active": true,
+    "state:feed:option_context:active": true,
+    "state:feed:selected_option:active": true,
+    "state:provider_runtime:mme": true
+  },
+  "current_hash_ready": {
+    "state:dhan_context:mme": false,
+    "state:feed:futures:active": false,
+    "state:feed:option_context:active": false,
+    "state:feed:selected_option:active": false,
+    "state:provider_runtime:mme": false
+  },
+  "forbidden": [
+    "no paper/live enablement",
+    "no broker order path changes",
+    "no risk/execution start",
+    "no strategy threshold relaxation",
+    "no all-strategy firing",
+    "no Redis trading stream write",
+    "no source patch in this batch"
+  ],
+  "if_no_patch_needed_next_scope": [
+    "rerun A6-FEED-R5 readiness with post-current-only samples",
+    "then hand off to A6-PAPER only if PASS"
+  ],
+  "if_patch_required_next_patch_scope": [
+    "one minimal source patch only after explicit approval",
+    "prefer app/mme_scalpx/services/feeds.py if durable provider/feed hash owner is missing",
+    "use names.py constants if available; otherwise add names only if missing",
+    "do not add runtime logic to names.py",
+    "do not add domain deletion policy to redisx.py",
+    "back up target files under run/_code_backups/<batch>",
+    "compile/import proof required",
+    "proof must show hashes persist for observation window",
+    "proof must show features/decisions consume hashes",
+    "proof must show provider_not_ready/view_data_invalid gone from fresh samples",
+    "orders:mme:stream must remain zero",
+    "state:position:mme must remain FLAT",
+    "no broker order"
+  ],
+  "patch_plan_type": "MINIMAL_DURABLE_FEEDS_OWNER_PATCH_PLAN_AFTER_APPROVAL",
+  "plan_status": "FINAL_PATCH_PLAN_ONLY_NO_PATCH",
+  "preferred_runtime_owner": "feeds/provider-runtime path",
+  "required_hashes": [
+    "state:provider_runtime:mme",
+    "state:feed:futures:active",
+    "state:feed:selected_option:active",
+    "state:feed:option_context:active",
+    "state:dhan_context:mme"
+  ],
+  "root_cause": "REQUIRED_CANONICAL_HASHES_STILL_NOT_DURABLY_PRESENT"
+}

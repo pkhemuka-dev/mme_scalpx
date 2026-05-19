@@ -1036,7 +1036,75 @@ class RiskService:
 # =============================================================================
 
 
+# B1A-R38D observe-only lifecycle publisher.
+# Emits lifecycle/status only under explicit observe-only env gating.
+# Must never create candidates, risk approvals, execution fills, broker calls, orders, paper/live state, or PnL.
+def _b1a_observe_only_lifecycle_publish(context, phase):
+    try:
+        import os as _os
+        import subprocess as _subprocess
+        import time as _time
+        from app.mme_scalpx.core import names as _b1_names
+
+        if _os.environ.get("SCALPX_OBSERVE_ONLY") != "1":
+            return False
+        if _os.environ.get("SCALPX_B1_OBSERVE_ONLY_LIFECYCLE_PUBLISH") != "1":
+            return False
+
+        _forbidden = ['SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME', 'SCALPX_CONTROLLED_PAPER_SCOPE_ACK', 'SCALPX_REAL_LIVE_ALLOWED', 'SCALPX_ALLOW_REAL_LIVE', 'SCALPX_ALLOW_BROKER_ORDERS', 'SCALPX_PAPER_ARMED', 'SCALPX_ENABLE_PAPER', 'SCALPX_ENABLE_LIVE']
+        if any(_os.environ.get(_key) for _key in _forbidden):
+            return False
+
+        _stream = getattr(_b1_names, "STREAM_RISK_MME", "")
+        if not isinstance(_stream, str) or not _stream:
+            return False
+
+        _fields = {
+            "schema_version": "b1_observe_only_lifecycle_v1",
+            "service": "risk",
+            "event": "observe_only_lifecycle_probe",
+            "phase": str(phase),
+            "created_at_utc": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+            "observe_only": "true",
+            "trading_effect": "none",
+            "broker_call": "false",
+            "order_sent": "false",
+            "paper_or_live": "false",
+            "pnl": "false",
+            "candidate_generated": "false",
+            "risk_approved": "false",
+            "execution_fill": "false",
+            "source": "B1A-R38D",
+        }
+
+        _client = None
+        for _attr in ("redis", "redis_client", "redis_conn", "redis_connection"):
+            _client = getattr(context, _attr, None)
+            if _client is not None:
+                break
+
+        _deps = getattr(context, "dependencies", None)
+        if _client is None and _deps is not None:
+            for _attr in ("redis", "redis_client", "redis_conn", "redis_connection"):
+                _client = getattr(_deps, _attr, None)
+                if _client is not None:
+                    break
+
+        if _client is not None and hasattr(_client, "xadd"):
+            _client.xadd(_stream, _fields)
+            return True
+
+        _cmd = ["redis-cli", "XADD", _stream, "*"]
+        for _key, _value in _fields.items():
+            _cmd.extend([str(_key), str(_value)])
+        _proc = _subprocess.run(_cmd, text=True, capture_output=True, timeout=3)
+        return _proc.returncode == 0
+    except Exception:
+        return False
+
+
 def run(context: Any) -> int:
+    _b1a_observe_only_lifecycle_publish(context, phase="service_started")
     _validate_name_surface_or_die()
 
     if context is None:
@@ -1508,29 +1576,118 @@ def _batch14_ack(self, stream_name: str, message_id: str) -> None:
     RX.xack(stream_name, self.keys.risk_group, [message_id], client=self.redis)
 
 
-def _batch14_claim_pending(self, stream_name: str, now_ns: int, *, count: int = 10):
-    claim_fn = getattr(self.redis, "xautoclaim", None)
-    if not callable(claim_fn):
-        return []
+# A6_PAPER_R16C_R2_XAUTOCLAIM_COMPAT_BEGIN
+def _a6_paper_r16c_r2_redis_command_known(redis_client, command_name):
+    """Best-effort Redis command support probe.
 
-    min_idle_ms = max(1, int(self.cfg.thresholds.stale_heartbeat_seconds * 1000))
+    This is intentionally read-only. It prevents repeatedly calling unsupported
+    XAUTOCLAIM on older Redis servers.
+    """
     try:
-        result = claim_fn(
-            stream_name,
-            self.keys.risk_group,
-            self.cfg.consumer_name,
-            min_idle_ms,
-            "0-0",
-            count=count,
-        )
-    except Exception as exc:
-        self._publish_error_event(
-            event="risk_pending_claim_error",
-            detail=f"{stream_name}:{type(exc).__name__}:{exc}",
-            ts_ns=now_ns,
-        )
+        info = redis_client.execute_command("COMMAND", "INFO", command_name)
+    except Exception:
+        return False
+    return bool(info)
+
+
+def _a6_paper_r16c_r2_pending_ids_from_xpending_rows(rows, min_idle_ms):
+    ids = []
+    for row in rows or []:
+        message_id = None
+        idle_ms = None
+
+        if isinstance(row, dict):
+            message_id = (
+                row.get("message_id")
+                or row.get(b"message_id")
+                or row.get("id")
+                or row.get(b"id")
+            )
+            idle_ms = (
+                row.get("time_since_delivered")
+                or row.get(b"time_since_delivered")
+                or row.get("idle")
+                or row.get(b"idle")
+            )
+        elif isinstance(row, (list, tuple)) and row:
+            message_id = row[0]
+            if len(row) >= 3:
+                idle_ms = row[2]
+
+        if isinstance(message_id, bytes):
+            message_id = message_id.decode("utf-8", errors="replace")
+
+        try:
+            idle_ok = idle_ms is None or int(idle_ms) >= int(min_idle_ms)
+        except Exception:
+            idle_ok = True
+
+        if message_id and idle_ok:
+            ids.append(str(message_id))
+
+    return ids
+
+
+def _a6_paper_r16c_r2_xpending_ids(redis_client, stream_name, group_name, min_idle_ms, count):
+    # A6_PAPER_R17D_RETRY_PLAIN_XPENDING_PATH
+    count = int(count or 10)
+
+    if hasattr(redis_client, "xpending_range"):
+        try:
+            rows = redis_client.xpending_range(
+                stream_name,
+                group_name,
+                "-",
+                "+",
+                count,
+                idle=int(min_idle_ms),
+            )
+            return _a6_paper_r16c_r2_pending_ids_from_xpending_rows(rows, min_idle_ms)
+        except Exception:
+            # Redis/redis-py combinations can reject the IDLE form even when
+            # XPENDING itself is available. Fall through to plain range syntax.
+            pass
+
+        try:
+            rows = redis_client.xpending_range(stream_name, group_name, "-", "+", count)
+            return _a6_paper_r16c_r2_pending_ids_from_xpending_rows(rows, min_idle_ms)
+        except Exception:
+            # Some redis-py versions expose xpending_range but still emit syntax
+            # incompatible with Redis 6.0.x. Fall through to raw XPENDING.
+            pass
+
+    rows = redis_client.execute_command("XPENDING", stream_name, group_name, "-", "+", count)
+    return _a6_paper_r16c_r2_pending_ids_from_xpending_rows(rows, min_idle_ms)
+
+
+def _a6_paper_r16c_r2_xclaim(redis_client, stream_name, group_name, consumer_name, min_idle_ms, message_ids):
+    ids = [str(x) for x in (message_ids or []) if x]
+    if not ids:
         return []
 
+    if hasattr(redis_client, "xclaim"):
+        try:
+            return redis_client.xclaim(
+                stream_name,
+                group_name,
+                consumer_name,
+                int(min_idle_ms),
+                ids,
+            )
+        except TypeError:
+            return redis_client.xclaim(stream_name, group_name, consumer_name, int(min_idle_ms), ids)
+
+    return redis_client.execute_command(
+        "XCLAIM",
+        stream_name,
+        group_name,
+        consumer_name,
+        int(min_idle_ms),
+        *ids,
+    )
+
+
+def _a6_paper_r16c_r2_normalize_claim_result(result):
     if isinstance(result, tuple):
         if len(result) >= 2 and isinstance(result[1], list):
             return result[1]
@@ -1539,6 +1696,73 @@ def _batch14_claim_pending(self, stream_name: str, now_ns: int, *, count: int = 
     if isinstance(result, list):
         return result
     return []
+
+
+def _batch14_claim_pending(self, stream_name: str, now_ns: int, *, count: int = 10):
+    min_idle_ms = max(1, int(self.cfg.thresholds.stale_heartbeat_seconds * 1000))
+
+    try:
+        if _a6_paper_r16c_r2_redis_command_known(self.redis, "XAUTOCLAIM"):
+            claim_fn = getattr(self.redis, "xautoclaim", None)
+            if callable(claim_fn):
+                try:
+                    result = claim_fn(
+                        stream_name,
+                        self.keys.risk_group,
+                        self.cfg.consumer_name,
+                        min_idle_ms,
+                        "0-0",
+                        count=count,
+                    )
+                    return _a6_paper_r16c_r2_normalize_claim_result(result)
+                except Exception as exc:
+                    if "unknown command" not in str(exc).lower():
+                        self._publish_error_event(
+                            event="risk_pending_claim_error",
+                            detail=f"{stream_name}:{type(exc).__name__}:{exc}",
+                            ts_ns=now_ns,
+                        )
+                        return []
+
+        if not (
+            _a6_paper_r16c_r2_redis_command_known(self.redis, "XPENDING")
+            and _a6_paper_r16c_r2_redis_command_known(self.redis, "XCLAIM")
+        ):
+            self._publish_error_event(
+                event="risk_pending_claim_error",
+                detail=f"{stream_name}:NO_SAFE_REDIS_STREAM_CLAIM_PATH",
+                ts_ns=now_ns,
+            )
+            return []
+
+        pending_ids = _a6_paper_r16c_r2_xpending_ids(
+            self.redis,
+            stream_name,
+            self.keys.risk_group,
+            min_idle_ms,
+            count,
+        )
+        if not pending_ids:
+            return []
+
+        claimed = _a6_paper_r16c_r2_xclaim(
+            self.redis,
+            stream_name,
+            self.keys.risk_group,
+            self.cfg.consumer_name,
+            min_idle_ms,
+            pending_ids,
+        )
+        return _a6_paper_r16c_r2_normalize_claim_result(claimed)
+
+    except Exception as exc:
+        self._publish_error_event(
+            event="risk_pending_claim_error",
+            detail=f"{stream_name}:{type(exc).__name__}:{exc}",
+            ts_ns=now_ns,
+        )
+        return []
+# A6_PAPER_R16C_R2_XAUTOCLAIM_COMPAT_END
 
 
 RiskService._ack_stream_message = _batch14_ack

@@ -2571,3 +2571,8 @@ __all__ = tuple(
 # Batch 25K-J compatibility heartbeat aliases
 KEY_COMPAT_FEATURES_HEARTBEAT = "features:heartbeat"
 KEY_COMPAT_STRATEGY_HEARTBEAT = "strategy:heartbeat"
+
+
+# B1A-R38D observe-only lifecycle stream constants.
+STREAM_RISK_MME = "risk:mme:stream"
+STREAM_EXECUTION_MME = "execution:mme:stream"

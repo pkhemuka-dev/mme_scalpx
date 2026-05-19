@@ -1,0 +1,8 @@
+# A6-FEED-R5BE-R2_repair_partial_stage_flags_contract_patch_normalize_expected_and_empty_payload_no_restart_no_order_no_paper_20260518_101439 Runbook
+
+If PASS, next action is an observe-only live-session recheck for feeds/features/strategy only.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-FEED-R5BE-R2_repair_partial_stage_flags_contract_patch_normalize_expected_and_empty_payload_no_restart_no_order_no_paper_20260518_101439.json`
+Audit: `/home/Lenovo/scalpx/projects/mme_scalpx/run/audits/A6-FEED-R5BE-R2_repair_partial_stage_flags_contract_patch_normalize_expected_and_empty_payload_no_restart_no_order_no_paper_20260518_101439_audit.json`
+Milestone: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/milestones/A6-FEED-R5BE-R2_repair_partial_stage_flags_contract_patch_normalize_expected_and_empty_payload_no_restart_no_order_no_paper_20260518_101439.md`
+Handoff: `/home/Lenovo/scalpx/projects/mme_scalpx/run/handoffs/A6-FEED-R5BE-R2_repair_partial_stage_flags_contract_patch_normalize_expected_and_empty_payload_no_restart_no_order_no_paper_20260518_101439_handoff.md`

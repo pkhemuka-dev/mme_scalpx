@@ -1,0 +1,6 @@
+# A6-PAPER-R3_controlled_paper_route_patch_plan_only_after_r2_pass_no_patch_no_start_no_order_no_paper_20260518_143924 Runbook
+
+If PASS, next action is A6-PAPER-R4 source patch only after exact approval.
+
+Patch plan: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/patch_plans/A6-PAPER-R3_controlled_paper_route_patch_plan_only_after_r2_pass_no_patch_no_start_no_order_no_paper_20260518_143924_patch_plan.md`
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R3_controlled_paper_route_patch_plan_only_after_r2_pass_no_patch_no_start_no_order_no_paper_20260518_143924.json`

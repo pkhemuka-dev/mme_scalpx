@@ -2066,7 +2066,75 @@ class ExecutionService:
         self.log.exception("execution exception where=%s", where)
 
 
+# B1A-R38D observe-only lifecycle publisher.
+# Emits lifecycle/status only under explicit observe-only env gating.
+# Must never create candidates, risk approvals, execution fills, broker calls, orders, paper/live state, or PnL.
+def _b1a_observe_only_lifecycle_publish(context, phase):
+    try:
+        import os as _os
+        import subprocess as _subprocess
+        import time as _time
+        from app.mme_scalpx.core import names as _b1_names
+
+        if _os.environ.get("SCALPX_OBSERVE_ONLY") != "1":
+            return False
+        if _os.environ.get("SCALPX_B1_OBSERVE_ONLY_LIFECYCLE_PUBLISH") != "1":
+            return False
+
+        _forbidden = ['SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME', 'SCALPX_CONTROLLED_PAPER_SCOPE_ACK', 'SCALPX_REAL_LIVE_ALLOWED', 'SCALPX_ALLOW_REAL_LIVE', 'SCALPX_ALLOW_BROKER_ORDERS', 'SCALPX_PAPER_ARMED', 'SCALPX_ENABLE_PAPER', 'SCALPX_ENABLE_LIVE']
+        if any(_os.environ.get(_key) for _key in _forbidden):
+            return False
+
+        _stream = getattr(_b1_names, "STREAM_EXECUTION_MME", "")
+        if not isinstance(_stream, str) or not _stream:
+            return False
+
+        _fields = {
+            "schema_version": "b1_observe_only_lifecycle_v1",
+            "service": "execution",
+            "event": "observe_only_lifecycle_probe",
+            "phase": str(phase),
+            "created_at_utc": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+            "observe_only": "true",
+            "trading_effect": "none",
+            "broker_call": "false",
+            "order_sent": "false",
+            "paper_or_live": "false",
+            "pnl": "false",
+            "candidate_generated": "false",
+            "risk_approved": "false",
+            "execution_fill": "false",
+            "source": "B1A-R38D",
+        }
+
+        _client = None
+        for _attr in ("redis", "redis_client", "redis_conn", "redis_connection"):
+            _client = getattr(context, _attr, None)
+            if _client is not None:
+                break
+
+        _deps = getattr(context, "dependencies", None)
+        if _client is None and _deps is not None:
+            for _attr in ("redis", "redis_client", "redis_conn", "redis_connection"):
+                _client = getattr(_deps, _attr, None)
+                if _client is not None:
+                    break
+
+        if _client is not None and hasattr(_client, "xadd"):
+            _client.xadd(_stream, _fields)
+            return True
+
+        _cmd = ["redis-cli", "XADD", _stream, "*"]
+        for _key, _value in _fields.items():
+            _cmd.extend([str(_key), str(_value)])
+        _proc = _subprocess.run(_cmd, text=True, capture_output=True, timeout=3)
+        return _proc.returncode == 0
+    except Exception:
+        return False
+
+
 def run(context: Any) -> int | None:
+    _b1a_observe_only_lifecycle_publish(context, phase="service_started")
     _validate_name_surface_or_die()
 
     redis_runtime = getattr(context, "redis", None)
@@ -2631,3 +2699,54 @@ def controlled_paper_order_cycle_preflight(
         "broker_calls_executed": False,
     }
 # --- END LANE A6-R3 CONTROLLED PAPER SANDBOX ROUTE ---
+
+# --- BEGIN A6-LIVE-R2H CONTROLLED PAPER ACTIVATION GATE ---
+
+from typing import Any as _A6R2HExecAny, Mapping as _A6R2HExecMapping
+
+CONTROLLED_PAPER_ACTIVATION_GATE_REQUIRED = "CONTROLLED_PAPER_ACTIVATION_GATE_REQUIRED"
+CONTROLLED_PAPER_ACTIVATION_GATE_BLOCKED = "CONTROLLED_PAPER_ACTIVATION_GATE_BLOCKED"
+
+
+def a6_live_r2h_execution_activation_gate_precheck(
+    request: _A6R2HExecMapping[str, _A6R2HExecAny] | None = None,
+    *,
+    activation_gate: _A6R2HExecMapping[str, _A6R2HExecAny] | None = None,
+) -> dict[str, _A6R2HExecAny]:
+    """Execution-side precheck for the A6-LIVE-R2H activation gate.
+
+    This never sends an order and never calls a broker. It only blocks unless the
+    strategy-side activation gate has already passed.
+    """
+
+    req = dict(request or {})
+    gate = dict(activation_gate or {})
+    if not gate:
+        return {
+            "ok": False,
+            "status": "FAIL_CLOSED",
+            "reason": CONTROLLED_PAPER_ACTIVATION_GATE_REQUIRED,
+            "order_sent": False,
+            "broker_calls_executed": False,
+            "real_live_forbidden": True,
+        }
+    if gate.get("ok") is not True:
+        return {
+            "ok": False,
+            "status": "FAIL_CLOSED",
+            "reason": CONTROLLED_PAPER_ACTIVATION_GATE_BLOCKED,
+            "gate_blockers": gate.get("blockers", []),
+            "order_sent": False,
+            "broker_calls_executed": False,
+            "real_live_forbidden": True,
+        }
+    return {
+        "ok": True,
+        "status": "ACTIVATION_GATE_PREFLIGHT_OK_NO_ORDER_SENT",
+        "family_id": req.get("family_id") or gate.get("family_id"),
+        "side": req.get("side") or gate.get("side"),
+        "order_sent": False,
+        "broker_calls_executed": False,
+        "real_live_forbidden": True,
+    }
+# --- END A6-LIVE-R2H CONTROLLED PAPER ACTIVATION GATE ---

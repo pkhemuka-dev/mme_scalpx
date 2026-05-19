@@ -1,0 +1,5 @@
+# B1A-R34_SERVICE_STDERR_TRIAGE_NO_PATCH_NO_START next route
+
+classification: PASS_R34_TRIAGED_REDIS_PREREQ_ERROR_NO_PATCH_NO_START
+next_route: B1A-R35_REDIS_PREREQ_TRIAGE_NO_PATCH_NO_START
+reason: Failure appears related to Redis availability.

@@ -1,0 +1,3 @@
+# A6-PAPER-R13-R2_live_session_report_only_dry_run_capture_after_stack_healthy_no_start_no_order_no_paper_20260519_102749 Runbook
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R13-R2_live_session_report_only_dry_run_capture_after_stack_healthy_no_start_no_order_no_paper_20260519_102749.json`

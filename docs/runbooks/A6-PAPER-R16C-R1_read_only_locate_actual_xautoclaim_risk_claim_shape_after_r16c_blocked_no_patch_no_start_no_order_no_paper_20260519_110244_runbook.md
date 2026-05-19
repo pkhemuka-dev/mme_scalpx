@@ -1,0 +1,5 @@
+# A6-PAPER-R16C-R1_read_only_locate_actual_xautoclaim_risk_claim_shape_after_r16c_blocked_no_patch_no_start_no_order_no_paper_20260519_110244 Runbook
+
+Use the proof to build the corrected R16C-R2 patch command.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R16C-R1_read_only_locate_actual_xautoclaim_risk_claim_shape_after_r16c_blocked_no_patch_no_start_no_order_no_paper_20260519_110244.json`

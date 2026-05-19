@@ -1,0 +1,5 @@
+# A6-PAPER-R16C-R2_patch_located_batch14_claim_pending_xautoclaim_fallback_fail_closed_no_start_no_order_no_paper_20260519_110710 Runbook
+
+If PASS, next step is static proof only.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R16C-R2_patch_located_batch14_claim_pending_xautoclaim_fallback_fail_closed_no_start_no_order_no_paper_20260519_110710.json`

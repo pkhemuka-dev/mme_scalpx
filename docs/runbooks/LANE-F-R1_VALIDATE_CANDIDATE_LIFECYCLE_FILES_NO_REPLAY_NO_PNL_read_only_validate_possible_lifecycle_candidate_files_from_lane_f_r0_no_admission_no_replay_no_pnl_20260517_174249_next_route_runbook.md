@@ -1,0 +1,6 @@
+# LANE-F-R1_VALIDATE_CANDIDATE_LIFECYCLE_FILES_NO_REPLAY_NO_PNL next route
+
+classification: PASS_LANE_F_R1_NO_VALID_TRADE_LIFECYCLE_CONFIRMED_FROM_CANDIDATES
+next_route: LANE-F_R2_CAPTURE_PLAN_FOR_FUTURE_VALID_TRADE_LIFECYCLE_DATA_NO_START
+
+No replay/PnL until deep validation confirms real candidate+risk+execution lifecycle evidence.

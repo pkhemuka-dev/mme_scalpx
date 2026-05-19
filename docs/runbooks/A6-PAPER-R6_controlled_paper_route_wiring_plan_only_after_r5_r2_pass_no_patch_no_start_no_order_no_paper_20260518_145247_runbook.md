@@ -1,0 +1,6 @@
+# A6-PAPER-R6_controlled_paper_route_wiring_plan_only_after_r5_r2_pass_no_patch_no_start_no_order_no_paper_20260518_145247 Runbook
+
+If PASS, next action is A6-PAPER-R7 wiring source patch only after exact approval.
+
+Wiring plan: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/patch_plans/A6-PAPER-R6_controlled_paper_route_wiring_plan_only_after_r5_r2_pass_no_patch_no_start_no_order_no_paper_20260518_145247_wiring_plan.md`
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R6_controlled_paper_route_wiring_plan_only_after_r5_r2_pass_no_patch_no_start_no_order_no_paper_20260518_145247.json`

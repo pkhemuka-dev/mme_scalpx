@@ -1,0 +1,39 @@
+{
+  "allowed_future_patch_scope_if_approved": [
+    "minimal durable canonical provider/feed hash owner only",
+    "no strategy threshold changes",
+    "no paper/live enablement",
+    "no broker order path changes",
+    "no risk/execution start",
+    "no all-strategy firing"
+  ],
+  "batch": "A6-FEED-R5-G",
+  "candidate_owner_preference": [
+    "Prefer feeds/provider runtime owner for provider/feed hashes",
+    "Features/strategy should consume canonical hashes, not own/delete them",
+    "names.py only names keys; no runtime logic",
+    "redisx.py only transport primitives; no domain key deletion policy"
+  ],
+  "current_required_hashes_absent": false,
+  "future_patch_must_prove": [
+    "existing target files backed up",
+    "source patch minimal",
+    "compile/import OK",
+    "canonical hashes persist for observation window",
+    "features/decisions consume hashes",
+    "provider_not_ready/view_data_invalid gone from post-publish samples",
+    "orders stream remains zero",
+    "position remains flat",
+    "no broker order"
+  ],
+  "patch_plan_type": "DURABLE_OWNER_AUDIT_OR_PATCH_PLAN_AFTER_APPROVAL",
+  "plan_status": "PLAN_ONLY_NO_PATCH_NO_HASH_PUBLISH",
+  "required_hashes": [
+    "state:provider_runtime:mme",
+    "state:feed:futures:active",
+    "state:feed:selected_option:active",
+    "state:feed:option_context:active",
+    "state:dhan_context:mme"
+  ],
+  "root_cause": "DELETE_EXPIRE_HITS_ARE_LIKELY_GENERIC_FALSE_POSITIVES_BUT_DURABLE_OWNER_STILL_UNPROVEN"
+}

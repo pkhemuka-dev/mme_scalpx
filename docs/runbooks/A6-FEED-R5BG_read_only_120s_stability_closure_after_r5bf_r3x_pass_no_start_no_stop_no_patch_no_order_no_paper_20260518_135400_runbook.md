@@ -1,0 +1,8 @@
+# A6-FEED-R5BG_read_only_120s_stability_closure_after_r5bf_r3x_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_135400 Runbook
+
+Use this as the A6-FEED post-patch observe-only stability closure proof.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-FEED-R5BG_read_only_120s_stability_closure_after_r5bf_r3x_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_135400.json`
+Audit: `/home/Lenovo/scalpx/projects/mme_scalpx/run/audits/A6-FEED-R5BG_read_only_120s_stability_closure_after_r5bf_r3x_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_135400_audit.json`
+Milestone: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/milestones/A6-FEED-R5BG_read_only_120s_stability_closure_after_r5bf_r3x_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_135400.md`
+Handoff: `/home/Lenovo/scalpx/projects/mme_scalpx/run/handoffs/A6-FEED-R5BG_read_only_120s_stability_closure_after_r5bf_r3x_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_135400_handoff.md`

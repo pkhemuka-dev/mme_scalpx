@@ -1,0 +1,9 @@
+# B1A-R34_SERVICE_STDERR_TRIAGE_NO_PATCH_NO_START
+
+- classification: PASS_R34_TRIAGED_REDIS_PREREQ_ERROR_NO_PATCH_NO_START
+- latest_r33_path: /home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/B1A-R33_RETRY_HELPER_EXECUTE_AFTER_R32_PATCH_APPROVAL_REQUIRED_guarded_helper_execute_after_r32_patch_verify_risk_execution_lifecycle_streams_zero_order_20260517_165218.json
+- helper_execute_report_path: run/audits/B1A-R33_RETRY_HELPER_EXECUTE_AFTER_R32_PATCH_APPROVAL_REQUIRED_guarded_helper_execute_after_r32_patch_verify_risk_execution_lifecycle_streams_zero_order_20260517_165218_helper_execute_report.json
+- failed_services: []
+- early_exited_services: []
+- running_services_before_terminate: ["features", "strategy", "risk", "execution"]
+- next_route: B1A-R35_REDIS_PREREQ_TRIAGE_NO_PATCH_NO_START

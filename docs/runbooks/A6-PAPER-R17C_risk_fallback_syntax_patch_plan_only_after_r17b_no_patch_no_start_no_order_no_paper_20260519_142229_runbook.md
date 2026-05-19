@@ -1,0 +1,6 @@
+# A6-PAPER-R17C_risk_fallback_syntax_patch_plan_only_after_r17b_no_patch_no_start_no_order_no_paper_20260519_142229 Runbook
+
+If PASS, next step is R17D source patch only.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R17C_risk_fallback_syntax_patch_plan_only_after_r17b_no_patch_no_start_no_order_no_paper_20260519_142229.json`
+Patch plan: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/patch_plans/A6-PAPER-R17C_risk_fallback_syntax_patch_plan_only_after_r17b_no_patch_no_start_no_order_no_paper_20260519_142229_fallback_syntax_patch_plan.md`

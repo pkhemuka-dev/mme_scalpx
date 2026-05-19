@@ -1,0 +1,8 @@
+# A6-FEED-R5BF-R3X_read_only_recovery_snapshot_after_ssh_reset_during_r5bf_r3_no_start_no_stop_no_patch_no_order_no_paper_20260518_134221 Runbook
+
+Use this proof before deciding whether to rerun pfeeds-only recovery.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-FEED-R5BF-R3X_read_only_recovery_snapshot_after_ssh_reset_during_r5bf_r3_no_start_no_stop_no_patch_no_order_no_paper_20260518_134221.json`
+Audit: `/home/Lenovo/scalpx/projects/mme_scalpx/run/audits/A6-FEED-R5BF-R3X_read_only_recovery_snapshot_after_ssh_reset_during_r5bf_r3_no_start_no_stop_no_patch_no_order_no_paper_20260518_134221_audit.json`
+Milestone: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/milestones/A6-FEED-R5BF-R3X_read_only_recovery_snapshot_after_ssh_reset_during_r5bf_r3_no_start_no_stop_no_patch_no_order_no_paper_20260518_134221.md`
+Handoff: `/home/Lenovo/scalpx/projects/mme_scalpx/run/handoffs/A6-FEED-R5BF-R3X_read_only_recovery_snapshot_after_ssh_reset_during_r5bf_r3_no_start_no_stop_no_patch_no_order_no_paper_20260518_134221_handoff.md`

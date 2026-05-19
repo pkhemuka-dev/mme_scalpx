@@ -1,0 +1,6 @@
+# LANE-F-R4R12_DIAGNOSTIC_PATCH_STATIC_PROOF_NO_START next route
+
+classification: PASS_LANE_F_R4R12_DIAGNOSTIC_PATCH_STATIC_PROOF_READY_NO_START
+next_route: LANE-F-R4R13_POST_PATCH_OBSERVE_ONLY_DECISION_DIAGNOSTIC_CAPTURE_NO_ORDER
+
+Next may be observe-only diagnostic capture. No order/paper/live/replay/PnL.

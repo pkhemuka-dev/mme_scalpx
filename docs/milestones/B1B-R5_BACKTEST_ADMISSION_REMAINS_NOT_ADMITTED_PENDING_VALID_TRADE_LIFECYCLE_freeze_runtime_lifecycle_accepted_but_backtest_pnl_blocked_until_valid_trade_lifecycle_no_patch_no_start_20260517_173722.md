@@ -1,0 +1,9 @@
+# B1B-R5_BACKTEST_ADMISSION_REMAINS_NOT_ADMITTED_PENDING_VALID_TRADE_LIFECYCLE
+
+- classification: PASS_B1B_R5_BACKTEST_ADMISSION_NOT_ADMITTED_PNL_NOT_READY_VALID_TRADE_LIFECYCLE_REQUIRED
+- runtime_lifecycle_evidence_accepted: True
+- status_only_limitation_confirmed: True
+- backtest_admission: NOT_ADMITTED
+- pnl_status: NOT_READY
+- valid_trade_lifecycle_data_required: true
+- next_route: B1B_WAIT_FOR_VALID_TRADE_LIFECYCLE_DATA_OR_LANE_F_DATASET_CAPTURE

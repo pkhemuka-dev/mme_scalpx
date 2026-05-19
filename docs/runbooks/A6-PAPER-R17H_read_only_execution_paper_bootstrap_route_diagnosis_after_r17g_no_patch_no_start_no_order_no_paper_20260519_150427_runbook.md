@@ -1,0 +1,6 @@
+# A6-PAPER-R17H_read_only_execution_paper_bootstrap_route_diagnosis_after_r17g_no_patch_no_start_no_order_no_paper_20260519_150427 Runbook
+
+If PASS, next step is R17I execution bootstrap route patch-plan only. Do not proceed to paper trial.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R17H_read_only_execution_paper_bootstrap_route_diagnosis_after_r17g_no_patch_no_start_no_order_no_paper_20260519_150427.json`
+Patch plan: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/patch_plans/A6-PAPER-R17H_read_only_execution_paper_bootstrap_route_diagnosis_after_r17g_no_patch_no_start_no_order_no_paper_20260519_150427_execution_bootstrap_patch_plan.md`

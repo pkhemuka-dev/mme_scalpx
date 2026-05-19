@@ -1,0 +1,8 @@
+# A6-FEED-R5BF-R0-R2_robust_read_only_pfeeds_pstack_wrapper_audit_after_r5bf_r0_script_bug_no_start_no_patch_no_order_no_paper_20260518_131652 Runbook
+
+If PASS, use the next guarded observe-only pfeeds/pstack readiness package.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-FEED-R5BF-R0-R2_robust_read_only_pfeeds_pstack_wrapper_audit_after_r5bf_r0_script_bug_no_start_no_patch_no_order_no_paper_20260518_131652.json`
+Audit: `/home/Lenovo/scalpx/projects/mme_scalpx/run/audits/A6-FEED-R5BF-R0-R2_robust_read_only_pfeeds_pstack_wrapper_audit_after_r5bf_r0_script_bug_no_start_no_patch_no_order_no_paper_20260518_131652_audit.json`
+Milestone: `/home/Lenovo/scalpx/projects/mme_scalpx/docs/milestones/A6-FEED-R5BF-R0-R2_robust_read_only_pfeeds_pstack_wrapper_audit_after_r5bf_r0_script_bug_no_start_no_patch_no_order_no_paper_20260518_131652.md`
+Handoff: `/home/Lenovo/scalpx/projects/mme_scalpx/run/handoffs/A6-FEED-R5BF-R0-R2_robust_read_only_pfeeds_pstack_wrapper_audit_after_r5bf_r0_script_bug_no_start_no_patch_no_order_no_paper_20260518_131652_handoff.md`

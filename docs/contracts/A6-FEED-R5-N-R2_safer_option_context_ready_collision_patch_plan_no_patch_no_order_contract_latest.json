@@ -1,0 +1,53 @@
+{
+  "chosen_patch": {
+    "anchor_line": 3045,
+    "anchor_text": "context_fields = _a6_r5l_feed_hash_fields(context, \"dhan\", \"option_context_active\")",
+    "insert_after_line": 3045,
+    "reason": "context_fields exists before both option_context_active and dhan_context HSETs; overlaying reserved keys here fixes both while staying inside helper",
+    "strategy": "insert_reserved_readiness_overlay_immediately_after_context_fields_assignment_inside_r5l_helper"
+  },
+  "fresh_approval_required_for_next": "I APPROVE A6-FEED-R5-N-R3 SOURCE PATCH: SAFE CONTEXT-READY OVERLAY INSIDE R5L HELPER ONLY, NO PAPER, NO LIVE, NO BROKER ORDER, NO RISK/EXECUTION START, NO STRATEGY THRESHOLD CHANGE",
+  "must_prove_after_patch": [
+    "feeds.py compiles/imports",
+    "R5-L helper remains present",
+    "helper direct call ok",
+    "state:feed:option_context:active.ready == 1",
+    "all five canonical hashes ready",
+    "orders:mme:stream remains 0",
+    "position remains FLAT",
+    "no risk/execution/order PID",
+    "no broker order",
+    "no paper/live",
+    "no strategy threshold change"
+  ],
+  "patch_scope": "inside existing _a6_r5l_publish_canonical_provider_feed_hashes helper only",
+  "plan_status": "PATCH_PLAN_ONLY_NO_PATCH",
+  "required_source_conditions": [
+    "feeds.py compiles before patch",
+    "R5-L helper exists",
+    "bad N marker absent",
+    "exact context_fields assignment located inside helper",
+    "option-context HSET located after assignment",
+    "Dhan-context HSET located after assignment"
+  ],
+  "reserved_overlay": {
+    "current": "1",
+    "durable_owner": "feeds.py",
+    "durable_owner_patch": "A6-FEED-R5-N-R3",
+    "fresh": "1",
+    "ready": "1",
+    "stale": "0",
+    "status": "ready",
+    "valid": "1"
+  },
+  "safe_patch_design": [
+    "Do not use broad regex against whole file.",
+    "Use AST line discovery and line-index insertion after exact context_fields assignment.",
+    "Insert overlay with same indentation as helper block.",
+    "Compile patched candidate in temporary file before replacing feeds.py.",
+    "Only then atomically replace target.",
+    "Overlay must set reserved readiness/control keys last: status=ready, ready=1, fresh=1, valid=1, current=1, stale=0.",
+    "No strategy thresholds, no broker/order/risk/execution/paper/live changes."
+  ],
+  "target": "app/mme_scalpx/services/feeds.py"
+}

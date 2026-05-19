@@ -381,3 +381,77 @@ def build_controlled_paper_order_cycle_request(
         "real_live_forbidden": True,
     }
 # --- END LANE A6-R3 CONTROLLED PAPER SANDBOX ROUTE ---
+
+# --- BEGIN A6-LIVE-R2H CONTROLLED PAPER ACTIVATION GATE ---
+
+from typing import Any as _A6R2HRuntimeAny, Mapping as _A6R2HRuntimeMapping
+
+def a6_live_r2h_select_single_promotable_scope(
+    candidates: list[_A6R2HRuntimeMapping[str, _A6R2HRuntimeAny]] | tuple[_A6R2HRuntimeMapping[str, _A6R2HRuntimeAny], ...],
+    *,
+    approved_family_id: str = "",
+    approved_side: str = "",
+) -> dict[str, _A6R2HRuntimeAny]:
+    """Select exactly one controlled-paper promotable scope.
+
+    Side-effect free. No Redis write, no order, no broker call.
+    """
+
+    approved_family = str(approved_family_id or "").upper()
+    approved_side_norm = str(approved_side or "").upper()
+    if approved_side_norm == "CE":
+        approved_side_norm = "CALL"
+    if approved_side_norm == "PE":
+        approved_side_norm = "PUT"
+
+    usable: list[dict[str, _A6R2HRuntimeAny]] = []
+    for raw in candidates:
+        c = dict(raw or {})
+        family = str(c.get("family_id") or c.get("family") or "").upper()
+        side = str(c.get("side") or c.get("option_side") or "").upper()
+        if side == "CE":
+            side = "CALL"
+        if side == "PE":
+            side = "PUT"
+        if approved_family and family != approved_family:
+            continue
+        if approved_side_norm and side != approved_side_norm:
+            continue
+        if family == "MISO" and side == "PUT" and not str(c.get("dhan_context_fresh", "")).lower() in {"1", "true", "yes"}:
+            continue
+        if not bool(c.get("controlled_paper_promotable") or c.get("activation_safe_to_promote") or c.get("safe_to_promote")):
+            continue
+        c["family_id"] = family
+        c["side"] = side
+        usable.append(c)
+
+    if not usable:
+        return {
+            "ok": False,
+            "status": "NO_PROMOTABLE_SCOPE",
+            "selected": None,
+            "candidate_count": 0,
+            "order_sent": False,
+            "broker_calls_executed": False,
+        }
+
+    if len(usable) > 1:
+        return {
+            "ok": False,
+            "status": "MULTIPLE_PROMOTABLE_SCOPES_FAIL_CLOSED",
+            "selected": None,
+            "candidate_count": len(usable),
+            "candidates": usable[:20],
+            "order_sent": False,
+            "broker_calls_executed": False,
+        }
+
+    return {
+        "ok": True,
+        "status": "ONE_PROMOTABLE_SCOPE_SELECTED",
+        "selected": usable[0],
+        "candidate_count": 1,
+        "order_sent": False,
+        "broker_calls_executed": False,
+    }
+# --- END A6-LIVE-R2H CONTROLLED PAPER ACTIVATION GATE ---

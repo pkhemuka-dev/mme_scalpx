@@ -1,0 +1,56 @@
+{
+  "batch": "A6-LIVE-R2G",
+  "forbidden_behavior": [
+    "do not disable observe_only globally",
+    "do not set real_live_allowed",
+    "do not set broker order env by default",
+    "do not force candidate",
+    "do not relax thresholds",
+    "do not bypass provider_ready/data_valid/warmup/safe_to_consume",
+    "do not bypass activation_safe_to_promote=false",
+    "do not fire all five strategies",
+    "do not start risk/execution during plan batch"
+  ],
+  "fresh_user_approval_required_for_patch": "I APPROVE A6-LIVE-R2H SOURCE PATCH: MINIMAL CONTROLLED-PAPER ACTIVATION GATE ONLY, NO ORDER, NO BROKER CALL, REAL LIVE FORBIDDEN, OBSERVE_ONLY DEFAULT PRESERVED, CONTROLLED PAPER STILL BLOCKED AFTER PATCH PROOF.",
+  "next_patch_batch_if_user_approves": "A6-LIVE-R2H minimal controlled-paper activation-gate source patch / no order / no broker call",
+  "patch_scope_if_approved": {
+    "no_all_family_execution": true,
+    "no_config_global_flip": true,
+    "no_real_live": true,
+    "primary_target": "app/mme_scalpx/services/strategy.py",
+    "support_targets": [
+      "app/mme_scalpx/services/controlled_paper_runtime.py",
+      "app/mme_scalpx/services/execution.py"
+    ],
+    "target_files": [
+      "app/mme_scalpx/services/strategy.py",
+      "app/mme_scalpx/services/controlled_paper_runtime.py",
+      "app/mme_scalpx/services/execution.py"
+    ]
+  },
+  "plan_status": "PLAN_ONLY_NO_SOURCE_PATCH",
+  "problem": {
+    "current_effect": "all actions remain HOLD despite live family surfaces being evaluated",
+    "live_gate_classification": "SOURCE_BRIDGE_HOLD_ONLY_DRIVEN_BY_REPORT_ONLY_OR_OBSERVE_ONLY_CONFIG",
+    "live_reason": "hold_only_family_features_consumer_bridge"
+  },
+  "required_behavior_after_patch": [
+    "observe_only remains default",
+    "real live remains forbidden",
+    "no broker call during patch/proof",
+    "no order during patch/proof",
+    "report-only behavior preserved unless controlled-paper runtime is explicitly armed",
+    "controlled-paper promotion may only expose exactly one scoped family/side candidate",
+    "promotion requires fresh exact scope acknowledgement",
+    "promotion requires orders:mme:stream == 0",
+    "promotion requires state:position:mme FLAT",
+    "promotion requires activation_bridge_enabled=true",
+    "promotion requires activation_safe_to_promote=true",
+    "promotion requires activation_candidate_count > 0",
+    "promotion requires selected family/side equals approved family/side",
+    "promotion preserves provider/readiness/risk vetoes",
+    "MISO PUT remains blocked unless Dhan context freshness is explicitly proven",
+    "multiple scoped candidates fail closed",
+    "no candidate remains HOLD/no trade"
+  ]
+}

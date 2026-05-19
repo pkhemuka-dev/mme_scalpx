@@ -1,0 +1,6 @@
+# LANE-F-R4R15B_NO_SIGNAL_CONSTRUCTION_PATH_REVIEW_NO_PATCH_NO_START
+
+- classification: PASS_LANE_F_R4R15B_CONSTRUCTION_PATH_REVIEW_READY_NO_PATCH_NO_START
+- likely_patch_target: app/mme_scalpx/services/strategy_family/activation.py
+- likely_function: _evaluation_to_frame
+- next_route: LANE-F-R4R15C_EXACT_FUNCTION_WIRING_PATCH_PLAN_NO_PATCH_NO_START

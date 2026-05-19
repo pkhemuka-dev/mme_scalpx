@@ -1,0 +1,6 @@
+# B1B-R4D_ACCEPT_B1A_STATUS_ONLY_ATTESTATION_RUNTIME_LIFECYCLE_ACCEPTED_NO_BACKTEST_NO_PNL next route
+
+classification: PASS_B1B_R4D_RUNTIME_LIFECYCLE_EVIDENCE_ACCEPTED_STATUS_ONLY_CONFIRMED
+next_route: B1B-R5_BACKTEST_ADMISSION_REMAINS_NOT_ADMITTED_PENDING_VALID_TRADE_LIFECYCLE
+
+Runtime lifecycle evidence can be treated as accepted only if classification is PASS. Backtest admission must remain NOT_ADMITTED and PnL NOT_READY until valid trade lifecycle data exists.

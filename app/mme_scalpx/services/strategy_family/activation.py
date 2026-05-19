@@ -392,7 +392,13 @@ def _evaluation_to_frame(result: Any, *, family_id: str, branch_id: str) -> Doct
         candidate=candidate or None,
         blocker=blocker or None,
         reason=reason,
-        raw=raw,
+        raw=lane_f_r4r15h_merge_runtime_diagnostics_into_raw(
+            raw,
+            family_id=family_id,
+            branch_id=branch_id,
+            reason=reason,
+            action=action,
+        ),
     )
 
 
@@ -948,4 +954,73 @@ def build_order_intent_preview_for_activation(
         final_readiness_ok=final_readiness_ok,
     )
     return preview.to_dict()
+
+
+# LANE-F-R4R11R diagnostic-only helper.
+# No activation eligibility is changed by this helper. It only normalizes
+# runtime gate explanation fields for audit/reporting.
+def lane_f_r4r11_runtime_gate_diagnostics(
+    *,
+    family_id=None,
+    branch_id=None,
+    reason=None,
+    action=None,
+    activation_mode=None,
+    report_only=None,
+    safe_to_promote=None,
+    promoted=None,
+):
+    reason_text = "" if reason is None else str(reason)
+    runtime_enabled = not (
+        "runtime_disabled" in reason_text or "disabled" in reason_text
+    )
+    return {
+        "family_runtime_enabled": bool(runtime_enabled),
+        "family_runtime_gate_reason": reason_text,
+        "family_runtime_family_id": family_id,
+        "family_runtime_branch_id": branch_id,
+        "family_runtime_action": action,
+        "family_runtime_activation_mode": activation_mode,
+        "family_runtime_report_only": report_only,
+        "family_runtime_safe_to_promote": safe_to_promote,
+        "family_runtime_promoted": promoted,
+        "lane_f_r4r11_diagnostic_only": True,
+    }
+
+
+# LANE-F-R4R15H diagnostic-only raw merge helper.
+# This helper only enriches DoctrineEvaluationFrame.raw with explanatory
+# runtime-gate fields. It must not alter candidate eligibility, action,
+# score, priority, risk approval, execution, replay, PnL, or order behavior.
+def lane_f_r4r15h_merge_runtime_diagnostics_into_raw(
+    raw,
+    *,
+    family_id=None,
+    branch_id=None,
+    reason=None,
+    action=None,
+    activation_mode=None,
+    report_only=None,
+    safe_to_promote=None,
+    promoted=None,
+):
+    base = dict(raw or {})
+    reason_text = "" if reason is None else str(reason)
+    if "runtime_disabled" not in reason_text and "disabled" not in reason_text:
+        return base
+    base.update(
+        lane_f_r4r15h_raw_diagnostic_wiring=True,
+        family_runtime_enabled=False,
+        family_runtime_gate_reason=reason_text,
+        family_runtime_family_id=family_id,
+        family_runtime_branch_id=branch_id,
+        family_runtime_action=action,
+        family_runtime_activation_mode=activation_mode,
+        family_runtime_report_only=report_only,
+        family_runtime_safe_to_promote=safe_to_promote,
+        family_runtime_promoted=promoted,
+        lane_f_r4r11_diagnostic_only=True,
+    )
+    return base
+
 

@@ -1,0 +1,8 @@
+# B1A-R36_SERVICE_LOG_DEEP_DIVE_OR_LIFECYCLE_PUBLISHER_TRIGGER_PATCH_PLAN_NO_START
+
+- classification: PASS_R36_LIFECYCLE_STREAMS_INPUT_GATED_OR_TRIGGER_MISSING_NO_PATCH_NO_START
+- latest_r35_path: /home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/B1A-R35_REDIS_PREREQ_TRIAGE_NO_PATCH_NO_START_read_only_redis_prereq_and_r33_service_log_triage_no_patch_no_start_20260517_170830.json
+- risk_xlen_now: 0
+- execution_xlen_now: 0
+- orders_xlen_now: 0
+- next_route: B1A-R37_LIFECYCLE_TRIGGER_OR_WAIT_WINDOW_PATCH_PLAN_NO_START

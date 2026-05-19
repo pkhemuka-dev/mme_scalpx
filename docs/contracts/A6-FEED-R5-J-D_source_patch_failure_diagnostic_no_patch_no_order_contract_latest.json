@@ -1,0 +1,18 @@
+{
+  "batch": "A6-FEED-R5-J-D",
+  "candidate_hook_seam_count": 60,
+  "literal_xadd_count": 6,
+  "next_patch_rule": [
+    "Do not retry blind xadd insertion.",
+    "Use exact source-shape seam found by A6-FEED-R5-J-D.",
+    "If no runtime seam exists in feeds.py, patch must add an explicit helper plus explicit safe invocation only after approved plan.",
+    "Patch must keep feeds as owner; features/strategy stay consumers.",
+    "No broker/order/paper/live/risk/execution/strategy-threshold changes."
+  ],
+  "next_recommended_batch": "A6-FEED-R5-K corrected seam patch plan / no patch until approved",
+  "plan_status": "DIAGNOSTIC_ONLY_NO_PATCH",
+  "redis_call_inventory_count": 71,
+  "restore_needed": false,
+  "root_cause": "ORIGINAL_PATCH_SEARCHED_ONLY_DIRECT_XADD_BUT_FEEDS_PY_HAS_NON_XADD_PUBLISH_SEAMS",
+  "target": "app/mme_scalpx/services/feeds.py"
+}

@@ -1,0 +1,5 @@
+# A6-PAPER-R0-R2_read_only_longer_window_features_decisions_stall_triage_after_r0_block_no_start_no_stop_no_patch_no_order_no_paper_20260518_141458 Runbook
+
+Use this proof before any restart or controlled-paper readiness action.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R0-R2_read_only_longer_window_features_decisions_stall_triage_after_r0_block_no_start_no_stop_no_patch_no_order_no_paper_20260518_141458.json`

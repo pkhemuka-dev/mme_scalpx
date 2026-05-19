@@ -1,0 +1,5 @@
+# A6-PAPER-R8_static_proof_report_only_controlled_paper_observability_after_r7_no_patch_no_start_no_order_no_paper_20260518_150449 Runbook
+
+If PASS, next action is report-only strategy bridge plan only after exact approval.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R8_static_proof_report_only_controlled_paper_observability_after_r7_no_patch_no_start_no_order_no_paper_20260518_150449.json`
