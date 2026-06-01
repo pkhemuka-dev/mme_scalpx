@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R24-R1_CORRECTED_ZLOGIN_AUTH_PROOF_NO_ORDER_classify_zlogin_success_from_redacted_log_after_bad_quote_checker_no_start_no_order_20260521_150637 Runbook
+
+Corrected auth proof only. No patch/start/stop/kill/delete/order.
+
+Next route: `B1-PROFIT-LIVE-R25_APPROVAL_GATED_START_FEEDS_ONLY_AFTER_AUTH_OK_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R24-R1_CORRECTED_ZLOGIN_AUTH_PROOF_NO_ORDER_classify_zlogin_success_from_redacted_log_after_bad_quote_checker_no_start_no_order_20260521_150637.json`

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="/home/Lenovo/scalpx/projects/mme_scalpx"
+HELPER_NAME="$(basename "$0")"
+
+cd "$ROOT"
+
+# Load user's shell helper definitions.
+shopt -s expand_aliases 2>/dev/null || true
+source "$HOME/.bashrc" 2>/dev/null || true
+
+# Prefer bash function if present.
+if declare -F "$HELPER_NAME" >/dev/null 2>&1; then
+  "$HELPER_NAME" "$@"
+  exit $?
+fi
+
+# Support alias if present, but avoid wrapper self-recursion.
+if alias "$HELPER_NAME" >/dev/null 2>&1; then
+  ALIAS_LINE="$(alias "$HELPER_NAME" 2>/dev/null || true)"
+  ALIAS_BODY="$(printf '%s\n' "$ALIAS_LINE" | sed -E "s/^alias ${HELPER_NAME}='(.*)'$/\1/")"
+
+  case "$ALIAS_BODY" in
+    *"./bin/${HELPER_NAME}"*|*"bin/${HELPER_NAME}"*)
+      echo "ERROR: alias for ${HELPER_NAME} points back to bin/${HELPER_NAME}; refusing recursion." >&2
+      echo "alias_line=${ALIAS_LINE}" >&2
+      exit 125
+      ;;
+  esac
+
+  eval "$ALIAS_BODY \"\$@\""
+  exit $?
+fi
+
+echo "ERROR: helper '${HELPER_NAME}' not found as function/alias after sourcing ~/.bashrc." >&2
+echo "Check ~/.bashrc or define ${HELPER_NAME} there." >&2
+exit 127

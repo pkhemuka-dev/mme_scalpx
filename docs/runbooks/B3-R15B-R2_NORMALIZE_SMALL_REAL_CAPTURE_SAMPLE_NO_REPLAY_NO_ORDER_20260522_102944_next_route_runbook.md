@@ -1,0 +1,22 @@
+# B3-R15B-R2_NORMALIZE_SMALL_REAL_CAPTURE_SAMPLE_NO_REPLAY_NO_ORDER_20260522_102944
+
+batch=B3-R15B-R2_NORMALIZE_SMALL_REAL_CAPTURE_SAMPLE_NO_REPLAY_NO_ORDER
+tag=B3-R15B-R2_NORMALIZE_SMALL_REAL_CAPTURE_SAMPLE_NO_REPLAY_NO_ORDER_20260522_102944
+classification=PASS_B3_R15B_R2_SMALL_REAL_CAPTURE_SAMPLE_NORMALIZED_NO_ORDER
+normalize_status=NORMALIZED_SAMPLE_READY
+next_route=B3-R16_REAL_CAPTURE_REPLAY_COMPATIBILITY_CHECK_NO_ORDER
+dataset_dir=run/replay/staging/B3-R15B-R2_NORMALIZE_SMALL_REAL_CAPTURE_SAMPLE_NO_REPLAY_NO_ORDER_20260522_102944/2026-05-22
+fut_ticks=40
+opt_ticks=40
+features=20
+decisions=20
+orders=0
+risk=0
+execution=0
+risk_proc=0
+execution_proc=0
+no_replay_execution=true
+no_broker_order=true
+no_paper_live=true
+no_pnl=true
+limitation=real captured HOLD/no-candidate sample likely; not PnL-valid

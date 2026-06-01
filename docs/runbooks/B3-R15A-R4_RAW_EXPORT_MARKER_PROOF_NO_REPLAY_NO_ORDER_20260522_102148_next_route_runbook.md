@@ -1,0 +1,13 @@
+# B3-R15A-R4_RAW_EXPORT_MARKER_PROOF_NO_REPLAY_NO_ORDER_20260522_102148
+
+batch=B3-R15A-R4_RAW_EXPORT_MARKER_PROOF_NO_REPLAY_NO_ORDER
+tag=B3-R15A-R4_RAW_EXPORT_MARKER_PROOF_NO_REPLAY_NO_ORDER_20260522_102148
+classification=PASS_B3_R15A_R4_RAW_EXPORT_MARKED_RECOVERED_NO_ORDER
+export_status=RAW_EXPORT_EXISTS_VERIFIED_BY_MANUAL_INSPECTION
+next_route=B3-R15B_NORMALIZE_SMALL_REAL_CAPTURE_SAMPLE_NO_REPLAY_NO_ORDER
+dataset_dir=run/replay/staging/B3-R15A_REAL_CAPTURE_RAW_EXPORT_NO_REPLAY_NO_ORDER_20260522_100328/2026-05-22
+note=manual inspection already proved raw fut,opt,features,decisions files exist and safety was clean
+no_replay_execution=true
+no_broker_order=true
+no_paper_live=true
+no_pnl=true

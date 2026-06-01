@@ -1,0 +1,327 @@
+===== DISK-A5 READONLY EVIDENCE BUNDLE DELETE PLAN =====
+{
+  "batch": "DISK-A5",
+  "broker_calls_executed": false,
+  "candidates_file": "${CANDIDATES}",
+  "compression_executed": false,
+  "created_at": "2026-05-19T18:32:59.336078+00:00",
+  "delete_executed": false,
+  "delete_review_count": 46,
+  "delete_review_total_bytes": 11495494707,
+  "delete_review_total_gb": 10.706,
+  "df_human": "Filesystem     Type  Size  Used Avail Use% Mounted on\n/dev/root      ext4   78G   66G   12G  85% /\n",
+  "hot_areas": "15G\trun/evidence_bundles\n19G\trun/proofs\n6.8G\trun/replay\n772M\trun/_data_keep\n180K\trun/_disk_maintenance\n",
+  "keeper_pointer_targets_file": "${KEEPERS}",
+  "keeper_total_bytes_estimate": 2860629462,
+  "keeper_total_gb_estimate": 2.664,
+  "live_enabled": false,
+  "paper_enabled": false,
+  "pointer_file_count": 12,
+  "pointer_target_count": 12,
+  "protected_paths": [
+    "run/replay",
+    "run/_data_keep",
+    "run/proofs",
+    "app",
+    "bin",
+    "docs",
+    ".git",
+    ".venv"
+  ],
+  "readonly": true,
+  "recommendation": "Review candidates_file first. Delete only DELETE_REVIEW entries after confirming they are not needed for active lane handoff.",
+  "report": "${REPORT}",
+  "services_started": false,
+  "source_patch_applied": false,
+  "tag": "${TAG}",
+  "top_delete_review_candidates": [
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-11T17:28:07.870904+00:00",
+      "path": "run/evidence_bundles/lane_b1_replay_backtest_evidence_bundle_20260511_224933",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 4205886152,
+      "size_mb": 4011.05
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-07T07:51:43.111704+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_integrity_raw_replay_bundle_v2_20260502_103549",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 1211861478,
+      "size_mb": 1155.72
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-13T05:14:10.650698+00:00",
+      "path": "run/evidence_bundles/A6-NEXT-R0_live_paper_continuation_evidence_bundle_no_patch_no_order_20260513_104100",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 1197638792,
+      "size_mb": 1142.16
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-11T17:18:30.314877+00:00",
+      "path": "run/evidence_bundles/lane_a6_related_evidence_bundle_20260511_224830",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 1074956376,
+      "size_mb": 1025.16
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-07T07:51:42.747672+00:00",
+      "path": "run/evidence_bundles/mme_integrity_surface_raw_replay_evidence_20260502_102410",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 537589855,
+      "size_mb": 512.69
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-07T07:51:42.591658+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_full_integrity_raw_replay_audit_20260502_103054",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 450897303,
+      "size_mb": 430.01
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-01T11:55:04.316894+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_replay_research_raw_audit_20260501_172504",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 419750481,
+      "size_mb": 400.31
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-01T11:51:44.223223+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_replay_research_raw_audit_20260501_172144",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 228378348,
+      "size_mb": 217.8
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-11T17:18:09.231868+00:00",
+      "path": "run/evidence_bundles/lane_a6_related_evidence_bundle_20260511_224623",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 193989859,
+      "size_mb": 185.0
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-11T03:58:58.117774+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260511_092858",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 160805979,
+      "size_mb": 153.36
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-10T07:04:11.175095+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260510_123411",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 159192009,
+      "size_mb": 151.82
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-10T16:02:49.046578+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260510_213249",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 156061388,
+      "size_mb": 148.83
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-10T07:01:43.137826+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_dev_phase_evidence_v3_capped_20260510_123143",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 153371076,
+      "size_mb": 146.27
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-13T05:14:45.466864+00:00",
+      "path": "run/evidence_bundles/A6-NEXT_live_paper_continuation_evidence_bundle_latest.tar.gz",
+      "reason": "stale_archive_not_latest_no_matching_extracted_dir_review_before_delete",
+      "size_bytes": 103740400,
+      "size_mb": 98.93
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-03T06:27:14.943741+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260503_115714",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 100720385,
+      "size_mb": 96.05
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-06T05:12:01.338284+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260506_104201",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 96774163,
+      "size_mb": 92.29
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-02T05:14:26.484980+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260502_104426",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 95720645,
+      "size_mb": 91.29
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-04T03:44:32.159456+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260504_091432",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 95013994,
+      "size_mb": 90.61
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-02T05:08:26.828829+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_short_integrity_raw_replay_bundle_20260502_103826",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 93715322,
+      "size_mb": 89.37
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-08T05:12:48.636067+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260508_104248",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 93513797,
+      "size_mb": 89.18
+    }
+  ],
+  "verdict": "PASS_DELETE_DRY_RUN_ONLY"
+}
+
+===== ALL CLASSIFIED EVIDENCE_BUNDLE ITEMS =====
+{"action": "DELETE_REVIEW", "mtime": "2026-05-11T17:28:07.870904+00:00", "path": "run/evidence_bundles/lane_b1_replay_backtest_evidence_bundle_20260511_224933", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 4205886152, "size_mb": 4011.05}
+{"action": "KEEP", "mtime": "2026-05-17T12:21:33.217541+00:00", "path": "run/evidence_bundles/A6-FEED-R5AX-R2_clipboard_safe_new_chat_handoff_evidence_bundle_after_r5aw_r2_no_patch_no_start_no_order_no_paper_20260517_175108", "reason": "recent_under_72h", "size_bytes": 1598139698, "size_mb": 1524.1}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-07T07:51:43.111704+00:00", "path": "run/evidence_bundles/mme_scalpx_integrity_raw_replay_bundle_v2_20260502_103549", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 1211861478, "size_mb": 1155.72}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-13T05:14:10.650698+00:00", "path": "run/evidence_bundles/A6-NEXT-R0_live_paper_continuation_evidence_bundle_no_patch_no_order_20260513_104100", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 1197638792, "size_mb": 1142.16}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-11T17:18:30.314877+00:00", "path": "run/evidence_bundles/lane_a6_related_evidence_bundle_20260511_224830", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 1074956376, "size_mb": 1025.16}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-11T16:30:19.468476+00:00", "path": "run/evidence_bundles/lane_b_master_replay_related_evidence_20260511_214417.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 606272603, "size_mb": 578.19}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-07T07:51:42.747672+00:00", "path": "run/evidence_bundles/mme_integrity_surface_raw_replay_evidence_20260502_102410", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 537589855, "size_mb": 512.69}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-07T07:51:42.591658+00:00", "path": "run/evidence_bundles/mme_scalpx_full_integrity_raw_replay_audit_20260502_103054", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 450897303, "size_mb": 430.01}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-01T11:55:04.316894+00:00", "path": "run/evidence_bundles/mme_scalpx_replay_research_raw_audit_20260501_172504", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 419750481, "size_mb": 400.31}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-11T17:28:05.730700+00:00", "path": "run/evidence_bundles/lane_b1_replay_backtest_evidence_bundle_20260511_224933.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 323215910, "size_mb": 308.24}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-01T11:51:44.223223+00:00", "path": "run/evidence_bundles/mme_scalpx_replay_research_raw_audit_20260501_172144", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 228378348, "size_mb": 217.8}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-11T17:18:09.231868+00:00", "path": "run/evidence_bundles/lane_a6_related_evidence_bundle_20260511_224623", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 193989859, "size_mb": 185.0}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-11T03:58:58.117774+00:00", "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260511_092858", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 160805979, "size_mb": 153.36}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-10T07:04:11.175095+00:00", "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260510_123411", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 159192009, "size_mb": 151.82}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-10T16:02:49.046578+00:00", "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260510_213249", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 156061388, "size_mb": 148.83}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-10T07:01:43.137826+00:00", "path": "run/evidence_bundles/mme_scalpx_dev_phase_evidence_v3_capped_20260510_123143", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 153371076, "size_mb": 146.27}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-13T05:14:45.466864+00:00", "path": "run/evidence_bundles/A6-NEXT-R0_live_paper_continuation_evidence_bundle_no_patch_no_order_20260513_104100.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 103740400, "size_mb": 98.93}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-13T05:14:45.466864+00:00", "path": "run/evidence_bundles/A6-NEXT_live_paper_continuation_evidence_bundle_latest.tar.gz", "reason": "stale_archive_not_latest_no_matching_extracted_dir_review_before_delete", "size_bytes": 103740400, "size_mb": 98.93}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-03T06:27:14.943741+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260503_115714", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 100720385, "size_mb": 96.05}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-06T05:12:01.338284+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260506_104201", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 96774163, "size_mb": 92.29}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-02T05:14:26.484980+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260502_104426", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 95720645, "size_mb": 91.29}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-04T03:44:32.159456+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260504_091432", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 95013994, "size_mb": 90.61}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-02T05:08:26.828829+00:00", "path": "run/evidence_bundles/mme_scalpx_short_integrity_raw_replay_bundle_20260502_103826", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 93715322, "size_mb": 89.37}
+{"action": "KEEP", "mtime": "2026-05-17T12:22:52.135684+00:00", "path": "run/evidence_bundles/A6-FEED-R5AX-R2_clipboard_safe_new_chat_handoff_evidence_bundle_after_r5aw_r2_no_patch_no_start_no_order_no_paper_20260517_175108.tar.gz", "reason": "current_latest_pointer_target", "size_bytes": 93522857, "size_mb": 89.19}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-08T05:12:48.636067+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260508_104248", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 93513797, "size_mb": 89.18}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-01T04:29:26.475983+00:00", "path": "run/evidence_bundles/batch27a_replay_full_audit_bundle_20260501_095926", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 93309198, "size_mb": 88.99}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-11T17:47:43.133879+00:00", "path": "run/evidence_bundles/lane_b1_minimal_critical_replay_evidence_20260511_231650", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 91783083, "size_mb": 87.53}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-01T04:32:46.715164+00:00", "path": "run/evidence_bundles/batch27a_replay_full_audit_bundle_20260501_095926_SANITIZED", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 87356801, "size_mb": 83.31}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-13T02:20:27.782076+00:00", "path": "run/evidence_bundles/lane_b_master_replay_related_evidence_20260511_214417", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 61722604, "size_mb": 58.86}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-12T07:53:16.706465+00:00", "path": "run/evidence_bundles/A6-PAPER-R0_evidence_bundle_for_next_batch_no_order_no_broker_20260512_132309", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 54660038, "size_mb": 52.13}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-12T05:12:16.902112+00:00", "path": "run/evidence_bundles/A6-FEED-R0_evidence_bundle_for_next_batch_no_order_no_broker_20260512_104208", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 52160082, "size_mb": 49.74}
+{"action": "DELETE_REVIEW", "mtime": "2026-04-29T18:48:21.146537+00:00", "path": "run/evidence_bundles/mme_scalpx_complete_trading_system_audit_20260430_001821", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 38209041, "size_mb": 36.44}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-11T16:00:17.491802+00:00", "path": "run/evidence_bundles/lane_a6_r0_proof_reconciliation_evidence_20260511_213017", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 35468798, "size_mb": 33.83}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-04T05:08:12.191675+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260504_103812", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 26148565, "size_mb": 24.94}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-12T14:18:51.526454+00:00", "path": "run/evidence_bundles/UI-R0-PLUS_streamlit_observe_only_dashboard_evidence_max60mb_20260512_194851", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 24842516, "size_mb": 23.69}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-12T14:33:02.066622+00:00", "path": "run/evidence_bundles/UI-R0-PLUS_streamlit_observe_only_dashboard_evidence_max60mb_20260512_200302", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 21717544, "size_mb": 20.71}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-12T14:31:45.496246+00:00", "path": "run/evidence_bundles/UI-R0-PLUS_streamlit_observe_only_dashboard_evidence_max60mb_20260512_200145", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 21662063, "size_mb": 20.66}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-10T07:04:51.311879+00:00", "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260510_123411.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 21655765, "size_mb": 20.65}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-11T04:01:31.143123+00:00", "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260511_092858.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 20935133, "size_mb": 19.97}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-10T16:04:27.509408+00:00", "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260510_213249.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 19948500, "size_mb": 19.02}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-10T07:03:21.071619+00:00", "path": "run/evidence_bundles/mme_scalpx_dev_phase_evidence_v3_capped_20260510_123143.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 19886343, "size_mb": 18.97}
+{"action": "DELETE_REVIEW", "mtime": "2026-04-26T13:24:28.627449+00:00", "path": "run/evidence_bundles/mme_scalpx_5family_integration_audit_20260426_185428", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 17295656, "size_mb": 16.49}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-11T16:03:42.151296+00:00", "path": "run/evidence_bundles/lane_a_a6_related_evidence_bundle_20260511_213307.tar.gz", "reason": "stale_archive_not_latest_no_matching_extracted_dir_review_before_delete", "size_bytes": 12590539, "size_mb": 12.01}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-13T02:00:09.227286+00:00", "path": "run/evidence_bundles/A6-AFTERMARKET-R0_post_live_session_consolidation_tomorrow_handoff_no_patch_no_order_20260513_073006", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 9438531, "size_mb": 9.0}
+{"action": "KEEP", "mtime": "2026-05-17T11:04:12.096297+00:00", "path": "run/evidence_bundles/B1-SPLIT-R0B_EVIDENCE_BUNDLE_FOR_B1A_B1B_HANDOFF_NO_PATCH_NO_START_rerun_minimal_handoff_bundle_fixed_sys_import_20260517_163411_staging", "reason": "recent_under_72h", "size_bytes": 8594936, "size_mb": 8.2}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-12T14:34:28.541694+00:00", "path": "run/evidence_bundles/UI-R0-PLUS_streamlit_observe_only_dashboard_evidence_max60mb_20260512_200428", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 8397058, "size_mb": 8.01}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-11T17:18:11.171052+00:00", "path": "run/evidence_bundles/lane_a6_related_evidence_bundle_20260511_224623.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 7864320, "size_mb": 7.5}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-11T17:47:43.075873+00:00", "path": "run/evidence_bundles/lane_b1_minimal_critical_replay_evidence_20260511_231650.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 7221733, "size_mb": 6.89}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-11T05:26:52.905788+00:00", "path": "run/evidence_bundles/batch26o23_q_r21_lane_a3_live_session_evidence_bundle_20260511_105640.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 6671513, "size_mb": 6.36}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-08T05:14:02.939256+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260508_104248.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 5942522, "size_mb": 5.67}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-12T07:53:19.713751+00:00", "path": "run/evidence_bundles/A6-PAPER-R0_evidence_bundle_for_next_batch_no_order_no_broker_20260512_132309.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 3776645, "size_mb": 3.6}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-12T07:53:19.713751+00:00", "path": "run/evidence_bundles/A6-PAPER-R0_evidence_bundle_for_next_batch_no_order_no_broker_latest.tar.gz", "reason": "stale_archive_not_latest_no_matching_extracted_dir_review_before_delete", "size_bytes": 3776645, "size_mb": 3.6}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-12T05:12:19.717380+00:00", "path": "run/evidence_bundles/A6-FEED-R0_evidence_bundle_for_next_batch_no_order_no_broker_20260512_104208.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 3694531, "size_mb": 3.52}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-12T05:12:19.717380+00:00", "path": "run/evidence_bundles/A6-FEED-R0_evidence_bundle_for_next_batch_no_order_no_broker_latest.tar.gz", "reason": "stale_archive_not_latest_no_matching_extracted_dir_review_before_delete", "size_bytes": 3694531, "size_mb": 3.52}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-11T05:28:56.023136+00:00", "path": "run/evidence_bundles/batch26o23_q_r21_r1_corrected_lane_a3_live_session_evidence_bundle_20260511_105849.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 3369140, "size_mb": 3.21}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-12T14:35:06.945385+00:00", "path": "run/evidence_bundles/UI-R0-PLUS_streamlit_observe_only_dashboard_evidence_max60mb_20260512_200428.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 2995055, "size_mb": 2.86}
+{"action": "KEEP", "mtime": "2026-05-17T11:04:12.625338+00:00", "path": "run/evidence_bundles/B1-SPLIT-R0B_EVIDENCE_BUNDLE_FOR_B1A_B1B_HANDOFF_NO_PATCH_NO_START_rerun_minimal_handoff_bundle_fixed_sys_import_20260517_163411.tar.gz", "reason": "current_latest_pointer_target", "size_bytes": 887297, "size_mb": 0.85}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-13T02:00:09.742333+00:00", "path": "run/evidence_bundles/A6-AFTERMARKET-R0_post_live_session_consolidation_tomorrow_handoff_no_patch_no_order_20260513_073006.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 686944, "size_mb": 0.66}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-13T02:00:09.742333+00:00", "path": "run/evidence_bundles/A6-AFTERMARKET-R0_post_live_session_consolidation_tomorrow_handoff_no_patch_no_order_latest.tar.gz", "reason": "stale_archive_not_latest_no_matching_extracted_dir_review_before_delete", "size_bytes": 686944, "size_mb": 0.66}
+{"action": "KEEP", "mtime": "2026-05-11T16:03:31.887319+00:00", "path": "run/evidence_bundles/lane_a_a6_related_evidence_bundle_summary_20260511_213307.json", "reason": "non_bundle_or_unknown_keep", "size_bytes": 499668, "size_mb": 0.48}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-10T13:57:42.128917+00:00", "path": "run/evidence_bundles/lane_c_after_market_closeout_r5bl_20260510_192742", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 446401, "size_mb": 0.43}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-10T13:33:02.057263+00:00", "path": "run/evidence_bundles/lane_c_clearance_r5bf_20260510_190302", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 410012, "size_mb": 0.39}
+{"action": "KEEP", "mtime": "2026-05-17T11:24:09.008462+00:00", "path": "run/evidence_bundles/B1B-R3_B1B_WAITING_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_START_package_b1b_r1_r1a_r2_artifacts_for_b1a_and_lane_e_waiting_state_20260517_165408", "reason": "recent_under_72h", "size_bytes": 245394, "size_mb": 0.23}
+{"action": "KEEP", "mtime": "2026-05-17T12:31:25.514643+00:00", "path": "run/evidence_bundles/DATAKEEP-C6E-HANDOFF_new_chat_evidence_bundle_after_aftermarket_contract_repair_no_start_no_order_20260517_180121", "reason": "recent_under_72h", "size_bytes": 243954, "size_mb": 0.23}
+{"action": "KEEP", "mtime": "2026-05-17T11:57:03.061106+00:00", "path": "run/evidence_bundles/B1A-R40R_RECOVER_LIFECYCLE_EVIDENCE_BUNDLE_AND_B1B_HANDOFF_NO_PATCH_NO_START_recover_package_r39_lifecycle_runtime_evidence_for_b1b_handoff_skip_directories_no_patch_no_start_20260517_172702.tar.gz", "reason": "current_latest_pointer_target", "size_bytes": 161845, "size_mb": 0.15}
+{"action": "KEEP", "mtime": "2026-05-18T08:36:45.200328+00:00", "path": "run/evidence_bundles/A6-FEED-R5BH-R2_robust_final_closure_bundle_after_r5bg_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_140644", "reason": "recent_under_72h", "size_bytes": 151427, "size_mb": 0.14}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-10T14:10:05.767494+00:00", "path": "run/evidence_bundles/batch26o23_q_r18_aftermarket_closeout_bundle_20260510_194005.tar.gz", "reason": "stale_archive_not_latest_no_matching_extracted_dir_review_before_delete", "size_bytes": 63406, "size_mb": 0.06}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-10T13:57:42.580948+00:00", "path": "run/evidence_bundles/lane_c_after_market_closeout_r5bl_20260510_192742.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 60028, "size_mb": 0.06}
+{"action": "REVIEW_ONLY", "mtime": "2026-05-10T13:33:02.515295+00:00", "path": "run/evidence_bundles/lane_c_clearance_r5bf_20260510_190302.tar.gz", "reason": "archive_has_matching_extracted_dir_keep_archive_preferred", "size_bytes": 54621, "size_mb": 0.05}
+{"action": "KEEP", "mtime": "2026-05-17T12:20:06.514792+00:00", "path": "run/evidence_bundles/A6-FEED-R5AX_create_new_chat_handoff_evidence_bundle_after_r5aw_r2_no_patch_no_start_no_order_no_paper_20260517_175006", "reason": "recent_under_72h", "size_bytes": 40960, "size_mb": 0.04}
+{"action": "KEEP", "mtime": "2026-05-17T12:31:25.538646+00:00", "path": "run/evidence_bundles/DATAKEEP-C6E-HANDOFF_new_chat_evidence_bundle_after_aftermarket_contract_repair_no_start_no_order_20260517_180121.tar.gz", "reason": "current_latest_pointer_target", "size_bytes": 39813, "size_mb": 0.04}
+{"action": "KEEP", "mtime": "2026-05-17T11:24:09.022463+00:00", "path": "run/evidence_bundles/B1B-R3_B1B_WAITING_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_START_package_b1b_r1_r1a_r2_artifacts_for_b1a_and_lane_e_waiting_state_20260517_165408.tar.gz", "reason": "current_latest_pointer_target", "size_bytes": 34878, "size_mb": 0.03}
+{"action": "KEEP", "mtime": "2026-05-19T17:41:23.596961+00:00", "path": "run/evidence_bundles/LANE-F-R4R18AR_RECOVER_AFTERMARKET_HANDOFF_BUNDLE_NO_START_recover_archive_packaging_after_relative_path_error_no_start_no_replay_no_pnl_20260519_231123.tar.gz", "reason": "current_latest_pointer_target", "size_bytes": 25249, "size_mb": 0.02}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-07T09:54:21.143415+00:00", "path": "run/evidence_bundles/lane_c_guarded_offline_replay_execution_30j_r5_20260507_152409.tar.gz", "reason": "stale_archive_not_latest_no_matching_extracted_dir_review_before_delete", "size_bytes": 22810, "size_mb": 0.02}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-12T15:27:23.513479+00:00", "path": "run/evidence_bundles/observe_only_lifecycle_capture", "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete", "size_bytes": 21485, "size_mb": 0.02}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-11T05:28:52.945827+00:00", "path": "run/evidence_bundles/batch26o23_q_r21_r1_corrected_lane_a3_live_session_evidence_bundle_20260511_105849", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 17993, "size_mb": 0.02}
+{"action": "DELETE_REVIEW", "mtime": "2026-05-11T05:26:46.718168+00:00", "path": "run/evidence_bundles/batch26o23_q_r21_lane_a3_live_session_evidence_bundle_20260511_105640", "reason": "extracted_bundle_dir_with_matching_tar_gz_archive", "size_bytes": 14561, "size_mb": 0.01}
+{"action": "KEEP", "mtime": "2026-05-18T08:36:45.225330+00:00", "path": "run/evidence_bundles/A6-FEED-R5BH-R2_robust_final_closure_bundle_after_r5bg_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_140644.tar.gz", "reason": "current_latest_pointer_target", "size_bytes": 14403, "size_mb": 0.01}
+{"action": "KEEP", "mtime": "2026-05-17T11:57:02.972100+00:00", "path": "run/evidence_bundles/B1A-R40R_RECOVER_LIFECYCLE_EVIDENCE_BUNDLE_AND_B1B_HANDOFF_NO_PATCH_NO_START_recover_package_r39_lifecycle_runtime_evidence_for_b1b_handoff_skip_directories_no_patch_no_start_20260517_172702_manifest.json", "reason": "recent_under_72h", "size_bytes": 11189, "size_mb": 0.01}
+{"action": "KEEP", "mtime": "2026-05-19T17:41:23.597961+00:00", "path": "run/evidence_bundles/LANE-F-R4R18AR_RECOVER_AFTERMARKET_HANDOFF_BUNDLE_NO_START_recover_archive_packaging_after_relative_path_error_no_start_no_replay_no_pnl_20260519_231123_manifest.json", "reason": "recent_under_72h", "size_bytes": 7972, "size_mb": 0.01}
+{"action": "KEEP", "mtime": "2026-05-19T17:37:51.206314+00:00", "path": "run/evidence_bundles/LANE-F-R4R18A_AFTERMARKET_RAW_DIAGNOSTIC_PATCH_HANDOFF_BUNDLE_NO_START_compact_bundle_raw_diagnostic_patch_evidence_next_live_session_no_start_no_replay_no_pnl_20260519_230750_manifest.json", "reason": "recent_under_72h", "size_bytes": 7742, "size_mb": 0.01}
+{"action": "KEEP", "mtime": "2026-05-10T13:57:42.581948+00:00", "path": "run/evidence_bundles/LATEST_LANE_C_CLOSEOUT_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 507, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-10T13:33:02.516295+00:00", "path": "run/evidence_bundles/LATEST_LANE_C_CLEARANCE_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 494, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-10T14:10:05.768494+00:00", "path": "run/evidence_bundles/LATEST_BATCH26O23_Q_R18_CLOSEOUT_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 301, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-11T04:01:33.201329+00:00", "path": "run/evidence_bundles/LATEST_EVIDENCE_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 295, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-11T16:03:42.192300+00:00", "path": "run/evidence_bundles/LATEST_LANE_A_A6_RELATED_EVIDENCE_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 291, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-17T12:22:52.761732+00:00", "path": "run/evidence_bundles/A6-FEED-R5AX-R2_clipboard_safe_new_chat_handoff_evidence_bundle_after_r5aw_r2_no_patch_no_start_no_order_no_paper_20260517_175108.tar.gz.sha256", "reason": "recent_under_72h", "size_bytes": 264, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-19T17:41:23.596961+00:00", "path": "run/evidence_bundles/LATEST_LANE_F_RAW_DIAGNOSTIC_HANDOFF_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 221, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-17T11:57:03.062107+00:00", "path": "run/evidence_bundles/LATEST_B1A_LIFECYCLE_HANDOFF_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 219, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-11T05:28:56.051138+00:00", "path": "run/evidence_bundles/batch26o23_q_r21_r1_corrected_lane_a3_live_session_evidence_bundle_20260511_105849.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 217, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-11T05:26:52.981796+00:00", "path": "run/evidence_bundles/batch26o23_q_r21_lane_a3_live_session_evidence_bundle_20260511_105640.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 204, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-19T17:37:51.210314+00:00", "path": "run/evidence_bundles/LANE-F-R4R18A_AFTERMARKET_RAW_DIAGNOSTIC_PATCH_HANDOFF_BUNDLE_NO_START_compact_bundle_raw_diagnostic_patch_evidence_next_live_session_no_start_no_replay_no_pnl_20260519_230750.tar.gz", "reason": "recent_under_72h", "size_bytes": 200, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-17T12:22:52.761732+00:00", "path": "run/evidence_bundles/LATEST_A6_FEED_NEW_CHAT_HANDOFF_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 198, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-02T05:08:52.997804+00:00", "path": "run/evidence_bundles/mme_scalpx_short_integrity_raw_replay_bundle_20260502_103826.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 195, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-01T04:32:48.814334+00:00", "path": "run/evidence_bundles/batch27a_replay_full_audit_bundle_20260501_095926_SANITIZED.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 194, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-18T08:36:45.226330+00:00", "path": "run/evidence_bundles/A6-FEED-R5BH-R2_robust_final_closure_bundle_after_r5bg_pass_no_start_no_stop_no_patch_no_order_no_paper_20260518_140644.tar.gz.sha256", "reason": "recent_under_72h", "size_bytes": 193, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-04-29T18:48:44.856326+00:00", "path": "run/evidence_bundles/mme_scalpx_complete_trading_system_audit_20260430_001821.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 191, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-18T08:36:45.226330+00:00", "path": "run/evidence_bundles/LATEST_A6_FEED_CLOSURE_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 188, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-01T04:30:28.917029+00:00", "path": "run/evidence_bundles/batch27a_replay_full_audit_bundle_20260501_095926.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 184, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-13T05:14:46.180929+00:00", "path": "run/evidence_bundles/A6-NEXT-R0_live_paper_continuation_evidence_bundle_no_patch_no_order_20260513_104100.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 179, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-13T05:14:46.180929+00:00", "path": "run/evidence_bundles/A6-NEXT_live_paper_continuation_evidence_bundle_latest.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 179, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-12T07:53:19.726752+00:00", "path": "run/evidence_bundles/A6-PAPER-R0_evidence_bundle_for_next_batch_no_order_no_broker_20260512_132309.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 172, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-12T05:12:19.729382+00:00", "path": "run/evidence_bundles/A6-FEED-R0_evidence_bundle_for_next_batch_no_order_no_broker_20260512_104208.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 171, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-12T14:35:06.982388+00:00", "path": "run/evidence_bundles/UI-R0-PLUS_streamlit_observe_only_dashboard_evidence_max60mb_20260512_200428.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 171, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-17T11:24:09.023463+00:00", "path": "run/evidence_bundles/LATEST_B1B_WAITING_STATE_HANDOFF_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 167, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-12T07:53:19.773757+00:00", "path": "run/evidence_bundles/A6-PAPER-R0_evidence_bundle_for_next_batch_no_order_no_broker_latest.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 163, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-12T05:12:19.745383+00:00", "path": "run/evidence_bundles/A6-FEED-R0_evidence_bundle_for_next_batch_no_order_no_broker_latest.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 162, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-17T11:04:12.632339+00:00", "path": "run/evidence_bundles/LATEST_B1_SPLIT_EVIDENCE_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 157, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-01T11:55:43.630759+00:00", "path": "run/evidence_bundles/mme_scalpx_replay_research_raw_audit_20260501_172504_SANITIZED.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 157, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-10T14:10:05.768494+00:00", "path": "run/evidence_bundles/batch26o23_q_r18_aftermarket_closeout_bundle_20260510_194005.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 155, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-10T07:03:21.193628+00:00", "path": "run/evidence_bundles/mme_scalpx_dev_phase_evidence_v3_capped_20260510_123143.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 150, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-11T16:30:23.100822+00:00", "path": "run/evidence_bundles/lane_b_master_replay_related_evidence_20260511_214417.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 148, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-04-26T19:56:14.521597+00:00", "path": "run/evidence_bundles/mme_scalpx_5family_integration_audit_20260426_185428.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 147, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-11T16:03:42.192300+00:00", "path": "run/evidence_bundles/lane_a_a6_related_evidence_bundle_20260511_213307.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 144, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-10T13:57:42.580948+00:00", "path": "run/evidence_bundles/lane_c_after_market_closeout_r5bl_20260510_192742.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 144, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-17T12:31:25.540646+00:00", "path": "run/evidence_bundles/LATEST_DATAKEEP_C6E_HANDOFF_BUNDLE.txt", "reason": "pointer_file", "size_bytes": 142, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-10T07:04:51.443888+00:00", "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260510_123411.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 136, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-10T16:04:27.632416+00:00", "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260510_213249.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 136, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-11T04:01:31.385147+00:00", "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260511_092858.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 136, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-02T05:14:44.317325+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260502_104426.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 134, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-03T06:28:14.949832+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260503_115714.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 134, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-04T03:45:34.666020+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260504_091432.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 134, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-06T05:13:16.910969+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260506_104201.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 134, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-08T05:14:02.989261+00:00", "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260508_104248.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 134, "size_mb": 0.0}
+{"action": "KEEP", "mtime": "2026-05-10T13:33:02.515295+00:00", "path": "run/evidence_bundles/lane_c_clearance_r5bf_20260510_190302.tar.gz.sha256", "reason": "non_bundle_or_unknown_keep", "size_bytes": 132, "size_mb": 0.0}

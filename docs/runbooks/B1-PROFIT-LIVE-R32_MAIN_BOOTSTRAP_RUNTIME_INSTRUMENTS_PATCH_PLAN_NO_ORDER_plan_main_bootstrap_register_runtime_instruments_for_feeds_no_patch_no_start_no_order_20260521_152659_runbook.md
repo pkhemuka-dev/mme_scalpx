@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R32_MAIN_BOOTSTRAP_RUNTIME_INSTRUMENTS_PATCH_PLAN_NO_ORDER_plan_main_bootstrap_register_runtime_instruments_for_feeds_no_patch_no_start_no_order_20260521_152659 Runbook
+
+Patch plan only. No patch/start/stop/kill/delete/order.
+
+Next route: `B1-PROFIT-LIVE-R33_APPLY_MAIN_BOOTSTRAP_RUNTIME_INSTRUMENTS_PATCH_NO_START_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R32_MAIN_BOOTSTRAP_RUNTIME_INSTRUMENTS_PATCH_PLAN_NO_ORDER_plan_main_bootstrap_register_runtime_instruments_for_feeds_no_patch_no_start_no_order_20260521_152659.json`

@@ -1,0 +1,12 @@
+# A6-PAPER-R17M-R3C_read_only_execution_broker_requirement_static_fix_plan_after_r3b_no_patch_no_start_no_order_20260520_104712
+
+Classification: `BLOCKED_A6_PAPER_R17M_R3C_STATIC_FIX_PLAN_REQUIRED_NO_PATCH_NO_ORDER`
+
+Root cause: `execution_run_requires_context_broker_in_observe_only_no_broker_preflight`
+
+Next route: `A6-PAPER-R17M-R3D_NARROW_EXECUTION_OBSERVE_ONLY_NO_BROKER_GUARD_PATCH_NO_ORDER`
+
+Source patch applied: `False`
+
+Order attempted: `False`
+

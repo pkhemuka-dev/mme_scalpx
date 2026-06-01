@@ -1,0 +1,10 @@
+# LANE-F-R4R20M-R3G_STATIC_COMPILE_AND_RESTART_PLAN_NO_START_NO_ORDER_static_compile_guard_after_r3f_attribute_error_patch_and_plan_strategy_restart_no_start_no_order_20260520_135904
+
+Classification: `PASS_LANE_F_R4R20M_R3G_STATIC_COMPILE_AND_RESTART_PLAN_READY_NO_START_NO_ORDER`
+
+Next route: `LANE-F-R4R20M_R3H_OBSERVE_ONLY_STRATEGY_RESTART_AFTER_R3F_PATCH_NO_ORDER`
+
+Order attempted: `False`
+
+Blockers:
+- none

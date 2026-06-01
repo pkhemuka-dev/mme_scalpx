@@ -1,0 +1,9 @@
+# LANE-F-R4R20M-R3I_RUNTIME_DIAGNOSTIC_VISIBILITY_RECHECK_NO_ORDER_recheck_fresh_decision_rows_for_diagnostics_after_r3h_decision_recovery_no_patch_no_start_no_order_20260520_143900 Next Route Runbook
+
+Runtime diagnostic visibility recheck after decisions recovered.
+
+No patch, no start, no stop, no order.
+
+Next route: `A6-PAPER-R17O-R4_FRESH_CANDIDATE_AUDIT_WITH_CURRENT_DIAGNOSTIC_LIMITATION_NO_ORDER`
+
+Proof: `run/proofs/LANE-F-R4R20M-R3I_RUNTIME_DIAGNOSTIC_VISIBILITY_RECHECK_NO_ORDER_recheck_fresh_decision_rows_for_diagnostics_after_r3h_decision_recovery_no_patch_no_start_no_order_20260520_143900.json`

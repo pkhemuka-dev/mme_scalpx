@@ -1,0 +1,7 @@
+# B1-PROFIT-R1_OPTION_CONTEXT_AND_CANDIDATE_GENERATION_BLOCKER_AUDIT_NO_ORDER_audit_dhan_option_context_provider_readiness_and_no_candidate_causes_no_patch_no_start_no_order_20260520_145726 Next Route Runbook
+
+No order, no broker, no paper. This batch audits why there are no candidates.
+
+Next route: `B1-PROFIT-R2_DHAN_OPTION_CONTEXT_RESTORE_OR_DEGRADE_ROUTE_PLAN_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-R1_OPTION_CONTEXT_AND_CANDIDATE_GENERATION_BLOCKER_AUDIT_NO_ORDER_audit_dhan_option_context_provider_readiness_and_no_candidate_causes_no_patch_no_start_no_order_20260520_145726.json`

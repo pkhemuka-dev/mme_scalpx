@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -Eeu
+cd /home/Lenovo/scalpx/projects/mme_scalpx
+echo "pdevlatest is integrated into pdev."
+echo "Run: ./bin/pdev ${1:-300}"
+exit 0

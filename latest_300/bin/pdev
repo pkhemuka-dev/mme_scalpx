@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+PROJECT="/home/Lenovo/scalpx/projects/mme_scalpx"
+cd "$PROJECT"
+
+TS="$(date +%Y%m%d_%H%M%S)"
+BUNDLE_NAME="pdev_current_${TS}"
+OUT_DIR="run/evidence_bundles/${BUNDLE_NAME}"
+STAGE="$OUT_DIR/stage"
+ARCHIVE="run/evidence_bundles/${BUNDLE_NAME}.tar.gz"
+SHA="${ARCHIVE}.sha256"
+LATEST="run/evidence_bundles/LATEST_PDEV_CURRENT_BUNDLE.txt"
+MANIFEST="$STAGE/PDEV_CURRENT_MANIFEST.json"
+FILELIST="$STAGE/PDEV_CURRENT_FILELIST.txt"
+HASHLIST="$STAGE/PDEV_CURRENT_SHA256SUMS.txt"
+LATEST300_LIST="$STAGE/PDEV_LATEST_300_FILELIST.txt"
+
+mkdir -p "$STAGE"
+
+copy_if_exists() {
+  local src="$1"
+  local dst="$2"
+  if [ -e "$src" ]; then
+    mkdir -p "$(dirname "$STAGE/$dst")"
+    cp -a "$src" "$STAGE/$dst"
+  fi
+}
+
+copy_glob_dir() {
+  local pattern="$1"
+  local dst="$2"
+  mkdir -p "$STAGE/$dst"
+  shopt -s nullglob
+  local f
+  for f in $pattern; do
+    cp -a "$f" "$STAGE/$dst/"
+  done
+  shopt -u nullglob
+}
+
+copy_recent_glob_dir() {
+  local pattern="$1"
+  local dst="$2"
+  local limit="${3:-120}"
+  mkdir -p "$STAGE/$dst"
+  local f
+  while IFS= read -r f; do
+    [ -n "$f" ] && cp -a "$f" "$STAGE/$dst/"
+  done < <(ls -1t $pattern 2>/dev/null | head -"$limit" || true)
+}
+
+# ===== 1) Full source-of-truth source tree =====
+copy_if_exists "app/mme_scalpx" "app/mme_scalpx"
+
+# ===== 2) Operator scripts / helpers =====
+copy_if_exists "bin" "bin"
+
+# ===== 3) Config/doctrine surfaces, excluding secrets =====
+copy_if_exists "etc" "etc"
+copy_if_exists "config" "config"
+
+# Do not copy common/secrets or .env secret files into pdev.
+
+# ===== 4) Documentation surfaces =====
+copy_if_exists "docs/strategy" "docs/strategy"
+copy_recent_glob_dir "docs/milestones/*.md" "docs/recent_milestones" 160
+copy_recent_glob_dir "docs/runbooks/*.md" "docs/recent_runbooks" 160
+
+# ===== 5) Evidence surfaces =====
+copy_recent_glob_dir "run/proofs/*.json" "run/recent_proofs" 220
+copy_recent_glob_dir "run/audits/*.json" "run/recent_audits" 160
+copy_recent_glob_dir "run/audits/*.md" "run/recent_audits" 160
+copy_recent_glob_dir "run/patches/*" "run/recent_patches" 160
+copy_recent_glob_dir "run/handoffs/*.md" "run/recent_handoffs" 160
+
+# ===== 6) Dashboard full chain =====
+copy_glob_dir "run/proofs/OPS-DASH*" "run/proofs"
+copy_glob_dir "run/audits/OPS-DASH*" "run/audits"
+copy_glob_dir "run/patches/OPS-DASH*" "run/patches"
+copy_glob_dir "docs/milestones/OPS-DASH*" "docs/milestones"
+copy_glob_dir "docs/runbooks/OPS-DASH*" "docs/runbooks"
+copy_glob_dir "run/handoffs/OPS-DASH*" "run/handoffs"
+copy_glob_dir "run/logs/ops_dash*" "run/logs"
+copy_glob_dir "run/pids/ops_dash*" "run/pids"
+
+# ===== 7) Latest 300 modified/created project files =====
+mkdir -p "$STAGE/latest_300"
+python3 - <<'PY'
+import os
+import shutil
+from pathlib import Path
+
+project = Path("/home/Lenovo/scalpx/projects/mme_scalpx")
+stage = Path(os.environ.get("STAGE_PATH", "")) if os.environ.get("STAGE_PATH") else Path("")
+
+# Passed through file after script substitutes path.
+PY

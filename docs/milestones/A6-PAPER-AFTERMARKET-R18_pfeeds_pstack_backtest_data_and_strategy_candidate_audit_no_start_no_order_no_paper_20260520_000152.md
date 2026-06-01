@@ -1,0 +1,11 @@
+# A6-PAPER-AFTERMARKET-R18_pfeeds_pstack_backtest_data_and_strategy_candidate_audit_no_start_no_order_no_paper_20260520_000152
+
+Verdict: `REVIEW_A6_PAPER_AFTERMARKET_R18_DATA_AND_CANDIDATE_AUDIT_NEEDS_INTERPRETATION`
+
+After-market read-only audit for pfeeds/pstack collection, backtest data candidate status, and strategy candidate evidence.
+
+Blockers:
+- pfeeds_collection_not_proven_today
+- pstack_decisions_collection_not_proven_today
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-AFTERMARKET-R18_pfeeds_pstack_backtest_data_and_strategy_candidate_audit_no_start_no_order_no_paper_20260520_000152.json`

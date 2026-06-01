@@ -1,0 +1,9 @@
+# B1-PROFIT-LIVE-R7-R5_EXACT_RUNTIME_GATE_DATAFLOW_REVIEW_NO_PATCH_NO_ORDER_dump_runtime_gate_source_lines_and_decision_payload_values_before_any_patch_no_start_no_order_20260521_102314
+
+Classification: `PASS_B1_PROFIT_LIVE_R7_R5_DYNAMIC_GATE_DATAFLOW_MAPPED_NO_PATCH_NO_ORDER`
+
+Next route: `B1-PROFIT-LIVE-R7-R6_ENV_GATED_RUNTIME_BOOL_PATCH_PLAN_NO_PATCH_NO_ORDER`
+
+Patch applied: `False`
+
+Order attempted: `False`

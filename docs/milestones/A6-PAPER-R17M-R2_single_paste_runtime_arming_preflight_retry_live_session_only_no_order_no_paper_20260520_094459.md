@@ -1,0 +1,9 @@
+# A6-PAPER-R17M-R2_single_paste_runtime_arming_preflight_retry_live_session_only_no_order_no_paper_20260520_094459
+
+Verdict: `ERROR_A6_PAPER_R17M_R2_EXCEPTION_NO_ORDER_NO_PAPER`
+
+Blockers:
+- exception_during_r17m_r2
+- features_not_running_before
+- feeds_not_running_before
+- strategy_not_running_before

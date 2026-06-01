@@ -8122,3 +8122,480 @@ if "_BATCH26O20R3D_R2B_RUN_ONCE_PATCHED" not in globals() and "FeatureService" i
 
     FeatureService.run_once = _batch26o20r3d_r2b_run_once
 
+
+# BEGIN R38ZB_SELECTED_OPTION_TS_PROPAGATION_CLASSIC_FAILOVER
+# R38ZB:
+# - Propagate selected-option timestamp into family_features snapshot for classic Zerodha failover.
+# - Do not fake validity if selected option timestamp is absent.
+# - Do not enable MISO without Dhan context.
+# - Do not touch risk/execution/broker/order paths.
+
+from collections.abc import Mapping as _R38ZBMapping
+from typing import Any as _R38ZBAny
+
+
+def _r38zb_text(value: _R38ZBAny) -> str:
+    return str(value if value is not None else "").strip()
+
+
+def _r38zb_upper(value: _R38ZBAny) -> str:
+    return _r38zb_text(value).upper()
+
+
+def _r38zb_bool(value: _R38ZBAny, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None or value == "":
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on", "healthy", "failover_active"}
+
+
+def _r38zb_int_ns(value: _R38ZBAny) -> int:
+    if value is None or value == "":
+        return 0
+    try:
+        iv = int(float(str(value).strip()))
+    except Exception:
+        return 0
+    # Accept only plausible ns timestamps.
+    return iv if iv > 1_000_000_000_000_000_000 else 0
+
+
+def _r38zb_mapping(value: _R38ZBAny) -> dict[str, _R38ZBAny]:
+    return dict(value) if isinstance(value, _R38ZBMapping) else {}
+
+
+def _r38zb_nested(mapping: _R38ZBAny, *keys: str) -> _R38ZBAny:
+    cur = mapping
+    for key in keys:
+        if not isinstance(cur, _R38ZBMapping):
+            return None
+        cur = cur.get(key)
+    return cur
+
+
+_R38ZB_TS_KEYS = (
+    "ts_event_ns",
+    "last_update_ns",
+    "last_tick_ns",
+    "ltt_ns",
+    "source_ts_ns",
+    "snapshot_ns",
+    "option_snapshot_ns",
+    "selected_option_snapshot_ns",
+    "exchange_ts_ns",
+    "ts_ns",
+)
+
+
+def _r38zb_pick_ts(mapping: _R38ZBAny) -> int:
+    m = _r38zb_mapping(mapping)
+    for key in _R38ZB_TS_KEYS:
+        ts = _r38zb_int_ns(m.get(key))
+        if ts:
+            return ts
+    return 0
+
+
+def _r38zb_selected_option_sources(family_features: dict[str, _R38ZBAny], shared_core: _R38ZBAny) -> list[dict[str, _R38ZBAny]]:
+    common = _r38zb_mapping(family_features.get("common"))
+    shared = _r38zb_mapping(shared_core)
+
+    paths = [
+        _r38zb_nested(common, "selected_option"),
+        _r38zb_nested(common, "call"),
+        _r38zb_nested(common, "put"),
+        _r38zb_nested(common, "cross_option", "selected_option"),
+        _r38zb_nested(shared, "selected_option"),
+        _r38zb_nested(shared, "option", "selected"),
+        _r38zb_nested(shared, "options", "selected"),
+        _r38zb_nested(shared, "selected"),
+        _r38zb_nested(shared, "market", "selected_option"),
+        _r38zb_nested(shared, "common", "selected_option"),
+        _r38zb_nested(shared, "zerodha", "selected_option"),
+        _r38zb_nested(shared, "provider", "selected_option"),
+        _r38zb_nested(shared, "runtime", "selected_option"),
+    ]
+
+    out: list[dict[str, _R38ZBAny]] = []
+    for item in paths:
+        d = _r38zb_mapping(item)
+        if d:
+            out.append(d)
+    return out
+
+
+def _r38zb_find_selected_option_ts(family_features: dict[str, _R38ZBAny], shared_core: _R38ZBAny) -> int:
+    for src in _r38zb_selected_option_sources(family_features, shared_core):
+        ts = _r38zb_pick_ts(src)
+        if ts:
+            return ts
+    return 0
+
+
+def _r38zb_classic_failover_ready(provider_runtime: _R38ZBAny, stage_flags: _R38ZBAny) -> bool:
+    provider = _r38zb_mapping(provider_runtime)
+    flags = _r38zb_mapping(stage_flags)
+
+    fut_status = _r38zb_upper(
+        provider.get("futures_provider_status")
+        or provider.get("futures_marketdata_status")
+        or provider.get("active_futures_provider_status")
+    )
+    selected_status = _r38zb_upper(
+        provider.get("selected_option_provider_status")
+        or provider.get("selected_option_marketdata_status")
+        or provider.get("active_selected_option_provider_status")
+    )
+    selected_provider = _r38zb_upper(
+        provider.get("active_selected_option_provider_id")
+        or provider.get("selected_option_marketdata_provider_id")
+        or provider.get("selected_option_provider_id")
+    )
+    execution_provider = _r38zb_upper(
+        provider.get("active_execution_provider_id")
+        or provider.get("execution_primary_provider_id")
+        or provider.get("execution_provider_id")
+    )
+    option_context_status = _r38zb_upper(
+        provider.get("option_context_provider_status")
+        or provider.get("option_context_status")
+        or provider.get("active_option_context_provider_status")
+    )
+    fallback_execution_status = _r38zb_upper(
+        provider.get("execution_fallback_status")
+        or provider.get("execution_fallback_provider_status")
+    )
+
+    return bool(
+        fut_status == "HEALTHY"
+        and selected_provider == "ZERODHA"
+        and selected_status in {"HEALTHY", "FAILOVER_ACTIVE"}
+        and execution_provider == "ZERODHA"
+        and option_context_status in {"", "UNAVAILABLE", "STALE"}
+        and fallback_execution_status in {"", "DISABLED", "UNAVAILABLE"}
+        and _r38zb_bool(flags.get("selected_option_present"), False)
+        and _r38zb_bool(flags.get("futures_present"), False)
+        and _r38zb_bool(flags.get("warmup_complete"), False)
+        and _r38zb_bool(flags.get("session_eligible"), True)
+    )
+
+
+def _r38zb_repair_classic_failover_family_features(
+    family_features: _R38ZBAny,
+    *,
+    provider_runtime: _R38ZBAny = None,
+    shared_core: _R38ZBAny = None,
+) -> dict[str, _R38ZBAny]:
+    ff = dict(family_features) if isinstance(family_features, _R38ZBMapping) else {}
+    if not ff:
+        return ff
+
+    common = _r38zb_mapping(ff.get("common"))
+    provider = _r38zb_mapping(ff.get("provider_runtime")) or _r38zb_mapping(provider_runtime)
+    flags = _r38zb_mapping(ff.get("stage_flags"))
+    snapshot = _r38zb_mapping(ff.get("snapshot"))
+
+    opt_ts = _r38zb_find_selected_option_ts(ff, shared_core)
+    if not opt_ts:
+        # Safety law: do not fake selected-option timestamp.
+        ff.setdefault("r38zb_selected_option_ts_status", "missing_not_faked")
+        return ff
+
+    selected = _r38zb_mapping(common.get("selected_option"))
+    selected.setdefault("ts_event_ns", opt_ts)
+    selected.setdefault("last_update_ns", opt_ts)
+    selected.setdefault("selected_option_snapshot_ns", opt_ts)
+    common["selected_option"] = selected
+    ff["common"] = common
+
+    snapshot["selected_option_snapshot_ns"] = opt_ts
+
+    fut_ts = _r38zb_int_ns(snapshot.get("futures_snapshot_ns") or snapshot.get("active_snapshot_ns"))
+    skew_ms = None
+    sync_ok = False
+    if fut_ts:
+        skew_ms = abs(fut_ts - opt_ts) / 1_000_000.0
+        sync_limit_ms = float(snapshot.get("sync_limit_ms") or 1000.0)
+        sync_ok = skew_ms <= sync_limit_ms
+        snapshot["fut_opt_skew_ms"] = skew_ms
+
+    if fut_ts and sync_ok:
+        snapshot["sync_ok"] = True
+        snapshot["freshness_ok"] = _r38zb_bool(snapshot.get("freshness_ok"), True)
+        snapshot["packet_gap_ok"] = _r38zb_bool(snapshot.get("packet_gap_ok"), True)
+        snapshot["valid"] = True
+        snapshot["validity"] = "OK"
+    else:
+        snapshot["sync_ok"] = False
+        snapshot["valid"] = False
+        snapshot["validity"] = "MARKETDATA_INCOMPLETE_OR_UNSYNCED"
+
+    ff["snapshot"] = snapshot
+
+    classic_ready = _r38zb_classic_failover_ready(provider, flags)
+
+    if classic_ready and fut_ts and sync_ok:
+        provider["provider_ready_classic"] = True
+        provider["family_runtime_mode"] = provider.get("family_runtime_mode") or "OBSERVE_ONLY"
+        provider["r38zb_classic_failover_ready"] = True
+
+        flags["provider_ready_classic"] = True
+        flags["classic_provider_degraded_safe"] = True
+        flags["snapshot_sync_valid"] = True
+        flags["data_quality_ok"] = bool(snapshot.get("freshness_ok") and snapshot.get("packet_gap_ok") and snapshot.get("sync_ok"))
+        flags["data_valid"] = bool(
+            flags.get("data_quality_ok")
+            and flags.get("provider_ready_classic")
+            and flags.get("futures_present")
+            and flags.get("selected_option_present")
+            and flags.get("warmup_complete")
+            and flags.get("session_eligible", True)
+        )
+    else:
+        flags["snapshot_sync_valid"] = False
+        flags["data_valid"] = False
+
+    # Preserve MISO block when Dhan context is unavailable.
+    if _r38zb_upper(provider.get("option_context_provider_status") or provider.get("option_context_status")) in {"UNAVAILABLE", "STALE", ""}:
+        provider["provider_ready_miso"] = False
+        flags["provider_ready_miso"] = False
+
+    ff["provider_runtime"] = provider
+    ff["stage_flags"] = flags
+    ff["r38zb_selected_option_ts_status"] = "propagated"
+    return ff
+
+
+if not globals().get("_R38ZB_SELECTED_OPTION_TS_PATCH_INSTALLED", False):
+    _R38ZB_ORIGINAL_FAMILY_FEATURES = FeatureEngine._family_features
+
+    def _r38zb_family_features(self, *args, **kwargs):
+        out = _R38ZB_ORIGINAL_FAMILY_FEATURES(self, *args, **kwargs)
+        provider_runtime = kwargs.get("provider_runtime")
+        shared_core = kwargs.get("shared_core")
+        if provider_runtime is None and isinstance(out, _R38ZBMapping):
+            provider_runtime = out.get("provider_runtime")
+        return _r38zb_repair_classic_failover_family_features(
+            out,
+            provider_runtime=provider_runtime,
+            shared_core=shared_core,
+        )
+
+    FeatureEngine._family_features = _r38zb_family_features
+    _R38ZB_SELECTED_OPTION_TS_PATCH_INSTALLED = True
+# END R38ZB_SELECTED_OPTION_TS_PROPAGATION_CLASSIC_FAILOVER
+
+
+# BEGIN R38ZE_RECEIVE_CLOCK_SELECTED_OPTION_TS_PREFERENCE
+# R38ZE:
+# Prefer receive-clock timestamps for selected-option failover because R38ZD
+# proved ts_recv_ns is aligned while ts_event_ns / ts_provider_ns are provider-domain.
+# This only changes timestamp selection priority. It does not force data_valid,
+# does not enable MISO, and does not touch risk/execution/broker/order paths.
+
+if not globals().get("_R38ZE_RECEIVE_CLOCK_TS_PATCH_INSTALLED", False):
+    _R38ZE_ORIGINAL_R38ZB_PICK_TS = _r38zb_pick_ts
+
+    _R38ZE_RECEIVE_TS_KEYS = (
+        "ts_recv_ns",
+        "recv_ts_ns",
+        "received_ts_ns",
+        "receive_ts_ns",
+        "redis_stream_ts_ns",
+        "stream_ts_ns",
+        "ingest_ts_ns",
+        "capture_ts_ns",
+        "local_recv_ns",
+    )
+
+    _R38ZE_SECONDARY_TS_KEYS = (
+        "selected_option_snapshot_ns",
+        "option_snapshot_ns",
+        "last_update_ns",
+        "last_tick_ns",
+        "source_ts_ns",
+        "snapshot_ns",
+        "exchange_ts_ns",
+        "ts_ns",
+        # Keep provider-domain timestamps last. Existing sync check still rejects
+        # them if they are far from futures/frame clock.
+        "ts_event_ns",
+        "ts_provider_ns",
+        "ltt_ns",
+    )
+
+    def _r38ze_pick_ts_receive_clock_first(mapping):
+        m = _r38zb_mapping(mapping)
+
+        for key in _R38ZE_RECEIVE_TS_KEYS:
+            ts = _r38zb_int_ns(m.get(key))
+            if ts:
+                return ts
+
+        for key in _R38ZE_SECONDARY_TS_KEYS:
+            ts = _r38zb_int_ns(m.get(key))
+            if ts:
+                return ts
+
+        return 0
+
+    _r38zb_pick_ts = _r38ze_pick_ts_receive_clock_first
+    _R38ZE_RECEIVE_CLOCK_TS_PATCH_INSTALLED = True
+# END R38ZE_RECEIVE_CLOCK_SELECTED_OPTION_TS_PREFERENCE
+
+
+# BEGIN R38ZF_FUTURES_RECEIVE_CLOCK_SNAPSHOT_SYNC
+# R38ZF:
+# Repair futures timestamp clock domain for classic Zerodha failover.
+# Uses receive/stream-clock futures timestamp when available.
+# Does not fake validity if futures timestamp is missing or skewed.
+# Does not enable MISO and does not touch risk/execution/broker/order paths.
+
+if not globals().get("_R38ZF_FUTURES_RECEIVE_CLOCK_PATCH_INSTALLED", False):
+    _R38ZF_ORIGINAL_R38ZB_REPAIR = _r38zb_repair_classic_failover_family_features
+
+    _R38ZF_FUTURES_RECEIVE_KEYS = (
+        "ts_recv_ns",
+        "recv_ts_ns",
+        "received_ts_ns",
+        "receive_ts_ns",
+        "redis_stream_ts_ns",
+        "stream_ts_ns",
+        "ingest_ts_ns",
+        "capture_ts_ns",
+        "local_recv_ns",
+    )
+
+    _R38ZF_FUTURES_SECONDARY_KEYS = (
+        "futures_snapshot_ns",
+        "active_snapshot_ns",
+        "snapshot_ns",
+        "last_update_ns",
+        "last_tick_ns",
+        "ts_ns",
+        "ts_event_ns",
+        "ts_provider_ns",
+        "ltt_ns",
+    )
+
+    def _r38zf_pick_fut_ts(mapping):
+        m = _r38zb_mapping(mapping)
+        for key in _R38ZF_FUTURES_RECEIVE_KEYS:
+            ts = _r38zb_int_ns(m.get(key))
+            if ts:
+                return ts
+        for key in _R38ZF_FUTURES_SECONDARY_KEYS:
+            ts = _r38zb_int_ns(m.get(key))
+            if ts:
+                return ts
+        return 0
+
+    def _r38zf_futures_sources(shared_core, family_features):
+        shared = _r38zb_mapping(shared_core)
+        common = _r38zb_mapping(_r38zb_mapping(family_features).get("common"))
+        paths = [
+            _r38zb_nested(shared, "futures"),
+            _r38zb_nested(shared, "future"),
+            _r38zb_nested(shared, "fut"),
+            _r38zb_nested(shared, "market", "futures"),
+            _r38zb_nested(shared, "zerodha", "futures"),
+            _r38zb_nested(shared, "provider", "futures"),
+            _r38zb_nested(shared, "runtime", "futures"),
+            _r38zb_nested(shared, "common", "futures"),
+            _r38zb_nested(common, "futures"),
+        ]
+        out = []
+        for item in paths:
+            d = _r38zb_mapping(item)
+            if d:
+                out.append(d)
+        return out
+
+    def _r38zf_find_futures_ts(shared_core, family_features):
+        for src in _r38zf_futures_sources(shared_core, family_features):
+            ts = _r38zf_pick_fut_ts(src)
+            if ts:
+                return ts
+        return 0
+
+    def _r38zf_repair_classic_failover_family_features(family_features, *, provider_runtime=None, shared_core=None):
+        out = _R38ZF_ORIGINAL_R38ZB_REPAIR(
+            family_features,
+            provider_runtime=provider_runtime,
+            shared_core=shared_core,
+        )
+
+        if not isinstance(out, _R38ZBMapping):
+            return out
+
+        ff = dict(out)
+        provider = _r38zb_mapping(ff.get("provider_runtime")) or _r38zb_mapping(provider_runtime)
+        flags = _r38zb_mapping(ff.get("stage_flags"))
+        snapshot = _r38zb_mapping(ff.get("snapshot"))
+
+        fut_ts = _r38zf_find_futures_ts(shared_core, ff)
+        opt_ts = _r38zb_int_ns(snapshot.get("selected_option_snapshot_ns"))
+
+        if not fut_ts:
+            ff["r38zf_futures_ts_status"] = "missing_not_faked"
+            ff["snapshot"] = snapshot
+            ff["stage_flags"] = flags
+            return ff
+
+        snapshot["futures_snapshot_ns"] = fut_ts
+        snapshot["active_snapshot_ns"] = fut_ts
+        ff["r38zf_futures_ts_status"] = "propagated"
+
+        sync_ok = False
+        if opt_ts:
+            skew_ms = abs(fut_ts - opt_ts) / 1_000_000.0
+            sync_limit_ms = float(snapshot.get("sync_limit_ms") or 1000.0)
+            snapshot["fut_opt_skew_ms"] = skew_ms
+            sync_ok = skew_ms <= sync_limit_ms
+
+        if sync_ok:
+            snapshot["sync_ok"] = True
+            snapshot["freshness_ok"] = _r38zb_bool(snapshot.get("freshness_ok"), True)
+            snapshot["packet_gap_ok"] = _r38zb_bool(snapshot.get("packet_gap_ok"), True)
+            snapshot["valid"] = True
+            snapshot["validity"] = "OK"
+        else:
+            snapshot["sync_ok"] = False
+            snapshot["valid"] = False
+            snapshot["validity"] = "MARKETDATA_INCOMPLETE_OR_UNSYNCED"
+
+        classic_ready = _r38zb_classic_failover_ready(provider, flags)
+
+        if classic_ready and sync_ok:
+            provider["provider_ready_classic"] = True
+            provider["r38zf_futures_receive_clock_ready"] = True
+            flags["provider_ready_classic"] = True
+            flags["classic_provider_degraded_safe"] = True
+            flags["snapshot_sync_valid"] = True
+            flags["data_quality_ok"] = bool(snapshot.get("freshness_ok") and snapshot.get("packet_gap_ok") and snapshot.get("sync_ok"))
+            flags["data_valid"] = bool(
+                flags.get("data_quality_ok")
+                and flags.get("provider_ready_classic")
+                and flags.get("futures_present")
+                and flags.get("selected_option_present")
+                and flags.get("warmup_complete")
+                and flags.get("session_eligible", True)
+            )
+        else:
+            flags["snapshot_sync_valid"] = False
+            flags["data_valid"] = False
+
+        if _r38zb_upper(provider.get("option_context_provider_status") or provider.get("option_context_status")) in {"UNAVAILABLE", "STALE", ""}:
+            provider["provider_ready_miso"] = False
+            flags["provider_ready_miso"] = False
+
+        ff["provider_runtime"] = provider
+        ff["stage_flags"] = flags
+        ff["snapshot"] = snapshot
+        return ff
+
+    _r38zb_repair_classic_failover_family_features = _r38zf_repair_classic_failover_family_features
+    _R38ZF_FUTURES_RECEIVE_CLOCK_PATCH_INSTALLED = True
+# END R38ZF_FUTURES_RECEIVE_CLOCK_SNAPSHOT_SYNC
+

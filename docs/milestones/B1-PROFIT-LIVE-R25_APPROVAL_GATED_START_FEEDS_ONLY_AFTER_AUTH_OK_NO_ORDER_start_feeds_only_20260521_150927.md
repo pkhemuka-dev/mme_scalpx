@@ -1,0 +1,13 @@
+# B1-PROFIT-LIVE-R25_APPROVAL_GATED_START_FEEDS_ONLY_AFTER_AUTH_OK_NO_ORDER_start_feeds_only_20260521_150927
+
+Classification: `REVIEW_B1_PROFIT_LIVE_R25_FEEDS_START_POSTCHECK_BLOCKED_NO_ORDER`
+
+Next route: `B1-PROFIT-LIVE-R26_FEEDS_LOG_TRIAGE_OR_RESTART_PLAN_NO_ORDER`
+
+Candidate seen: `False`
+
+Max candidate count: `0`
+
+Classic ready: `0`
+
+Order attempted: `False`

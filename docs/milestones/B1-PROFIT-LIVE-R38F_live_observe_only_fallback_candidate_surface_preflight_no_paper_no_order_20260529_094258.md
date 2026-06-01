@@ -1,0 +1,6 @@
+# B1-PROFIT-LIVE-R38F_live_observe_only_fallback_candidate_surface_preflight_no_paper_no_order_20260529_094258
+
+- ts_utc: `2026-05-29T04:12:58.370646+00:00`
+- verdict: `BLOCKED_OR_INCOMPLETE_LIVE_OBSERVE_ONLY_PROOF`
+- controlled paper: `BLOCKED_PENDING_READY_GATE_AND_EXPLICIT_APPROVAL`
+- MISO: `BLOCKED_WHILE_DHAN_CONTEXT_UNAVAILABLE`

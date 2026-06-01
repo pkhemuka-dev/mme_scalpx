@@ -1,0 +1,747 @@
+{
+  "batch": "B1-PROFIT-LIVE-R38A-R1_PROVIDER_RUNTIME_EXACT_SOURCE_READ_PATCH_PLAN_NO_PATCH_NO_START_NO_ORDER",
+  "classification": "PASS_R38A_R1_EXACT_SOURCE_TARGET_READY_NO_PATCH_NO_ORDER",
+  "created_at_utc": "2026-05-28T16:35:52.988675+00:00",
+  "execution_start_attempted": false,
+  "file_stats": {
+    "app/mme_scalpx/core/models.py": {
+      "exists": true,
+      "size_bytes": 127210
+    },
+    "app/mme_scalpx/core/names.py": {
+      "exists": true,
+      "size_bytes": 102413
+    },
+    "app/mme_scalpx/integrations/provider_runtime.py": {
+      "exists": true,
+      "size_bytes": 39595
+    },
+    "app/mme_scalpx/services/features.py": {
+      "exists": true,
+      "size_bytes": 318749
+    },
+    "app/mme_scalpx/services/feeds.py": {
+      "exists": true,
+      "size_bytes": 137792
+    },
+    "etc/brokers/provider_roles.yaml": {
+      "exists": true,
+      "size_bytes": 2300
+    }
+  },
+  "order_attempted": false,
+  "pdev_compare": {
+    "comparisons": {
+      "app/mme_scalpx/core/models.py": {
+        "comparable": true,
+        "diff_line_count": 0,
+        "diff_preview": [],
+        "same": true
+      },
+      "app/mme_scalpx/core/names.py": {
+        "comparable": true,
+        "diff_line_count": 0,
+        "diff_preview": [],
+        "same": true
+      },
+      "app/mme_scalpx/integrations/provider_runtime.py": {
+        "comparable": true,
+        "diff_line_count": 0,
+        "diff_preview": [],
+        "same": true
+      },
+      "app/mme_scalpx/services/features.py": {
+        "comparable": true,
+        "diff_line_count": 0,
+        "diff_preview": [],
+        "same": true
+      },
+      "app/mme_scalpx/services/feeds.py": {
+        "comparable": true,
+        "diff_line_count": 0,
+        "diff_preview": [],
+        "same": true
+      },
+      "etc/brokers/provider_roles.yaml": {
+        "comparable": true,
+        "diff_line_count": 0,
+        "diff_preview": [],
+        "same": true
+      }
+    },
+    "path": "run/evidence_bundles/pdev_current.tar.gz",
+    "present": true
+  },
+  "process_kill_attempted": false,
+  "provider_runtime_findings": {
+    "has_dhan_mentions": 15,
+    "has_failover_mode_manual_mentions": 5,
+    "has_pending_failover_mentions": 19,
+    "has_pending_failover_message": false,
+    "has_selected_option_role_mentions": 4,
+    "has_zerodha_mentions": 12
+  },
+  "recommended_patch": {
+    "do_not_patch_yet": true,
+    "primary_target": "app/mme_scalpx/integrations/provider_runtime.py",
+    "required_fixture_cases": [
+      {
+        "expect_classic_degraded_safe": true,
+        "expect_miso_blocked": true,
+        "expect_pending_failover": false,
+        "expect_selected_option_marketdata_provider_id": "ZERODHA",
+        "name": "dhan_selected_unavailable_zerodha_selected_healthy"
+      },
+      {
+        "expect_no_fallback": true,
+        "expect_selected_option_marketdata_provider_id": "DHAN",
+        "name": "dhan_selected_healthy"
+      },
+      {
+        "expect_classic_blocked": true,
+        "expect_selected_option_marketdata_status": "UNAVAILABLE",
+        "name": "dhan_unavailable_zerodha_unavailable"
+      }
+    ],
+    "rule": [
+      "When role=selected_option_marketdata currently resolves to DHAN and DHAN status is UNAVAILABLE.",
+      "If fallback candidate ZERODHA is healthy/eligible for selected option marketdata.",
+      "And no position/risk/execution/order is active.",
+      "Then resolve selected_option_marketdata_provider_id to ZERODHA for classic-provider runtime.",
+      "Keep option_context_provider_id as DHAN and status UNAVAILABLE.",
+      "Keep MISO blocked when Dhan option context is unavailable.",
+      "Do not change execution_primary_provider_id.",
+      "Do not enable risk/execution/order/paper."
+    ],
+    "secondary_targets": [
+      "tests or proof fixture only, not runtime, unless import/static proof reveals constants gap"
+    ]
+  },
+  "redis_delete_attempted": false,
+  "risk_start_attempted": false,
+  "safety": {
+    "execution_pids": 0,
+    "execution_stream": "0",
+    "orders": "0",
+    "risk_pids": 0,
+    "risk_stream": "0"
+  },
+  "service_start_attempted": false,
+  "service_stop_attempted": false,
+  "source_context": {
+    "app/mme_scalpx/core/models.py": [
+      {
+        "end_line": 219,
+        "start_line": 203,
+        "text": "203: \n204: # Batch 25G frozen cross-service field registries anchored to core.names.\n205: MODEL_CONTRACT_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = tuple(\n206:     names.CONTRACT_PROVIDER_RUNTIME_KEYS\n207: )\n208: MODEL_CONTRACT_FEED_SNAPSHOT_KEYS: Final[tuple[str, ...]] = tuple(\n209:     names.CONTRACT_FEED_SNAPSHOT_KEYS\n210: )\n211: MODEL_CONTRACT_DHAN_CONTEXT_KEYS: Final[tuple[str, ...]] = tuple(\n212:     names.CONTRACT_DHAN_CONTEXT_KEYS\n213: )\n214: MODEL_CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS: Final[tuple[str, ...]] = tuple(\n215:     names.CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS\n216: )\n217: MODEL_CONTRACT_EXECUTION_ENTRY_METADATA_KEYS: Final[tuple[str, ...]] = tuple(\n218:     names.CONTRACT_EXECUTION_ENTRY_METADATA_KEYS\n219: )"
+      },
+      {
+        "end_line": 220,
+        "start_line": 204,
+        "text": "204: # Batch 25G frozen cross-service field registries anchored to core.names.\n205: MODEL_CONTRACT_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = tuple(\n206:     names.CONTRACT_PROVIDER_RUNTIME_KEYS\n207: )\n208: MODEL_CONTRACT_FEED_SNAPSHOT_KEYS: Final[tuple[str, ...]] = tuple(\n209:     names.CONTRACT_FEED_SNAPSHOT_KEYS\n210: )\n211: MODEL_CONTRACT_DHAN_CONTEXT_KEYS: Final[tuple[str, ...]] = tuple(\n212:     names.CONTRACT_DHAN_CONTEXT_KEYS\n213: )\n214: MODEL_CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS: Final[tuple[str, ...]] = tuple(\n215:     names.CONTRACT_EXECUTION_ENTRY_TOP_LEVEL_KEYS\n216: )\n217: MODEL_CONTRACT_EXECUTION_ENTRY_METADATA_KEYS: Final[tuple[str, ...]] = tuple(\n218:     names.CONTRACT_EXECUTION_ENTRY_METADATA_KEYS\n219: )\n220: MODEL_CONTRACT_EXECUTION_ENTRY_KEYS: Final[tuple[str, ...]] = tuple("
+      },
+      {
+        "end_line": 239,
+        "start_line": 223,
+        "text": "223: \n224: MISO_ALLOWED_STRATEGY_RUNTIME_MODES: Final[tuple[str, ...]] = (\n225:     names.STRATEGY_RUNTIME_MODE_BASE_5DEPTH,\n226:     names.STRATEGY_RUNTIME_MODE_DEPTH20_ENHANCED,\n227:     names.STRATEGY_RUNTIME_MODE_DISABLED,\n228: )\n229: NON_MISO_ALLOWED_STRATEGY_RUNTIME_MODES: Final[tuple[str, ...]] = (\n230:     names.STRATEGY_RUNTIME_MODE_NORMAL,\n231:     names.STRATEGY_RUNTIME_MODE_DHAN_DEGRADED,\n232:     names.STRATEGY_RUNTIME_MODE_DISABLED,\n233: )\n234: \n235: ALLOWED_OPERATOR_MODE_VALUES: Final[tuple[str, ...]] = tuple(\n236:     dict.fromkeys(\n237:         (\n238:             *ALLOWED_CONTROL_MODES,\n239:             *ALLOWED_EXECUTION_MODES,"
+      },
+      {
+        "end_line": 751,
+        "start_line": 735,
+        "text": "735:     ask_qty: int | None = None\n736:     bids: tuple[BookLevel, ...] = ()\n737:     asks: tuple[BookLevel, ...] = ()\n738:     option_side: str | None = None\n739:     strike: float | None = None\n740:     expiry: str | None = None\n741:     tick_validity: str = TickValidity.OK\n742:     reject_reason: str | None = None\n743:     is_selected_option: bool = False\n744:     is_shadow_option: bool = False\n745: \n746:     _TYPE: ClassVar[str] = \"feed_tick\"\n747: \n748:     def validate(self) -> None:\n749:         _require_non_empty_str(self.instrument_key, \"instrument_key\")\n750:         _require_literal(\n751:             self.instrument_role,"
+      },
+      {
+        "end_line": 805,
+        "start_line": 789,
+        "text": "789:             _require_literal(self.option_side, \"option_side\", allowed=ALLOWED_OPTION_SIDES)\n790:         if self.strike is not None:\n791:             _require_float(self.strike, \"strike\", min_value=0.0)\n792:         if self.expiry is not None:\n793:             _optional_non_empty_str(self.expiry, \"expiry\")\n794:         _require_literal(self.tick_validity, \"tick_validity\", allowed=ALLOWED_TICK_VALIDITY)\n795:         if self.reject_reason is not None:\n796:             _optional_non_empty_str(self.reject_reason, \"reject_reason\")\n797:         _require_bool(self.is_selected_option, \"is_selected_option\")\n798:         _require_bool(self.is_shadow_option, \"is_shadow_option\")\n799:         if self.bid is not None and self.ask is not None:\n800:             _require(self.ask >= self.bid, \"ask must be >= bid\")\n801:         if self.is_shadow_option:\n802:             _require(self.option_side is not None, \"shadow option ticks require option_side\")\n803: \n804: \n805: @dataclass(frozen=True, slots=True)"
+      },
+      {
+        "end_line": 898,
+        "start_line": 882,
+        "text": "882:     bid: float | None = None\n883:     ask: float | None = None\n884:     bid_qty: int | None = None\n885:     ask_qty: int | None = None\n886:     bids: tuple[BookLevel, ...] = ()\n887:     asks: tuple[BookLevel, ...] = ()\n888:     delta_proxy: float | None = None\n889:     seq_no: int | None = None\n890:     is_selected_option: bool = False\n891:     is_shadow_option: bool = False\n892: \n893:     _TYPE: ClassVar[str] = \"option_snapshot\"\n894: \n895:     def validate(self) -> None:\n896:         _require_non_empty_str(self.instrument_key, \"instrument_key\")\n897:         _require_int(self.ts_event_ns, \"ts_event_ns\", min_value=0)\n898:         _require_literal(self.option_side, \"option_side\", allowed=ALLOWED_OPTION_SIDES)"
+      },
+      {
+        "end_line": 941,
+        "start_line": 925,
+        "text": "925:         if self.bid_qty is not None:\n926:             _require_int(self.bid_qty, \"bid_qty\", min_value=0)\n927:         if self.ask_qty is not None:\n928:             _require_int(self.ask_qty, \"ask_qty\", min_value=0)\n929:         if self.delta_proxy is not None:\n930:             _require_float(self.delta_proxy, \"delta_proxy\")\n931:         if self.seq_no is not None:\n932:             _require_int(self.seq_no, \"seq_no\", min_value=0)\n933:         _require_bool(self.is_selected_option, \"is_selected_option\")\n934:         _require_bool(self.is_shadow_option, \"is_shadow_option\")\n935:         if self.bid is not None and self.ask is not None:\n936:             _require(self.ask >= self.bid, \"ask must be >= bid\")\n937: \n938: \n939: @dataclass(frozen=True, slots=True)\n940: class SnapshotMember(SchemaBase):\n941:     role: str"
+      },
+      {
+        "end_line": 1151,
+        "start_line": 1135,
+        "text": "1135:     warmup_complete: bool\n1136:     futures_snapshot: FuturesSnapshot\n1137:     strategy_family_id: str | None = None\n1138:     doctrine_id: str | None = None\n1139:     branch_id: str | None = None\n1140:     strategy_runtime_mode: str | None = None\n1141:     family_runtime_mode: str | None = None\n1142:     active_futures_provider_id: str | None = None\n1143:     active_selected_option_provider_id: str | None = None\n1144:     active_option_context_provider_id: str | None = None\n1145:     snapshot_frame: SnapshotFrame | None = None\n1146:     economic_viability: EconomicViability | None = None\n1147:     four_pillar: FourPillarSignal | None = None\n1148:     delta_proxy_normalization: DeltaProxyNormalization | None = None\n1149:     entry_mode_hint: str | None = None\n1150:     explain: str | None = None\n1151:     tags: tuple[str, ...] = ()"
+      },
+      {
+        "end_line": 1152,
+        "start_line": 1136,
+        "text": "1136:     futures_snapshot: FuturesSnapshot\n1137:     strategy_family_id: str | None = None\n1138:     doctrine_id: str | None = None\n1139:     branch_id: str | None = None\n1140:     strategy_runtime_mode: str | None = None\n1141:     family_runtime_mode: str | None = None\n1142:     active_futures_provider_id: str | None = None\n1143:     active_selected_option_provider_id: str | None = None\n1144:     active_option_context_provider_id: str | None = None\n1145:     snapshot_frame: SnapshotFrame | None = None\n1146:     economic_viability: EconomicViability | None = None\n1147:     four_pillar: FourPillarSignal | None = None\n1148:     delta_proxy_normalization: DeltaProxyNormalization | None = None\n1149:     entry_mode_hint: str | None = None\n1150:     explain: str | None = None\n1151:     tags: tuple[str, ...] = ()\n1152: "
+      },
+      {
+        "end_line": 1183,
+        "start_line": 1167,
+        "text": "1167:                 self.strategy_family_id,\n1168:                 self.strategy_runtime_mode,\n1169:                 field_name=\"strategy_runtime_mode\",\n1170:             )\n1171:         if self.family_runtime_mode is not None:\n1172:             _require_literal(self.family_runtime_mode, \"family_runtime_mode\", allowed=ALLOWED_FAMILY_RUNTIME_MODES)\n1173:         if self.active_futures_provider_id is not None:\n1174:             _require_literal(self.active_futures_provider_id, \"active_futures_provider_id\", allowed=ALLOWED_PROVIDER_IDS)\n1175:         if self.active_selected_option_provider_id is not None:\n1176:             _require_literal(\n1177:                 self.active_selected_option_provider_id,\n1178:                 \"active_selected_option_provider_id\",\n1179:                 allowed=ALLOWED_PROVIDER_IDS,\n1180:             )\n1181:         if self.active_option_context_provider_id is not None:\n1182:             _require_literal(\n1183:                 self.active_option_context_provider_id,"
+      },
+      {
+        "end_line": 1185,
+        "start_line": 1169,
+        "text": "1169:                 field_name=\"strategy_runtime_mode\",\n1170:             )\n1171:         if self.family_runtime_mode is not None:\n1172:             _require_literal(self.family_runtime_mode, \"family_runtime_mode\", allowed=ALLOWED_FAMILY_RUNTIME_MODES)\n1173:         if self.active_futures_provider_id is not None:\n1174:             _require_literal(self.active_futures_provider_id, \"active_futures_provider_id\", allowed=ALLOWED_PROVIDER_IDS)\n1175:         if self.active_selected_option_provider_id is not None:\n1176:             _require_literal(\n1177:                 self.active_selected_option_provider_id,\n1178:                 \"active_selected_option_provider_id\",\n1179:                 allowed=ALLOWED_PROVIDER_IDS,\n1180:             )\n1181:         if self.active_option_context_provider_id is not None:\n1182:             _require_literal(\n1183:                 self.active_option_context_provider_id,\n1184:                 \"active_option_context_provider_id\",\n1185:                 allowed=ALLOWED_PROVIDER_IDS,"
+      },
+      {
+        "end_line": 1186,
+        "start_line": 1170,
+        "text": "1170:             )\n1171:         if self.family_runtime_mode is not None:\n1172:             _require_literal(self.family_runtime_mode, \"family_runtime_mode\", allowed=ALLOWED_FAMILY_RUNTIME_MODES)\n1173:         if self.active_futures_provider_id is not None:\n1174:             _require_literal(self.active_futures_provider_id, \"active_futures_provider_id\", allowed=ALLOWED_PROVIDER_IDS)\n1175:         if self.active_selected_option_provider_id is not None:\n1176:             _require_literal(\n1177:                 self.active_selected_option_provider_id,\n1178:                 \"active_selected_option_provider_id\",\n1179:                 allowed=ALLOWED_PROVIDER_IDS,\n1180:             )\n1181:         if self.active_option_context_provider_id is not None:\n1182:             _require_literal(\n1183:                 self.active_option_context_provider_id,\n1184:                 \"active_option_context_provider_id\",\n1185:                 allowed=ALLOWED_PROVIDER_IDS,\n1186:             )"
+      },
+      {
+        "end_line": 1189,
+        "start_line": 1173,
+        "text": "1173:         if self.active_futures_provider_id is not None:\n1174:             _require_literal(self.active_futures_provider_id, \"active_futures_provider_id\", allowed=ALLOWED_PROVIDER_IDS)\n1175:         if self.active_selected_option_provider_id is not None:\n1176:             _require_literal(\n1177:                 self.active_selected_option_provider_id,\n1178:                 \"active_selected_option_provider_id\",\n1179:                 allowed=ALLOWED_PROVIDER_IDS,\n1180:             )\n1181:         if self.active_option_context_provider_id is not None:\n1182:             _require_literal(\n1183:                 self.active_option_context_provider_id,\n1184:                 \"active_option_context_provider_id\",\n1185:                 allowed=ALLOWED_PROVIDER_IDS,\n1186:             )\n1187:         if self.entry_mode_hint is not None:\n1188:             _require_literal(self.entry_mode_hint, \"entry_mode_hint\", allowed=ALLOWED_ENTRY_MODES)\n1189:         if self.explain is not None:"
+      },
+      {
+        "end_line": 1191,
+        "start_line": 1175,
+        "text": "1175:         if self.active_selected_option_provider_id is not None:\n1176:             _require_literal(\n1177:                 self.active_selected_option_provider_id,\n1178:                 \"active_selected_option_provider_id\",\n1179:                 allowed=ALLOWED_PROVIDER_IDS,\n1180:             )\n1181:         if self.active_option_context_provider_id is not None:\n1182:             _require_literal(\n1183:                 self.active_option_context_provider_id,\n1184:                 \"active_option_context_provider_id\",\n1185:                 allowed=ALLOWED_PROVIDER_IDS,\n1186:             )\n1187:         if self.entry_mode_hint is not None:\n1188:             _require_literal(self.entry_mode_hint, \"entry_mode_hint\", allowed=ALLOWED_ENTRY_MODES)\n1189:         if self.explain is not None:\n1190:             _optional_non_empty_str(self.explain, \"explain\")\n1191:         object.__setattr__(self, \"tags\", _require_str_sequence(self.tags, \"tags\"))"
+      },
+      {
+        "end_line": 1192,
+        "start_line": 1176,
+        "text": "1176:             _require_literal(\n1177:                 self.active_selected_option_provider_id,\n1178:                 \"active_selected_option_provider_id\",\n1179:                 allowed=ALLOWED_PROVIDER_IDS,\n1180:             )\n1181:         if self.active_option_context_provider_id is not None:\n1182:             _require_literal(\n1183:                 self.active_option_context_provider_id,\n1184:                 \"active_option_context_provider_id\",\n1185:                 allowed=ALLOWED_PROVIDER_IDS,\n1186:             )\n1187:         if self.entry_mode_hint is not None:\n1188:             _require_literal(self.entry_mode_hint, \"entry_mode_hint\", allowed=ALLOWED_ENTRY_MODES)\n1189:         if self.explain is not None:\n1190:             _optional_non_empty_str(self.explain, \"explain\")\n1191:         object.__setattr__(self, \"tags\", _require_str_sequence(self.tags, \"tags\"))\n1192: "
+      },
+      {
+        "end_line": 1266,
+        "start_line": 1250,
+        "text": "1250:     doctrine_id: str | None = None\n1251:     branch_id: str | None = None\n1252:     family_runtime_mode: str | None = None\n1253:     strategy_runtime_mode: str | None = None\n1254:     source_event_id: str | None = None\n1255:     trap_event_id: str | None = None\n1256:     burst_event_id: str | None = None\n1257:     active_futures_provider_id: str | None = None\n1258:     active_selected_option_provider_id: str | None = None\n1259:     active_option_context_provider_id: str | None = None\n1260:     entry_mode: str = names.ENTRY_MODE_UNKNOWN\n1261:     strategy_mode: str = names.STRATEGY_AUTO\n1262:     system_state: str = names.STATE_IDLE\n1263:     explain: str | None = None\n1264:     blocker_code: str | None = None\n1265:     blocker_message: str | None = None\n1266:     stop_plan: StopPlan | None = None"
+      },
+      {
+        "end_line": 1267,
+        "start_line": 1251,
+        "text": "1251:     branch_id: str | None = None\n1252:     family_runtime_mode: str | None = None\n1253:     strategy_runtime_mode: str | None = None\n1254:     source_event_id: str | None = None\n1255:     trap_event_id: str | None = None\n1256:     burst_event_id: str | None = None\n1257:     active_futures_provider_id: str | None = None\n1258:     active_selected_option_provider_id: str | None = None\n1259:     active_option_context_provider_id: str | None = None\n1260:     entry_mode: str = names.ENTRY_MODE_UNKNOWN\n1261:     strategy_mode: str = names.STRATEGY_AUTO\n1262:     system_state: str = names.STATE_IDLE\n1263:     explain: str | None = None\n1264:     blocker_code: str | None = None\n1265:     blocker_message: str | None = None\n1266:     stop_plan: StopPlan | None = None\n1267:     target_plan: TargetPlan | None = None"
+      },
+      {
+        "end_line": 1315,
+        "start_line": 1299,
+        "text": "1299:             \"blocker_code\",\n1300:             \"blocker_message\",\n1301:         ):\n1302:             value = getattr(self, field_name)\n1303:             if value is not None:\n1304:                 _optional_non_empty_str(value, field_name)\n1305:         for field_name in (\n1306:             \"active_futures_provider_id\",\n1307:             \"active_selected_option_provider_id\",\n1308:             \"active_option_context_provider_id\",\n1309:         ):\n1310:             value = getattr(self, field_name)\n1311:             if value is not None:\n1312:                 _require_literal(value, field_name, allowed=ALLOWED_PROVIDER_IDS)\n1313: \n1314:         _require_literal(self.entry_mode, \"entry_mode\", allowed=ALLOWED_ENTRY_MODES)\n1315:         _require_literal(self.strategy_mode, \"strategy_mode\", allowed=ALLOWED_STRATEGY_MODES)"
+      },
+      {
+        "end_line": 1316,
+        "start_line": 1300,
+        "text": "1300:             \"blocker_message\",\n1301:         ):\n1302:             value = getattr(self, field_name)\n1303:             if value is not None:\n1304:                 _optional_non_empty_str(value, field_name)\n1305:         for field_name in (\n1306:             \"active_futures_provider_id\",\n1307:             \"active_selected_option_provider_id\",\n1308:             \"active_option_context_provider_id\",\n1309:         ):\n1310:             value = getattr(self, field_name)\n1311:             if value is not None:\n1312:                 _require_literal(value, field_name, allowed=ALLOWED_PROVIDER_IDS)\n1313: \n1314:         _require_literal(self.entry_mode, \"entry_mode\", allowed=ALLOWED_ENTRY_MODES)\n1315:         _require_literal(self.strategy_mode, \"strategy_mode\", allowed=ALLOWED_STRATEGY_MODES)\n1316:         _require_literal(self.system_state, \"system_state\", allowed=ALLOWED_SYSTEM_STATES)"
+      },
+      {
+        "end_line": 1415,
+        "start_line": 1399,
+        "text": "1399:     reason_code: str\n1400:     strategy_runtime_mode: str | None = None\n1401:     entry_mode: str = names.ENTRY_MODE_UNKNOWN\n1402:     system_state: str = names.STATE_IDLE\n1403:     source_event_id: str | None = None\n1404:     trap_event_id: str | None = None\n1405:     burst_event_id: str | None = None\n1406:     active_futures_provider_id: str | None = None\n1407:     active_selected_option_provider_id: str | None = None\n1408:     active_option_context_provider_id: str | None = None\n1409:     instrument_key: str | None = None\n1410:     option_symbol: str | None = None\n1411:     option_token: str | None = None\n1412:     strike: float | None = None\n1413:     limit_price: float | None = None\n1414:     metadata: Mapping[str, Any] = field(default_factory=dict)\n1415: "
+      }
+    ],
+    "app/mme_scalpx/core/names.py": [
+      {
+        "end_line": 321,
+        "start_line": 305,
+        "text": "305:     BRANCH_CALL,\n306:     BRANCH_PUT,\n307: )\n308: \n309: # ============================================================================\n310: # Provider identifiers / roles / migration runtime modes\n311: # ============================================================================\n312: \n313: PROVIDER_ZERODHA: Final[str] = \"ZERODHA\"\n314: PROVIDER_DHAN: Final[str] = \"DHAN\"\n315: \n316: PROVIDER_IDS: Final[tuple[str, ...]] = (\n317:     PROVIDER_ZERODHA,\n318:     PROVIDER_DHAN,\n319: )\n320: \n321: PROVIDER_ROLE_FUTURES_MARKETDATA: Final[str] = \"futures_marketdata\""
+      },
+      {
+        "end_line": 322,
+        "start_line": 306,
+        "text": "306:     BRANCH_PUT,\n307: )\n308: \n309: # ============================================================================\n310: # Provider identifiers / roles / migration runtime modes\n311: # ============================================================================\n312: \n313: PROVIDER_ZERODHA: Final[str] = \"ZERODHA\"\n314: PROVIDER_DHAN: Final[str] = \"DHAN\"\n315: \n316: PROVIDER_IDS: Final[tuple[str, ...]] = (\n317:     PROVIDER_ZERODHA,\n318:     PROVIDER_DHAN,\n319: )\n320: \n321: PROVIDER_ROLE_FUTURES_MARKETDATA: Final[str] = \"futures_marketdata\"\n322: PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: Final[str] = \"selected_option_marketdata\""
+      },
+      {
+        "end_line": 325,
+        "start_line": 309,
+        "text": "309: # ============================================================================\n310: # Provider identifiers / roles / migration runtime modes\n311: # ============================================================================\n312: \n313: PROVIDER_ZERODHA: Final[str] = \"ZERODHA\"\n314: PROVIDER_DHAN: Final[str] = \"DHAN\"\n315: \n316: PROVIDER_IDS: Final[tuple[str, ...]] = (\n317:     PROVIDER_ZERODHA,\n318:     PROVIDER_DHAN,\n319: )\n320: \n321: PROVIDER_ROLE_FUTURES_MARKETDATA: Final[str] = \"futures_marketdata\"\n322: PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: Final[str] = \"selected_option_marketdata\"\n323: PROVIDER_ROLE_OPTION_CONTEXT: Final[str] = \"option_context\"\n324: PROVIDER_ROLE_EXECUTION_PRIMARY: Final[str] = \"execution_primary\"\n325: PROVIDER_ROLE_EXECUTION_FALLBACK: Final[str] = \"execution_fallback\""
+      },
+      {
+        "end_line": 326,
+        "start_line": 310,
+        "text": "310: # Provider identifiers / roles / migration runtime modes\n311: # ============================================================================\n312: \n313: PROVIDER_ZERODHA: Final[str] = \"ZERODHA\"\n314: PROVIDER_DHAN: Final[str] = \"DHAN\"\n315: \n316: PROVIDER_IDS: Final[tuple[str, ...]] = (\n317:     PROVIDER_ZERODHA,\n318:     PROVIDER_DHAN,\n319: )\n320: \n321: PROVIDER_ROLE_FUTURES_MARKETDATA: Final[str] = \"futures_marketdata\"\n322: PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: Final[str] = \"selected_option_marketdata\"\n323: PROVIDER_ROLE_OPTION_CONTEXT: Final[str] = \"option_context\"\n324: PROVIDER_ROLE_EXECUTION_PRIMARY: Final[str] = \"execution_primary\"\n325: PROVIDER_ROLE_EXECUTION_FALLBACK: Final[str] = \"execution_fallback\"\n326: "
+      },
+      {
+        "end_line": 329,
+        "start_line": 313,
+        "text": "313: PROVIDER_ZERODHA: Final[str] = \"ZERODHA\"\n314: PROVIDER_DHAN: Final[str] = \"DHAN\"\n315: \n316: PROVIDER_IDS: Final[tuple[str, ...]] = (\n317:     PROVIDER_ZERODHA,\n318:     PROVIDER_DHAN,\n319: )\n320: \n321: PROVIDER_ROLE_FUTURES_MARKETDATA: Final[str] = \"futures_marketdata\"\n322: PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: Final[str] = \"selected_option_marketdata\"\n323: PROVIDER_ROLE_OPTION_CONTEXT: Final[str] = \"option_context\"\n324: PROVIDER_ROLE_EXECUTION_PRIMARY: Final[str] = \"execution_primary\"\n325: PROVIDER_ROLE_EXECUTION_FALLBACK: Final[str] = \"execution_fallback\"\n326: \n327: PROVIDER_ROLES: Final[tuple[str, ...]] = (\n328:     PROVIDER_ROLE_FUTURES_MARKETDATA,\n329:     PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA,"
+      },
+      {
+        "end_line": 330,
+        "start_line": 314,
+        "text": "314: PROVIDER_DHAN: Final[str] = \"DHAN\"\n315: \n316: PROVIDER_IDS: Final[tuple[str, ...]] = (\n317:     PROVIDER_ZERODHA,\n318:     PROVIDER_DHAN,\n319: )\n320: \n321: PROVIDER_ROLE_FUTURES_MARKETDATA: Final[str] = \"futures_marketdata\"\n322: PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: Final[str] = \"selected_option_marketdata\"\n323: PROVIDER_ROLE_OPTION_CONTEXT: Final[str] = \"option_context\"\n324: PROVIDER_ROLE_EXECUTION_PRIMARY: Final[str] = \"execution_primary\"\n325: PROVIDER_ROLE_EXECUTION_FALLBACK: Final[str] = \"execution_fallback\"\n326: \n327: PROVIDER_ROLES: Final[tuple[str, ...]] = (\n328:     PROVIDER_ROLE_FUTURES_MARKETDATA,\n329:     PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA,\n330:     PROVIDER_ROLE_OPTION_CONTEXT,"
+      },
+      {
+        "end_line": 331,
+        "start_line": 315,
+        "text": "315: \n316: PROVIDER_IDS: Final[tuple[str, ...]] = (\n317:     PROVIDER_ZERODHA,\n318:     PROVIDER_DHAN,\n319: )\n320: \n321: PROVIDER_ROLE_FUTURES_MARKETDATA: Final[str] = \"futures_marketdata\"\n322: PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: Final[str] = \"selected_option_marketdata\"\n323: PROVIDER_ROLE_OPTION_CONTEXT: Final[str] = \"option_context\"\n324: PROVIDER_ROLE_EXECUTION_PRIMARY: Final[str] = \"execution_primary\"\n325: PROVIDER_ROLE_EXECUTION_FALLBACK: Final[str] = \"execution_fallback\"\n326: \n327: PROVIDER_ROLES: Final[tuple[str, ...]] = (\n328:     PROVIDER_ROLE_FUTURES_MARKETDATA,\n329:     PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA,\n330:     PROVIDER_ROLE_OPTION_CONTEXT,\n331:     PROVIDER_ROLE_EXECUTION_PRIMARY,"
+      },
+      {
+        "end_line": 372,
+        "start_line": 356,
+        "text": "356: \n357: PROVIDER_FAILOVER_MODES: Final[tuple[str, ...]] = (\n358:     PROVIDER_FAILOVER_MODE_MANUAL,\n359:     PROVIDER_FAILOVER_MODE_ARMED_MANUAL,\n360:     PROVIDER_FAILOVER_MODE_AUTO_AFTER_PROOF,\n361: )\n362: \n363: PROVIDER_OVERRIDE_MODE_AUTO: Final[str] = \"AUTO\"\n364: PROVIDER_OVERRIDE_MODE_FORCE_ZERODHA: Final[str] = \"FORCE_ZERODHA\"\n365: PROVIDER_OVERRIDE_MODE_FORCE_DHAN: Final[str] = \"FORCE_DHAN\"\n366: \n367: PROVIDER_OVERRIDE_MODES: Final[tuple[str, ...]] = (\n368:     PROVIDER_OVERRIDE_MODE_AUTO,\n369:     PROVIDER_OVERRIDE_MODE_FORCE_ZERODHA,\n370:     PROVIDER_OVERRIDE_MODE_FORCE_DHAN,\n371: )\n372: "
+      },
+      {
+        "end_line": 373,
+        "start_line": 357,
+        "text": "357: PROVIDER_FAILOVER_MODES: Final[tuple[str, ...]] = (\n358:     PROVIDER_FAILOVER_MODE_MANUAL,\n359:     PROVIDER_FAILOVER_MODE_ARMED_MANUAL,\n360:     PROVIDER_FAILOVER_MODE_AUTO_AFTER_PROOF,\n361: )\n362: \n363: PROVIDER_OVERRIDE_MODE_AUTO: Final[str] = \"AUTO\"\n364: PROVIDER_OVERRIDE_MODE_FORCE_ZERODHA: Final[str] = \"FORCE_ZERODHA\"\n365: PROVIDER_OVERRIDE_MODE_FORCE_DHAN: Final[str] = \"FORCE_DHAN\"\n366: \n367: PROVIDER_OVERRIDE_MODES: Final[tuple[str, ...]] = (\n368:     PROVIDER_OVERRIDE_MODE_AUTO,\n369:     PROVIDER_OVERRIDE_MODE_FORCE_ZERODHA,\n370:     PROVIDER_OVERRIDE_MODE_FORCE_DHAN,\n371: )\n372: \n373: PROVIDER_TRANSITION_REASON_BOOTSTRAP: Final[str] = \"BOOTSTRAP\""
+      },
+      {
+        "end_line": 377,
+        "start_line": 361,
+        "text": "361: )\n362: \n363: PROVIDER_OVERRIDE_MODE_AUTO: Final[str] = \"AUTO\"\n364: PROVIDER_OVERRIDE_MODE_FORCE_ZERODHA: Final[str] = \"FORCE_ZERODHA\"\n365: PROVIDER_OVERRIDE_MODE_FORCE_DHAN: Final[str] = \"FORCE_DHAN\"\n366: \n367: PROVIDER_OVERRIDE_MODES: Final[tuple[str, ...]] = (\n368:     PROVIDER_OVERRIDE_MODE_AUTO,\n369:     PROVIDER_OVERRIDE_MODE_FORCE_ZERODHA,\n370:     PROVIDER_OVERRIDE_MODE_FORCE_DHAN,\n371: )\n372: \n373: PROVIDER_TRANSITION_REASON_BOOTSTRAP: Final[str] = \"BOOTSTRAP\"\n374: PROVIDER_TRANSITION_REASON_CONFIG_RELOAD: Final[str] = \"CONFIG_RELOAD\"\n375: PROVIDER_TRANSITION_REASON_MANUAL_OVERRIDE: Final[str] = \"MANUAL_OVERRIDE\"\n376: PROVIDER_TRANSITION_REASON_HEALTH_FAIL: Final[str] = \"HEALTH_FAIL\"\n377: PROVIDER_TRANSITION_REASON_STALE_DATA: Final[str] = \"STALE_DATA\""
+      },
+      {
+        "end_line": 378,
+        "start_line": 362,
+        "text": "362: \n363: PROVIDER_OVERRIDE_MODE_AUTO: Final[str] = \"AUTO\"\n364: PROVIDER_OVERRIDE_MODE_FORCE_ZERODHA: Final[str] = \"FORCE_ZERODHA\"\n365: PROVIDER_OVERRIDE_MODE_FORCE_DHAN: Final[str] = \"FORCE_DHAN\"\n366: \n367: PROVIDER_OVERRIDE_MODES: Final[tuple[str, ...]] = (\n368:     PROVIDER_OVERRIDE_MODE_AUTO,\n369:     PROVIDER_OVERRIDE_MODE_FORCE_ZERODHA,\n370:     PROVIDER_OVERRIDE_MODE_FORCE_DHAN,\n371: )\n372: \n373: PROVIDER_TRANSITION_REASON_BOOTSTRAP: Final[str] = \"BOOTSTRAP\"\n374: PROVIDER_TRANSITION_REASON_CONFIG_RELOAD: Final[str] = \"CONFIG_RELOAD\"\n375: PROVIDER_TRANSITION_REASON_MANUAL_OVERRIDE: Final[str] = \"MANUAL_OVERRIDE\"\n376: PROVIDER_TRANSITION_REASON_HEALTH_FAIL: Final[str] = \"HEALTH_FAIL\"\n377: PROVIDER_TRANSITION_REASON_STALE_DATA: Final[str] = \"STALE_DATA\"\n378: PROVIDER_TRANSITION_REASON_AUTH_FAILED: Final[str] = \"AUTH_FAILED\""
+      },
+      {
+        "end_line": 404,
+        "start_line": 388,
+        "text": "388:     PROVIDER_TRANSITION_REASON_STALE_DATA,\n389:     PROVIDER_TRANSITION_REASON_AUTH_FAILED,\n390:     PROVIDER_TRANSITION_REASON_PROOF_PROMOTION,\n391:     PROVIDER_TRANSITION_REASON_FAILOVER_ACTIVATED,\n392:     PROVIDER_TRANSITION_REASON_FAILBACK_RECOVERY,\n393: )\n394: \n395: STRATEGY_RUNTIME_MODE_NORMAL: Final[str] = \"NORMAL\"\n396: STRATEGY_RUNTIME_MODE_DHAN_DEGRADED: Final[str] = \"DHAN_DEGRADED\"\n397: STRATEGY_RUNTIME_MODE_BASE_5DEPTH: Final[str] = \"BASE_5DEPTH\"\n398: STRATEGY_RUNTIME_MODE_DEPTH20_ENHANCED: Final[str] = \"DEPTH20_ENHANCED\"\n399: STRATEGY_RUNTIME_MODE_DISABLED: Final[str] = \"DISABLED\"\n400: \n401: STRATEGY_RUNTIME_MODES: Final[tuple[str, ...]] = (\n402:     STRATEGY_RUNTIME_MODE_NORMAL,\n403:     STRATEGY_RUNTIME_MODE_DHAN_DEGRADED,\n404:     STRATEGY_RUNTIME_MODE_BASE_5DEPTH,"
+      },
+      {
+        "end_line": 411,
+        "start_line": 395,
+        "text": "395: STRATEGY_RUNTIME_MODE_NORMAL: Final[str] = \"NORMAL\"\n396: STRATEGY_RUNTIME_MODE_DHAN_DEGRADED: Final[str] = \"DHAN_DEGRADED\"\n397: STRATEGY_RUNTIME_MODE_BASE_5DEPTH: Final[str] = \"BASE_5DEPTH\"\n398: STRATEGY_RUNTIME_MODE_DEPTH20_ENHANCED: Final[str] = \"DEPTH20_ENHANCED\"\n399: STRATEGY_RUNTIME_MODE_DISABLED: Final[str] = \"DISABLED\"\n400: \n401: STRATEGY_RUNTIME_MODES: Final[tuple[str, ...]] = (\n402:     STRATEGY_RUNTIME_MODE_NORMAL,\n403:     STRATEGY_RUNTIME_MODE_DHAN_DEGRADED,\n404:     STRATEGY_RUNTIME_MODE_BASE_5DEPTH,\n405:     STRATEGY_RUNTIME_MODE_DEPTH20_ENHANCED,\n406:     STRATEGY_RUNTIME_MODE_DISABLED,\n407: )\n408: \n409: FAMILY_RUNTIME_MODE_OBSERVE_ONLY: Final[str] = \"OBSERVE_ONLY\"\n410: FAMILY_RUNTIME_MODE_LEGACY_LIVE_FAMILY_SHADOW: Final[str] = \"LEGACY_LIVE_FAMILY_SHADOW\"\n411: FAMILY_RUNTIME_MODE_FAMILY_LIVE_LEGACY_SHADOW: Final[str] = \"FAMILY_LIVE_LEGACY_SHADOW\""
+      },
+      {
+        "end_line": 435,
+        "start_line": 419,
+        "text": "419: )\n420: \n421: \n422: # ============================================================================\n423: # Batch 25G frozen cross-service field registry\n424: # ============================================================================\n425: \n426: CONTRACT_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = (\n427:     \"futures_marketdata_provider_id\",\n428:     \"selected_option_marketdata_provider_id\",\n429:     \"option_context_provider_id\",\n430:     \"execution_primary_provider_id\",\n431:     \"execution_fallback_provider_id\",\n432:     \"futures_marketdata_status\",\n433:     \"selected_option_marketdata_status\",\n434:     \"option_context_status\",\n435:     \"execution_primary_status\","
+      },
+      {
+        "end_line": 436,
+        "start_line": 420,
+        "text": "420: \n421: \n422: # ============================================================================\n423: # Batch 25G frozen cross-service field registry\n424: # ============================================================================\n425: \n426: CONTRACT_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = (\n427:     \"futures_marketdata_provider_id\",\n428:     \"selected_option_marketdata_provider_id\",\n429:     \"option_context_provider_id\",\n430:     \"execution_primary_provider_id\",\n431:     \"execution_fallback_provider_id\",\n432:     \"futures_marketdata_status\",\n433:     \"selected_option_marketdata_status\",\n434:     \"option_context_status\",\n435:     \"execution_primary_status\",\n436:     \"execution_fallback_status\","
+      },
+      {
+        "end_line": 437,
+        "start_line": 421,
+        "text": "421: \n422: # ============================================================================\n423: # Batch 25G frozen cross-service field registry\n424: # ============================================================================\n425: \n426: CONTRACT_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = (\n427:     \"futures_marketdata_provider_id\",\n428:     \"selected_option_marketdata_provider_id\",\n429:     \"option_context_provider_id\",\n430:     \"execution_primary_provider_id\",\n431:     \"execution_fallback_provider_id\",\n432:     \"futures_marketdata_status\",\n433:     \"selected_option_marketdata_status\",\n434:     \"option_context_status\",\n435:     \"execution_primary_status\",\n436:     \"execution_fallback_status\",\n437:     \"family_runtime_mode\","
+      },
+      {
+        "end_line": 440,
+        "start_line": 424,
+        "text": "424: # ============================================================================\n425: \n426: CONTRACT_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = (\n427:     \"futures_marketdata_provider_id\",\n428:     \"selected_option_marketdata_provider_id\",\n429:     \"option_context_provider_id\",\n430:     \"execution_primary_provider_id\",\n431:     \"execution_fallback_provider_id\",\n432:     \"futures_marketdata_status\",\n433:     \"selected_option_marketdata_status\",\n434:     \"option_context_status\",\n435:     \"execution_primary_status\",\n436:     \"execution_fallback_status\",\n437:     \"family_runtime_mode\",\n438:     \"failover_mode\",\n439:     \"override_mode\",\n440:     \"transition_reason\","
+      },
+      {
+        "end_line": 441,
+        "start_line": 425,
+        "text": "425: \n426: CONTRACT_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = (\n427:     \"futures_marketdata_provider_id\",\n428:     \"selected_option_marketdata_provider_id\",\n429:     \"option_context_provider_id\",\n430:     \"execution_primary_provider_id\",\n431:     \"execution_fallback_provider_id\",\n432:     \"futures_marketdata_status\",\n433:     \"selected_option_marketdata_status\",\n434:     \"option_context_status\",\n435:     \"execution_primary_status\",\n436:     \"execution_fallback_status\",\n437:     \"family_runtime_mode\",\n438:     \"failover_mode\",\n439:     \"override_mode\",\n440:     \"transition_reason\",\n441:     \"provider_transition_seq\","
+      },
+      {
+        "end_line": 442,
+        "start_line": 426,
+        "text": "426: CONTRACT_PROVIDER_RUNTIME_KEYS: Final[tuple[str, ...]] = (\n427:     \"futures_marketdata_provider_id\",\n428:     \"selected_option_marketdata_provider_id\",\n429:     \"option_context_provider_id\",\n430:     \"execution_primary_provider_id\",\n431:     \"execution_fallback_provider_id\",\n432:     \"futures_marketdata_status\",\n433:     \"selected_option_marketdata_status\",\n434:     \"option_context_status\",\n435:     \"execution_primary_status\",\n436:     \"execution_fallback_status\",\n437:     \"family_runtime_mode\",\n438:     \"failover_mode\",\n439:     \"override_mode\",\n440:     \"transition_reason\",\n441:     \"provider_transition_seq\",\n442:     \"failover_active\","
+      },
+      {
+        "end_line": 446,
+        "start_line": 430,
+        "text": "430:     \"execution_primary_provider_id\",\n431:     \"execution_fallback_provider_id\",\n432:     \"futures_marketdata_status\",\n433:     \"selected_option_marketdata_status\",\n434:     \"option_context_status\",\n435:     \"execution_primary_status\",\n436:     \"execution_fallback_status\",\n437:     \"family_runtime_mode\",\n438:     \"failover_mode\",\n439:     \"override_mode\",\n440:     \"transition_reason\",\n441:     \"provider_transition_seq\",\n442:     \"failover_active\",\n443:     \"pending_failover\",\n444: )\n445: \n446: CONTRACT_FEED_SNAPSHOT_KEYS: Final[tuple[str, ...]] = ("
+      }
+    ],
+    "app/mme_scalpx/integrations/provider_runtime.py": [
+      {
+        "end_line": 14,
+        "start_line": 1,
+        "text": "1: from __future__ import annotations\n2: \n3: \"\"\"\n4: app/mme_scalpx/integrations/provider_runtime.py\n5: \n6: Provider-role resolution and failover policy for ScalpX MME.\n7: \n8: Purpose\n9: -------\n10: This module OWNS:\n11: - provider-role resolution for market data, option context, and execution\n12: - interpretation of failover mode and provider override mode\n13: - normalization of provider health/context into active-provider runtime truth\n14: - deterministic provider-transition event construction"
+      },
+      {
+        "end_line": 20,
+        "start_line": 4,
+        "text": "4: app/mme_scalpx/integrations/provider_runtime.py\n5: \n6: Provider-role resolution and failover policy for ScalpX MME.\n7: \n8: Purpose\n9: -------\n10: This module OWNS:\n11: - provider-role resolution for market data, option context, and execution\n12: - interpretation of failover mode and provider override mode\n13: - normalization of provider health/context into active-provider runtime truth\n14: - deterministic provider-transition event construction\n15: - pre-position setup invalidation signaling when active providers change\n16: - enforcement of \"no silent provider switch\" and \"no mid-position provider migration\"\n17: \n18: This module DOES NOT own:\n19: - broker API clients\n20: - websocket/session lifecycle"
+      },
+      {
+        "end_line": 158,
+        "start_line": 142,
+        "text": "142:     names.STATE_ARMED,\n143:     names.STATE_RETEST_MONITOR,\n144:     names.STATE_ENTRY_PENDING,\n145: )\n146: \n147: _BASELINE_ROLE_PROVIDER_ORDER: Final[Mapping[str, tuple[str, ...]]] = MappingProxyType(\n148:     {\n149:         names.PROVIDER_ROLE_FUTURES_MARKETDATA: (\n150:             names.PROVIDER_ZERODHA,\n151:             names.PROVIDER_DHAN,\n152:         ),\n153:         names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: (\n154:             names.PROVIDER_DHAN,\n155:             names.PROVIDER_ZERODHA,\n156:         ),\n157:         names.PROVIDER_ROLE_OPTION_CONTEXT: (\n158:             names.PROVIDER_DHAN,"
+      },
+      {
+        "end_line": 159,
+        "start_line": 143,
+        "text": "143:     names.STATE_RETEST_MONITOR,\n144:     names.STATE_ENTRY_PENDING,\n145: )\n146: \n147: _BASELINE_ROLE_PROVIDER_ORDER: Final[Mapping[str, tuple[str, ...]]] = MappingProxyType(\n148:     {\n149:         names.PROVIDER_ROLE_FUTURES_MARKETDATA: (\n150:             names.PROVIDER_ZERODHA,\n151:             names.PROVIDER_DHAN,\n152:         ),\n153:         names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: (\n154:             names.PROVIDER_DHAN,\n155:             names.PROVIDER_ZERODHA,\n156:         ),\n157:         names.PROVIDER_ROLE_OPTION_CONTEXT: (\n158:             names.PROVIDER_DHAN,\n159:         ),"
+      },
+      {
+        "end_line": 162,
+        "start_line": 146,
+        "text": "146: \n147: _BASELINE_ROLE_PROVIDER_ORDER: Final[Mapping[str, tuple[str, ...]]] = MappingProxyType(\n148:     {\n149:         names.PROVIDER_ROLE_FUTURES_MARKETDATA: (\n150:             names.PROVIDER_ZERODHA,\n151:             names.PROVIDER_DHAN,\n152:         ),\n153:         names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: (\n154:             names.PROVIDER_DHAN,\n155:             names.PROVIDER_ZERODHA,\n156:         ),\n157:         names.PROVIDER_ROLE_OPTION_CONTEXT: (\n158:             names.PROVIDER_DHAN,\n159:         ),\n160:         names.PROVIDER_ROLE_EXECUTION_PRIMARY: (\n161:             names.PROVIDER_ZERODHA,\n162:             names.PROVIDER_DHAN,"
+      },
+      {
+        "end_line": 163,
+        "start_line": 147,
+        "text": "147: _BASELINE_ROLE_PROVIDER_ORDER: Final[Mapping[str, tuple[str, ...]]] = MappingProxyType(\n148:     {\n149:         names.PROVIDER_ROLE_FUTURES_MARKETDATA: (\n150:             names.PROVIDER_ZERODHA,\n151:             names.PROVIDER_DHAN,\n152:         ),\n153:         names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: (\n154:             names.PROVIDER_DHAN,\n155:             names.PROVIDER_ZERODHA,\n156:         ),\n157:         names.PROVIDER_ROLE_OPTION_CONTEXT: (\n158:             names.PROVIDER_DHAN,\n159:         ),\n160:         names.PROVIDER_ROLE_EXECUTION_PRIMARY: (\n161:             names.PROVIDER_ZERODHA,\n162:             names.PROVIDER_DHAN,\n163:         ),"
+      },
+      {
+        "end_line": 166,
+        "start_line": 150,
+        "text": "150:             names.PROVIDER_ZERODHA,\n151:             names.PROVIDER_DHAN,\n152:         ),\n153:         names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: (\n154:             names.PROVIDER_DHAN,\n155:             names.PROVIDER_ZERODHA,\n156:         ),\n157:         names.PROVIDER_ROLE_OPTION_CONTEXT: (\n158:             names.PROVIDER_DHAN,\n159:         ),\n160:         names.PROVIDER_ROLE_EXECUTION_PRIMARY: (\n161:             names.PROVIDER_ZERODHA,\n162:             names.PROVIDER_DHAN,\n163:         ),\n164:         names.PROVIDER_ROLE_EXECUTION_FALLBACK: (\n165:             names.PROVIDER_DHAN,\n166:             names.PROVIDER_ZERODHA,"
+      },
+      {
+        "end_line": 169,
+        "start_line": 153,
+        "text": "153:         names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA: (\n154:             names.PROVIDER_DHAN,\n155:             names.PROVIDER_ZERODHA,\n156:         ),\n157:         names.PROVIDER_ROLE_OPTION_CONTEXT: (\n158:             names.PROVIDER_DHAN,\n159:         ),\n160:         names.PROVIDER_ROLE_EXECUTION_PRIMARY: (\n161:             names.PROVIDER_ZERODHA,\n162:             names.PROVIDER_DHAN,\n163:         ),\n164:         names.PROVIDER_ROLE_EXECUTION_FALLBACK: (\n165:             names.PROVIDER_DHAN,\n166:             names.PROVIDER_ZERODHA,\n167:         ),\n168:     }\n169: )"
+      },
+      {
+        "end_line": 170,
+        "start_line": 154,
+        "text": "154:             names.PROVIDER_DHAN,\n155:             names.PROVIDER_ZERODHA,\n156:         ),\n157:         names.PROVIDER_ROLE_OPTION_CONTEXT: (\n158:             names.PROVIDER_DHAN,\n159:         ),\n160:         names.PROVIDER_ROLE_EXECUTION_PRIMARY: (\n161:             names.PROVIDER_ZERODHA,\n162:             names.PROVIDER_DHAN,\n163:         ),\n164:         names.PROVIDER_ROLE_EXECUTION_FALLBACK: (\n165:             names.PROVIDER_DHAN,\n166:             names.PROVIDER_ZERODHA,\n167:         ),\n168:     }\n169: )\n170: "
+      },
+      {
+        "end_line": 173,
+        "start_line": 157,
+        "text": "157:         names.PROVIDER_ROLE_OPTION_CONTEXT: (\n158:             names.PROVIDER_DHAN,\n159:         ),\n160:         names.PROVIDER_ROLE_EXECUTION_PRIMARY: (\n161:             names.PROVIDER_ZERODHA,\n162:             names.PROVIDER_DHAN,\n163:         ),\n164:         names.PROVIDER_ROLE_EXECUTION_FALLBACK: (\n165:             names.PROVIDER_DHAN,\n166:             names.PROVIDER_ZERODHA,\n167:         ),\n168:     }\n169: )\n170: \n171: _STATUSES_ALLOWING_ACTIVE_ASSIGNMENT: Final[frozenset[str]] = frozenset(\n172:     {\n173:         names.PROVIDER_STATUS_HEALTHY,"
+      },
+      {
+        "end_line": 174,
+        "start_line": 158,
+        "text": "158:             names.PROVIDER_DHAN,\n159:         ),\n160:         names.PROVIDER_ROLE_EXECUTION_PRIMARY: (\n161:             names.PROVIDER_ZERODHA,\n162:             names.PROVIDER_DHAN,\n163:         ),\n164:         names.PROVIDER_ROLE_EXECUTION_FALLBACK: (\n165:             names.PROVIDER_DHAN,\n166:             names.PROVIDER_ZERODHA,\n167:         ),\n168:     }\n169: )\n170: \n171: _STATUSES_ALLOWING_ACTIVE_ASSIGNMENT: Final[frozenset[str]] = frozenset(\n172:     {\n173:         names.PROVIDER_STATUS_HEALTHY,\n174:         names.PROVIDER_STATUS_DEGRADED,"
+      },
+      {
+        "end_line": 238,
+        "start_line": 222,
+        "text": "222:     )\n223: \n224: \n225: def _get_runtime_provider_id(\n226:     runtime_state: models.ProviderRuntimeState,\n227:     role: str,\n228: ) -> str:\n229:     if role == names.PROVIDER_ROLE_FUTURES_MARKETDATA:\n230:         return runtime_state.futures_marketdata_provider_id\n231:     if role == names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA:\n232:         return runtime_state.selected_option_marketdata_provider_id\n233:     if role == names.PROVIDER_ROLE_OPTION_CONTEXT:\n234:         return runtime_state.option_context_provider_id\n235:     if role == names.PROVIDER_ROLE_EXECUTION_PRIMARY:\n236:         return runtime_state.execution_primary_provider_id\n237:     if role == names.PROVIDER_ROLE_EXECUTION_FALLBACK:\n238:         return runtime_state.execution_fallback_provider_id"
+      },
+      {
+        "end_line": 240,
+        "start_line": 224,
+        "text": "224: \n225: def _get_runtime_provider_id(\n226:     runtime_state: models.ProviderRuntimeState,\n227:     role: str,\n228: ) -> str:\n229:     if role == names.PROVIDER_ROLE_FUTURES_MARKETDATA:\n230:         return runtime_state.futures_marketdata_provider_id\n231:     if role == names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA:\n232:         return runtime_state.selected_option_marketdata_provider_id\n233:     if role == names.PROVIDER_ROLE_OPTION_CONTEXT:\n234:         return runtime_state.option_context_provider_id\n235:     if role == names.PROVIDER_ROLE_EXECUTION_PRIMARY:\n236:         return runtime_state.execution_primary_provider_id\n237:     if role == names.PROVIDER_ROLE_EXECUTION_FALLBACK:\n238:         return runtime_state.execution_fallback_provider_id\n239:     raise ProviderRuntimeValidationError(f\"unknown provider role: {role!r}\")\n240: "
+      },
+      {
+        "end_line": 242,
+        "start_line": 226,
+        "text": "226:     runtime_state: models.ProviderRuntimeState,\n227:     role: str,\n228: ) -> str:\n229:     if role == names.PROVIDER_ROLE_FUTURES_MARKETDATA:\n230:         return runtime_state.futures_marketdata_provider_id\n231:     if role == names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA:\n232:         return runtime_state.selected_option_marketdata_provider_id\n233:     if role == names.PROVIDER_ROLE_OPTION_CONTEXT:\n234:         return runtime_state.option_context_provider_id\n235:     if role == names.PROVIDER_ROLE_EXECUTION_PRIMARY:\n236:         return runtime_state.execution_primary_provider_id\n237:     if role == names.PROVIDER_ROLE_EXECUTION_FALLBACK:\n238:         return runtime_state.execution_fallback_provider_id\n239:     raise ProviderRuntimeValidationError(f\"unknown provider role: {role!r}\")\n240: \n241: \n242: def _get_runtime_status("
+      },
+      {
+        "end_line": 255,
+        "start_line": 239,
+        "text": "239:     raise ProviderRuntimeValidationError(f\"unknown provider role: {role!r}\")\n240: \n241: \n242: def _get_runtime_status(\n243:     runtime_state: models.ProviderRuntimeState,\n244:     role: str,\n245: ) -> str:\n246:     if role == names.PROVIDER_ROLE_FUTURES_MARKETDATA:\n247:         return runtime_state.futures_marketdata_status\n248:     if role == names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA:\n249:         return runtime_state.selected_option_marketdata_status\n250:     if role == names.PROVIDER_ROLE_OPTION_CONTEXT:\n251:         return runtime_state.option_context_status\n252:     if role == names.PROVIDER_ROLE_EXECUTION_PRIMARY:\n253:         return runtime_state.execution_primary_status\n254:     if role == names.PROVIDER_ROLE_EXECUTION_FALLBACK:\n255:         return runtime_state.execution_fallback_status"
+      },
+      {
+        "end_line": 257,
+        "start_line": 241,
+        "text": "241: \n242: def _get_runtime_status(\n243:     runtime_state: models.ProviderRuntimeState,\n244:     role: str,\n245: ) -> str:\n246:     if role == names.PROVIDER_ROLE_FUTURES_MARKETDATA:\n247:         return runtime_state.futures_marketdata_status\n248:     if role == names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA:\n249:         return runtime_state.selected_option_marketdata_status\n250:     if role == names.PROVIDER_ROLE_OPTION_CONTEXT:\n251:         return runtime_state.option_context_status\n252:     if role == names.PROVIDER_ROLE_EXECUTION_PRIMARY:\n253:         return runtime_state.execution_primary_status\n254:     if role == names.PROVIDER_ROLE_EXECUTION_FALLBACK:\n255:         return runtime_state.execution_fallback_status\n256:     raise ProviderRuntimeValidationError(f\"unknown provider role: {role!r}\")\n257: "
+      },
+      {
+        "end_line": 259,
+        "start_line": 243,
+        "text": "243:     runtime_state: models.ProviderRuntimeState,\n244:     role: str,\n245: ) -> str:\n246:     if role == names.PROVIDER_ROLE_FUTURES_MARKETDATA:\n247:         return runtime_state.futures_marketdata_status\n248:     if role == names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA:\n249:         return runtime_state.selected_option_marketdata_status\n250:     if role == names.PROVIDER_ROLE_OPTION_CONTEXT:\n251:         return runtime_state.option_context_status\n252:     if role == names.PROVIDER_ROLE_EXECUTION_PRIMARY:\n253:         return runtime_state.execution_primary_status\n254:     if role == names.PROVIDER_ROLE_EXECUTION_FALLBACK:\n255:         return runtime_state.execution_fallback_status\n256:     raise ProviderRuntimeValidationError(f\"unknown provider role: {role!r}\")\n257: \n258: \n259: def _status_reason_from_status(status: str) -> str:"
+      },
+      {
+        "end_line": 293,
+        "start_line": 277,
+        "text": "277:     provider_health_map: Mapping[str, models.ProviderHealthState],\n278:     dhan_context_state: models.DhanContextState | None,\n279: ) -> str:\n280:     \"\"\"\n281:     Resolve provider status for a specific runtime role.\n282: \n283:     Freeze law:\n284:     Dhan provider-level health is not option-chain/context health.\n285:     For option_context + DHAN, a concrete DhanContextState is mandatory.\n286:     Without it, the context lane is UNAVAILABLE even if generic Dhan\n287:     market-data health is HEALTHY.\n288:     \"\"\"\n289: \n290:     if role == names.PROVIDER_ROLE_OPTION_CONTEXT and provider_id == names.PROVIDER_DHAN:\n291:         if dhan_context_state is None:\n292:             return names.PROVIDER_STATUS_UNAVAILABLE\n293: "
+      },
+      {
+        "end_line": 298,
+        "start_line": 282,
+        "text": "282: \n283:     Freeze law:\n284:     Dhan provider-level health is not option-chain/context health.\n285:     For option_context + DHAN, a concrete DhanContextState is mandatory.\n286:     Without it, the context lane is UNAVAILABLE even if generic Dhan\n287:     market-data health is HEALTHY.\n288:     \"\"\"\n289: \n290:     if role == names.PROVIDER_ROLE_OPTION_CONTEXT and provider_id == names.PROVIDER_DHAN:\n291:         if dhan_context_state is None:\n292:             return names.PROVIDER_STATUS_UNAVAILABLE\n293: \n294:         context_status = dhan_context_state.context_status\n295:         health_state = provider_health_map.get(provider_id)\n296: \n297:         if health_state is None:\n298:             return context_status"
+      },
+      {
+        "end_line": 347,
+        "start_line": 331,
+        "text": "331:         return names.PROVIDER_STATUS_AUTH_FAILED\n332: \n333:     if health_state.stale:\n334:         return names.PROVIDER_STATUS_STALE\n335: \n336:     if role in (\n337:         names.PROVIDER_ROLE_FUTURES_MARKETDATA,\n338:         names.PROVIDER_ROLE_SELECTED_OPTION_MARKETDATA,\n339:     ) and health_state.marketdata_healthy is False:\n340:         if base_status in (\n341:             names.PROVIDER_STATUS_HEALTHY,\n342:             names.PROVIDER_STATUS_FAILOVER_ACTIVE,\n343:         ):\n344:             return names.PROVIDER_STATUS_DEGRADED\n345:         return base_status\n346: \n347:     if role in ("
+      }
+    ],
+    "app/mme_scalpx/services/features.py": [
+      {
+        "end_line": 34,
+        "start_line": 18,
+        "text": "18: - wiring all five per-family feature surfaces:\n19:   MIST, MISB, MISC, MISR, MISO\n20: - publishing stable family_features\n21: - publishing stable family_surfaces\n22: - publishing feature hash / feature stream / heartbeat\n23: \n24: This module DOES NOT own:\n25: - raw feed ingestion\n26: - provider failover policy\n27: - strategy decisions\n28: - doctrine state machines\n29: - cooldowns\n30: - execution\n31: - risk mutation\n32: - order placement\n33: \n34: Frozen laws"
+      },
+      {
+        "end_line": 191,
+        "start_line": 175,
+        "text": "175:         \"FAMILY_IDS\",\n176:         (FAMILY_MIST, FAMILY_MISB, FAMILY_MISC, FAMILY_MISR, FAMILY_MISO),\n177:     )\n178: )\n179: BRANCH_IDS: Final[tuple[str, ...]] = tuple(\n180:     getattr(FF_C, \"BRANCH_IDS\", (BRANCH_CALL, BRANCH_PUT))\n181: )\n182: \n183: PROVIDER_DHAN: Final[str] = getattr(N, \"PROVIDER_DHAN\", \"DHAN\")\n184: PROVIDER_ZERODHA: Final[str] = getattr(N, \"PROVIDER_ZERODHA\", \"ZERODHA\")\n185: \n186: PROVIDER_IDS: Final[tuple[str, ...]] = tuple(\n187:     getattr(FF_C, \"ALLOWED_PROVIDER_IDS\", (PROVIDER_ZERODHA, PROVIDER_DHAN))\n188: )\n189: PROVIDER_STATUSES: Final[tuple[str, ...]] = tuple(\n190:     getattr(\n191:         FF_C,"
+      },
+      {
+        "end_line": 192,
+        "start_line": 176,
+        "text": "176:         (FAMILY_MIST, FAMILY_MISB, FAMILY_MISC, FAMILY_MISR, FAMILY_MISO),\n177:     )\n178: )\n179: BRANCH_IDS: Final[tuple[str, ...]] = tuple(\n180:     getattr(FF_C, \"BRANCH_IDS\", (BRANCH_CALL, BRANCH_PUT))\n181: )\n182: \n183: PROVIDER_DHAN: Final[str] = getattr(N, \"PROVIDER_DHAN\", \"DHAN\")\n184: PROVIDER_ZERODHA: Final[str] = getattr(N, \"PROVIDER_ZERODHA\", \"ZERODHA\")\n185: \n186: PROVIDER_IDS: Final[tuple[str, ...]] = tuple(\n187:     getattr(FF_C, \"ALLOWED_PROVIDER_IDS\", (PROVIDER_ZERODHA, PROVIDER_DHAN))\n188: )\n189: PROVIDER_STATUSES: Final[tuple[str, ...]] = tuple(\n190:     getattr(\n191:         FF_C,\n192:         \"ALLOWED_PROVIDER_STATUSES\","
+      },
+      {
+        "end_line": 195,
+        "start_line": 179,
+        "text": "179: BRANCH_IDS: Final[tuple[str, ...]] = tuple(\n180:     getattr(FF_C, \"BRANCH_IDS\", (BRANCH_CALL, BRANCH_PUT))\n181: )\n182: \n183: PROVIDER_DHAN: Final[str] = getattr(N, \"PROVIDER_DHAN\", \"DHAN\")\n184: PROVIDER_ZERODHA: Final[str] = getattr(N, \"PROVIDER_ZERODHA\", \"ZERODHA\")\n185: \n186: PROVIDER_IDS: Final[tuple[str, ...]] = tuple(\n187:     getattr(FF_C, \"ALLOWED_PROVIDER_IDS\", (PROVIDER_ZERODHA, PROVIDER_DHAN))\n188: )\n189: PROVIDER_STATUSES: Final[tuple[str, ...]] = tuple(\n190:     getattr(\n191:         FF_C,\n192:         \"ALLOWED_PROVIDER_STATUSES\",\n193:         (\"HEALTHY\", \"DEGRADED\", \"STALE\", \"UNAVAILABLE\", \"AVAILABLE\"),\n194:     )\n195: )"
+      },
+      {
+        "end_line": 214,
+        "start_line": 198,
+        "text": "198: REGIME_NORMAL: Final[str] = getattr(FF_C, \"REGIME_NORMAL\", \"NORMAL\")\n199: REGIME_FAST: Final[str] = getattr(FF_C, \"REGIME_FAST\", \"FAST\")\n200: REGIME_IDS: Final[tuple[str, ...]] = tuple(\n201:     getattr(FF_C, \"ALLOWED_REGIMES\", (REGIME_LOWVOL, REGIME_NORMAL, REGIME_FAST))\n202: )\n203: \n204: RUNTIME_DISABLED: Final[str] = getattr(N, \"STRATEGY_RUNTIME_MODE_DISABLED\", \"DISABLED\")\n205: RUNTIME_NORMAL: Final[str] = getattr(N, \"STRATEGY_RUNTIME_MODE_NORMAL\", \"NORMAL\")\n206: RUNTIME_DHAN_DEGRADED: Final[str] = getattr(\n207:     N,\n208:     \"STRATEGY_RUNTIME_MODE_DHAN_DEGRADED\",\n209:     \"DHAN-DEGRADED\",\n210: )\n211: RUNTIME_BASE_5DEPTH: Final[str] = getattr(\n212:     N,\n213:     \"STRATEGY_RUNTIME_MODE_BASE_5DEPTH\",\n214:     \"BASE-5DEPTH\","
+      },
+      {
+        "end_line": 216,
+        "start_line": 200,
+        "text": "200: REGIME_IDS: Final[tuple[str, ...]] = tuple(\n201:     getattr(FF_C, \"ALLOWED_REGIMES\", (REGIME_LOWVOL, REGIME_NORMAL, REGIME_FAST))\n202: )\n203: \n204: RUNTIME_DISABLED: Final[str] = getattr(N, \"STRATEGY_RUNTIME_MODE_DISABLED\", \"DISABLED\")\n205: RUNTIME_NORMAL: Final[str] = getattr(N, \"STRATEGY_RUNTIME_MODE_NORMAL\", \"NORMAL\")\n206: RUNTIME_DHAN_DEGRADED: Final[str] = getattr(\n207:     N,\n208:     \"STRATEGY_RUNTIME_MODE_DHAN_DEGRADED\",\n209:     \"DHAN-DEGRADED\",\n210: )\n211: RUNTIME_BASE_5DEPTH: Final[str] = getattr(\n212:     N,\n213:     \"STRATEGY_RUNTIME_MODE_BASE_5DEPTH\",\n214:     \"BASE-5DEPTH\",\n215: )\n216: RUNTIME_DEPTH20: Final[str] = getattr("
+      },
+      {
+        "end_line": 217,
+        "start_line": 201,
+        "text": "201:     getattr(FF_C, \"ALLOWED_REGIMES\", (REGIME_LOWVOL, REGIME_NORMAL, REGIME_FAST))\n202: )\n203: \n204: RUNTIME_DISABLED: Final[str] = getattr(N, \"STRATEGY_RUNTIME_MODE_DISABLED\", \"DISABLED\")\n205: RUNTIME_NORMAL: Final[str] = getattr(N, \"STRATEGY_RUNTIME_MODE_NORMAL\", \"NORMAL\")\n206: RUNTIME_DHAN_DEGRADED: Final[str] = getattr(\n207:     N,\n208:     \"STRATEGY_RUNTIME_MODE_DHAN_DEGRADED\",\n209:     \"DHAN-DEGRADED\",\n210: )\n211: RUNTIME_BASE_5DEPTH: Final[str] = getattr(\n212:     N,\n213:     \"STRATEGY_RUNTIME_MODE_BASE_5DEPTH\",\n214:     \"BASE-5DEPTH\",\n215: )\n216: RUNTIME_DEPTH20: Final[str] = getattr(\n217:     N,"
+      },
+      {
+        "end_line": 242,
+        "start_line": 226,
+        "text": "226: \n227: FAMILY_RUNTIME_MODES: Final[tuple[str, ...]] = tuple(\n228:     getattr(FF_C, \"ALLOWED_FAMILY_RUNTIME_MODES\", (FAMILY_RUNTIME_OBSERVE,))\n229: )\n230: CLASSIC_RUNTIME_MODES: Final[tuple[str, ...]] = tuple(\n231:     getattr(\n232:         FF_C,\n233:         \"CLASSIC_ALLOWED_STRATEGY_RUNTIME_MODES\",\n234:         (RUNTIME_NORMAL, RUNTIME_DHAN_DEGRADED, RUNTIME_DISABLED),\n235:     )\n236: )\n237: MISO_RUNTIME_MODES: Final[tuple[str, ...]] = tuple(\n238:     getattr(\n239:         FF_C,\n240:         \"MISO_ALLOWED_STRATEGY_RUNTIME_MODES\",\n241:         (RUNTIME_BASE_5DEPTH, RUNTIME_DEPTH20, RUNTIME_DISABLED),\n242:     )"
+      },
+      {
+        "end_line": 289,
+        "start_line": 273,
+        "text": "273:     getattr(N, \"HB_FEATURES\", N.KEY_COMPAT_FEATURES_HEARTBEAT),\n274: )\n275: \n276: HASH_PROVIDER_RUNTIME: Final[str] = getattr(\n277:     N,\n278:     \"HASH_STATE_PROVIDER_RUNTIME\",\n279:     N.HASH_STATE_PROVIDER_RUNTIME,\n280: )\n281: HASH_DHAN_CONTEXT: Final[str] = getattr(\n282:     N,\n283:     \"HASH_STATE_DHAN_CONTEXT\",\n284:     N.HASH_STATE_DHAN_CONTEXT,\n285: )\n286: HASH_FUT_ACTIVE: Final[str] = getattr(\n287:     N,\n288:     \"HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE\",\n289:     getattr(N, \"HASH_STATE_SNAPSHOT_MME_FUT\", N.HASH_STATE_SNAPSHOT_MME_FUT),"
+      },
+      {
+        "end_line": 291,
+        "start_line": 275,
+        "text": "275: \n276: HASH_PROVIDER_RUNTIME: Final[str] = getattr(\n277:     N,\n278:     \"HASH_STATE_PROVIDER_RUNTIME\",\n279:     N.HASH_STATE_PROVIDER_RUNTIME,\n280: )\n281: HASH_DHAN_CONTEXT: Final[str] = getattr(\n282:     N,\n283:     \"HASH_STATE_DHAN_CONTEXT\",\n284:     N.HASH_STATE_DHAN_CONTEXT,\n285: )\n286: HASH_FUT_ACTIVE: Final[str] = getattr(\n287:     N,\n288:     \"HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE\",\n289:     getattr(N, \"HASH_STATE_SNAPSHOT_MME_FUT\", N.HASH_STATE_SNAPSHOT_MME_FUT),\n290: )\n291: HASH_OPT_ACTIVE: Final[str] = getattr("
+      },
+      {
+        "end_line": 292,
+        "start_line": 276,
+        "text": "276: HASH_PROVIDER_RUNTIME: Final[str] = getattr(\n277:     N,\n278:     \"HASH_STATE_PROVIDER_RUNTIME\",\n279:     N.HASH_STATE_PROVIDER_RUNTIME,\n280: )\n281: HASH_DHAN_CONTEXT: Final[str] = getattr(\n282:     N,\n283:     \"HASH_STATE_DHAN_CONTEXT\",\n284:     N.HASH_STATE_DHAN_CONTEXT,\n285: )\n286: HASH_FUT_ACTIVE: Final[str] = getattr(\n287:     N,\n288:     \"HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE\",\n289:     getattr(N, \"HASH_STATE_SNAPSHOT_MME_FUT\", N.HASH_STATE_SNAPSHOT_MME_FUT),\n290: )\n291: HASH_OPT_ACTIVE: Final[str] = getattr(\n292:     N,"
+      },
+      {
+        "end_line": 308,
+        "start_line": 292,
+        "text": "292:     N,\n293:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE\",\n294:     getattr(\n295:         N,\n296:         \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n297:         N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED,\n298:     ),\n299: )\n300: HASH_FUT_DHAN: Final[str] = getattr(\n301:     N,\n302:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n303:     N.HASH_STATE_SNAPSHOT_MME_FUT_DHAN,\n304: )\n305: HASH_OPT_DHAN: Final[str] = getattr(\n306:     N,\n307:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n308:     N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN,"
+      },
+      {
+        "end_line": 310,
+        "start_line": 294,
+        "text": "294:     getattr(\n295:         N,\n296:         \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n297:         N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED,\n298:     ),\n299: )\n300: HASH_FUT_DHAN: Final[str] = getattr(\n301:     N,\n302:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n303:     N.HASH_STATE_SNAPSHOT_MME_FUT_DHAN,\n304: )\n305: HASH_OPT_DHAN: Final[str] = getattr(\n306:     N,\n307:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n308:     N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN,\n309: )\n310: "
+      },
+      {
+        "end_line": 311,
+        "start_line": 295,
+        "text": "295:         N,\n296:         \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n297:         N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED,\n298:     ),\n299: )\n300: HASH_FUT_DHAN: Final[str] = getattr(\n301:     N,\n302:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n303:     N.HASH_STATE_SNAPSHOT_MME_FUT_DHAN,\n304: )\n305: HASH_OPT_DHAN: Final[str] = getattr(\n306:     N,\n307:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n308:     N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN,\n309: )\n310: \n311: SHARED_MODULES: Final[Mapping[str, str]] = {"
+      },
+      {
+        "end_line": 313,
+        "start_line": 297,
+        "text": "297:         N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED,\n298:     ),\n299: )\n300: HASH_FUT_DHAN: Final[str] = getattr(\n301:     N,\n302:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n303:     N.HASH_STATE_SNAPSHOT_MME_FUT_DHAN,\n304: )\n305: HASH_OPT_DHAN: Final[str] = getattr(\n306:     N,\n307:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n308:     N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN,\n309: )\n310: \n311: SHARED_MODULES: Final[Mapping[str, str]] = {\n312:     \"option_core\": \"app.mme_scalpx.services.feature_family.option_core\",\n313:     \"futures_core\": \"app.mme_scalpx.services.feature_family.futures_core\","
+      },
+      {
+        "end_line": 315,
+        "start_line": 299,
+        "text": "299: )\n300: HASH_FUT_DHAN: Final[str] = getattr(\n301:     N,\n302:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n303:     N.HASH_STATE_SNAPSHOT_MME_FUT_DHAN,\n304: )\n305: HASH_OPT_DHAN: Final[str] = getattr(\n306:     N,\n307:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n308:     N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN,\n309: )\n310: \n311: SHARED_MODULES: Final[Mapping[str, str]] = {\n312:     \"option_core\": \"app.mme_scalpx.services.feature_family.option_core\",\n313:     \"futures_core\": \"app.mme_scalpx.services.feature_family.futures_core\",\n314:     \"tradability\": \"app.mme_scalpx.services.feature_family.tradability\",\n315:     \"regime\": \"app.mme_scalpx.services.feature_family.regime\","
+      },
+      {
+        "end_line": 316,
+        "start_line": 300,
+        "text": "300: HASH_FUT_DHAN: Final[str] = getattr(\n301:     N,\n302:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n303:     N.HASH_STATE_SNAPSHOT_MME_FUT_DHAN,\n304: )\n305: HASH_OPT_DHAN: Final[str] = getattr(\n306:     N,\n307:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n308:     N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN,\n309: )\n310: \n311: SHARED_MODULES: Final[Mapping[str, str]] = {\n312:     \"option_core\": \"app.mme_scalpx.services.feature_family.option_core\",\n313:     \"futures_core\": \"app.mme_scalpx.services.feature_family.futures_core\",\n314:     \"tradability\": \"app.mme_scalpx.services.feature_family.tradability\",\n315:     \"regime\": \"app.mme_scalpx.services.feature_family.regime\",\n316:     \"strike_selection\": \"app.mme_scalpx.services.feature_family.strike_selection\","
+      },
+      {
+        "end_line": 532,
+        "start_line": 516,
+        "text": "516:         return text\n517:     if default in allowed:\n518:         return default\n519:     if allowed:\n520:         return allowed[0]\n521:     return default\n522: \n523: \n524: def _provider_id(value: Any, default: str = PROVIDER_DHAN) -> str:\n525:     return _safe_str(_literal(value, PROVIDER_IDS, default), default)\n526: \n527: \n528: # Missing provider-runtime hash must not become HEALTHY.\n529: def _provider_status(value: Any) -> str:\n530:     default = (\n531:         getattr(N, \"PROVIDER_STATUS_UNAVAILABLE\", None)\n532:         or getattr(N, \"PROVIDER_STATUS_STALE\", None)"
+      },
+      {
+        "end_line": 553,
+        "start_line": 537,
+        "text": "537: \n538: def _optional_provider_id(value: Any) -> str | None:\n539:     \"\"\"\n540:     Provider ID parser with no silent fallback.\n541: \n542:     Do not use _provider_id() in provider-runtime repair paths because _literal()\n543:     intentionally falls back to the first allowed value when no default is allowed.\n544:     For Batch 25H, missing provider identity must remain None and become an\n545:     explicit unavailable provider surface, not DHAN/ZERODHA by accident.\n546:     \"\"\"\n547: \n548:     text = _safe_str(value)\n549:     return text if text in PROVIDER_IDS else None\n550: \n551: \n552: def _provider_failover_mode(value: Any) -> str:\n553:     allowed = tuple(getattr(N, \"ALLOWED_PROVIDER_FAILOVER_MODES\", ()))"
+      },
+      {
+        "end_line": 560,
+        "start_line": 544,
+        "text": "544:     For Batch 25H, missing provider identity must remain None and become an\n545:     explicit unavailable provider surface, not DHAN/ZERODHA by accident.\n546:     \"\"\"\n547: \n548:     text = _safe_str(value)\n549:     return text if text in PROVIDER_IDS else None\n550: \n551: \n552: def _provider_failover_mode(value: Any) -> str:\n553:     allowed = tuple(getattr(N, \"ALLOWED_PROVIDER_FAILOVER_MODES\", ()))\n554:     default = getattr(N, \"PROVIDER_FAILOVER_MODE_MANUAL\", \"MANUAL\")\n555:     text = _safe_str(value)\n556:     return text if text in allowed else default\n557: \n558: \n559: def _provider_override_mode(value: Any) -> str:\n560:     allowed = tuple(getattr(N, \"ALLOWED_PROVIDER_OVERRIDE_MODES\", ()))"
+      }
+    ],
+    "app/mme_scalpx/services/feeds.py": [
+      {
+        "end_line": 108,
+        "start_line": 92,
+        "text": "92: # =============================================================================\n93: # Required surface validation\n94: # =============================================================================\n95: \n96: _REQUIRED_NAME_EXPORTS: Final[tuple[str, ...]] = (\n97:     \"SERVICE_FEEDS\",\n98:     \"STREAM_TICKS_MME_FUT\",\n99:     \"STREAM_TICKS_MME_OPT\",\n100:     \"STREAM_TICKS_MME_FUT_ZERODHA\",\n101:     \"STREAM_TICKS_MME_FUT_DHAN\",\n102:     \"STREAM_TICKS_MME_OPT_SELECTED_ZERODHA\",\n103:     \"STREAM_TICKS_MME_OPT_SELECTED_DHAN\",\n104:     \"STREAM_TICKS_MME_OPT_CONTEXT_DHAN\",\n105:     \"STREAM_PROVIDER_RUNTIME\",\n106:     \"STREAM_SYSTEM_HEALTH\",\n107:     \"STREAM_SYSTEM_ERRORS\",\n108:     \"HASH_STATE_SNAPSHOT_MME_FUT\","
+      },
+      {
+        "end_line": 109,
+        "start_line": 93,
+        "text": "93: # Required surface validation\n94: # =============================================================================\n95: \n96: _REQUIRED_NAME_EXPORTS: Final[tuple[str, ...]] = (\n97:     \"SERVICE_FEEDS\",\n98:     \"STREAM_TICKS_MME_FUT\",\n99:     \"STREAM_TICKS_MME_OPT\",\n100:     \"STREAM_TICKS_MME_FUT_ZERODHA\",\n101:     \"STREAM_TICKS_MME_FUT_DHAN\",\n102:     \"STREAM_TICKS_MME_OPT_SELECTED_ZERODHA\",\n103:     \"STREAM_TICKS_MME_OPT_SELECTED_DHAN\",\n104:     \"STREAM_TICKS_MME_OPT_CONTEXT_DHAN\",\n105:     \"STREAM_PROVIDER_RUNTIME\",\n106:     \"STREAM_SYSTEM_HEALTH\",\n107:     \"STREAM_SYSTEM_ERRORS\",\n108:     \"HASH_STATE_SNAPSHOT_MME_FUT\",\n109:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\","
+      },
+      {
+        "end_line": 110,
+        "start_line": 94,
+        "text": "94: # =============================================================================\n95: \n96: _REQUIRED_NAME_EXPORTS: Final[tuple[str, ...]] = (\n97:     \"SERVICE_FEEDS\",\n98:     \"STREAM_TICKS_MME_FUT\",\n99:     \"STREAM_TICKS_MME_OPT\",\n100:     \"STREAM_TICKS_MME_FUT_ZERODHA\",\n101:     \"STREAM_TICKS_MME_FUT_DHAN\",\n102:     \"STREAM_TICKS_MME_OPT_SELECTED_ZERODHA\",\n103:     \"STREAM_TICKS_MME_OPT_SELECTED_DHAN\",\n104:     \"STREAM_TICKS_MME_OPT_CONTEXT_DHAN\",\n105:     \"STREAM_PROVIDER_RUNTIME\",\n106:     \"STREAM_SYSTEM_HEALTH\",\n107:     \"STREAM_SYSTEM_ERRORS\",\n108:     \"HASH_STATE_SNAPSHOT_MME_FUT\",\n109:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n110:     \"HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA\","
+      },
+      {
+        "end_line": 111,
+        "start_line": 95,
+        "text": "95: \n96: _REQUIRED_NAME_EXPORTS: Final[tuple[str, ...]] = (\n97:     \"SERVICE_FEEDS\",\n98:     \"STREAM_TICKS_MME_FUT\",\n99:     \"STREAM_TICKS_MME_OPT\",\n100:     \"STREAM_TICKS_MME_FUT_ZERODHA\",\n101:     \"STREAM_TICKS_MME_FUT_DHAN\",\n102:     \"STREAM_TICKS_MME_OPT_SELECTED_ZERODHA\",\n103:     \"STREAM_TICKS_MME_OPT_SELECTED_DHAN\",\n104:     \"STREAM_TICKS_MME_OPT_CONTEXT_DHAN\",\n105:     \"STREAM_PROVIDER_RUNTIME\",\n106:     \"STREAM_SYSTEM_HEALTH\",\n107:     \"STREAM_SYSTEM_ERRORS\",\n108:     \"HASH_STATE_SNAPSHOT_MME_FUT\",\n109:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n110:     \"HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA\",\n111:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\","
+      },
+      {
+        "end_line": 112,
+        "start_line": 96,
+        "text": "96: _REQUIRED_NAME_EXPORTS: Final[tuple[str, ...]] = (\n97:     \"SERVICE_FEEDS\",\n98:     \"STREAM_TICKS_MME_FUT\",\n99:     \"STREAM_TICKS_MME_OPT\",\n100:     \"STREAM_TICKS_MME_FUT_ZERODHA\",\n101:     \"STREAM_TICKS_MME_FUT_DHAN\",\n102:     \"STREAM_TICKS_MME_OPT_SELECTED_ZERODHA\",\n103:     \"STREAM_TICKS_MME_OPT_SELECTED_DHAN\",\n104:     \"STREAM_TICKS_MME_OPT_CONTEXT_DHAN\",\n105:     \"STREAM_PROVIDER_RUNTIME\",\n106:     \"STREAM_SYSTEM_HEALTH\",\n107:     \"STREAM_SYSTEM_ERRORS\",\n108:     \"HASH_STATE_SNAPSHOT_MME_FUT\",\n109:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n110:     \"HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA\",\n111:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n112:     \"HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE\","
+      },
+      {
+        "end_line": 118,
+        "start_line": 102,
+        "text": "102:     \"STREAM_TICKS_MME_OPT_SELECTED_ZERODHA\",\n103:     \"STREAM_TICKS_MME_OPT_SELECTED_DHAN\",\n104:     \"STREAM_TICKS_MME_OPT_CONTEXT_DHAN\",\n105:     \"STREAM_PROVIDER_RUNTIME\",\n106:     \"STREAM_SYSTEM_HEALTH\",\n107:     \"STREAM_SYSTEM_ERRORS\",\n108:     \"HASH_STATE_SNAPSHOT_MME_FUT\",\n109:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n110:     \"HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA\",\n111:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n112:     \"HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE\",\n113:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA\",\n114:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n115:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE\",\n116:     \"HASH_STATE_DHAN_CONTEXT\",\n117:     \"HASH_STATE_PROVIDER_RUNTIME\",\n118:     \"HASH_STATE_RUNTIME\","
+      },
+      {
+        "end_line": 119,
+        "start_line": 103,
+        "text": "103:     \"STREAM_TICKS_MME_OPT_SELECTED_DHAN\",\n104:     \"STREAM_TICKS_MME_OPT_CONTEXT_DHAN\",\n105:     \"STREAM_PROVIDER_RUNTIME\",\n106:     \"STREAM_SYSTEM_HEALTH\",\n107:     \"STREAM_SYSTEM_ERRORS\",\n108:     \"HASH_STATE_SNAPSHOT_MME_FUT\",\n109:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n110:     \"HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA\",\n111:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n112:     \"HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE\",\n113:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA\",\n114:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n115:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE\",\n116:     \"HASH_STATE_DHAN_CONTEXT\",\n117:     \"HASH_STATE_PROVIDER_RUNTIME\",\n118:     \"HASH_STATE_RUNTIME\",\n119:     \"KEY_HEALTH_FEEDS\","
+      },
+      {
+        "end_line": 121,
+        "start_line": 105,
+        "text": "105:     \"STREAM_PROVIDER_RUNTIME\",\n106:     \"STREAM_SYSTEM_HEALTH\",\n107:     \"STREAM_SYSTEM_ERRORS\",\n108:     \"HASH_STATE_SNAPSHOT_MME_FUT\",\n109:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n110:     \"HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA\",\n111:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n112:     \"HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE\",\n113:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA\",\n114:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n115:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE\",\n116:     \"HASH_STATE_DHAN_CONTEXT\",\n117:     \"HASH_STATE_PROVIDER_RUNTIME\",\n118:     \"HASH_STATE_RUNTIME\",\n119:     \"KEY_HEALTH_FEEDS\",\n120:     \"KEY_HEALTH_DHAN_AUTH\",\n121:     \"KEY_HEALTH_DHAN_MARKETDATA\","
+      },
+      {
+        "end_line": 122,
+        "start_line": 106,
+        "text": "106:     \"STREAM_SYSTEM_HEALTH\",\n107:     \"STREAM_SYSTEM_ERRORS\",\n108:     \"HASH_STATE_SNAPSHOT_MME_FUT\",\n109:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n110:     \"HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA\",\n111:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n112:     \"HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE\",\n113:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA\",\n114:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n115:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE\",\n116:     \"HASH_STATE_DHAN_CONTEXT\",\n117:     \"HASH_STATE_PROVIDER_RUNTIME\",\n118:     \"HASH_STATE_RUNTIME\",\n119:     \"KEY_HEALTH_FEEDS\",\n120:     \"KEY_HEALTH_DHAN_AUTH\",\n121:     \"KEY_HEALTH_DHAN_MARKETDATA\",\n122:     \"KEY_HEALTH_DHAN_EXECUTION\","
+      },
+      {
+        "end_line": 124,
+        "start_line": 108,
+        "text": "108:     \"HASH_STATE_SNAPSHOT_MME_FUT\",\n109:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED\",\n110:     \"HASH_STATE_SNAPSHOT_MME_FUT_ZERODHA\",\n111:     \"HASH_STATE_SNAPSHOT_MME_FUT_DHAN\",\n112:     \"HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE\",\n113:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA\",\n114:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n115:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE\",\n116:     \"HASH_STATE_DHAN_CONTEXT\",\n117:     \"HASH_STATE_PROVIDER_RUNTIME\",\n118:     \"HASH_STATE_RUNTIME\",\n119:     \"KEY_HEALTH_FEEDS\",\n120:     \"KEY_HEALTH_DHAN_AUTH\",\n121:     \"KEY_HEALTH_DHAN_MARKETDATA\",\n122:     \"KEY_HEALTH_DHAN_EXECUTION\",\n123:     \"KEY_HEALTH_ZERODHA_MARKETDATA\",\n124:     \"KEY_HEALTH_ZERODHA_EXECUTION\","
+      },
+      {
+        "end_line": 128,
+        "start_line": 112,
+        "text": "112:     \"HASH_STATE_SNAPSHOT_MME_FUT_ACTIVE\",\n113:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA\",\n114:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n115:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE\",\n116:     \"HASH_STATE_DHAN_CONTEXT\",\n117:     \"HASH_STATE_PROVIDER_RUNTIME\",\n118:     \"HASH_STATE_RUNTIME\",\n119:     \"KEY_HEALTH_FEEDS\",\n120:     \"KEY_HEALTH_DHAN_AUTH\",\n121:     \"KEY_HEALTH_DHAN_MARKETDATA\",\n122:     \"KEY_HEALTH_DHAN_EXECUTION\",\n123:     \"KEY_HEALTH_ZERODHA_MARKETDATA\",\n124:     \"KEY_HEALTH_ZERODHA_EXECUTION\",\n125:     \"KEY_HEALTH_PROVIDER_RUNTIME\",\n126:     \"KEY_LOCK_FEEDS\",\n127:     \"HEALTH_STATUS_OK\",\n128:     \"HEALTH_STATUS_WARN\","
+      },
+      {
+        "end_line": 129,
+        "start_line": 113,
+        "text": "113:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ZERODHA\",\n114:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n115:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE\",\n116:     \"HASH_STATE_DHAN_CONTEXT\",\n117:     \"HASH_STATE_PROVIDER_RUNTIME\",\n118:     \"HASH_STATE_RUNTIME\",\n119:     \"KEY_HEALTH_FEEDS\",\n120:     \"KEY_HEALTH_DHAN_AUTH\",\n121:     \"KEY_HEALTH_DHAN_MARKETDATA\",\n122:     \"KEY_HEALTH_DHAN_EXECUTION\",\n123:     \"KEY_HEALTH_ZERODHA_MARKETDATA\",\n124:     \"KEY_HEALTH_ZERODHA_EXECUTION\",\n125:     \"KEY_HEALTH_PROVIDER_RUNTIME\",\n126:     \"KEY_LOCK_FEEDS\",\n127:     \"HEALTH_STATUS_OK\",\n128:     \"HEALTH_STATUS_WARN\",\n129:     \"HEALTH_STATUS_ERROR\","
+      },
+      {
+        "end_line": 130,
+        "start_line": 114,
+        "text": "114:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_DHAN\",\n115:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE\",\n116:     \"HASH_STATE_DHAN_CONTEXT\",\n117:     \"HASH_STATE_PROVIDER_RUNTIME\",\n118:     \"HASH_STATE_RUNTIME\",\n119:     \"KEY_HEALTH_FEEDS\",\n120:     \"KEY_HEALTH_DHAN_AUTH\",\n121:     \"KEY_HEALTH_DHAN_MARKETDATA\",\n122:     \"KEY_HEALTH_DHAN_EXECUTION\",\n123:     \"KEY_HEALTH_ZERODHA_MARKETDATA\",\n124:     \"KEY_HEALTH_ZERODHA_EXECUTION\",\n125:     \"KEY_HEALTH_PROVIDER_RUNTIME\",\n126:     \"KEY_LOCK_FEEDS\",\n127:     \"HEALTH_STATUS_OK\",\n128:     \"HEALTH_STATUS_WARN\",\n129:     \"HEALTH_STATUS_ERROR\",\n130: )"
+      },
+      {
+        "end_line": 131,
+        "start_line": 115,
+        "text": "115:     \"HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE\",\n116:     \"HASH_STATE_DHAN_CONTEXT\",\n117:     \"HASH_STATE_PROVIDER_RUNTIME\",\n118:     \"HASH_STATE_RUNTIME\",\n119:     \"KEY_HEALTH_FEEDS\",\n120:     \"KEY_HEALTH_DHAN_AUTH\",\n121:     \"KEY_HEALTH_DHAN_MARKETDATA\",\n122:     \"KEY_HEALTH_DHAN_EXECUTION\",\n123:     \"KEY_HEALTH_ZERODHA_MARKETDATA\",\n124:     \"KEY_HEALTH_ZERODHA_EXECUTION\",\n125:     \"KEY_HEALTH_PROVIDER_RUNTIME\",\n126:     \"KEY_LOCK_FEEDS\",\n127:     \"HEALTH_STATUS_OK\",\n128:     \"HEALTH_STATUS_WARN\",\n129:     \"HEALTH_STATUS_ERROR\",\n130: )\n131: "
+      },
+      {
+        "end_line": 132,
+        "start_line": 116,
+        "text": "116:     \"HASH_STATE_DHAN_CONTEXT\",\n117:     \"HASH_STATE_PROVIDER_RUNTIME\",\n118:     \"HASH_STATE_RUNTIME\",\n119:     \"KEY_HEALTH_FEEDS\",\n120:     \"KEY_HEALTH_DHAN_AUTH\",\n121:     \"KEY_HEALTH_DHAN_MARKETDATA\",\n122:     \"KEY_HEALTH_DHAN_EXECUTION\",\n123:     \"KEY_HEALTH_ZERODHA_MARKETDATA\",\n124:     \"KEY_HEALTH_ZERODHA_EXECUTION\",\n125:     \"KEY_HEALTH_PROVIDER_RUNTIME\",\n126:     \"KEY_LOCK_FEEDS\",\n127:     \"HEALTH_STATUS_OK\",\n128:     \"HEALTH_STATUS_WARN\",\n129:     \"HEALTH_STATUS_ERROR\",\n130: )\n131: \n132: _REQUIRED_MODEL_EXPORTS: Final[tuple[str, ...]] = ("
+      },
+      {
+        "end_line": 198,
+        "start_line": 182,
+        "text": "182: DEFAULT_LOCK_REFRESH_MS = 10_000\n183: DEFAULT_NO_DATA_WARN_AFTER_MS = 3_000\n184: DEFAULT_NO_DATA_ERROR_AFTER_MS = 8_000\n185: DEFAULT_ANOMALY_WINDOW = 32\n186: DEFAULT_ANOMALY_MIN_SAMPLES = 10\n187: DEFAULT_ANOMALY_MEDIAN_TICKS = 8.0\n188: DEFAULT_CONTEXT_STALE_MS = 5_000\n189: DEFAULT_CONTEXT_DEAD_MS = 15_000\n190: DEFAULT_DHAN_CONTEXT_LADDER_MAX_ROWS = 80\n191: DEFAULT_SNAPSHOT_SYNC_MAX_MS = 250\n192: HEALTH_STREAM_MAXLEN = 10_000\n193: ERROR_STREAM_MAXLEN = 10_000\n194: PROVIDER_RUNTIME_STREAM_MAXLEN = 10_000\n195: \n196: COMPATIBILITY_ROLE_ORDER: Final[tuple[str, ...]] = (\n197:     M.InstrumentRole.FUTURES,\n198:     M.InstrumentRole.CE_ATM,"
+      },
+      {
+        "end_line": 213,
+        "start_line": 197,
+        "text": "197:     M.InstrumentRole.FUTURES,\n198:     M.InstrumentRole.CE_ATM,\n199:     M.InstrumentRole.CE_ATM1,\n200:     M.InstrumentRole.PE_ATM,\n201:     M.InstrumentRole.PE_ATM1,\n202: )\n203: \n204: PROVIDER_IDS: Final[tuple[str, ...]] = (\n205:     N.PROVIDER_ZERODHA,\n206:     N.PROVIDER_DHAN,\n207: )\n208: \n209: \n210: # =============================================================================\n211: # Exceptions\n212: # =============================================================================\n213: "
+      },
+      {
+        "end_line": 214,
+        "start_line": 198,
+        "text": "198:     M.InstrumentRole.CE_ATM,\n199:     M.InstrumentRole.CE_ATM1,\n200:     M.InstrumentRole.PE_ATM,\n201:     M.InstrumentRole.PE_ATM1,\n202: )\n203: \n204: PROVIDER_IDS: Final[tuple[str, ...]] = (\n205:     N.PROVIDER_ZERODHA,\n206:     N.PROVIDER_DHAN,\n207: )\n208: \n209: \n210: # =============================================================================\n211: # Exceptions\n212: # =============================================================================\n213: \n214: "
+      },
+      {
+        "end_line": 325,
+        "start_line": 309,
+        "text": "309:     cur: Any = mapping\n310:     for key in path:\n311:         if not isinstance(cur, Mapping) or key not in cur:\n312:             return None\n313:         cur = cur[key]\n314:     return cur\n315: \n316: \n317: _DHAN_CONTEXT_CONTAINER_KEYS: Final[tuple[str, ...]] = (\n318:     \"option_chain_ladder_json\",\n319:     \"strike_ladder_json\",\n320:     \"option_chain_ladder\",\n321:     \"strike_ladder\",\n322:     \"strike_ladder_rows\",\n323:     \"chain_rows\",\n324:     \"option_chain\",\n325:     \"chain\","
+      },
+      {
+        "end_line": 393,
+        "start_line": 377,
+        "text": "377:                 \"instrument_token\",\n378:                 \"security_id\",\n379:             )\n380:         )\n381:         if row_like:\n382:             return [parsed]\n383: \n384:         out: list[Mapping[str, Any]] = []\n385:         for key in _DHAN_CONTEXT_CONTAINER_KEYS:\n386:             if key in parsed:\n387:                 out.extend(_extract_context_rows(parsed.get(key)))\n388:         return out\n389: \n390:     if isinstance(parsed, Sequence) and not isinstance(parsed, (str, bytes, bytearray)):\n391:         out: list[Mapping[str, Any]] = []\n392:         for item in parsed:\n393:             out.extend(_extract_context_rows(item))"
+      }
+    ],
+    "etc/brokers/provider_roles.yaml": [
+      {
+        "end_line": 13,
+        "start_line": 1,
+        "text": "1: schema_version: 1\n2: config_name: provider_roles\n3: config_revision: batch25s_config_systemd_alignment\n4: provider_roles:\n5:   futures_marketdata:\n6:     preferred_provider: ZERODHA\n7:     allowed_providers:\n8:     - ZERODHA\n9:     - DHAN\n10:     required_status: HEALTHY\n11:     role_truth: futures_directional_truth\n12:   selected_option_marketdata:\n13:     preferred_provider: DHAN"
+      },
+      {
+        "end_line": 14,
+        "start_line": 1,
+        "text": "1: schema_version: 1\n2: config_name: provider_roles\n3: config_revision: batch25s_config_systemd_alignment\n4: provider_roles:\n5:   futures_marketdata:\n6:     preferred_provider: ZERODHA\n7:     allowed_providers:\n8:     - ZERODHA\n9:     - DHAN\n10:     required_status: HEALTHY\n11:     role_truth: futures_directional_truth\n12:   selected_option_marketdata:\n13:     preferred_provider: DHAN\n14:     allowed_providers:"
+      },
+      {
+        "end_line": 16,
+        "start_line": 1,
+        "text": "1: schema_version: 1\n2: config_name: provider_roles\n3: config_revision: batch25s_config_systemd_alignment\n4: provider_roles:\n5:   futures_marketdata:\n6:     preferred_provider: ZERODHA\n7:     allowed_providers:\n8:     - ZERODHA\n9:     - DHAN\n10:     required_status: HEALTHY\n11:     role_truth: futures_directional_truth\n12:   selected_option_marketdata:\n13:     preferred_provider: DHAN\n14:     allowed_providers:\n15:     - DHAN\n16:     required_status: HEALTHY"
+      },
+      {
+        "end_line": 17,
+        "start_line": 1,
+        "text": "1: schema_version: 1\n2: config_name: provider_roles\n3: config_revision: batch25s_config_systemd_alignment\n4: provider_roles:\n5:   futures_marketdata:\n6:     preferred_provider: ZERODHA\n7:     allowed_providers:\n8:     - ZERODHA\n9:     - DHAN\n10:     required_status: HEALTHY\n11:     role_truth: futures_directional_truth\n12:   selected_option_marketdata:\n13:     preferred_provider: DHAN\n14:     allowed_providers:\n15:     - DHAN\n16:     required_status: HEALTHY\n17:     role_truth: selected_option_tradability_truth"
+      },
+      {
+        "end_line": 20,
+        "start_line": 4,
+        "text": "4: provider_roles:\n5:   futures_marketdata:\n6:     preferred_provider: ZERODHA\n7:     allowed_providers:\n8:     - ZERODHA\n9:     - DHAN\n10:     required_status: HEALTHY\n11:     role_truth: futures_directional_truth\n12:   selected_option_marketdata:\n13:     preferred_provider: DHAN\n14:     allowed_providers:\n15:     - DHAN\n16:     required_status: HEALTHY\n17:     role_truth: selected_option_tradability_truth\n18:   option_context:\n19:     preferred_provider: DHAN\n20:     allowed_providers:"
+      },
+      {
+        "end_line": 21,
+        "start_line": 5,
+        "text": "5:   futures_marketdata:\n6:     preferred_provider: ZERODHA\n7:     allowed_providers:\n8:     - ZERODHA\n9:     - DHAN\n10:     required_status: HEALTHY\n11:     role_truth: futures_directional_truth\n12:   selected_option_marketdata:\n13:     preferred_provider: DHAN\n14:     allowed_providers:\n15:     - DHAN\n16:     required_status: HEALTHY\n17:     role_truth: selected_option_tradability_truth\n18:   option_context:\n19:     preferred_provider: DHAN\n20:     allowed_providers:\n21:     - DHAN"
+      },
+      {
+        "end_line": 23,
+        "start_line": 7,
+        "text": "7:     allowed_providers:\n8:     - ZERODHA\n9:     - DHAN\n10:     required_status: HEALTHY\n11:     role_truth: futures_directional_truth\n12:   selected_option_marketdata:\n13:     preferred_provider: DHAN\n14:     allowed_providers:\n15:     - DHAN\n16:     required_status: HEALTHY\n17:     role_truth: selected_option_tradability_truth\n18:   option_context:\n19:     preferred_provider: DHAN\n20:     allowed_providers:\n21:     - DHAN\n22:     required_status: HEALTHY\n23:     role_truth: oi_ladder_context_truth"
+      },
+      {
+        "end_line": 25,
+        "start_line": 9,
+        "text": "9:     - DHAN\n10:     required_status: HEALTHY\n11:     role_truth: futures_directional_truth\n12:   selected_option_marketdata:\n13:     preferred_provider: DHAN\n14:     allowed_providers:\n15:     - DHAN\n16:     required_status: HEALTHY\n17:     role_truth: selected_option_tradability_truth\n18:   option_context:\n19:     preferred_provider: DHAN\n20:     allowed_providers:\n21:     - DHAN\n22:     required_status: HEALTHY\n23:     role_truth: oi_ladder_context_truth\n24:   execution_primary:\n25:     preferred_provider: ZERODHA"
+      },
+      {
+        "end_line": 26,
+        "start_line": 10,
+        "text": "10:     required_status: HEALTHY\n11:     role_truth: futures_directional_truth\n12:   selected_option_marketdata:\n13:     preferred_provider: DHAN\n14:     allowed_providers:\n15:     - DHAN\n16:     required_status: HEALTHY\n17:     role_truth: selected_option_tradability_truth\n18:   option_context:\n19:     preferred_provider: DHAN\n20:     allowed_providers:\n21:     - DHAN\n22:     required_status: HEALTHY\n23:     role_truth: oi_ladder_context_truth\n24:   execution_primary:\n25:     preferred_provider: ZERODHA\n26:     allowed_providers:"
+      },
+      {
+        "end_line": 27,
+        "start_line": 11,
+        "text": "11:     role_truth: futures_directional_truth\n12:   selected_option_marketdata:\n13:     preferred_provider: DHAN\n14:     allowed_providers:\n15:     - DHAN\n16:     required_status: HEALTHY\n17:     role_truth: selected_option_tradability_truth\n18:   option_context:\n19:     preferred_provider: DHAN\n20:     allowed_providers:\n21:     - DHAN\n22:     required_status: HEALTHY\n23:     role_truth: oi_ladder_context_truth\n24:   execution_primary:\n25:     preferred_provider: ZERODHA\n26:     allowed_providers:\n27:     - ZERODHA"
+      },
+      {
+        "end_line": 29,
+        "start_line": 13,
+        "text": "13:     preferred_provider: DHAN\n14:     allowed_providers:\n15:     - DHAN\n16:     required_status: HEALTHY\n17:     role_truth: selected_option_tradability_truth\n18:   option_context:\n19:     preferred_provider: DHAN\n20:     allowed_providers:\n21:     - DHAN\n22:     required_status: HEALTHY\n23:     role_truth: oi_ladder_context_truth\n24:   execution_primary:\n25:     preferred_provider: ZERODHA\n26:     allowed_providers:\n27:     - ZERODHA\n28:     required_status: HEALTHY\n29:     role_truth: execution_order_owner"
+      },
+      {
+        "end_line": 33,
+        "start_line": 17,
+        "text": "17:     role_truth: selected_option_tradability_truth\n18:   option_context:\n19:     preferred_provider: DHAN\n20:     allowed_providers:\n21:     - DHAN\n22:     required_status: HEALTHY\n23:     role_truth: oi_ladder_context_truth\n24:   execution_primary:\n25:     preferred_provider: ZERODHA\n26:     allowed_providers:\n27:     - ZERODHA\n28:     required_status: HEALTHY\n29:     role_truth: execution_order_owner\n30:   execution_fallback:\n31:     preferred_provider: DHAN\n32:     allowed_providers:\n33:     - DHAN"
+      },
+      {
+        "end_line": 35,
+        "start_line": 19,
+        "text": "19:     preferred_provider: DHAN\n20:     allowed_providers:\n21:     - DHAN\n22:     required_status: HEALTHY\n23:     role_truth: oi_ladder_context_truth\n24:   execution_primary:\n25:     preferred_provider: ZERODHA\n26:     allowed_providers:\n27:     - ZERODHA\n28:     required_status: HEALTHY\n29:     role_truth: execution_order_owner\n30:   execution_fallback:\n31:     preferred_provider: DHAN\n32:     allowed_providers:\n33:     - DHAN\n34:     required_status: AVAILABLE\n35:     role_truth: manual_fallback_ready_only"
+      },
+      {
+        "end_line": 39,
+        "start_line": 23,
+        "text": "23:     role_truth: oi_ladder_context_truth\n24:   execution_primary:\n25:     preferred_provider: ZERODHA\n26:     allowed_providers:\n27:     - ZERODHA\n28:     required_status: HEALTHY\n29:     role_truth: execution_order_owner\n30:   execution_fallback:\n31:     preferred_provider: DHAN\n32:     allowed_providers:\n33:     - DHAN\n34:     required_status: AVAILABLE\n35:     role_truth: manual_fallback_ready_only\n36: provider_role_laws:\n37:   selected_option_tradability_truth_provider: execution_primary\n38:   fallback_execution_provider_must_differ_from_primary: true\n39:   option_context_may_not_silently_default_to_zerodha: true"
+      },
+      {
+        "end_line": 41,
+        "start_line": 25,
+        "text": "25:     preferred_provider: ZERODHA\n26:     allowed_providers:\n27:     - ZERODHA\n28:     required_status: HEALTHY\n29:     role_truth: execution_order_owner\n30:   execution_fallback:\n31:     preferred_provider: DHAN\n32:     allowed_providers:\n33:     - DHAN\n34:     required_status: AVAILABLE\n35:     role_truth: manual_fallback_ready_only\n36: provider_role_laws:\n37:   selected_option_tradability_truth_provider: execution_primary\n38:   fallback_execution_provider_must_differ_from_primary: true\n39:   option_context_may_not_silently_default_to_zerodha: true\n40:   miso_requires_dhan_option_context: true\n41:   miso_requires_dhan_selected_option_marketdata: true"
+      },
+      {
+        "end_line": 45,
+        "start_line": 29,
+        "text": "29:     role_truth: execution_order_owner\n30:   execution_fallback:\n31:     preferred_provider: DHAN\n32:     allowed_providers:\n33:     - DHAN\n34:     required_status: AVAILABLE\n35:     role_truth: manual_fallback_ready_only\n36: provider_role_laws:\n37:   selected_option_tradability_truth_provider: execution_primary\n38:   fallback_execution_provider_must_differ_from_primary: true\n39:   option_context_may_not_silently_default_to_zerodha: true\n40:   miso_requires_dhan_option_context: true\n41:   miso_requires_dhan_selected_option_marketdata: true\n42:   miso_requires_dhan_futures_current_baseline: false\n43:   miso_allows_zerodha_futures_when_healthy_and_synced: true\n44:   miso_requires_futures_health_and_cross_provider_sync: true\n45:   miso_requires_dhan_futures_only_in_dhan_futures_rollout_mode: true"
+      },
+      {
+        "end_line": 47,
+        "start_line": 31,
+        "text": "31:     preferred_provider: DHAN\n32:     allowed_providers:\n33:     - DHAN\n34:     required_status: AVAILABLE\n35:     role_truth: manual_fallback_ready_only\n36: provider_role_laws:\n37:   selected_option_tradability_truth_provider: execution_primary\n38:   fallback_execution_provider_must_differ_from_primary: true\n39:   option_context_may_not_silently_default_to_zerodha: true\n40:   miso_requires_dhan_option_context: true\n41:   miso_requires_dhan_selected_option_marketdata: true\n42:   miso_requires_dhan_futures_current_baseline: false\n43:   miso_allows_zerodha_futures_when_healthy_and_synced: true\n44:   miso_requires_futures_health_and_cross_provider_sync: true\n45:   miso_requires_dhan_futures_only_in_dhan_futures_rollout_mode: true\n46: miso_provider_doctrine_alignment:\n47:   source_batch: 25N"
+      },
+      {
+        "end_line": 48,
+        "start_line": 32,
+        "text": "32:     allowed_providers:\n33:     - DHAN\n34:     required_status: AVAILABLE\n35:     role_truth: manual_fallback_ready_only\n36: provider_role_laws:\n37:   selected_option_tradability_truth_provider: execution_primary\n38:   fallback_execution_provider_must_differ_from_primary: true\n39:   option_context_may_not_silently_default_to_zerodha: true\n40:   miso_requires_dhan_option_context: true\n41:   miso_requires_dhan_selected_option_marketdata: true\n42:   miso_requires_dhan_futures_current_baseline: false\n43:   miso_allows_zerodha_futures_when_healthy_and_synced: true\n44:   miso_requires_futures_health_and_cross_provider_sync: true\n45:   miso_requires_dhan_futures_only_in_dhan_futures_rollout_mode: true\n46: miso_provider_doctrine_alignment:\n47:   source_batch: 25N\n48:   selected_option_provider_required: DHAN"
+      },
+      {
+        "end_line": 49,
+        "start_line": 33,
+        "text": "33:     - DHAN\n34:     required_status: AVAILABLE\n35:     role_truth: manual_fallback_ready_only\n36: provider_role_laws:\n37:   selected_option_tradability_truth_provider: execution_primary\n38:   fallback_execution_provider_must_differ_from_primary: true\n39:   option_context_may_not_silently_default_to_zerodha: true\n40:   miso_requires_dhan_option_context: true\n41:   miso_requires_dhan_selected_option_marketdata: true\n42:   miso_requires_dhan_futures_current_baseline: false\n43:   miso_allows_zerodha_futures_when_healthy_and_synced: true\n44:   miso_requires_futures_health_and_cross_provider_sync: true\n45:   miso_requires_dhan_futures_only_in_dhan_futures_rollout_mode: true\n46: miso_provider_doctrine_alignment:\n47:   source_batch: 25N\n48:   selected_option_provider_required: DHAN\n49:   option_context_provider_required: DHAN"
+      },
+      {
+        "end_line": 56,
+        "start_line": 40,
+        "text": "40:   miso_requires_dhan_option_context: true\n41:   miso_requires_dhan_selected_option_marketdata: true\n42:   miso_requires_dhan_futures_current_baseline: false\n43:   miso_allows_zerodha_futures_when_healthy_and_synced: true\n44:   miso_requires_futures_health_and_cross_provider_sync: true\n45:   miso_requires_dhan_futures_only_in_dhan_futures_rollout_mode: true\n46: miso_provider_doctrine_alignment:\n47:   source_batch: 25N\n48:   selected_option_provider_required: DHAN\n49:   option_context_provider_required: DHAN\n50:   futures_providers_allowed_when_healthy_and_synced:\n51:   - ZERODHA\n52:   - DHAN\n53:   dhan_futures_required_only_in_explicit_future_rollout_mode: true\n54:   current_baseline: ZERODHA futures + DHAN selected option + DHAN context + ZERODHA\n55:     execution\n56: "
+      }
+    ]
+  },
+  "source_patch_applied": false,
+  "tag": "__TAG__"
+}

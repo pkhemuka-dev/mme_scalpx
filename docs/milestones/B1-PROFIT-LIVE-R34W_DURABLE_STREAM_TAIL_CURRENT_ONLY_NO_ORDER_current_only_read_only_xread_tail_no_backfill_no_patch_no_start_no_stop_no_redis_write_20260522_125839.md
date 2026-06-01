@@ -1,0 +1,11 @@
+# B1-PROFIT-LIVE-R34W_DURABLE_STREAM_TAIL_CURRENT_ONLY_NO_ORDER
+
+Classification: **STARTED_B1_PROFIT_LIVE_R34W_DURABLE_STREAM_TAIL_CURRENT_ONLY_NO_ORDER**
+
+Started corrected current-only read-only stream tailer.
+
+No patch. No app service start. No app service stop. No Redis delete. No Redis write. No order. No risk/execution.
+
+Tail dir: `run/live_capture/B1-PROFIT-LIVE-R34W_DURABLE_STREAM_TAIL_CURRENT_ONLY_NO_ORDER_current_only_read_only_xread_tail_no_backfill_no_patch_no_start_no_stop_no_redis_write_20260522_125839`  
+Stats: `run/live_capture/B1-PROFIT-LIVE-R34W_DURABLE_STREAM_TAIL_CURRENT_ONLY_NO_ORDER_current_only_read_only_xread_tail_no_backfill_no_patch_no_start_no_stop_no_redis_write_20260522_125839/B1-PROFIT-LIVE-R34W_DURABLE_STREAM_TAIL_CURRENT_ONLY_NO_ORDER_current_only_read_only_xread_tail_no_backfill_no_patch_no_start_no_stop_no_redis_write_20260522_125839_stats.csv`  
+Proof: `run/proofs/B1-PROFIT-LIVE-R34W_DURABLE_STREAM_TAIL_CURRENT_ONLY_NO_ORDER_current_only_read_only_xread_tail_no_backfill_no_patch_no_start_no_stop_no_redis_write_20260522_125839.json`

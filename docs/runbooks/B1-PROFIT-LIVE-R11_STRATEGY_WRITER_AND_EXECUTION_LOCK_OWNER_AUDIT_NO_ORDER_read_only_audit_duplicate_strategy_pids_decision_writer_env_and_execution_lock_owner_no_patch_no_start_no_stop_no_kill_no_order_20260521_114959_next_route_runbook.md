@@ -1,0 +1,9 @@
+# B1-PROFIT-LIVE-R11_STRATEGY_WRITER_AND_EXECUTION_LOCK_OWNER_AUDIT_NO_ORDER_read_only_audit_duplicate_strategy_pids_decision_writer_env_and_execution_lock_owner_no_patch_no_start_no_stop_no_kill_no_order_20260521_114959 Next Route Runbook
+
+Read-only audit only. No patch/start/stop/kill/delete/order.
+
+Next route: `B1-PROFIT-LIVE-R12_APPROVAL_GATED_STOP_DUPLICATE_STRATEGY_AND_RESTART_ONE_OBSERVE_ONLY_NO_ORDER`
+
+If duplicate writer is confirmed, next batch must be approval-gated stop/restart plan, not direct kill.
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R11_STRATEGY_WRITER_AND_EXECUTION_LOCK_OWNER_AUDIT_NO_ORDER_read_only_audit_duplicate_strategy_pids_decision_writer_env_and_execution_lock_owner_no_patch_no_start_no_stop_no_kill_no_order_20260521_114959.json`

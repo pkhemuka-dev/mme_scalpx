@@ -1,0 +1,14 @@
+# LANE-F-R4R20L_GLOBAL_GATE_DIAGNOSTIC_PATCH_PLAN_NO_PATCH_NO_START_plan_global_gate_diagnostic_patch_after_r4r20k_no_patch_no_start_no_order_20260520_131458
+
+Classification: `BLOCKED_LANE_F_R4R20L_PATCH_PLAN_SAFETY_OR_EVIDENCE_REVIEW_REQUIRED_NO_PATCH_NO_START`
+
+Next route: `REVIEW_R4R20L_BLOCKERS_BEFORE_PATCH`
+
+Source patch applied: `False`
+
+Order attempted: `False`
+
+Blockers:
+- r4r20k_global_missing_count_not_30_or_missing
+- r4r20k_classic_missing_count_not_zero
+- r4r20k_miso_missing_count_not_zero

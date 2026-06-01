@@ -1,0 +1,43 @@
+# FEEDS-LOCK-R3_EXACT_REFRESH_PATH_AND_TIMEOUT_POLICY_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER
+
+Classification: **PASS_FEEDS_LOCK_R3_EXACT_REFRESH_PATH_AUDIT_READY_FOR_PATCH_PLAN_NO_PATCH_NO_START_NO_ORDER_NO_PAPER**
+
+## Purpose
+
+Exact read-only audit before any patch planning for feeds lock refresh timeout.
+
+## Extracts
+
+- Feeds refresh exact: `run/audits/FEEDS-LOCK-R3_EXACT_REFRESH_PATH_AND_TIMEOUT_POLICY_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_extract_exact_feeds_refresh_loop_redis_client_timeout_settings_and_patch_decision_inputs_20260531_212530_feeds_refresh_exact.txt`
+- Feeds loop exact: `run/audits/FEEDS-LOCK-R3_EXACT_REFRESH_PATH_AND_TIMEOUT_POLICY_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_extract_exact_feeds_refresh_loop_redis_client_timeout_settings_and_patch_decision_inputs_20260531_212530_feeds_loop_exact.txt`
+- Redis client construction: `run/audits/FEEDS-LOCK-R3_EXACT_REFRESH_PATH_AND_TIMEOUT_POLICY_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_extract_exact_feeds_refresh_loop_redis_client_timeout_settings_and_patch_decision_inputs_20260531_212530_redis_client_construction.txt`
+- Settings timeout policy: `run/audits/FEEDS-LOCK-R3_EXACT_REFRESH_PATH_AND_TIMEOUT_POLICY_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_extract_exact_feeds_refresh_loop_redis_client_timeout_settings_and_patch_decision_inputs_20260531_212530_settings_timeout_policy.txt`
+- Env snapshot: `run/audits/FEEDS-LOCK-R3_EXACT_REFRESH_PATH_AND_TIMEOUT_POLICY_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_extract_exact_feeds_refresh_loop_redis_client_timeout_settings_and_patch_decision_inputs_20260531_212530_env_timeout_lock_snapshot.txt`
+- Latest feed errors: `run/audits/FEEDS-LOCK-R3_EXACT_REFRESH_PATH_AND_TIMEOUT_POLICY_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_extract_exact_feeds_refresh_loop_redis_client_timeout_settings_and_patch_decision_inputs_20260531_212530_latest_feed_errors.json`
+
+## Checks
+
+- feeds_refresh_extract_ok=1
+- feeds_loop_extract_ok=1
+- redis_client_extract_ok=1
+- settings_timeout_extract_ok=1
+- latest_error_extract_ok=1
+- safety_ok=1
+
+## Safety
+
+- No patch
+- No Redis write
+- No service start/stop
+- No broker call
+- No order
+- No paper/live
+
+Safety counters:
+
+- orders_before=0
+- orders_after=0
+- risk_stream_after=0
+- execution_stream_after=0
+- risk_pids_after=0
+- execution_pids_after=0

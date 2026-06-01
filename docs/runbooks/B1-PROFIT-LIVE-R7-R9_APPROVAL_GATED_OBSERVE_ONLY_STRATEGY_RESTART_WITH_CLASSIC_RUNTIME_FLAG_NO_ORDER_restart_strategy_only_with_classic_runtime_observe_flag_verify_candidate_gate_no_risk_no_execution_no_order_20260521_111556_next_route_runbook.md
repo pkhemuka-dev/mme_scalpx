@@ -1,0 +1,9 @@
+# B1-PROFIT-LIVE-R7-R9_APPROVAL_GATED_OBSERVE_ONLY_STRATEGY_RESTART_WITH_CLASSIC_RUNTIME_FLAG_NO_ORDER_restart_strategy_only_with_classic_runtime_observe_flag_verify_candidate_gate_no_risk_no_execution_no_order_20260521_111556 Next Route Runbook
+
+Approval-gated observe-only strategy restart only.
+
+No risk, no execution, no broker, no paper, no order.
+
+Next route: `B1-PROFIT-LIVE-R10_DECISION_PAYLOAD_REVIEW_AFTER_RESTART_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R7-R9_APPROVAL_GATED_OBSERVE_ONLY_STRATEGY_RESTART_WITH_CLASSIC_RUNTIME_FLAG_NO_ORDER_restart_strategy_only_with_classic_runtime_observe_flag_verify_candidate_gate_no_risk_no_execution_no_order_20260521_111556.json`

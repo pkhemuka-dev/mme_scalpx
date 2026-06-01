@@ -1,0 +1,496 @@
+#!/usr/bin/env bash
+set -Eeu
+
+ROOT="/home/Lenovo/scalpx/projects/mme_scalpx"
+cd "$ROOT"
+
+TS="$(date +%Y%m%d_%H%M%S)"
+RECENT_LIMIT="${1:-300}"
+MAX_RECENT_COPY_BYTES=750000
+MAX_TOTAL_RECENT_BYTES=50000000
+
+OUT="run/handoffs/pdev_current"
+ARCHIVE="run/evidence_bundles/pdev_current.tar.gz"
+SHA="${ARCHIVE}.sha256"
+PTR="run/evidence_bundles/LATEST_PDEV_PACK.txt"
+
+BUILD="run/handoffs/.pdev_build_${TS}"
+FILES_DIR="$BUILD/pdev_files"
+RECENT_DIR="$BUILD/pdev_recent_files"
+LIST="$BUILD/pdev_02_source_filelist.txt"
+CAND="$BUILD/.recent_candidates.txt"
+RECENT_INDEX="$BUILD/pdev_08_recent_index.tsv"
+
+echo "============================================================"
+echo "PDEV R6 — unified source/config/docs + latest recent activity pack"
+echo "============================================================"
+echo "repo=$ROOT"
+echo "timestamp=$TS"
+echo "recent_limit=$RECENT_LIMIT"
+echo "Safety: no patch, no start, no Redis write/delete, no broker, no order, no paper/live."
+echo
+
+export SCALPX_OBSERVE_ONLY=1
+unset SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME || true
+unset SCALPX_CONTROLLED_PAPER_SCOPE_ACK || true
+unset SCALPX_REAL_LIVE_ALLOWED || true
+unset SCALPX_ALLOW_REAL_LIVE || true
+unset SCALPX_ALLOW_BROKER_ORDERS || true
+unset SCALPX_PAPER_ARMED || true
+unset SCALPX_ENABLE_PAPER || true
+unset SCALPX_ENABLE_LIVE || true
+
+echo "[0/7] cleaning previous pdev and stale pdevlatest only"
+rm -rf "$BUILD" "$OUT" "$ARCHIVE" "$SHA"
+rm -rf run/handoffs/pdevlatest_current \
+       run/evidence_bundles/pdevlatest_current \
+       run/evidence_bundles/pdevlatest_current.tar.gz \
+       run/evidence_bundles/pdevlatest_current.tar.gz.sha256
+mkdir -p "$BUILD" "$FILES_DIR" "$RECENT_DIR" run/handoffs run/evidence_bundles
+: > "$CAND"
+
+sha_file() {
+  [ -f "$1" ] && sha256sum "$1" | awk '{print $1}' || echo "MISSING"
+}
+
+is_excluded() {
+  local p="$1"
+  case "$p" in
+    .git/*|.venv/*|secrets/*|run/evidence_bundles/*|run/live_capture/*|run/logs/*|run/pids/*|run/_code_backups/*|data/*)
+      return 0
+      ;;
+    *secret*|*token*|*credential*|*.env*|*password*|*access_key*|*api_key*|*.tar.gz|*.zip|*.db|*.sqlite|*.parquet|*.csv|*.log|*.pyc)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+safe_copy_source() {
+  local src="$1"
+  [ -f "$src" ] || return 0
+  is_excluded "$src" && return 0
+  mkdir -p "$FILES_DIR/$(dirname "$src")"
+  cp -a "$src" "$FILES_DIR/$src"
+}
+
+add_candidate() {
+  local p="$1"
+  p="${p#./}"
+  [ -f "$p" ] || return 0
+  is_excluded "$p" && return 0
+  printf '%s\n' "$p" >> "$CAND"
+}
+
+add_latest_dir_flat() {
+  local d="$1"
+  local n="${2:-100}"
+  [ -d "$d" ] || return 0
+  ls -1t "$d" 2>/dev/null | head -n "$n" | while read -r name; do
+    [ -n "$name" ] || continue
+    add_candidate "$d/$name"
+  done
+}
+
+latest_names() {
+  local d="$1"
+  local n="${2:-100}"
+  [ -d "$d" ] || return 0
+  ls -1t "$d" 2>/dev/null | head -n "$n" || true
+}
+
+echo "[1/7] building source/config/docs file list"
+{
+  cat <<'EOF'
+README.md
+pyproject.toml
+requirements.txt
+requirements-dev.txt
+app/mme_scalpx/main.py
+app/mme_scalpx/ops_dashboard/__init__.py
+app/mme_scalpx/ops_dashboard/server.py
+app/mme_scalpx/core/names.py
+app/mme_scalpx/core/models.py
+app/mme_scalpx/core/settings.py
+app/mme_scalpx/core/validators.py
+app/mme_scalpx/core/clock.py
+app/mme_scalpx/core/codec.py
+app/mme_scalpx/core/redisx.py
+app/mme_scalpx/services/feeds.py
+app/mme_scalpx/services/features.py
+app/mme_scalpx/services/strategy.py
+app/mme_scalpx/services/risk.py
+app/mme_scalpx/services/execution.py
+app/mme_scalpx/domain/strategy.py
+app/mme_scalpx/domain/risk.py
+app/mme_scalpx/domain/execution.py
+app/mme_scalpx/integrations/provider_runtime.py
+app/mme_scalpx/integrations/bootstrap_provider.py
+app/mme_scalpx/integrations/dhan_marketdata.py
+app/mme_scalpx/integrations/dhan_execution.py
+app/mme_scalpx/integrations/zerodha_feed_adapter.py
+app/mme_scalpx/integrations/broker_api.py
+app/mme_scalpx/integrations/broker_auth.py
+app/mme_scalpx/integrations/runtime_instruments_factory.py
+app/mme_scalpx/integrations/instrument_master_sync.py
+app/mme_scalpx/integrations/login.py
+app/mme_scalpx/integrations/token_store.py
+app/mme_scalpx/replay/contracts.py
+app/mme_scalpx/replay/runner.py
+app/mme_scalpx/replay/dataset.py
+app/mme_scalpx/replay/integrity.py
+app/mme_scalpx/replay/report_exporter.py
+app/mme_scalpx/replay/reports.py
+bin/pfeeds
+bin/pfeedcheck
+bin/pfeedstop
+bin/pstack
+bin/pstackcheck
+bin/pcheck
+bin/zlogin
+bin/plogin
+bin/replay_run.py
+bin/pdev
+bin/pmemory
+EOF
+
+  git ls-files 2>/dev/null | grep -E '^app/mme_scalpx/.*\.py$' || true
+  git ls-files 2>/dev/null | grep -E '^bin/' | grep -E 'pfeeds|pfeedcheck|pfeedstop|pstack|pstackcheck|pcheck|zlogin|plogin|replay|proof|bundle|check|audit|handoff|memory|pdev|pmemory|login' || true
+  git ls-files 2>/dev/null | grep -E '^(etc/strategy_family|etc/replay|etc/brokers|docs/strategy)/' || true
+  git ls-files 2>/dev/null | grep -E '^docs/milestones/' | tail -n 100 || true
+  git ls-files 2>/dev/null | grep -E '^docs/runbooks/' | tail -n 100 || true
+} \
+  | grep -v -Ei 'secret|token|credential|password|api_key|access_key|\.env|\.tar\.gz|\.zip|\.db|\.sqlite|\.parquet|\.csv' \
+  | awk 'NF' \
+  | sort -u \
+  > "$LIST"
+
+echo "[2/7] copying source/config/docs"
+while IFS= read -r f; do
+  safe_copy_source "$f"
+done < "$LIST"
+
+echo "[3/7] collecting latest recent activity candidates"
+
+git status --short 2>/dev/null | awk '{print $2}' | while read -r p; do
+  add_candidate "$p"
+done
+
+for d in \
+  app/mme_scalpx \
+  app/mme_scalpx/core \
+  app/mme_scalpx/domain \
+  app/mme_scalpx/services \
+  app/mme_scalpx/services/strategy_family \
+  app/mme_scalpx/integrations \
+  app/mme_scalpx/ops \
+  app/mme_scalpx/ops_dashboard \
+  app/mme_scalpx/replay \
+  app/mme_scalpx/replay_optimization \
+  app/mme_scalpx/research_capture \
+  app/mme_scalpx/research_gate \
+  bin \
+  docs/strategy \
+  docs/milestones \
+  docs/runbooks \
+  run/proofs \
+  run/audits \
+  run/handoffs \
+  etc/replay \
+  etc/strategy_family \
+  etc/brokers
+do
+  add_latest_dir_flat "$d" 120
+done
+
+# PDEV_R6_DASHBOARD_ONLY_ADDITION
+for d in run/proofs run/audits run/patches docs/milestones docs/runbooks run/handoffs; do
+  [ -d "$d" ] || continue
+  find "$d" -maxdepth 1 -type f -name 'OPS-DASH*' 2>/dev/null | while read -r f; do
+    add_candidate "$f"
+  done
+done
+
+sort -u "$CAND" -o "$CAND"
+
+echo "[4/7] ranking/copying latest recent files"
+
+{
+  while IFS= read -r p; do
+    [ -f "$p" ] || continue
+    is_excluded "$p" && continue
+    mtime_epoch="$(stat -c '%Y' "$p" 2>/dev/null || echo 0)"
+    printf '%s\t%s\n' "$mtime_epoch" "$p"
+  done < "$CAND"
+} | sort -nr | head -n "$RECENT_LIMIT" > "$BUILD/.recent_ranked.tsv"
+
+{
+  echo -e "rank\tmtime_epoch\tmtime_iso\tctime_iso\tbytes\tsha256\tpath\tcopied"
+  rank=0
+  total_bytes=0
+
+  while IFS=$'\t' read -r epoch p; do
+    [ -f "$p" ] || continue
+    rank=$((rank + 1))
+    bytes="$(wc -c < "$p" 2>/dev/null | tr -d ' ' || echo 0)"
+    sha="$(sha_file "$p")"
+    mtime_iso="$(stat -c '%y' "$p" 2>/dev/null || echo UNKNOWN)"
+    ctime_iso="$(stat -c '%z' "$p" 2>/dev/null || echo UNKNOWN)"
+    copied="NO"
+
+    if [ "$bytes" -le "$MAX_RECENT_COPY_BYTES" ]; then
+      next_total=$((total_bytes + bytes))
+      if [ "$next_total" -le "$MAX_TOTAL_RECENT_BYTES" ]; then
+        mkdir -p "$RECENT_DIR/$(dirname "$p")"
+        cp -a "$p" "$RECENT_DIR/$p"
+        copied="YES"
+        total_bytes="$next_total"
+      else
+        copied="NO_TOTAL_CAP"
+      fi
+    else
+      copied="NO_SIZE_CAP"
+    fi
+
+    echo -e "${rank}\t${epoch}\t${mtime_iso}\t${ctime_iso}\t${bytes}\t${sha}\t${p}\t${copied}"
+  done < "$BUILD/.recent_ranked.tsv"
+} > "$RECENT_INDEX"
+
+echo "[5/7] writing pdev series files"
+
+cat > "$BUILD/pdev_01_manifest.md" <<EOF
+# pdev_01_manifest
+
+- generated_at: $(date -Is)
+- repo: $ROOT
+- pack: pdev_current
+- role: unified architecture/source/config/docs + latest recent activity pack
+- recent_limit: $RECENT_LIMIT
+- max_recent_copy_bytes_per_file: $MAX_RECENT_COPY_BYTES
+- max_total_recent_copy_bytes: $MAX_TOTAL_RECENT_BYTES
+- safety: no patch/start/Redis-write/broker/order/paper/live
+
+## Git identity
+
+\`\`\`text
+branch=$(git branch --show-current 2>/dev/null || true)
+head=$(git rev-parse HEAD 2>/dev/null || true)
+\`\`\`
+
+## Git status, capped
+
+\`\`\`text
+$(git status --short 2>/dev/null | head -n 250 || true)
+\`\`\`
+
+## Forced critical file check
+
+\`\`\`text
+EOF
+
+for f in app/mme_scalpx/main.py app/mme_scalpx/ops_dashboard/server.py bin/pfeeds bin/pfeedcheck bin/pfeedstop bin/pstack bin/pstackcheck bin/pcheck bin/zlogin bin/plogin bin/pdev bin/pmemory; do
+  if [ -f "$f" ]; then
+    echo "PRESENT | $f | bytes=$(wc -c < "$f" | tr -d ' ') | sha256=$(sha_file "$f")" >> "$BUILD/pdev_01_manifest.md"
+  else
+    echo "MISSING | $f" >> "$BUILD/pdev_01_manifest.md"
+  fi
+done
+
+cat >> "$BUILD/pdev_01_manifest.md" <<EOF
+\`\`\`
+
+## Pack summary
+
+\`\`\`text
+source_filelist_count=$(wc -l < "$LIST" | tr -d ' ')
+copied_source_count=$(find "$FILES_DIR" -type f | wc -l | tr -d ' ')
+recent_candidate_count=$(wc -l < "$CAND" | tr -d ' ')
+recent_index_rows=$(($(wc -l < "$RECENT_INDEX" | tr -d ' ') - 1))
+copied_recent_files=$(find "$RECENT_DIR" -type f | wc -l | tr -d ' ')
+\`\`\`
+EOF
+
+cat > "$BUILD/pdev_03_latest_artifact_index.md" <<'EOF'
+# pdev_03_latest_artifact_index
+
+Artifact names only. Full runtime verdict belongs in pstatus.
+EOF
+
+for d in run/proofs run/audits docs/milestones docs/runbooks run/handoffs; do
+  {
+    echo
+    echo "## $d"
+    echo
+  } >> "$BUILD/pdev_03_latest_artifact_index.md"
+  latest_names "$d" 120 | sed 's/^/- /' >> "$BUILD/pdev_03_latest_artifact_index.md" || true
+done
+
+cat > "$BUILD/pdev_04_new_chat_prompt.md" <<'EOF'
+# pdev_04_new_chat_prompt
+
+Upload:
+1. pmemory_current.tar.gz
+2. pdev_current.tar.gz
+
+Then paste:
+
+Load and follow pmemory_current + pdev_current as current MME-ScalpX repo truth.
+
+Truth rule:
+- Uploaded repo/source/config/recent-activity content overrides old ChatGPT memory.
+- Old ChatGPT memory is navigation-only.
+- pdev includes latest recent activity files, but it is not a formal runtime PASS/BLOCKED verdict.
+
+First inspect:
+1. pdev_01_manifest.md
+2. pdev_03_latest_artifact_index.md
+3. pdev_06_helper_discovery.md
+4. pdev_07_recent_work_status.md
+5. pdev_08_recent_index.tsv
+6. pdev_files/
+7. pdev_recent_files/
+
+Then summarize:
+- current architecture/source truth
+- recently completed work
+- ongoing work
+- changed files that matter
+- likely blockers / attention
+- safest next move
+
+Safety:
+- no broker/order/paper/live/risk-execution enabling unless explicitly approved
+- preserve lane discipline
+- do not mix Lane A/B/C/E/F
+EOF
+
+cat > "$BUILD/pdev_05_operating_model.md" <<'EOF'
+# pdev_05_operating_model
+
+pdev is now unified.
+
+It includes:
+- source/config/docs architecture truth
+- forced critical runtime helper wrappers
+- helper discovery
+- recent work status
+- latest recent activity index
+- copied recent relevant files
+
+It excludes:
+- secrets/tokens/password-like files
+- generated datasets
+- live capture raw data
+- logs
+- archives/databases/csv/parquet
+
+Use pstatus later for exact runtime/proof verdict before paper/live decisions.
+EOF
+
+cat > "$BUILD/pdev_06_helper_discovery.md" <<'EOF'
+# pdev_06_helper_discovery
+
+Helper commands may be repo files, shell aliases, or shell functions.
+EOF
+
+{
+  echo
+  echo "## type -a from current shell"
+  echo
+  echo '```text'
+  for h in pfeeds pfeedcheck pfeedstop pstack pstackcheck pcheck zlogin plogin pmemory pdev pdevlatest; do
+    echo "===== $h ====="
+    type -a "$h" 2>&1 || true
+    echo
+  done
+  echo '```'
+  echo
+  echo "## ~/.bashrc relevant lines"
+  echo
+  echo '```text'
+  grep -nE 'pfeeds|pfeedcheck|pfeedstop|pstack|pstackcheck|pcheck|zlogin|plogin|pmemory|pdev|pdevlatest' "$HOME/.bashrc" 2>/dev/null || true
+  echo '```'
+} >> "$BUILD/pdev_06_helper_discovery.md"
+
+cat > "$BUILD/pdev_07_recent_work_status.md" <<'EOF'
+# pdev_07_recent_work_status
+
+This file is generated from bounded latest changed files and artifact names. It is a guide, not a formal PASS/BLOCKED verdict.
+EOF
+
+{
+  echo
+  echo "## Latest relevant files"
+  echo
+  echo '```text'
+  cut -f1,3,5,7,8 "$RECENT_INDEX" | column -t -s $'\t' 2>/dev/null || cat "$RECENT_INDEX"
+  echo '```'
+
+  echo
+  echo "## Active themes inferred"
+  echo
+
+  RECENT_TEXT="$(cat "$RECENT_INDEX"; ls -1t run/proofs run/audits docs/milestones docs/runbooks run/handoffs 2>/dev/null | head -n 300 || true)"
+
+  echo "$RECENT_TEXT" | grep -q 'B1-PROFIT-LIVE-R37' && echo "- B1-PROFIT-LIVE R37 appears active/recent: pseal, durable capture, capture supervisor, handoff work."
+  echo "$RECENT_TEXT" | grep -q 'B1-PROFIT-LIVE-R36' && echo "- B1-PROFIT-LIVE R36 appears recent: capture quality, market-close seal/export, backtest readiness."
+  echo "$RECENT_TEXT" | grep -q 'A6-PAPER' && echo "- A6-PAPER / controlled-paper readiness appears in recent work."
+  echo "$RECENT_TEXT" | grep -q 'A6-FEED' && echo "- A6-FEED / provider-feed readiness appears in recent work."
+  echo "$RECENT_TEXT" | grep -q 'DATAKEEP' && echo "- DATAKEEP / recorded data preservation appears in recent work."
+  echo "$RECENT_TEXT" | grep -q 'PDEV\|PMEMORY\|MEMORY' && echo "- Memory/repo-truth handoff stabilization appears active."
+  echo "$RECENT_TEXT" | grep -q 'replay' && echo "- Replay/backtest code or evidence appears in recent work."
+  echo "$RECENT_TEXT" | grep -q 'pfeeds\|pstack\|pcheck' && echo "- Runtime helper work appears in recent changes."
+
+  echo
+  echo "## Attention items"
+  echo
+  git status --short 2>/dev/null | grep -q '^ M ' && echo "- Modified tracked files exist."
+  git status --short 2>/dev/null | grep -q '^?? ' && echo "- Untracked files exist."
+  echo "- pdev is not a runtime verdict. Use pstatus before paper/live decisions."
+
+  echo
+  echo "## Raw/live data summary only"
+  echo
+  echo '```text'
+  for d in run/live_capture run/logs run/evidence_bundles data; do
+    echo "===== $d ====="
+    if [ -d "$d" ]; then
+      echo "size=$(du -sh "$d" 2>/dev/null | awk '{print $1}')"
+      echo "latest_names:"
+      ls -1t "$d" 2>/dev/null | head -n 25 || true
+    else
+      echo "missing"
+    fi
+    echo
+  done
+  echo '```'
+} >> "$BUILD/pdev_07_recent_work_status.md"
+
+echo "[6/7] creating archive"
+tar -czf "$ARCHIVE.tmp" -C "$BUILD" .
+sha256sum "$ARCHIVE.tmp" > "$SHA.tmp"
+
+echo "[7/7] replacing current pdev pack"
+rm -rf "$OUT" "$ARCHIVE" "$SHA"
+mv "$BUILD" "$OUT"
+mv "$ARCHIVE.tmp" "$ARCHIVE"
+sha256sum "$ARCHIVE" > "$SHA"
+rm -f "$SHA.tmp"
+printf '%s\n' "$ARCHIVE" > "$PTR"
+
+echo
+echo "============================================================"
+echo "PDEV R6 PACK CREATED"
+echo "============================================================"
+echo "out_dir=$OUT"
+echo "archive=$ARCHIVE"
+echo "sha=$SHA"
+echo "latest_pointer=$PTR"
+du -h "$ARCHIVE" "$OUT" || true
+echo
+echo "Series files:"
+find "$OUT" -maxdepth 1 -type f -printf '%f | %s bytes\n' | sort
+echo
+echo "Copied counts:"
+echo "source_files=$(find "$OUT/pdev_files" -type f | wc -l | tr -d ' ')"
+echo "recent_files=$(find "$OUT/pdev_recent_files" -type f | wc -l | tr -d ' ')"

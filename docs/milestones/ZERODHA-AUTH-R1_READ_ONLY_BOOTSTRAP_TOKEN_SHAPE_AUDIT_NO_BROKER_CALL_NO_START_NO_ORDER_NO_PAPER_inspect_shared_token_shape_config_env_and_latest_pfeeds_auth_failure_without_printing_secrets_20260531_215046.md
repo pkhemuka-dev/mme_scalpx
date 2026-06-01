@@ -1,0 +1,34 @@
+# ZERODHA-AUTH-R1_READ_ONLY_BOOTSTRAP_TOKEN_SHAPE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER
+
+Classification: **PASS_ZERODHA_AUTH_R1_READ_ONLY_AUDIT_READY_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER**
+
+## Purpose
+
+Read-only audit after R8B showed pfeeds blocked by Zerodha bootstrap quote auth.
+
+No broker call, no service start/stop, no Redis write, no order, no paper/live.
+
+## Checks
+
+- token_parse_ok=1
+- has_access_token=1
+- has_api_key=0
+- zlogin_ok=1
+- safety_ok=1
+
+## Artifacts
+
+- Token shape audit: `run/audits/ZERODHA-AUTH-R1_READ_ONLY_BOOTSTRAP_TOKEN_SHAPE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_shared_token_shape_config_env_and_latest_pfeeds_auth_failure_without_printing_secrets_20260531_215046_shared_token_shape.json`
+- Config grep: `run/audits/ZERODHA-AUTH-R1_READ_ONLY_BOOTSTRAP_TOKEN_SHAPE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_shared_token_shape_config_env_and_latest_pfeeds_auth_failure_without_printing_secrets_20260531_215046_auth_config_grep.txt`
+- Latest pfeeds auth log extract: `run/audits/ZERODHA-AUTH-R1_READ_ONLY_BOOTSTRAP_TOKEN_SHAPE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_shared_token_shape_config_env_and_latest_pfeeds_auth_failure_without_printing_secrets_20260531_215046_latest_pfeeds_auth_log_extract.txt`
+- Helper audit: `run/audits/ZERODHA-AUTH-R1_READ_ONLY_BOOTSTRAP_TOKEN_SHAPE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_shared_token_shape_config_env_and_latest_pfeeds_auth_failure_without_printing_secrets_20260531_215046_login_helper_audit.txt`
+- State: `run/audits/ZERODHA-AUTH-R1_READ_ONLY_BOOTSTRAP_TOKEN_SHAPE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_shared_token_shape_config_env_and_latest_pfeeds_auth_failure_without_printing_secrets_20260531_215046_state.txt`
+
+## Safety
+
+- orders=0
+- risk_stream=0
+- execution_stream=0
+- feeds_proc=0
+- risk_proc=0
+- execution_proc=0

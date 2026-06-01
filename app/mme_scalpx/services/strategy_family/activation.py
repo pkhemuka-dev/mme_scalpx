@@ -350,6 +350,35 @@ def _evaluate_leaf(view: Any, *, family_id: str, branch_id: str) -> Any:
     return fn(view, branch_id=branch_id)
 
 
+# LANE-F-R4R20H diagnostic-only helper.
+# This helper must never change strategy action, candidate selection, risk, execution, or order intent.
+def lane_f_r4r20h_merge_runtime_diagnostics_into_raw(raw, *, family_id=None, branch_id=None, action=None, reason=None, activation_mode=None, report_only=None, safe_to_promote=None, promoted=None):
+    base = dict(raw or {})
+    reason_text = str(reason or base.get("reason") or "")
+    family_text = str(family_id or base.get("family_id") or "")
+    branch_text = str(branch_id or base.get("branch_id") or "")
+    action_text = str(action or base.get("action") or "")
+    runtime_disabled = (
+        "runtime_disabled" in reason_text
+        or "classic_runtime_disabled" in reason_text
+        or "miso_runtime_disabled" in reason_text
+        or base.get("runtime_disabled") is True
+    )
+    base.setdefault("family_runtime_enabled", not bool(runtime_disabled))
+    base.setdefault("family_runtime_gate_reason", reason_text)
+    base.setdefault("family_runtime_family_id", family_text)
+    base.setdefault("family_runtime_branch_id", branch_text)
+    base.setdefault("family_runtime_action", action_text)
+    if activation_mode is not None:
+        base.setdefault("family_runtime_activation_mode", activation_mode)
+    if report_only is not None:
+        base.setdefault("family_runtime_report_only", bool(report_only))
+    if safe_to_promote is not None:
+        base.setdefault("family_runtime_safe_to_promote", bool(safe_to_promote))
+    if promoted is not None:
+        base.setdefault("family_runtime_promoted", bool(promoted))
+    return base
+
 def _evaluation_to_frame(result: Any, *, family_id: str, branch_id: str) -> DoctrineEvaluationFrame:
     raw = as_mapping(result)
     if not raw and hasattr(result, "to_dict"):

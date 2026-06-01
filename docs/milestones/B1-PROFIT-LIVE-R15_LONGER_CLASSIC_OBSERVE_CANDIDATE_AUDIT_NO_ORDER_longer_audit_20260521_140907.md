@@ -1,0 +1,15 @@
+# B1-PROFIT-LIVE-R15_LONGER_CLASSIC_OBSERVE_CANDIDATE_AUDIT_NO_ORDER_longer_audit_20260521_140907
+
+Classification: `REVIEW_B1_PROFIT_LIVE_R15_ENV_GATE_PRESENT_BUT_OBSERVE_REASON_NOT_SEEN_NO_ORDER`
+
+Next route: `B1-PROFIT-LIVE-R16_PATCH_EFFECT_RUNTIME_SOURCE_REVIEW_NO_ORDER`
+
+Strategy gate OK: `True`
+
+Observe seen: `False`
+
+Candidate seen: `False`
+
+Max candidate count: `0`
+
+Order attempted: `False`

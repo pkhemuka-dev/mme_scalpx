@@ -1,0 +1,5 @@
+# A6-PAPER-R17M-R2B_pfeeds_pstack_readiness_and_candidate_audit_after_r17m_r2_block_no_risk_no_execution_no_order_20260520_094641 Runbook
+
+No-start pfeeds/pstack readiness and candidate audit after R17M-R2 blocked.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R17M-R2B_pfeeds_pstack_readiness_and_candidate_audit_after_r17m_r2_block_no_risk_no_execution_no_order_20260520_094641.json`

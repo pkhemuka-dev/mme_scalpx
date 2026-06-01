@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R7-R4_CLASSIC_RUNTIME_GATE_SOURCE_MAPPING_NO_PATCH_NO_ORDER_map_classic_runtime_disabled_origin_to_activation_report_export_no_patch_no_start_no_order_20260521_102119 Next Route Runbook
+
+Source mapping only. No patch/start/order.
+
+Next route: `MANUAL_SOURCE_REVIEW_BEFORE_PATCH`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R7-R4_CLASSIC_RUNTIME_GATE_SOURCE_MAPPING_NO_PATCH_NO_ORDER_map_classic_runtime_disabled_origin_to_activation_report_export_no_patch_no_start_no_order_20260521_102119.json`

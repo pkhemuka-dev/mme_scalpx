@@ -1,0 +1,9 @@
+{
+"batch":"B3-R14R5_SHORT_GROWTH_CHECK_NO_START_NO_ORDER",
+"tag":"B3-R14R5_SHORT_GROWTH_CHECK_NO_START_NO_ORDER_20260522_095958",
+"classification":"PASS_B3_R14R5_READY_FOR_REAL_CAPTURE_WINDOW_NO_ORDER",
+"next_route":"B3-R15_REAL_CAPTURE_EXPORT_DRY_RUN_NO_ORDER",
+"growth_10s":{"fut_zerodha":8,"opt_zerodha":26,"features":4,"decisions":17,"errors":0},
+"after":{"orders":0,"risk":0,"execution":0},
+"safety_flags":{"no_start":true,"no_order":true,"no_paper_live":true,"no_replay":true,"no_pnl":true}
+}

@@ -1,0 +1,9 @@
+# B1-PROFIT-LIVE-R7-R4_CLASSIC_RUNTIME_GATE_SOURCE_MAPPING_NO_PATCH_NO_ORDER_map_classic_runtime_disabled_origin_to_activation_report_export_no_patch_no_start_no_order_20260521_102119
+
+Classification: `REVIEW_B1_PROFIT_LIVE_R7_R4_GATE_MAPPING_INCONCLUSIVE_NO_PATCH_NO_ORDER`
+
+Next route: `MANUAL_SOURCE_REVIEW_BEFORE_PATCH`
+
+Patch applied: `False`
+
+Order attempted: `False`

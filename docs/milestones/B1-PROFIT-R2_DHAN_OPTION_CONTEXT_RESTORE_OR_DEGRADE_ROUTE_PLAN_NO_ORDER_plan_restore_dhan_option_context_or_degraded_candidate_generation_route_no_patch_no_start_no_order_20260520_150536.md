@@ -1,0 +1,12 @@
+# B1-PROFIT-R2_DHAN_OPTION_CONTEXT_RESTORE_OR_DEGRADE_ROUTE_PLAN_NO_ORDER_plan_restore_dhan_option_context_or_degraded_candidate_generation_route_no_patch_no_start_no_order_20260520_150536
+
+Classification: `PASS_B1_PROFIT_R2_ROUTE_PLAN_READY_RESTORE_DHAN_CONTEXT_FIRST_NO_PATCH_NO_ORDER`
+
+Next route: `B1-PROFIT-R3_DHAN_OPTION_CONTEXT_READINESS_DEEP_TRIAGE_NO_PATCH_NO_START_NO_ORDER`
+
+Recommended route: `Restore Dhan option context first`
+
+Order attempted: `False`
+
+Blockers:
+- none

@@ -1,0 +1,36 @@
+{
+  "locks": {
+    "lock_execution": "none",
+    "lock_feeds": "string",
+    "lock_risk": "none",
+    "lock_strategy": "none"
+  },
+  "pids": {
+    "execution": [],
+    "features": [],
+    "feeds": [
+      4042
+    ],
+    "risk": [],
+    "strategy": []
+  },
+  "position": {
+    "has_position": "0",
+    "position_side": "FLAT",
+    "qty_lots": "0",
+    "qty_units": "0",
+    "type": "hash"
+  },
+  "redis_ping": true,
+  "streams": {
+    "decisions": 2958,
+    "execution": 0,
+    "features": 64,
+    "fut_zerodha": 548,
+    "opt_context_dhan": 0,
+    "opt_selected_zerodha": 2275,
+    "orders": 0,
+    "risk": 0,
+    "system_errors": 1
+  }
+}

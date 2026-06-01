@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="/home/Lenovo/scalpx/projects/mme_scalpx"
+cd "$ROOT"
+
+TS="$(date +%Y%m%d_%H%M%S)"
+OUT="run/handoffs/pmemory_dev_current"
+ARCHIVE="run/evidence_bundles/pmemory_dev_current.tar.gz"
+SHA="${ARCHIVE}.sha256"
+PTR="run/evidence_bundles/LATEST_PMEMORY_DEV_PACK.txt"
+
+BUILD="run/handoffs/.pmemory_dev_${TS}"
+LIST="$BUILD/memory_dev_filelist.txt"
+MANIFEST="$BUILD/memory_dev_manifest.md"
+
+echo "============================================================"
+echo "PMEMORY DEV — source/status development pack"
+echo "============================================================"
+echo "repo=$ROOT"
+echo "timestamp=$TS"
+echo "Safety: no patch, no start, no Redis, no broker, no order, no paper/live."
+echo
+
+rm -rf "$BUILD" "$OUT" "$ARCHIVE" "$SHA"
+mkdir -p "$BUILD" "$OUT" run/evidence_bundles
+
+{
+  echo "README.md"
+  echo "pyproject.toml"
+  echo "requirements.txt"
+  echo "requirements-dev.txt"
+
+  git ls-files 'app/mme_scalpx/**/*.py' 2>/dev/null || true
+  git ls-files 'bin/*' 2>/dev/null | grep -E 'pfeeds|pfeedcheck|pfeedstop|pstack|pstackcheck|pcheck|zlogin|plogin|replay|proof|bundle|check' || true
+  git ls-files 'docs/strategy/*' 2>/dev/null || true
+  git ls-files 'docs/milestones/*' 2>/dev/null | tail -n 80 || true
+  git ls-files 'docs/runbooks/*' 2>/dev/null | tail -n 80 || true
+  git ls-files 'etc/strategy_family/**' 2>/dev/null || true
+  git ls-files 'etc/replay/**' 2>/dev/null || true
+  git ls-files 'etc/brokers/**' 2>/dev/null || true
+} \
+  | grep -v -Ei 'secret|token|credential|password|api_key|access_key|\.env|\.tar\.gz|\.zip|\.db|\.sqlite|\.parquet|\.csv' \
+  | awk 'NF' \
+  | sort -u \
+  > "$LIST"
+
+{
+  echo "# pmemory_dev_current manifest"
+  echo
+  echo "- generated_at: $(date -Is)"
+  echo "- repo: $ROOT"
+  echo "- safety: no patch/start/Redis/broker/order/paper/live"
+  echo
+  echo "## Git"
+  echo
+  echo '```text'
+  echo "branch=$(git branch --show-current 2>/dev/null || true)"
+  echo "head=$(git rev-parse HEAD 2>/dev/null || true)"
+  echo
+  echo "status_short:"
+  git status --short 2>/dev/null | head -n 250 || true
+  echo '```'
+  echo
+  echo "## File list"
+  echo
+  echo '```text'
+  cat "$LIST"
+  echo '```'
+  echo
+  echo "## Latest artifact names only"
+  echo
+  echo '```text'
+  echo "[run/proofs]"
+  ls -1t run/proofs 2>/dev/null | head -n 80 || true
+  echo
+  echo "[run/audits]"
+  ls -1t run/audits 2>/dev/null | head -n 60 || true
+  echo
+  echo "[docs/milestones]"
+  ls -1t docs/milestones 2>/dev/null | head -n 80 || true
+  echo
+  echo "[docs/runbooks]"
+  ls -1t docs/runbooks 2>/dev/null | head -n 80 || true
+  echo '```'
+} > "$MANIFEST"
+
+cp "$LIST" "$OUT/memory_dev_filelist.txt"
+cp "$MANIFEST" "$OUT/memory_dev_manifest.md"
+
+while IFS= read -r f; do
+  [ -f "$f" ] || continue
+  mkdir -p "$OUT/$(dirname "$f")"
+  cp -a "$f" "$OUT/$f"
+done < "$LIST"
+
+cat > "$OUT/memory_dev_new_chat_prompt.md" <<'EOF'
+Load and follow pmemory_current + pmemory_dev_current as current MME-ScalpX repo truth.
+
+Truth rule:
+- Uploaded repo files, manifests, proofs, and milestones override old ChatGPT memory.
+- Old ChatGPT memory is navigation-only.
+- Do not assume old PASS/BLOCKED labels are current unless confirmed by uploaded files.
+
+Safety:
+- Preserve lane discipline.
+- Do not mix Lane A/B/C/E/F output.
+- No broker/order/paper/live/risk-execution enabling unless explicitly approved.
+- orders:mme:stream must remain zero unless explicitly approved.
+- position must remain FLAT unless explicitly approved.
+
+Workflow:
+- Safe/offline/observe-only work: integrated senior-engineer bundle.
+- Execution/risk/broker/order/paper/live/failover/kill-switch: strict micro-batches.
+- New proof/runbook/milestone filenames:
+  <EXACT_BATCH_NAME>_<purpose>_<timestamp>.<ext>
+
+First summarize current repo truth, current development status, blockers, and safest next step.
+EOF
+
+tar -czf "$ARCHIVE" -C "$OUT" .
+sha256sum "$ARCHIVE" > "$SHA"
+printf '%s\n' "$ARCHIVE" > "$PTR"
+
+echo
+echo "============================================================"
+echo "PMEMORY DEV PACK CREATED"
+echo "============================================================"
+echo "out_dir=$OUT"
+echo "archive=$ARCHIVE"
+echo "sha=$SHA"
+echo "latest_pointer=$PTR"
+du -h "$ARCHIVE" "$OUT" || true
+echo
+echo "file_count=$(wc -l < "$LIST" | tr -d ' ')"

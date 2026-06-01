@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R33_APPLY_MAIN_BOOTSTRAP_RUNTIME_INSTRUMENTS_PATCH_NO_START_NO_ORDER_patch_main_register_runtime_instruments_before_feeds_orchestration_no_start_no_order_20260522_095132 Runbook
+
+Source patch only. No start/stop/kill/delete/order.
+
+Next route: `REVIEW_R33_BLOCKERS`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R33_APPLY_MAIN_BOOTSTRAP_RUNTIME_INSTRUMENTS_PATCH_NO_START_NO_ORDER_patch_main_register_runtime_instruments_before_feeds_orchestration_no_start_no_order_20260522_095132.json`

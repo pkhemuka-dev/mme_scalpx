@@ -2630,6 +2630,9 @@ def make_stage_executor(
                 )
 
                 if events:
+                    # B3_R24C_SORT_BEFORE_INJECTOR_BEGIN
+                    events = _b3_r24c_sort_replay_events_by_event_time(events)
+                    # B3_R24C_SORT_BEFORE_INJECTOR_END
                     batch_result = injector.inject_batch(
                         run_id=context.run_id,
                         events=events,
@@ -2780,6 +2783,114 @@ def make_stage_executor(
     return stage_executor
 
 
+
+
+# --- B3_R24C_EVENT_TIME_SORT_HELPER_BEGIN ---
+def _b3_r24c_replay_event_time_sort_key(event):
+    """Replay-only deterministic event-time sort key.
+
+    This does not relax injector validation. It sorts the assembled batch before
+    injector.inject_batch so the existing injector can still enforce monotonicity.
+    """
+    from datetime import datetime
+
+    def _get(obj, key):
+        if isinstance(obj, dict):
+            return obj.get(key)
+        return getattr(obj, key, None)
+
+    def _parse_iso_ms(value):
+        if value is None:
+            return None
+        text = str(value).strip()
+        if not text:
+            return None
+        try:
+            if text.endswith("Z"):
+                text = text[:-1] + "+00:00"
+            return int(datetime.fromisoformat(text).timestamp() * 1000)
+        except Exception:
+            return None
+
+    for key in ("event_time", "timestamp", "ts", "exchange_ts"):
+        ms = _parse_iso_ms(_get(event, key))
+        if ms is not None:
+            return (ms, str(_get(event, "source_stream") or ""), str(_get(event, "redis_id") or _get(event, "id") or ""))
+
+    for key in ("ts_event", "ts_event_ns", "timestamp_ns", "frame_ts_ns", "exchange_ts_ns"):
+        value = _get(event, key)
+        try:
+            ns = int(float(value))
+            if ns > 10_000_000_000_000:
+                return (ns // 1_000_000, str(_get(event, "source_stream") or ""), str(_get(event, "redis_id") or _get(event, "id") or ""))
+        except Exception:
+            pass
+
+    for key in ("redis_id", "id", "stream_id", "_id"):
+        value = _get(event, key)
+        if value is not None:
+            try:
+                return (int(str(value).split("-")[0]), str(_get(event, "source_stream") or ""), str(value))
+            except Exception:
+                pass
+
+    return (9_999_999_999_999, str(_get(event, "source_stream") or ""), str(_get(event, "redis_id") or _get(event, "id") or ""))
+
+
+def _b3_r24f_with_sequence_id(event, sequence_id):
+    """Return event with a normalized strictly increasing sequence_id.
+
+    B3_R24F_SEQUENCE_ID_NORMALIZATION: this is replay-only and does not weaken
+    injector validation. It normalizes sequence_id after event-time sort so the
+    injector can continue enforcing strict monotonic sequence order.
+    """
+    # Most replay event batches here are dict-like.
+    if isinstance(event, dict):
+        normalized = dict(event)
+        normalized["sequence_id"] = sequence_id
+        return normalized
+
+    # Dataclass-like events.
+    try:
+        import dataclasses
+        if dataclasses.is_dataclass(event):
+            return dataclasses.replace(event, sequence_id=sequence_id)
+    except Exception:
+        pass
+
+    # Pydantic v2 / v1 style.
+    try:
+        if hasattr(event, "model_copy"):
+            return event.model_copy(update={"sequence_id": sequence_id})
+    except Exception:
+        pass
+    try:
+        if hasattr(event, "copy"):
+            return event.copy(update={"sequence_id": sequence_id})
+    except Exception:
+        pass
+
+    # Mutable object fallback.
+    try:
+        setattr(event, "sequence_id", sequence_id)
+        return event
+    except Exception:
+        return event
+
+
+def _b3_r24c_sort_replay_events_by_event_time(events):
+    """Return sorted replay events with sequence_id normalized in sorted order."""
+    try:
+        sorted_events = sorted(list(events), key=_b3_r24c_replay_event_time_sort_key)
+        return [
+            _b3_r24f_with_sequence_id(event, index)
+            for index, event in enumerate(sorted_events, start=1)
+        ]
+    except Exception:
+        return events
+# --- B3_R24C_EVENT_TIME_SORT_HELPER_END ---
+
+
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
 
@@ -2885,6 +2996,26 @@ def main(argv: list[str]) -> int:
         json.dumps(persisted_execution_shadow_results, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
         encoding="utf-8",
     )
+
+    # B3_R36A_LATE_REPLAY_ANALYSIS_EXPORTS_AFTER_ROW_ARTIFACTS_BEGIN
+    # Offline replay analysis exports. Runs after row artifacts are materialized.
+    try:
+        writer.write_b3_r32_analysis_exports(run_context)
+    except Exception as exc:
+        try:
+            writer.write_json_artifact(
+                run_context.artifact_plan.artifacts_dir / "b3_r36a_late_export_error.json",
+                {
+                    "schema_version": "b3_r36a_late_export_error_v1",
+                    "status": "error",
+                    "error": repr(exc),
+                    "note": "Optional late B3 export failed; replay artifacts remain available.",
+                },
+            )
+        except Exception:
+            pass
+    # B3_R36A_LATE_REPLAY_ANALYSIS_EXPORTS_AFTER_ROW_ARTIFACTS_END
+
 
     # Overwrite the early placeholder 03_integrity_report.json with the real evaluated bundle.
     real_integrity_payload = integrity_bundle_to_dict(integrity_bundle)

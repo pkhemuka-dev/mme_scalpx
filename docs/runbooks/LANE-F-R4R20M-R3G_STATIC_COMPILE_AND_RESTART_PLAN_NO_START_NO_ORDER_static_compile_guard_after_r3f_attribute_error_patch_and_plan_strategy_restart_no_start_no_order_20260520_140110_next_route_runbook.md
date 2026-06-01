@@ -1,0 +1,9 @@
+# LANE-F-R4R20M-R3G_STATIC_COMPILE_AND_RESTART_PLAN_NO_START_NO_ORDER_static_compile_guard_after_r3f_attribute_error_patch_and_plan_strategy_restart_no_start_no_order_20260520_140110 Next Route Runbook
+
+Static compile and restart planning only. No start, no stop, no order.
+
+Next route: `LANE-F-R4R20M_R3H_OBSERVE_ONLY_STRATEGY_RESTART_AFTER_R3F_PATCH_NO_ORDER`
+
+If PASS, run one strategy-only observe restart so corrected code loads.
+
+Proof: `run/proofs/LANE-F-R4R20M-R3G_STATIC_COMPILE_AND_RESTART_PLAN_NO_START_NO_ORDER_static_compile_guard_after_r3f_attribute_error_patch_and_plan_strategy_restart_no_start_no_order_20260520_140110.json`

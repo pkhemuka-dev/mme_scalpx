@@ -1,0 +1,9 @@
+# B1-PROFIT-LIVE-R29_EXACT_INSTRUMENT_ERROR_REVIEW_NO_ORDER_extract_exact_symbol_token_lookup_failure_from_r27_r28_and_feeds_log_20260521_152159
+
+Classification: `REVIEW_B1_PROFIT_LIVE_R29_EXACT_INSTRUMENT_FAILURE_STILL_MANUAL_NO_ORDER`
+
+Next route: `B1-PROFIT-LIVE-R30_MANUAL_INSTRUMENT_FAILURE_REVIEW_NO_ORDER`
+
+Exact kind: `exact_instrument_failure_still_needs_manual_review`
+
+Order attempted: `False`

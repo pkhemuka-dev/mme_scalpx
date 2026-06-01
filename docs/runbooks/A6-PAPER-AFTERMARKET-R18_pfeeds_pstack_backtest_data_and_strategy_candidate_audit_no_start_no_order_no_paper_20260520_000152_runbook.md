@@ -1,0 +1,6 @@
+# A6-PAPER-AFTERMARKET-R18_pfeeds_pstack_backtest_data_and_strategy_candidate_audit_no_start_no_order_no_paper_20260520_000152 Runbook
+
+Use this audit to decide whether today's pfeeds/pstack data is suitable for dataset export/backtest readiness work.
+
+Proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-AFTERMARKET-R18_pfeeds_pstack_backtest_data_and_strategy_candidate_audit_no_start_no_order_no_paper_20260520_000152.json`
+Audit: `/home/Lenovo/scalpx/projects/mme_scalpx/run/audits/A6-PAPER-AFTERMARKET-R18_pfeeds_pstack_backtest_data_and_strategy_candidate_audit_no_start_no_order_no_paper_20260520_000152_audit.json`

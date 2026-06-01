@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R29_EXACT_INSTRUMENT_ERROR_REVIEW_NO_ORDER_extract_exact_symbol_token_lookup_failure_from_r27_r28_and_feeds_log_20260521_152159 Runbook
+
+Exact instrument error review only. No patch/start/stop/kill/delete/order.
+
+Next route: `B1-PROFIT-LIVE-R30_MANUAL_INSTRUMENT_FAILURE_REVIEW_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R29_EXACT_INSTRUMENT_ERROR_REVIEW_NO_ORDER_extract_exact_symbol_token_lookup_failure_from_r27_r28_and_feeds_log_20260521_152159.json`

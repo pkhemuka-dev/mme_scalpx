@@ -633,6 +633,26 @@ def _resolve_role_choice(
     else:
         desired_provider_id = previous_provider_id or preferred_provider_id
 
+    # B1_PROFIT_LIVE_R38B_SELECTED_OPTION_ZERODHA_FALLBACK_BEGIN
+    # Narrow doctrine:
+    # - In MANUAL failover mode, keep the general policy unchanged for all roles.
+    # - Exception: selected_option_marketdata may degrade from DHAN to ZERODHA
+    #   when DHAN is unavailable and ZERODHA is already the first eligible provider.
+    # - This does not change option_context, MISO doctrine, execution provider,
+    #   risk, paper, live, broker orders, Redis deletion, or process control.
+    if (
+        role == "selected_option_marketdata"
+        and config.failover_mode == names.PROVIDER_FAILOVER_MODE_MANUAL
+        and config.override_mode == names.PROVIDER_OVERRIDE_MODE_AUTO
+        and not has_open_position
+        and first_eligible_provider_id is not None
+        and first_eligible_provider_id != desired_provider_id
+        and not _status_allows_active_assignment(status_by_provider[desired_provider_id])
+        and _status_allows_active_assignment(status_by_provider[first_eligible_provider_id])
+    ):
+        desired_provider_id = first_eligible_provider_id
+    # B1_PROFIT_LIVE_R38B_SELECTED_OPTION_ZERODHA_FALLBACK_END
+
     blocked_mid_position_switch = False
     pending_failover = False
 

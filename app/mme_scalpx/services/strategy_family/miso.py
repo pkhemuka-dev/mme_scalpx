@@ -2200,10 +2200,10 @@ def _batch26f_install_miso_burst_event_registry(module_globals):
                 descriptor_type = None
                 if isinstance(raw, staticmethod):
                     descriptor_type = staticmethod
-                    raw = raw.__func__
+                    raw = lane_f_r4r20h_merge_runtime_diagnostics_into_raw(raw, family_id=locals().get('family_id'), branch_id=locals().get('branch_id'), action=locals().get('action'), reason=locals().get('reason'), activation_mode=locals().get('activation_mode'), report_only=locals().get('report_only'), safe_to_promote=locals().get('safe_to_promote'), promoted=locals().get('promoted')).__func__
                 elif isinstance(raw, classmethod):
                     descriptor_type = classmethod
-                    raw = raw.__func__
+                    raw = lane_f_r4r20h_merge_runtime_diagnostics_into_raw(raw, family_id=locals().get('family_id'), branch_id=locals().get('branch_id'), action=locals().get('action'), reason=locals().get('reason'), activation_mode=locals().get('activation_mode'), report_only=locals().get('report_only'), safe_to_promote=locals().get('safe_to_promote'), promoted=locals().get('promoted')).__func__
 
                 if inspect.isfunction(raw):
                     wrapped = _batch26f_wrap_function(raw)
@@ -2337,4 +2337,33 @@ def context_score(view, branch_id, surface):
     return score, passed, reason
 
 # ===== BATCH26_OI_C_FAMILY_SOFT_SCORING_ONLY END =====
+
+# LANE-F-R4R20H diagnostic-only helper.
+# This helper must never change strategy action, candidate selection, risk, execution, or order intent.
+def lane_f_r4r20h_merge_runtime_diagnostics_into_raw(raw, *, family_id=None, branch_id=None, action=None, reason=None, activation_mode=None, report_only=None, safe_to_promote=None, promoted=None):
+    base = dict(raw or {})
+    reason_text = str(reason or base.get("reason") or "")
+    family_text = str(family_id or base.get("family_id") or "")
+    branch_text = str(branch_id or base.get("branch_id") or "")
+    action_text = str(action or base.get("action") or "")
+    runtime_disabled = (
+        "runtime_disabled" in reason_text
+        or "classic_runtime_disabled" in reason_text
+        or "miso_runtime_disabled" in reason_text
+        or base.get("runtime_disabled") is True
+    )
+    base.setdefault("family_runtime_enabled", not bool(runtime_disabled))
+    base.setdefault("family_runtime_gate_reason", reason_text)
+    base.setdefault("family_runtime_family_id", family_text)
+    base.setdefault("family_runtime_branch_id", branch_text)
+    base.setdefault("family_runtime_action", action_text)
+    if activation_mode is not None:
+        base.setdefault("family_runtime_activation_mode", activation_mode)
+    if report_only is not None:
+        base.setdefault("family_runtime_report_only", bool(report_only))
+    if safe_to_promote is not None:
+        base.setdefault("family_runtime_safe_to_promote", bool(safe_to_promote))
+    if promoted is not None:
+        base.setdefault("family_runtime_promoted", bool(promoted))
+    return base
 

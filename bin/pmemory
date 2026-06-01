@@ -1,0 +1,324 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="/home/Lenovo/scalpx/projects/mme_scalpx"
+cd "$ROOT"
+
+TS="$(date +%Y%m%d_%H%M%S)"
+OUT="run/handoffs/pmemory_current"
+STAGE="run/evidence_bundles/pmemory_current/stage"
+ARCHIVE="run/evidence_bundles/pmemory_current.tar.gz"
+SHA="${ARCHIVE}.sha256"
+PTR="run/evidence_bundles/LATEST_PMEMORY_PACK.txt"
+
+BUILD_OUT="run/handoffs/.pmemory_micro_${TS}"
+BUILD_STAGE="run/evidence_bundles/.pmemory_micro_${TS}/stage"
+TMP_ARCHIVE="run/evidence_bundles/.pmemory_micro_${TS}.tar.gz"
+
+echo "============================================================"
+echo "PMEMORY R4 MICRO — exact-file repo-truth pack"
+echo "============================================================"
+echo "repo=$ROOT"
+echo "timestamp=$TS"
+echo "Safety: no patch, no start, no Redis, no broker, no order, no paper/live."
+echo
+
+rm -rf "$BUILD_OUT" "$(dirname "$BUILD_STAGE")" "$TMP_ARCHIVE" "${TMP_ARCHIVE}.sha256"
+mkdir -p "$BUILD_OUT" "$BUILD_STAGE" run/handoffs run/evidence_bundles
+
+sha_file() {
+  [ -f "$1" ] && sha256sum "$1" | awk '{print $1}' || echo "MISSING"
+}
+
+redact_stream() {
+  sed -E 's/([Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Aa][Cc][Cc][Ee][Ss][Ss][_-]?[Kk][Ee][Yy])([^:=]*[:=]).*/\1\2<<REDACTED_SECRET_LIKE_LINE>>/g'
+}
+
+append_file() {
+  md="$1"
+  f="$2"
+
+  {
+    echo
+    echo "---"
+    echo "## \`$f\`"
+    echo
+  } >> "$md"
+
+  if [ ! -f "$f" ]; then
+    echo "\`MISSING\`" >> "$md"
+    return 0
+  fi
+
+  case "$f" in
+    *secret*|*token*|*credential*|*.env*|*password*|*access_key*|*api_key*)
+      echo "\`SKIPPED_SECRET_LIKE_FILENAME\`" >> "$md"
+      return 0
+      ;;
+  esac
+
+  bytes="$(wc -c < "$f" | tr -d ' ')"
+  sha="$(sha_file "$f")"
+
+  {
+    echo "- bytes: \`$bytes\`"
+    echo "- sha256: \`$sha\`"
+    echo
+    echo '```text'
+  } >> "$md"
+
+  if [ "$bytes" -le 120000 ]; then
+    redact_stream < "$f" >> "$md" || true
+  else
+    echo "<<TRUNCATED: first 60000 and last 30000 bytes only>>" >> "$md"
+    echo >> "$md"
+    head -c 60000 "$f" | redact_stream >> "$md" || true
+    echo
+    echo "... <<TRUNCATED MIDDLE>> ..." >> "$md"
+    echo
+    tail -c 30000 "$f" | redact_stream >> "$md" || true
+  fi
+
+  echo '```' >> "$md"
+}
+
+header() {
+  md="$1"
+  title="$2"
+  {
+    echo "# $title"
+    echo
+    echo "- generated_at: $(date -Is)"
+    echo "- repo: $ROOT"
+    echo "- safety: read-only; no patch/start/Redis/broker/order/paper/live"
+    echo
+    echo "Truth rule: repo files and latest proofs override old ChatGPT memory."
+  } > "$md"
+}
+
+finish_file() {
+  cp -a "$1" "$BUILD_STAGE/$(basename "$1")"
+}
+
+echo "[1/8] master"
+M01="$BUILD_OUT/memory_01_MASTER_STATUS.md"
+header "$M01" "memory_01_MASTER_STATUS"
+{
+  echo
+  echo "## Git identity"
+  echo
+  echo '```text'
+  echo "branch=$(git branch --show-current 2>/dev/null || true)"
+  echo "head=$(git rev-parse HEAD 2>/dev/null || true)"
+  echo
+  echo "status_short_first_120_lines:"
+  git status --short 2>/dev/null | head -n 120 || true
+  echo '```'
+  echo
+  echo "## Project file index from git, capped"
+  echo
+  echo '```text'
+  git ls-files 2>/dev/null | head -n 700 || true
+  echo '```'
+  echo
+  echo "## Latest proof/milestone/runbook names, capped"
+  echo
+  echo '```text'
+  ls -1t run/proofs 2>/dev/null | head -n 30 || true
+  ls -1t run/audits 2>/dev/null | head -n 20 || true
+  ls -1t docs/milestones 2>/dev/null | head -n 20 || true
+  ls -1t docs/runbooks 2>/dev/null | head -n 20 || true
+  echo '```'
+} >> "$M01"
+finish_file "$M01"
+
+echo "[2/8] governance"
+M02="$BUILD_OUT/memory_02_PROJECT_TREE_GOVERNANCE.md"
+header "$M02" "memory_02_PROJECT_TREE_GOVERNANCE"
+for f in \
+  README.md \
+  pyproject.toml \
+  requirements.txt \
+  requirements-dev.txt \
+  docs/strategy/MIS_FAMILY_MIGRATION_FREEZE.md \
+  docs/strategy/MIS_FAMILY_SURFACE_REGISTRY.md \
+  docs/strategy/LEGACY_SINGLE_BASELINE_FREEZE.md
+do append_file "$M02" "$f"; done
+finish_file "$M02"
+
+echo "[3/8] core"
+M03="$BUILD_OUT/memory_03_CORE_SPINE.md"
+header "$M03" "memory_03_CORE_SPINE"
+for f in \
+  app/mme_scalpx/core/names.py \
+  app/mme_scalpx/core/models.py \
+  app/mme_scalpx/core/settings.py \
+  app/mme_scalpx/core/validators.py \
+  app/mme_scalpx/core/clock.py \
+  app/mme_scalpx/core/codec.py \
+  app/mme_scalpx/core/redisx.py \
+  app/mme_scalpx/core/__init__.py
+do append_file "$M03" "$f"; done
+finish_file "$M03"
+
+echo "[4/8] runtime"
+M04="$BUILD_OUT/memory_04_RUNTIME_SERVICES_MAIN.md"
+header "$M04" "memory_04_RUNTIME_SERVICES_MAIN"
+for f in \
+  app/mme_scalpx/main.py \
+  app/mme_scalpx/services/feeds.py \
+  app/mme_scalpx/services/features.py \
+  app/mme_scalpx/services/strategy.py \
+  app/mme_scalpx/services/risk.py \
+  app/mme_scalpx/services/execution.py \
+  app/mme_scalpx/services/__init__.py \
+  app/mme_scalpx/domain/strategy.py \
+  app/mme_scalpx/domain/risk.py \
+  app/mme_scalpx/domain/execution.py
+do append_file "$M04" "$f"; done
+finish_file "$M04"
+
+echo "[5/8] providers"
+M05="$BUILD_OUT/memory_05_PROVIDERS_BROKERS_OPS.md"
+header "$M05" "memory_05_PROVIDERS_BROKERS_OPS"
+for f in \
+  app/mme_scalpx/integrations/provider_runtime.py \
+  app/mme_scalpx/integrations/bootstrap_provider.py \
+  app/mme_scalpx/integrations/dhan_marketdata.py \
+  app/mme_scalpx/integrations/dhan_execution.py \
+  app/mme_scalpx/integrations/zerodha_feed_adapter.py \
+  app/mme_scalpx/integrations/broker_api.py \
+  app/mme_scalpx/integrations/broker_auth.py \
+  app/mme_scalpx/integrations/runtime_instruments_factory.py \
+  app/mme_scalpx/integrations/instrument_master_sync.py \
+  app/mme_scalpx/integrations/login.py \
+  app/mme_scalpx/integrations/token_store.py \
+  bin/pfeeds \
+  bin/pfeedcheck \
+  bin/pfeedstop \
+  bin/pstack \
+  bin/pstackcheck \
+  bin/pcheck \
+  bin/zlogin \
+  bin/plogin
+do append_file "$M05" "$f"; done
+finish_file "$M05"
+
+echo "[6/8] replay"
+M06="$BUILD_OUT/memory_06_REPLAY_RESEARCH_PROOFS.md"
+header "$M06" "memory_06_REPLAY_RESEARCH_PROOFS"
+{
+  echo
+  echo "## Latest artifact names"
+  echo
+  echo '```text'
+  echo "[run/proofs]"
+  ls -1t run/proofs 2>/dev/null | head -n 50 || true
+  echo
+  echo "[run/audits]"
+  ls -1t run/audits 2>/dev/null | head -n 30 || true
+  echo
+  echo "[docs/milestones]"
+  ls -1t docs/milestones 2>/dev/null | head -n 30 || true
+  echo
+  echo "[docs/runbooks]"
+  ls -1t docs/runbooks 2>/dev/null | head -n 30 || true
+  echo '```'
+} >> "$M06"
+for f in \
+  app/mme_scalpx/replay/contracts.py \
+  app/mme_scalpx/replay/runner.py \
+  app/mme_scalpx/replay/dataset.py \
+  app/mme_scalpx/replay/integrity.py \
+  app/mme_scalpx/replay/artifacts.py \
+  app/mme_scalpx/replay/artifact_materializer.py \
+  app/mme_scalpx/replay/comparison_artifacts.py \
+  app/mme_scalpx/replay/report_exporter.py \
+  app/mme_scalpx/replay/reports.py \
+  app/mme_scalpx/replay/safety.py \
+  app/mme_scalpx/replay/selectors.py \
+  app/mme_scalpx/replay/transport.py \
+  bin/replay_run.py
+do append_file "$M06" "$f"; done
+finish_file "$M06"
+
+echo "[7/8] drift"
+M07="$BUILD_OUT/memory_07_MEMORY_DRIFT_REVIEW.md"
+cat > "$M07" <<'EOF'
+# memory_07_MEMORY_DRIFT_REVIEW
+
+Old ChatGPT memory is navigation-only unless confirmed by this pmemory pack.
+
+Keep in memory:
+1. Repo identity and path.
+2. Lane discipline.
+3. No broker/order/paper/live unless explicitly approved.
+4. Naming rule: <EXACT_BATCH_NAME>_<purpose>_<timestamp>.<ext>.
+5. Truth hierarchy: repo/proofs/milestones override memory.
+
+Do not trust old memory for current PASS/BLOCKED status, exact code behavior, current stream fields, helper behavior, provider readiness, replay runner behavior, or risk/execution readiness.
+EOF
+finish_file "$M07"
+
+echo "[8/8] prompt"
+M08="$BUILD_OUT/memory_08_NEW_CHAT_PROMPT.md"
+cat > "$M08" <<'EOF'
+# memory_08_NEW_CHAT_PROMPT
+
+Load and follow the uploaded pmemory files as current MME-ScalpX repo truth.
+
+Truth rule:
+- Uploaded pmemory content overrides old ChatGPT memory.
+- Old ChatGPT memory is navigation-only.
+- Do not assume old PASS/BLOCKED labels are current unless confirmed.
+
+Safety:
+- Preserve lane discipline.
+- Do not mix Lane A/B/C/E/F output.
+- No broker/order/paper/live/risk-execution enabling unless explicitly approved.
+- orders:mme:stream must remain zero unless explicitly approved.
+- position must remain FLAT unless explicitly approved.
+
+Workflow:
+- Safe/offline/observe-only work: integrated senior-engineer bundles.
+- Execution/risk/broker/order/paper/live/failover/kill-switch: strict micro-batches.
+- New proof/runbook/milestone filenames:
+  <EXACT_BATCH_NAME>_<purpose>_<timestamp>.<ext>
+
+First read memory_01 through memory_08. Then summarize current project truth, blockers, and safest next step.
+EOF
+finish_file "$M08"
+
+MAN="$BUILD_OUT/memory_00_manifest.txt"
+{
+  echo "pmemory_current manifest"
+  echo "generated_at=$(date -Is)"
+  echo "repo=$ROOT"
+  echo
+  find "$BUILD_OUT" -maxdepth 1 -type f -printf '%f | %s bytes\n' | sort
+} > "$MAN"
+finish_file "$MAN"
+
+echo "Creating archive..."
+tar -czf "$TMP_ARCHIVE" -C "$(dirname "$BUILD_STAGE")" stage
+sha256sum "$TMP_ARCHIVE" > "${TMP_ARCHIVE}.sha256"
+
+echo "Replacing current pack..."
+rm -rf "$OUT" "run/evidence_bundles/pmemory_current" "$ARCHIVE" "$SHA"
+mv "$BUILD_OUT" "$OUT"
+mv "$(dirname "$BUILD_STAGE")" "run/evidence_bundles/pmemory_current"
+mv "$TMP_ARCHIVE" "$ARCHIVE"
+sha256sum "$ARCHIVE" > "$SHA"
+rm -f "${TMP_ARCHIVE}.sha256"
+printf '%s\n' "$ARCHIVE" > "$PTR"
+
+echo
+echo "============================================================"
+echo "PMEMORY MICRO PACK CREATED"
+echo "============================================================"
+echo "out_dir=$OUT"
+echo "archive=$ARCHIVE"
+echo "sha=$SHA"
+echo "latest_pointer=$PTR"
+du -h "$ARCHIVE" "$OUT" || true
+find "$OUT" -maxdepth 1 -type f -printf '%f | %s bytes\n' | sort

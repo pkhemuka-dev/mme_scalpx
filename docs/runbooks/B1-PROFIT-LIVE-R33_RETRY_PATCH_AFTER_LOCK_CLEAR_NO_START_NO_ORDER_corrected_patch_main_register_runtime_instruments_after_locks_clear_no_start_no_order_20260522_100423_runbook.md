@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R33_RETRY_PATCH_AFTER_LOCK_CLEAR_NO_START_NO_ORDER_corrected_patch_main_register_runtime_instruments_after_locks_clear_no_start_no_order_20260522_100423 Runbook
+
+Source patch only after lock clear. No start/stop/kill/delete/order.
+
+Next route: `B1-PROFIT-LIVE-R33D_PATCH_REVIEW_OR_REVERT_PLAN_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R33_RETRY_PATCH_AFTER_LOCK_CLEAR_NO_START_NO_ORDER_corrected_patch_main_register_runtime_instruments_after_locks_clear_no_start_no_order_20260522_100423.json`

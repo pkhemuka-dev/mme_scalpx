@@ -2133,6 +2133,73 @@ def _b1a_observe_only_lifecycle_publish(context, phase):
         return False
 
 
+
+
+# A6_PAPER_R17M_R3D_OBSERVE_ONLY_NO_BROKER_GUARD
+def _a6_paper_r17m_r3d_observe_only_no_broker_guard_enabled() -> bool:
+    """Allow execution runtime preflight to stay alive without a broker only in
+    the A6-PAPER observe-only no-order diagnostic lane.
+
+    This is intentionally narrow:
+    - observe-only must be enabled
+    - all paper/live/broker-order flags must be absent or false
+    - no broker is injected
+    - no order path is enabled
+    """
+    import os
+
+    def _false(name: str) -> bool:
+        value = os.environ.get(name)
+        return value is None or str(value).strip().lower() in {"", "0", "false", "no", "n", "off"}
+
+    if str(os.environ.get("SCALPX_OBSERVE_ONLY", "")).strip().lower() not in {"1", "true", "yes", "on"}:
+        return False
+
+    forbidden = (
+        "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME",
+        "SCALPX_CONTROLLED_PAPER_SCOPE_ACK",
+        "SCALPX_REAL_LIVE_ALLOWED",
+        "SCALPX_ALLOW_REAL_LIVE",
+        "SCALPX_ALLOW_BROKER_ORDERS",
+        "SCALPX_PAPER_ARMED",
+        "SCALPX_ENABLE_PAPER",
+        "SCALPX_ENABLE_LIVE",
+    )
+    return all(_false(name) for name in forbidden)
+
+
+def _a6_paper_r17m_r3d_observe_only_no_broker_preflight_loop(context) -> int:
+    """Report-only no-broker execution preflight loop.
+
+    Keeps execution alive long enough for R17M runtime observation without
+    placing, routing, simulating, acknowledging, or publishing any order.
+    """
+    import logging
+    import os
+    import time
+
+    logger = logging.getLogger(__name__)
+    seconds = int(os.environ.get("A6_PAPER_EXECUTION_NO_BROKER_PREFLIGHT_SEC", "75"))
+    seconds = max(15, min(seconds, 180))
+
+    logger.warning(
+        "a6_paper_r17m_r3d_execution_no_broker_report_only_preflight_active "
+        "seconds=%s observe_only=%s no_order=1 no_broker=1",
+        seconds,
+        os.environ.get("SCALPX_OBSERVE_ONLY"),
+    )
+
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        time.sleep(1.0)
+
+    logger.warning(
+        "a6_paper_r17m_r3d_execution_no_broker_report_only_preflight_complete "
+        "no_order=1 no_broker=1"
+    )
+    return 0
+
+
 def run(context: Any) -> int | None:
     _b1a_observe_only_lifecycle_publish(context, phase="service_started")
     _validate_name_surface_or_die()
@@ -2147,6 +2214,8 @@ def run(context: Any) -> int | None:
     if redis_runtime is None:
         raise ExecutionConfigError("run(context) requires context.redis")
     if broker is None:
+        if _a6_paper_r17m_r3d_observe_only_no_broker_guard_enabled():
+            return _a6_paper_r17m_r3d_observe_only_no_broker_preflight_loop(context)
         raise ExecutionConfigError("run(context) requires context.broker")
     if clock is None:
         raise ExecutionConfigError("run(context) requires context.clock")

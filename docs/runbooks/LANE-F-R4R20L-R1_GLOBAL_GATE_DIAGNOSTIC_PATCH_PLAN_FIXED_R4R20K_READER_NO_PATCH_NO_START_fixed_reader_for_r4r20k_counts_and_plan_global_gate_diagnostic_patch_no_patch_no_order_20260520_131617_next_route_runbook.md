@@ -1,0 +1,9 @@
+# LANE-F-R4R20L-R1_GLOBAL_GATE_DIAGNOSTIC_PATCH_PLAN_FIXED_R4R20K_READER_NO_PATCH_NO_START_fixed_reader_for_r4r20k_counts_and_plan_global_gate_diagnostic_patch_no_patch_no_order_20260520_131617 Next Route Runbook
+
+Plan-only. No patch, no start, no order.
+
+Next route: `REVIEW_R4R20L_R1_BLOCKERS_BEFORE_PATCH`
+
+If PASS, apply only additive diagnostic patch in R4R20M.
+
+Proof: `run/proofs/LANE-F-R4R20L-R1_GLOBAL_GATE_DIAGNOSTIC_PATCH_PLAN_FIXED_R4R20K_READER_NO_PATCH_NO_START_fixed_reader_for_r4r20k_counts_and_plan_global_gate_diagnostic_patch_no_patch_no_order_20260520_131617.json`

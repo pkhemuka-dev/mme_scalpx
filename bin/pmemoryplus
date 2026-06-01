@@ -1,0 +1,349 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="/home/Lenovo/scalpx/projects/mme_scalpx"
+cd "$ROOT"
+
+TS="$(date +%Y%m%d_%H%M%S)"
+OUT="run/handoffs/pmemory_plus_current"
+STAGE="run/evidence_bundles/pmemory_plus_current/stage"
+ARCHIVE="run/evidence_bundles/pmemory_plus_current.tar.gz"
+SHA="${ARCHIVE}.sha256"
+PTR="run/evidence_bundles/LATEST_PMEMORY_PLUS_PACK.txt"
+
+BUILD_OUT="run/handoffs/.pmemory_plus_${TS}"
+BUILD_STAGE="run/evidence_bundles/.pmemory_plus_${TS}/stage"
+TMP_ARCHIVE="run/evidence_bundles/.pmemory_plus_${TS}.tar.gz"
+
+echo "============================================================"
+echo "PMEMORY PLUS — fuller MME-ScalpX development memory pack"
+echo "============================================================"
+echo "repo=$ROOT"
+echo "timestamp=$TS"
+echo "Safety: no patch, no start, no Redis write/delete, no broker, no order, no paper/live."
+echo
+
+rm -rf "$BUILD_OUT" "$(dirname "$BUILD_STAGE")" "$TMP_ARCHIVE" "${TMP_ARCHIVE}.sha256"
+mkdir -p "$BUILD_OUT" "$BUILD_STAGE" run/handoffs run/evidence_bundles
+
+sha_file() {
+  [ -f "$1" ] && sha256sum "$1" | awk '{print $1}' || echo "MISSING"
+}
+
+redact_stream() {
+  sed -E 's/([Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Aa][Cc][Cc][Ee][Ss][Ss][_-]?[Kk][Ee][Yy])([^:=]*[:=]).*/\1\2<<REDACTED_SECRET_LIKE_LINE>>/g'
+}
+
+append_file() {
+  md="$1"
+  f="$2"
+
+  {
+    echo
+    echo "---"
+    echo "## \`$f\`"
+    echo
+  } >> "$md"
+
+  if [ ! -f "$f" ]; then
+    echo "\`MISSING\`" >> "$md"
+    return 0
+  fi
+
+  case "$f" in
+    *secret*|*token*|*credential*|*.env*|*password*|*access_key*|*api_key*)
+      echo "\`SKIPPED_SECRET_LIKE_FILENAME\`" >> "$md"
+      return 0
+      ;;
+  esac
+
+  bytes="$(wc -c < "$f" | tr -d ' ')"
+  sha="$(sha_file "$f")"
+
+  {
+    echo "- bytes: \`$bytes\`"
+    echo "- sha256: \`$sha\`"
+    echo
+    echo '```text'
+  } >> "$md"
+
+  if [ "$bytes" -le 180000 ]; then
+    redact_stream < "$f" >> "$md" || true
+  else
+    echo "<<TRUNCATED: first 90000 and last 45000 bytes only>>" >> "$md"
+    echo >> "$md"
+    head -c 90000 "$f" | redact_stream >> "$md" || true
+    echo >> "$md"
+    echo "... <<TRUNCATED MIDDLE>> ..." >> "$md"
+    echo >> "$md"
+    tail -c 45000 "$f" | redact_stream >> "$md" || true
+  fi
+
+  echo '```' >> "$md"
+}
+
+header() {
+  md="$1"
+  title="$2"
+  {
+    echo "# $title"
+    echo
+    echo "- generated_at: $(date -Is)"
+    echo "- repo: $ROOT"
+    echo "- safety: read-only; no patch/start/Redis-write/broker/order/paper/live"
+    echo
+    echo "Truth rule: current repo/proof/milestone content overrides old ChatGPT memory."
+    echo
+  } > "$md"
+}
+
+finish_file() {
+  cp -a "$1" "$BUILD_STAGE/$(basename "$1")"
+}
+
+latest_index() {
+  md="$1"
+  dir="$2"
+  limit="${3:-100}"
+
+  {
+    echo
+    echo "## Latest index: \`$dir\`"
+    echo
+  } >> "$md"
+
+  if [ ! -d "$dir" ]; then
+    echo "- missing directory" >> "$md"
+    return 0
+  fi
+
+  find "$dir" -maxdepth 2 -type f \
+    ! -path '*/evidence_bundles/*' \
+    ! -path '*/live_capture/*' \
+    ! -path '*/logs/*' \
+    -printf '%T@ %p\n' 2>/dev/null \
+    | sort -nr \
+    | head -n "$limit" \
+    | while read -r _ p; do
+        b="$(wc -c < "$p" 2>/dev/null | tr -d ' ' || echo '?')"
+        s="$(sha_file "$p")"
+        echo "- \`$p\` | bytes=$b | sha256=$s" >> "$md"
+      done
+}
+
+embed_latest_small() {
+  md="$1"
+  dir="$2"
+  limit="${3:-10}"
+
+  [ -d "$dir" ] || return 0
+
+  find "$dir" -maxdepth 2 -type f \
+    ! -path '*/evidence_bundles/*' \
+    ! -path '*/live_capture/*' \
+    ! -path '*/logs/*' \
+    -printf '%T@ %p\n' 2>/dev/null \
+    | sort -nr \
+    | head -n "$limit" \
+    | awk '{ $1=""; sub(/^ /,""); print }' \
+    | while read -r p; do
+        [ -f "$p" ] || continue
+        bytes="$(wc -c < "$p" | tr -d ' ')"
+        [ "$bytes" -le 180000 ] && append_file "$md" "$p"
+      done
+}
+
+git_file_list() {
+  git ls-files 2>/dev/null | grep -E "$1" | head -n "${2:-300}" || true
+}
+
+echo "[1/7] master plus"
+M01="$BUILD_OUT/memory_plus_01_MASTER_DEVELOPMENT_STATUS.md"
+header "$M01" "memory_plus_01_MASTER_DEVELOPMENT_STATUS"
+{
+  echo "## Git identity"
+  echo
+  echo '```text'
+  echo "branch=$(git branch --show-current 2>/dev/null || true)"
+  echo "head=$(git rev-parse HEAD 2>/dev/null || true)"
+  echo
+  echo "status_short_first_300_lines:"
+  git status --short 2>/dev/null | head -n 300 || true
+  echo '```'
+  echo
+  echo "## Tracked project file index, capped"
+  echo
+  echo '```text'
+  git ls-files 2>/dev/null | head -n 1800 || true
+  echo '```'
+} >> "$M01"
+latest_index "$M01" "run/proofs" 120
+latest_index "$M01" "run/audits" 100
+latest_index "$M01" "docs/milestones" 100
+latest_index "$M01" "docs/runbooks" 100
+finish_file "$M01"
+
+echo "[2/7] all app source index and selected content"
+M02="$BUILD_OUT/memory_plus_02_APP_SOURCE_SURFACE.md"
+header "$M02" "memory_plus_02_APP_SOURCE_SURFACE"
+{
+  echo "## Tracked app/mme_scalpx Python files"
+  echo
+  echo '```text'
+  git_file_list '^app/mme_scalpx/.*\.py$' 600
+  echo '```'
+} >> "$M02"
+
+git_file_list '^app/mme_scalpx/(core|domain|services|integrations|ops|replay|replay_optimization|research_capture)/.*\.py$' 240 \
+  | while read -r f; do append_file "$M02" "$f"; done
+finish_file "$M02"
+
+echo "[3/7] configs and strategy docs"
+M03="$BUILD_OUT/memory_plus_03_CONFIGS_STRATEGY_DOCS.md"
+header "$M03" "memory_plus_03_CONFIGS_STRATEGY_DOCS"
+{
+  echo "## Tracked config/doc files"
+  echo
+  echo '```text'
+  git_file_list '^(etc|docs/strategy|docs/runbooks|docs/milestones)/' 800
+  echo '```'
+} >> "$M03"
+
+git_file_list '^(etc/strategy_family|etc/replay|etc/brokers|docs/strategy)/' 300 \
+  | while read -r f; do append_file "$M03" "$f"; done
+finish_file "$M03"
+
+echo "[4/7] bin helpers and operational scripts"
+M04="$BUILD_OUT/memory_plus_04_BIN_OPS_HELPERS.md"
+header "$M04" "memory_plus_04_BIN_OPS_HELPERS"
+{
+  echo "## Tracked bin files"
+  echo
+  echo '```text'
+  git_file_list '^bin/' 500
+  echo '```'
+} >> "$M04"
+
+git_file_list '^bin/(pfeeds|pfeedcheck|pfeedstop|pstack|pstackcheck|pcheck|zlogin|plogin|replay_run.py|.*replay.*|.*proof.*|.*check.*|.*bundle.*)$' 180 \
+  | while read -r f; do append_file "$M04" "$f"; done
+finish_file "$M04"
+
+echo "[5/7] latest evidence contents"
+M05="$BUILD_OUT/memory_plus_05_LATEST_EVIDENCE_CONTENTS.md"
+header "$M05" "memory_plus_05_LATEST_EVIDENCE_CONTENTS"
+latest_index "$M05" "run/proofs" 160
+latest_index "$M05" "run/audits" 120
+latest_index "$M05" "docs/milestones" 120
+latest_index "$M05" "docs/runbooks" 120
+embed_latest_small "$M05" "run/proofs" 20
+embed_latest_small "$M05" "run/audits" 12
+embed_latest_small "$M05" "docs/milestones" 20
+embed_latest_small "$M05" "docs/runbooks" 20
+finish_file "$M05"
+
+echo "[6/7] memory drift and operating model"
+M06="$BUILD_OUT/memory_plus_06_OPERATING_MODEL_MEMORY_DRIFT.md"
+cat > "$M06" <<'EOF'
+# memory_plus_06_OPERATING_MODEL_MEMORY_DRIFT
+
+Use this plus pack with pmemory_current.
+
+Authority:
+1. Current repo source and hashes.
+2. Latest proofs/audits/milestones/runbooks.
+3. Runtime diagnostics only when explicitly captured.
+4. Old ChatGPT memory only as navigation.
+
+Permanent memory should not be treated as exact source truth.
+
+Keep stable:
+- repo path and project identity
+- lane discipline
+- no broker/order/paper/live unless explicitly approved
+- exact filename rule: <EXACT_BATCH_NAME>_<purpose>_<timestamp>.<ext>
+- integrated bundles for safe/offline/observe-only work
+- micro-batches for risk/execution/broker/order/paper/live/failover/kill-switch
+
+Do not trust old memory for:
+- current PASS/BLOCKED status
+- exact stream fields
+- exact helper behavior
+- provider readiness
+- replay runner status
+- risk/execution readiness
+EOF
+finish_file "$M06"
+
+echo "[7/7] new chat prompt"
+M07="$BUILD_OUT/memory_plus_07_NEW_CHAT_PROMPT.md"
+cat > "$M07" <<'EOF'
+# memory_plus_07_NEW_CHAT_PROMPT
+
+Upload both:
+1. pmemory_current.tar.gz
+2. pmemory_plus_current.tar.gz
+
+Then paste:
+
+Load and follow pmemory_current + pmemory_plus_current as current MME-ScalpX repo truth.
+
+Truth rule:
+- Uploaded repo/proof/milestone content overrides old ChatGPT memory.
+- Old ChatGPT memory is navigation-only.
+- Do not assume old PASS/BLOCKED labels are current unless confirmed by uploaded files.
+
+Safety:
+- Preserve lane discipline.
+- Do not mix Lane A/B/C/E/F.
+- No broker/order/paper/live/risk-execution enabling unless explicitly approved.
+- orders:mme:stream must remain zero unless explicitly approved.
+- position must remain FLAT unless explicitly approved.
+
+Workflow:
+- Safe/offline/observe-only work: integrated senior-engineer bundle.
+- Execution/risk/broker/order/paper/live/failover/kill-switch: strict micro-batches.
+- New proof/runbook/milestone filenames:
+  <EXACT_BATCH_NAME>_<purpose>_<timestamp>.<ext>
+
+First summarize:
+1. current repo truth
+2. current development status
+3. what seems done
+4. what is blocked
+5. safest next step
+EOF
+finish_file "$M07"
+
+MAN="$BUILD_OUT/memory_plus_00_manifest.txt"
+{
+  echo "pmemory_plus_current manifest"
+  echo "generated_at=$(date -Is)"
+  echo "repo=$ROOT"
+  echo
+  find "$BUILD_OUT" -maxdepth 1 -type f -printf '%f | %s bytes\n' | sort
+} > "$MAN"
+finish_file "$MAN"
+
+echo "Creating archive..."
+tar -czf "$TMP_ARCHIVE" -C "$(dirname "$BUILD_STAGE")" stage
+sha256sum "$TMP_ARCHIVE" > "${TMP_ARCHIVE}.sha256"
+
+echo "Replacing current plus pack..."
+rm -rf "$OUT" "run/evidence_bundles/pmemory_plus_current" "$ARCHIVE" "$SHA"
+mv "$BUILD_OUT" "$OUT"
+mv "$(dirname "$BUILD_STAGE")" "run/evidence_bundles/pmemory_plus_current"
+mv "$TMP_ARCHIVE" "$ARCHIVE"
+sha256sum "$ARCHIVE" > "$SHA"
+rm -f "${TMP_ARCHIVE}.sha256"
+printf '%s\n' "$ARCHIVE" > "$PTR"
+
+echo
+echo "============================================================"
+echo "PMEMORY PLUS PACK CREATED"
+echo "============================================================"
+echo "out_dir=$OUT"
+echo "archive=$ARCHIVE"
+echo "sha=$SHA"
+echo "latest_pointer=$PTR"
+du -h "$ARCHIVE" "$OUT" || true
+find "$OUT" -maxdepth 1 -type f -printf '%f | %s bytes\n' | sort

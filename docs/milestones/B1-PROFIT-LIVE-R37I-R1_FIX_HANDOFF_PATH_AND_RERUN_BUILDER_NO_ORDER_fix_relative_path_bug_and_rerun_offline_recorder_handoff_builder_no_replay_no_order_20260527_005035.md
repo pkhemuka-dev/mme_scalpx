@@ -1,0 +1,9 @@
+# B1-PROFIT-LIVE-R37I-R1_FIX_HANDOFF_PATH_AND_RERUN_BUILDER_NO_ORDER
+
+Classification: **PASS_R37I_RECORDER_HANDOFF_READY_FOR_OFFLINE_REPLAY_ADMISSION_NO_ORDER**
+
+R37I-R1 fixed the helper relative-path crash and reran the offline recorder handoff builder.
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R37I-R1_FIX_HANDOFF_PATH_AND_RERUN_BUILDER_NO_ORDER_fix_relative_path_bug_and_rerun_offline_recorder_handoff_builder_no_replay_no_order_20260527_005035.json`  
+Report: `run/audits/B1-PROFIT-LIVE-R37I-R1_FIX_HANDOFF_PATH_AND_RERUN_BUILDER_NO_ORDER_fix_relative_path_bug_and_rerun_offline_recorder_handoff_builder_no_replay_no_order_20260527_005035_report.md`  
+Replay handoff: `run/replay/handoffs/B1-PROFIT-LIVE-R37I-R1_FIX_HANDOFF_PATH_AND_RERUN_BUILDER_NO_ORDER_fix_relative_path_bug_and_rerun_offline_recorder_handoff_builder_no_replay_no_order_20260527_005035_replay_handoff_manifest.json`

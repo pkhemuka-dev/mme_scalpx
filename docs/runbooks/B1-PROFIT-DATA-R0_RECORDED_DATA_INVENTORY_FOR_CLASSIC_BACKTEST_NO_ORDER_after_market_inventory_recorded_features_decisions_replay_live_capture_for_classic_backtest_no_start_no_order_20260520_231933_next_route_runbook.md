@@ -1,0 +1,9 @@
+# B1-PROFIT-DATA-R0_RECORDED_DATA_INVENTORY_FOR_CLASSIC_BACKTEST_NO_ORDER_after_market_inventory_recorded_features_decisions_replay_live_capture_for_classic_backtest_no_start_no_order_20260520_231933 Next Route Runbook
+
+After-market recorded-data inventory for classic backtest/profit analysis.
+
+No patch, no start, no stop, no order.
+
+Next route: `B1-PROFIT-SIM-R1_RECORDED_CANDIDATE_PNL_PRECHECK_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-DATA-R0_RECORDED_DATA_INVENTORY_FOR_CLASSIC_BACKTEST_NO_ORDER_after_market_inventory_recorded_features_decisions_replay_live_capture_for_classic_backtest_no_start_no_order_20260520_231933.json`

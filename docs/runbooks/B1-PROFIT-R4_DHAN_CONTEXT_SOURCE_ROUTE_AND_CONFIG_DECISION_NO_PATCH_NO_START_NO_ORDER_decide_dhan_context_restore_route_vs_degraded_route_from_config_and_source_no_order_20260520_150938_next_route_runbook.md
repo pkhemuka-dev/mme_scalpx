@@ -1,0 +1,7 @@
+# B1-PROFIT-R4_DHAN_CONTEXT_SOURCE_ROUTE_AND_CONFIG_DECISION_NO_PATCH_NO_START_NO_ORDER_decide_dhan_context_restore_route_vs_degraded_route_from_config_and_source_no_order_20260520_150938 Next Route Runbook
+
+Route decision only. No patch, no start, no stop, no order.
+
+Next route: `B1-PROFIT-R5_DHAN_CONTEXT_RESTORE_PATCH_PLAN_NO_PATCH_NO_START_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-R4_DHAN_CONTEXT_SOURCE_ROUTE_AND_CONFIG_DECISION_NO_PATCH_NO_START_NO_ORDER_decide_dhan_context_restore_route_vs_degraded_route_from_config_and_source_no_order_20260520_150938.json`

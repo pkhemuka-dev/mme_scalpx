@@ -1,0 +1,7 @@
+# B1-PROFIT-R0_PROFITABILITY_AND_DATA_SUFFICIENCY_AUDIT_NO_ORDER_audit_available_live_replay_candidate_and_decision_data_before_any_paper_trial_no_start_no_order_20260520_144425 Next Route Runbook
+
+No order, no broker, no paper. This batch only decides whether enough data exists for profitability testing.
+
+Next route: `FIX_OPTION_CONTEXT_OR_CANDIDATE_GENERATION_BEFORE_PAPER_TRIAL`
+
+Proof: `run/proofs/B1-PROFIT-R0_PROFITABILITY_AND_DATA_SUFFICIENCY_AUDIT_NO_ORDER_audit_available_live_replay_candidate_and_decision_data_before_any_paper_trial_no_start_no_order_20260520_144425.json`

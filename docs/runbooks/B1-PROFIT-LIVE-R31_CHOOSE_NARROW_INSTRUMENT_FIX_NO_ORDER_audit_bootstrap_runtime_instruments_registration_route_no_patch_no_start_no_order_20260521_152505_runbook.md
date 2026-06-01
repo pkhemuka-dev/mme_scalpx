@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R31_CHOOSE_NARROW_INSTRUMENT_FIX_NO_ORDER_audit_bootstrap_runtime_instruments_registration_route_no_patch_no_start_no_order_20260521_152505 Runbook
+
+Fix choice only. No patch/start/stop/kill/delete/order.
+
+Next route: `B1-PROFIT-LIVE-R32_MAIN_BOOTSTRAP_RUNTIME_INSTRUMENTS_PATCH_PLAN_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R31_CHOOSE_NARROW_INSTRUMENT_FIX_NO_ORDER_audit_bootstrap_runtime_instruments_registration_route_no_patch_no_start_no_order_20260521_152505.json`

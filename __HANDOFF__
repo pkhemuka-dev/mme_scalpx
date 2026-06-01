@@ -1,0 +1,44 @@
+# B1-PROFIT-LIVE-R38A-R1_PROVIDER_RUNTIME_EXACT_SOURCE_READ_PATCH_PLAN_NO_PATCH_NO_START_NO_ORDER
+
+Classification: **PASS_R38A_R1_EXACT_SOURCE_TARGET_READY_NO_PATCH_NO_ORDER**
+
+## Safety
+```json
+{
+  "orders": "0",
+  "risk_stream": "0",
+  "execution_stream": "0",
+  "risk_pids": 0,
+  "execution_pids": 0
+}
+```
+
+## Provider runtime findings
+```json
+{
+  "has_pending_failover_message": false,
+  "has_selected_option_role_mentions": 4,
+  "has_pending_failover_mentions": 19,
+  "has_failover_mode_manual_mentions": 5,
+  "has_dhan_mentions": 15,
+  "has_zerodha_mentions": 12
+}
+```
+
+## Recommended narrow patch
+- Primary target: `app/mme_scalpx/integrations/provider_runtime.py`
+- Patch only selected-option marketdata fallback.
+- Do not change execution provider.
+- Keep MISO blocked without Dhan context.
+- No risk/execution/order/paper enablement.
+
+## Required fixture cases
+- dhan_selected_unavailable_zerodha_selected_healthy
+- dhan_selected_healthy
+- dhan_unavailable_zerodha_unavailable
+
+## Next
+Run R38B only after reviewing the source-context report.
+
+Proof: `__PROOF__`
+Audit: `__AUDIT__`

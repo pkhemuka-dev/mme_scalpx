@@ -1,0 +1,9 @@
+# B1-PROFIT-LIVE-R23_ZERODHA_AUTH_REFRESH_PLAN_NO_ORDER_locate_safe_zerodha_login_refresh_route_after_invalid_token_no_patch_no_start_no_order_20260521_150128
+
+Classification: `PASS_B1_PROFIT_LIVE_R23_ZERODHA_AUTH_REFRESH_ROUTE_READY_NO_ORDER`
+
+Next route: `B1-PROFIT-LIVE-R24_APPROVAL_GATED_ZERODHA_LOGIN_REFRESH_AND_QUOTE_CHECK_NO_ORDER`
+
+Root: Zerodha invalid api_key/access_token
+
+Order attempted: `False`

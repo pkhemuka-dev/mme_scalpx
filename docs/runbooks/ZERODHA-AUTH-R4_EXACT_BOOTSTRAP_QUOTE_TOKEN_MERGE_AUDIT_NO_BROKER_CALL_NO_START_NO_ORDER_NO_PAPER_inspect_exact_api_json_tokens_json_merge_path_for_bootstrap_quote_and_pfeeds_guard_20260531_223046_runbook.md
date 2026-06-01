@@ -1,0 +1,37 @@
+# ZERODHA-AUTH-R4_EXACT_BOOTSTRAP_QUOTE_TOKEN_MERGE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER
+
+Classification: **PASS_ZERODHA_AUTH_R4_EXACT_SOURCE_AUDIT_READY_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER**
+
+## Purpose
+
+Exact source audit for Zerodha bootstrap quote and shared-token guard after R8B auth failure.
+
+## Checks
+
+- api_has_key=1
+- api_has_secret=1
+- token_has_access=1
+- bootstrap_reads_api=1
+- bootstrap_reads_token=1
+- ensure_expects_api_in_token=1
+- safety_ok=1
+
+## Artifacts
+
+- Bootstrap quote: `run/audits/ZERODHA-AUTH-R4_EXACT_BOOTSTRAP_QUOTE_TOKEN_MERGE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_exact_api_json_tokens_json_merge_path_for_bootstrap_quote_and_pfeeds_guard_20260531_223046_bootstrap_quote_exact.txt`
+- Ensure token: `run/audits/ZERODHA-AUTH-R4_EXACT_BOOTSTRAP_QUOTE_TOKEN_MERGE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_exact_api_json_tokens_json_merge_path_for_bootstrap_quote_and_pfeeds_guard_20260531_223046_ensure_zerodha_shared_token_exact.txt`
+- Token store: `run/audits/ZERODHA-AUTH-R4_EXACT_BOOTSTRAP_QUOTE_TOKEN_MERGE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_exact_api_json_tokens_json_merge_path_for_bootstrap_quote_and_pfeeds_guard_20260531_223046_token_store_exact.txt`
+- Login extract: `run/audits/ZERODHA-AUTH-R4_EXACT_BOOTSTRAP_QUOTE_TOKEN_MERGE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_exact_api_json_tokens_json_merge_path_for_bootstrap_quote_and_pfeeds_guard_20260531_223046_login_reuse_exact.txt`
+- Bashrc extract: `run/audits/ZERODHA-AUTH-R4_EXACT_BOOTSTRAP_QUOTE_TOKEN_MERGE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_exact_api_json_tokens_json_merge_path_for_bootstrap_quote_and_pfeeds_guard_20260531_223046_bashrc_pfeeds_zlogin_exact.txt`
+- State: `run/audits/ZERODHA-AUTH-R4_EXACT_BOOTSTRAP_QUOTE_TOKEN_MERGE_AUDIT_NO_BROKER_CALL_NO_START_NO_ORDER_NO_PAPER_inspect_exact_api_json_tokens_json_merge_path_for_bootstrap_quote_and_pfeeds_guard_20260531_223046_state.txt`
+
+## Safety
+
+No broker call, no service start/stop, no Redis write, no order, no paper/live.
+
+- orders=0
+- risk_stream=0
+- execution_stream=0
+- feeds_proc=0
+- risk_proc=0
+- execution_proc=0

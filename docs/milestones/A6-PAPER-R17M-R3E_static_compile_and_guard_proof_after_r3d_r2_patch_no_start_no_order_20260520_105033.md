@@ -1,0 +1,10 @@
+# A6-PAPER-R17M-R3E_static_compile_and_guard_proof_after_r3d_r2_patch_no_start_no_order_20260520_105033
+
+Classification: `PASS_A6_PAPER_R17M_R3E_STATIC_COMPILE_AND_GUARD_PROOF_AFTER_PATCH_NO_START_NO_ORDER`
+
+Next route: `A6-PAPER-R17M-R4_RUNTIME_ARMING_PREFLIGHT_RETRY_AFTER_EXECUTION_GUARD_PATCH_CAN_BE_CONSIDERED`
+
+R3D-R2 proof: `/home/Lenovo/scalpx/projects/mme_scalpx/run/proofs/A6-PAPER-R17M-R3D-R2_corrected_narrow_execution_observe_only_no_broker_guard_patch_no_start_no_order_20260520_104949.json`
+
+Blockers:
+- none

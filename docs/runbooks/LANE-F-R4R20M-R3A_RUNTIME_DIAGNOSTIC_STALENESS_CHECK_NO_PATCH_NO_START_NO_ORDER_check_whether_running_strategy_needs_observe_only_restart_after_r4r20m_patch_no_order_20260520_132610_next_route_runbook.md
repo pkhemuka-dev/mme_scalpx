@@ -1,0 +1,9 @@
+# LANE-F-R4R20M-R3A_RUNTIME_DIAGNOSTIC_STALENESS_CHECK_NO_PATCH_NO_START_NO_ORDER_check_whether_running_strategy_needs_observe_only_restart_after_r4r20m_patch_no_order_20260520_132610 Next Route Runbook
+
+Read-only runtime diagnostic staleness check after strategy.py diagnostic patch.
+
+Next route: `LANE-F-R4R20M_R3B_OBSERVE_ONLY_STRATEGY_RESTART_APPROVAL_REQUIRED_NO_ORDER`
+
+No patch, no start, no stop, no Redis delete, no order.
+
+Proof: `run/proofs/LANE-F-R4R20M-R3A_RUNTIME_DIAGNOSTIC_STALENESS_CHECK_NO_PATCH_NO_START_NO_ORDER_check_whether_running_strategy_needs_observe_only_restart_after_r4r20m_patch_no_order_20260520_132610.json`

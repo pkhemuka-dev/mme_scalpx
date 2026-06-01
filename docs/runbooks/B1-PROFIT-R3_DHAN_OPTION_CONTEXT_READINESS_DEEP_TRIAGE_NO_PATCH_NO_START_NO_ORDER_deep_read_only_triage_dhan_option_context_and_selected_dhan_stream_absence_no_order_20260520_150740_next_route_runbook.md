@@ -1,0 +1,7 @@
+# B1-PROFIT-R3_DHAN_OPTION_CONTEXT_READINESS_DEEP_TRIAGE_NO_PATCH_NO_START_NO_ORDER_deep_read_only_triage_dhan_option_context_and_selected_dhan_stream_absence_no_order_20260520_150740 Next Route Runbook
+
+Read-only Dhan option-context deep triage. No patch, no start, no stop, no order.
+
+Next route: `B1-PROFIT-R4_DHAN_CONTEXT_SOURCE_ROUTE_AND_CONFIG_DECISION_NO_PATCH_NO_START_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-R3_DHAN_OPTION_CONTEXT_READINESS_DEEP_TRIAGE_NO_PATCH_NO_START_NO_ORDER_deep_read_only_triage_dhan_option_context_and_selected_dhan_stream_absence_no_order_20260520_150740.json`

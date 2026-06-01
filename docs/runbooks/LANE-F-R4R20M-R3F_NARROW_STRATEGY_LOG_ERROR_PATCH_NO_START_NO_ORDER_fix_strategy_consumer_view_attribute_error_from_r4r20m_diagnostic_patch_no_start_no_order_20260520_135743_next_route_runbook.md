@@ -1,0 +1,9 @@
+# LANE-F-R4R20M-R3F_NARROW_STRATEGY_LOG_ERROR_PATCH_NO_START_NO_ORDER_fix_strategy_consumer_view_attribute_error_from_r4r20m_diagnostic_patch_no_start_no_order_20260520_135743 Next Route Runbook
+
+Narrow source patch only. No service start, no stop, no order.
+
+Next route: `LANE-F-R4R20M_R3G_STATIC_COMPILE_AND_RESTART_PLAN_NO_START_NO_ORDER`
+
+If PASS, run static/restart planning proof before touching the running strategy process.
+
+Proof: `run/proofs/LANE-F-R4R20M-R3F_NARROW_STRATEGY_LOG_ERROR_PATCH_NO_START_NO_ORDER_fix_strategy_consumer_view_attribute_error_from_r4r20m_diagnostic_patch_no_start_no_order_20260520_135743.json`

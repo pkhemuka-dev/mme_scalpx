@@ -1,0 +1,199 @@
+{
+  "batch": "DISK-A5",
+  "broker_calls_executed": false,
+  "candidates_file": "${CANDIDATES}",
+  "compression_executed": false,
+  "created_at": "2026-05-19T18:32:59.336078+00:00",
+  "delete_executed": false,
+  "delete_review_count": 46,
+  "delete_review_total_bytes": 11495494707,
+  "delete_review_total_gb": 10.706,
+  "df_human": "Filesystem     Type  Size  Used Avail Use% Mounted on\n/dev/root      ext4   78G   66G   12G  85% /\n",
+  "hot_areas": "15G\trun/evidence_bundles\n19G\trun/proofs\n6.8G\trun/replay\n772M\trun/_data_keep\n180K\trun/_disk_maintenance\n",
+  "keeper_pointer_targets_file": "${KEEPERS}",
+  "keeper_total_bytes_estimate": 2860629462,
+  "keeper_total_gb_estimate": 2.664,
+  "live_enabled": false,
+  "paper_enabled": false,
+  "pointer_file_count": 12,
+  "pointer_target_count": 12,
+  "protected_paths": [
+    "run/replay",
+    "run/_data_keep",
+    "run/proofs",
+    "app",
+    "bin",
+    "docs",
+    ".git",
+    ".venv"
+  ],
+  "readonly": true,
+  "recommendation": "Review candidates_file first. Delete only DELETE_REVIEW entries after confirming they are not needed for active lane handoff.",
+  "report": "${REPORT}",
+  "services_started": false,
+  "source_patch_applied": false,
+  "tag": "${TAG}",
+  "top_delete_review_candidates": [
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-11T17:28:07.870904+00:00",
+      "path": "run/evidence_bundles/lane_b1_replay_backtest_evidence_bundle_20260511_224933",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 4205886152,
+      "size_mb": 4011.05
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-07T07:51:43.111704+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_integrity_raw_replay_bundle_v2_20260502_103549",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 1211861478,
+      "size_mb": 1155.72
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-13T05:14:10.650698+00:00",
+      "path": "run/evidence_bundles/A6-NEXT-R0_live_paper_continuation_evidence_bundle_no_patch_no_order_20260513_104100",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 1197638792,
+      "size_mb": 1142.16
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-11T17:18:30.314877+00:00",
+      "path": "run/evidence_bundles/lane_a6_related_evidence_bundle_20260511_224830",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 1074956376,
+      "size_mb": 1025.16
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-07T07:51:42.747672+00:00",
+      "path": "run/evidence_bundles/mme_integrity_surface_raw_replay_evidence_20260502_102410",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 537589855,
+      "size_mb": 512.69
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-07T07:51:42.591658+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_full_integrity_raw_replay_audit_20260502_103054",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 450897303,
+      "size_mb": 430.01
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-01T11:55:04.316894+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_replay_research_raw_audit_20260501_172504",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 419750481,
+      "size_mb": 400.31
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-01T11:51:44.223223+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_replay_research_raw_audit_20260501_172144",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 228378348,
+      "size_mb": 217.8
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-11T17:18:09.231868+00:00",
+      "path": "run/evidence_bundles/lane_a6_related_evidence_bundle_20260511_224623",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 193989859,
+      "size_mb": 185.0
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-11T03:58:58.117774+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260511_092858",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 160805979,
+      "size_mb": 153.36
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-10T07:04:11.175095+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260510_123411",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 159192009,
+      "size_mb": 151.82
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-10T16:02:49.046578+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_getfile_bundle_20260510_213249",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 156061388,
+      "size_mb": 148.83
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-10T07:01:43.137826+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_dev_phase_evidence_v3_capped_20260510_123143",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 153371076,
+      "size_mb": 146.27
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-13T05:14:45.466864+00:00",
+      "path": "run/evidence_bundles/A6-NEXT_live_paper_continuation_evidence_bundle_latest.tar.gz",
+      "reason": "stale_archive_not_latest_no_matching_extracted_dir_review_before_delete",
+      "size_bytes": 103740400,
+      "size_mb": 98.93
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-03T06:27:14.943741+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260503_115714",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 100720385,
+      "size_mb": 96.05
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-06T05:12:01.338284+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260506_104201",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 96774163,
+      "size_mb": 92.29
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-02T05:14:26.484980+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260502_104426",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 95720645,
+      "size_mb": 91.29
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-04T03:44:32.159456+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260504_091432",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 95013994,
+      "size_mb": 90.61
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-02T05:08:26.828829+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_short_integrity_raw_replay_bundle_20260502_103826",
+      "reason": "stale_extracted_bundle_dir_no_latest_pointer_review_before_delete",
+      "size_bytes": 93715322,
+      "size_mb": 89.37
+    },
+    {
+      "action": "DELETE_REVIEW",
+      "mtime": "2026-05-08T05:12:48.636067+00:00",
+      "path": "run/evidence_bundles/mme_scalpx_audit_bundle_20260508_104248",
+      "reason": "extracted_bundle_dir_with_matching_tar_gz_archive",
+      "size_bytes": 93513797,
+      "size_mb": 89.18
+    }
+  ],
+  "verdict": "PASS_DELETE_DRY_RUN_ONLY"
+}

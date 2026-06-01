@@ -1697,12 +1697,19 @@ class FeedService:
         if (now_ns - self._last_lock_refresh_ns) < (self._cfg.lock_refresh_ms * 1_000_000):
             return
 
-        ok = RX.refresh_lock(
-            N.KEY_LOCK_FEEDS,
-            self._instance_id,
-            ttl_ms=self._cfg.lock_ttl_ms,
-            client=self._redis,
-        )
+        # FEEDS_LOCK_R5C_REFRESH_LOCKERROR_SAFE_REACQUIRE
+        refresh_error: Exception | None = None
+        try:
+            ok = RX.refresh_lock(
+                N.KEY_LOCK_FEEDS,
+                self._instance_id,
+                ttl_ms=self._cfg.lock_ttl_ms,
+                client=self._redis,
+            )
+        except RX.LockError as exc:
+            ok = False
+            refresh_error = exc
+
         if ok:
             self._last_lock_refresh_ns = now_ns
             return
@@ -1727,9 +1734,16 @@ class FeedService:
             )
             if reacquired:
                 self._last_lock_refresh_ns = now_ns
-                self._publish_health_event(event="feeds_lock_reacquired_after_expiry")
+                if refresh_error is not None:
+                    self._publish_health_event(event="feeds_lock_reacquired_after_refresh_error")
+                else:
+                    self._publish_health_event(event="feeds_lock_reacquired_after_expiry")
                 return
 
+        if refresh_error is not None:
+            raise FeedStartupError(
+                "feeds singleton lock refresh failed after refresh LockError"
+            ) from refresh_error
         raise FeedStartupError("feeds singleton lock refresh failed")
 
     def ingest_adapter_poll(

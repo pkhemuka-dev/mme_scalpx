@@ -1,0 +1,16 @@
+# A6-PAPER-R17N_controlled_paper_trial_plan_and_explicit_approval_gate_no_start_no_order_no_enablement_20260520_105500
+
+Classification: `PASS_A6_PAPER_R17N_CONTROLLED_PAPER_TRIAL_PLAN_READY_EXPLICIT_APPROVAL_REQUIRED_NO_ORDER`
+
+Next route: `A6-PAPER-R17O_FRESH_LIVE_CANDIDATE_SCOPE_AUDIT_BEFORE_ANY_PAPER_ORDER`
+
+R4A classification: `PASS_A6_PAPER_R17M_R4A_POST_R4_CLOSURE_READY_FOR_PAPER_TRIAL_PLANNING_NO_ORDER`
+
+R4 verdict: `PASS_A6_PAPER_R17M_R4_RUNTIME_ARMING_PREFLIGHT_RETRY_RISK_EXECUTION_START_STOP_NO_ORDER_NO_PAPER`
+
+Paper trial approved now: `False`
+
+Paper order approved now: `False`
+
+Blockers:
+- none

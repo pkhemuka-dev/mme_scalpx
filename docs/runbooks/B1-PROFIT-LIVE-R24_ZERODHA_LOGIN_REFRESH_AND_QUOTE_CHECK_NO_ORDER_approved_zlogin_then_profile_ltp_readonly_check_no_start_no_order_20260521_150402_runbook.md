@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R24_ZERODHA_LOGIN_REFRESH_AND_QUOTE_CHECK_NO_ORDER_approved_zlogin_then_profile_ltp_readonly_check_no_start_no_order_20260521_150402 Runbook
+
+Zerodha auth refresh + read-only quote check. No feeds/risk/execution/paper/live/broker order.
+
+Next route: `B1-PROFIT-LIVE-R25_ZERODHA_QUOTE_CHECK_TRIAGE_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R24_ZERODHA_LOGIN_REFRESH_AND_QUOTE_CHECK_NO_ORDER_approved_zlogin_then_profile_ltp_readonly_check_no_start_no_order_20260521_150402.json`

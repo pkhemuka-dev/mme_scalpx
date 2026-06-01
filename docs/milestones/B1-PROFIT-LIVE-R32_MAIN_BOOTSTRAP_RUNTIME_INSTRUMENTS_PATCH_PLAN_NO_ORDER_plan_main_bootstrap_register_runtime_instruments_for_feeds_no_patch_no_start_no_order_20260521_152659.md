@@ -1,0 +1,9 @@
+# B1-PROFIT-LIVE-R32_MAIN_BOOTSTRAP_RUNTIME_INSTRUMENTS_PATCH_PLAN_NO_ORDER_plan_main_bootstrap_register_runtime_instruments_for_feeds_no_patch_no_start_no_order_20260521_152659
+
+Classification: `PASS_B1_PROFIT_LIVE_R32_MAIN_BOOTSTRAP_RUNTIME_INSTRUMENTS_PATCH_PLAN_READY_NO_ORDER`
+
+Next route: `B1-PROFIT-LIVE-R33_APPLY_MAIN_BOOTSTRAP_RUNTIME_INSTRUMENTS_PATCH_NO_START_NO_ORDER`
+
+Patch target: `app/mme_scalpx/main.py`
+
+Order attempted: `False`

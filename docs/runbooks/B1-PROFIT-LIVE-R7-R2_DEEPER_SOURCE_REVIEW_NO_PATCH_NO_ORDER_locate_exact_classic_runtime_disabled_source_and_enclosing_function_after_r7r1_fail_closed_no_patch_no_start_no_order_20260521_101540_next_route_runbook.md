@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R7-R2_DEEPER_SOURCE_REVIEW_NO_PATCH_NO_ORDER_locate_exact_classic_runtime_disabled_source_and_enclosing_function_after_r7r1_fail_closed_no_patch_no_start_no_order_20260521_101540 Next Route Runbook
+
+Deeper source review only. No patch/start/order.
+
+Next route: `B1-PROFIT-LIVE-R7-R3_EXACT_TARGET_PATCH_PLAN_NO_PATCH_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R7-R2_DEEPER_SOURCE_REVIEW_NO_PATCH_NO_ORDER_locate_exact_classic_runtime_disabled_source_and_enclosing_function_after_r7r1_fail_closed_no_patch_no_start_no_order_20260521_101540.json`

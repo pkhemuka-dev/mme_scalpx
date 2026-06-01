@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R20_FEEDS_START_METHOD_REVIEW_NO_ORDER_reconcile_r18_feeds_log_path_and_inspect_actual_logs_start_method_no_patch_no_start_no_order_20260521_145034 Runbook
+
+Read-only feed start-method review. No patch/start/stop/kill/delete/order.
+
+Next route: `B1-PROFIT-LIVE-R21_FEEDS_FIX_PLAN_NO_PATCH_NO_START_NO_ORDER`
+
+Proof: `run/proofs/B1-PROFIT-LIVE-R20_FEEDS_START_METHOD_REVIEW_NO_ORDER_reconcile_r18_feeds_log_path_and_inspect_actual_logs_start_method_no_patch_no_start_no_order_20260521_145034.json`
