@@ -1,0 +1,5 @@
+# B4-DAY3-R5F_MISB_BREAKOUT_SCORE_INPUT_LINEAGE_READONLY_NO_PATCH_NO_START_NO_ORDER_extract_actual_misb_call_surface_breakout_fields_that_feed_compute_score_0004615_20260603_225709
+
+Classification: `PASS_B4_DAY3_R5F_MISB_BREAKOUT_SURFACE_LINEAGE_EXTRACTED_NO_PATCH_NO_START_NO_ORDER`
+
+MISB breakout score input lineage extraction completed.

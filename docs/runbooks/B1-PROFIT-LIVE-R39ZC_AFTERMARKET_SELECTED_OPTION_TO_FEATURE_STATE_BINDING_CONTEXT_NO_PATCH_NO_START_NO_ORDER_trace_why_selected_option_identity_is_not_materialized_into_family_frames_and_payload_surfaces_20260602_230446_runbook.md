@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39ZC_AFTERMARKET_SELECTED_OPTION_TO_FEATURE_STATE_BINDING_CONTEXT_NO_PATCH_NO_START_NO_ORDER_trace_why_selected_option_identity_is_not_materialized_into_family_frames_and_payload_surfaces_20260602_230446
+Review raw before R39ZD. Patch only if exact binding seam is proven.

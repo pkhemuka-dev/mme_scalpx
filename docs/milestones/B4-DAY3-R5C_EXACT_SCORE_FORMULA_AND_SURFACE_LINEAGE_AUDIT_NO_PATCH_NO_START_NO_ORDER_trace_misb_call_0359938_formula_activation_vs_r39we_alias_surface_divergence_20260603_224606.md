@@ -1,0 +1,5 @@
+# B4-DAY3-R5C_EXACT_SCORE_FORMULA_AND_SURFACE_LINEAGE_AUDIT_NO_PATCH_NO_START_NO_ORDER_trace_misb_call_0359938_formula_activation_vs_r39we_alias_surface_divergence_20260603_224606
+
+Classification: `PASS_B4_DAY3_R5C_FORMULA_LINEAGE_EXTRACTED_NO_PATCH_NO_START_NO_ORDER`
+
+R5C exact formula and surface-lineage audit completed.

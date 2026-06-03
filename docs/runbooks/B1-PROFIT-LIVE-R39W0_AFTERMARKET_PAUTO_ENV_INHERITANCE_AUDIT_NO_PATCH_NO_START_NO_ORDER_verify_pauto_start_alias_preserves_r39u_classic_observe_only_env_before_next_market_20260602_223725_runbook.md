@@ -1,0 +1,3 @@
+# B1-PROFIT-LIVE-R39W0_AFTERMARKET_PAUTO_ENV_INHERITANCE_AUDIT_NO_PATCH_NO_START_NO_ORDER_verify_pauto_start_alias_preserves_r39u_classic_observe_only_env_before_next_market_20260602_223725
+If PASS, tomorrow run pauto_start from a shell exporting SCALPX_OBSERVE_ONLY=1 and B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY=1.
+If WARN, inspect raw before market; do not start blindly.

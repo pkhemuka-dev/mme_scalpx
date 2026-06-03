@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39V_AFTERMARKET_STATIC_PROOF_AFTER_R39U_PATCH_NO_START_NO_ORDER_verify_common_py_patch_markers_compile_import_env_gate_and_safety_after_r39u_20260602_222540
+Next: market-session observe-only refresh/checkpoint with B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY=1. Do not paper.

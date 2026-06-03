@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39Z_AFTERMARKET_FAILOVER_ACTIVE_CONSUMER_VIEW_PATCH_PLAN_NO_PATCH_NO_START_NO_ORDER_decide_contract_verdict_for_zerodha_failover_active_classic_provider_readiness_after_r39y_20260602_225848
+Review raw and patch plan before any implementation. Do not patch unless one narrow source target is proven.

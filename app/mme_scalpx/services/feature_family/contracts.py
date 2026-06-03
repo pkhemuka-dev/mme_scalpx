@@ -577,6 +577,102 @@ CANONICAL_FIELD_COMPATIBILITY_ALIASES: Final[Mapping[str, str]] = MappingProxyTy
 # ============================================================================
 
 
+
+# R39H_PROVIDER_RUNTIME_MISSING_KEYS_COMPAT_PATCH_BEGIN
+def _r39h_provider_runtime_with_compat_aliases(provider_runtime):
+    """
+    A7 observe-only compatibility shim for provider_runtime contract validation.
+
+    Backfills frozen compatibility aliases from legacy provider-runtime names
+    before the missing-key check. This is validation-surface only:
+    no threshold change, no Dhan deep-fix, no paper/live/order enablement.
+    """
+    if not isinstance(provider_runtime, dict):
+        try:
+            provider_runtime = dict(provider_runtime)
+        except Exception:
+            return provider_runtime
+
+    pr = dict(provider_runtime)
+
+    alias_sources = {
+        "active_futures_provider_id": "futures_marketdata_provider_id",
+        "active_selected_option_provider_id": "selected_option_marketdata_provider_id",
+        "active_option_context_provider_id": "option_context_provider_id",
+        "active_execution_provider_id": "execution_primary_provider_id",
+        "fallback_execution_provider_id": "execution_fallback_provider_id",
+        "provider_runtime_mode": "family_runtime_mode",
+        "futures_provider_status": "futures_marketdata_status",
+        "selected_option_provider_status": "selected_option_marketdata_status",
+        "option_context_provider_status": "option_context_status",
+        "execution_provider_status": "execution_primary_status",
+        "execution_fallback_provider_status": "execution_fallback_status",
+    }
+
+    for dst, src in alias_sources.items():
+        if pr.get(dst) in (None, "") and pr.get(src) not in (None, ""):
+            pr[dst] = pr.get(src)
+
+    if pr.get("provider_runtime_mode") in (None, ""):
+        pr["provider_runtime_mode"] = (
+            pr.get("family_runtime_mode")
+            or pr.get("runtime_mode")
+            or pr.get("mode")
+            or "OBSERVE_ONLY"
+        )
+
+    def _status_ok(value):
+        return str(value or "").upper() in {
+            "OK",
+            "READY",
+            "ACTIVE",
+            "HEALTHY",
+            "FAILOVER_ACTIVE",
+            "DEGRADED",
+            "DEGRADED_SAFE",
+        }
+
+    if "provider_ready_classic" not in pr:
+        pr["provider_ready_classic"] = bool(
+            _status_ok(pr.get("futures_provider_status"))
+            and _status_ok(pr.get("selected_option_provider_status"))
+            and pr.get("active_futures_provider_id")
+            and pr.get("active_selected_option_provider_id")
+        )
+
+    if "provider_ready_miso" not in pr:
+        pr["provider_ready_miso"] = bool(
+            bool(pr.get("provider_ready_classic"))
+            and _status_ok(pr.get("option_context_provider_status"))
+            and pr.get("active_option_context_provider_id")
+        )
+
+    required = (
+        "active_futures_provider_id",
+        "active_selected_option_provider_id",
+        "active_option_context_provider_id",
+        "active_execution_provider_id",
+        "fallback_execution_provider_id",
+        "provider_runtime_mode",
+        "futures_provider_status",
+        "selected_option_provider_status",
+        "option_context_provider_status",
+        "execution_provider_status",
+        "execution_fallback_provider_status",
+        "provider_ready_classic",
+        "provider_ready_miso",
+    )
+
+    missing = [key for key in required if key not in pr]
+    pr["provider_runtime_missing_keys"] = missing
+    pr.setdefault("provider_runtime_blocked", bool(missing))
+    pr.setdefault(
+        "provider_runtime_block_reason",
+        "missing_provider_runtime_compat_aliases" if missing else "",
+    )
+    return pr
+# R39H_PROVIDER_RUNTIME_MISSING_KEYS_COMPAT_PATCH_END
+
 def _require(condition: bool, message: str) -> None:
     if not condition:
         raise FeatureFamilyContractError(message)
@@ -2102,6 +2198,8 @@ def validate_provider_runtime_block(
 ) -> None:
     if not isinstance(provider_runtime, Mapping):
         raise FeatureFamilyContractError("provider_runtime must be a mapping")
+
+    provider_runtime = _r39h_provider_runtime_with_compat_aliases(provider_runtime)
 
     missing = [key for key in PROVIDER_RUNTIME_KEYS if key not in provider_runtime]
     if missing:

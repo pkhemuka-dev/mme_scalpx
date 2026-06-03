@@ -249,6 +249,21 @@ def _r38zr_backfill_family_features_provider_runtime(strategy_self, family_featu
     return ff
 # ===== R38ZR_STRATEGY_FEATURE_CONTRACT_COMPAT_PATCH_END =====
 
+# ===== R38ZU_STRIP_REPAIR_METADATA_KEYS_PATCH_BEGIN =====
+# Report-only exact-key contract compatibility cleanup.
+# R38Z timestamp repair diagnostics must not remain as top-level family_features keys.
+# No doctrine/threshold/order/risk/execution behavior is changed.
+def _r38zu_strip_repair_metadata_keys_from_family_features(family_features):
+    ff = dict(family_features) if isinstance(family_features, dict) else {}
+    removed = {}
+    for key in ("r38zb_selected_option_ts_status", "r38zf_futures_ts_status"):
+        if key in ff:
+            removed[key] = ff.pop(key)
+    return ff
+# ===== R38ZU_STRIP_REPAIR_METADATA_KEYS_PATCH_END =====
+
+
+
 
 class StrategyBridgeError(RuntimeError):
     """Raised when strategy consumer bridge cannot safely consume features."""
@@ -701,6 +716,7 @@ class StrategyFamilyConsumerBridge:
         payload = _mapping(_json_load(payload_raw, field_name="payload_json")) if payload_raw else {}
 
         family_features = _r38zr_backfill_family_features_provider_runtime(self, family_features)
+        family_features = _r38zu_strip_repair_metadata_keys_from_family_features(family_features)
         FF_C.validate_family_features_payload(family_features)
 
         self._validate_surfaces(family_surfaces)

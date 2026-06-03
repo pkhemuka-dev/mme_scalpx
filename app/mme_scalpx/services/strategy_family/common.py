@@ -38,6 +38,7 @@ Design rules
 import hashlib
 import json
 import math
+import os
 from dataclasses import is_dataclass, replace
 from types import MappingProxyType
 from typing import Any, Final, Mapping
@@ -1050,6 +1051,37 @@ def normalize_miso_runtime_mode(value: Any) -> str:
     return aliases.get(token, MISO_RUNTIME_MODE_DISABLED)
 
 
+# B1_PROFIT_LIVE_R39U_CLASSIC_OBSERVE_ONLY_RUNTIME_PATCH_BEGIN
+def _b1_profit_live_r39u_classic_observe_only_runtime_enabled() -> bool:
+    """Allow classic leaf evaluation in observe-only only.
+
+    This helper does not enable paper, live, broker, risk, execution, Redis
+    mutation, order routing, promotion, or safe-to-promote. It only allows the
+    classic strategy-family leaf evaluators to see NORMAL instead of DISABLED
+    when the operator explicitly enables diagnostic observe-only leaf evaluation.
+    """
+    truthy = {"1", "true", "yes", "on", "y"}
+
+    def is_truthy(name: str) -> bool:
+        return str(os.environ.get(name, "")).strip().lower() in truthy
+
+    forbidden = (
+        "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME",
+        "SCALPX_CONTROLLED_PAPER_SCOPE_ACK",
+        "SCALPX_REAL_LIVE_ALLOWED",
+        "SCALPX_ALLOW_REAL_LIVE",
+        "SCALPX_ALLOW_BROKER_ORDERS",
+        "SCALPX_PAPER_ARMED",
+        "SCALPX_ENABLE_PAPER",
+        "SCALPX_ENABLE_LIVE",
+    )
+    return (
+        is_truthy("SCALPX_OBSERVE_ONLY")
+        and is_truthy("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY")
+        and not any(is_truthy(name) for name in forbidden)
+    )
+
+
 def resolve_classic_runtime_mode(
     common_surface: Mapping[str, Any],
     provider_runtime: Mapping[str, Any],
@@ -1061,7 +1093,14 @@ def resolve_classic_runtime_mode(
         or mapping_get(provider_runtime, "classic_runtime_mode")
         or mapping_get(provider_runtime, "strategy_runtime_mode_classic")
     )
-    return normalize_classic_runtime_mode(raw)
+    mode = normalize_classic_runtime_mode(raw)
+    if (
+        mode == CLASSIC_RUNTIME_MODE_DISABLED
+        and _b1_profit_live_r39u_classic_observe_only_runtime_enabled()
+    ):
+        return CLASSIC_RUNTIME_MODE_NORMAL
+    return mode
+# B1_PROFIT_LIVE_R39U_CLASSIC_OBSERVE_ONLY_RUNTIME_PATCH_END
 
 
 def resolve_miso_runtime_mode(

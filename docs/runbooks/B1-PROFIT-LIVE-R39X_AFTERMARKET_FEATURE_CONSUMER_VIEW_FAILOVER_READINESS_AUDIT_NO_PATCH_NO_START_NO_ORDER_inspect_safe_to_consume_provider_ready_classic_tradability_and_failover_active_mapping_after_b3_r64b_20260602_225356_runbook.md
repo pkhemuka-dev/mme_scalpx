@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39X_AFTERMARKET_FEATURE_CONSUMER_VIEW_FAILOVER_READINESS_AUDIT_NO_PATCH_NO_START_NO_ORDER_inspect_safe_to_consume_provider_ready_classic_tradability_and_failover_active_mapping_after_b3_r64b_20260602_225356
+Review raw before any patch. If source confirms FAILOVER_ACTIVE mapping is wrong for classic Zerodha fallback, prepare narrow patch plan only.

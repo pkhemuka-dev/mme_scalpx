@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39Q-R4_AFTERMARKET_CLASSIC_RUNTIME_GATE_LOCATOR_NO_PATCH_NO_START_NO_ORDER_bash_only_locator_after_heredoc_paste_break_no_patch_no_start_no_order_20260602_221553
+Review proof/report/raw/patch_plan before R39R.

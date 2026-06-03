@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39U_AFTERMARKET_COMMON_CLASSIC_OBSERVE_ONLY_RUNTIME_PATCH_NO_START_NO_ORDER_env_gated_common_py_classic_disabled_to_normal_for_observe_only_leaf_eval_20260602_222433
+Next: R39V static source proof, then market-session refresh proof. Do not paper.

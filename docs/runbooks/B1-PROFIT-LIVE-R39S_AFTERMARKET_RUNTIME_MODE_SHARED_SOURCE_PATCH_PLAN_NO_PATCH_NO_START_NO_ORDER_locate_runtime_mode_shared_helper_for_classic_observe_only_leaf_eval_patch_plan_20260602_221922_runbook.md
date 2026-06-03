@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39S_AFTERMARKET_RUNTIME_MODE_SHARED_SOURCE_PATCH_PLAN_NO_PATCH_NO_START_NO_ORDER_locate_runtime_mode_shared_helper_for_classic_observe_only_leaf_eval_patch_plan_20260602_221922
+Review runtime_mode map before R39T patch.

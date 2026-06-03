@@ -1,0 +1,7 @@
+# B4-DAY3-R2_LIVE_CONSUMER_VIEW_AND_CONTRACT_ERROR_AUDIT_NO_PATCH_NO_START_NO_ORDER_audit_running_generic_main_env_selected_option_consumer_surfaces_decisions_and_feature_family_contract_errors_20260603_095141
+
+Verdict: `BLOCKED_B4_DAY3_R2_SELECTED_OPTION_FEATURE_SURFACES_PRESENT_BUT_STRATEGY_CONTRACT_ERRORS_EXIST_NO_PATCH_NO_ORDER`
+
+Paper remains blocked.
+
+If selected option is present in feature_state_json and family_frames_json but FeatureFamilyContractError persists, next route is a narrow static+runtime audit of strategy consumer schema expectations versus feature payload shape.

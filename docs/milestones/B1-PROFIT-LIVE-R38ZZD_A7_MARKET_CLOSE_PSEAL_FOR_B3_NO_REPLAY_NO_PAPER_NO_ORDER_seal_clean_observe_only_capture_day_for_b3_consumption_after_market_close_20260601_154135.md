@@ -1,0 +1,5 @@
+# B1-PROFIT-LIVE-R38ZZD_A7_MARKET_CLOSE_PSEAL_FOR_B3_NO_REPLAY_NO_PAPER_NO_ORDER_seal_clean_observe_only_capture_day_for_b3_consumption_after_market_close_20260601_154135
+
+Verdict: `SAFETY_BLOCKED_R38ZZD_PSEAL_REVIEW_REQUIRED`
+
+A7 market-close pseal attempted for B3 handoff. Paper remains blocked.

@@ -3744,6 +3744,196 @@ def _batch26o16_branch_key(family_id: str, branch_id: str) -> str:
     return f"{str(family_id).lower()}_{str(branch_id).lower()}"
 
 
+
+# B1_PROFIT_LIVE_R39WE_DYNAMIC_SCORE_SURFACE_ALIAS_PATCH_BEGIN
+# Additive score-surface publication only.
+# No threshold changes. No candidate forcing. No paper/live/order enablement.
+def _b1_profit_live_r39we_float(value, default=0.0):
+    try:
+        if value is None or value == "":
+            return float(default)
+        if isinstance(value, bool):
+            return 1.0 if value else 0.0
+        return float(value)
+    except Exception:
+        return float(default)
+
+def _b1_profit_live_r39we_bool(value):
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "ok", "pass", "passed"}
+
+def _b1_profit_live_r39we_clamp01(value):
+    v = _b1_profit_live_r39we_float(value, 0.0)
+    if v < 0.0:
+        return 0.0
+    if v > 1.0:
+        return 1.0
+    return v
+
+def _b1_profit_live_r39we_pick(mapping, *keys, default=None):
+    if not isinstance(mapping, dict):
+        return default
+    for key in keys:
+        if key in mapping and mapping.get(key) not in (None, ""):
+            return mapping.get(key)
+    return default
+
+def _b1_profit_live_r39we_score_bool(value, score):
+    return float(score) if _b1_profit_live_r39we_bool(value) else 0.0
+
+def _b1_profit_live_r39we_publish_aliases_on_surface(surface, family_id=None, branch_id=None):
+    if not isinstance(surface, dict):
+        return surface
+
+    fut = surface.get("futures_features")
+    if not isinstance(fut, dict):
+        fut = {}
+        surface["futures_features"] = fut
+
+    selected = surface.get("selected_features")
+    if not isinstance(selected, dict):
+        selected = {}
+
+    opt = surface.get("option_features")
+    if not isinstance(opt, dict):
+        opt = {}
+
+    side = str(branch_id or surface.get("branch_id") or surface.get("side") or "").upper()
+    fam = str(family_id or surface.get("family_id") or surface.get("doctrine_id") or "").upper()
+
+    setup = _b1_profit_live_r39we_float(_b1_profit_live_r39we_pick(surface, "setup_score", "trend_score", default=0.0), 0.0)
+    trend = abs(_b1_profit_live_r39we_float(_b1_profit_live_r39we_pick(fut, "trend_score", default=0.0), 0.0))
+    direction = abs(_b1_profit_live_r39we_float(_b1_profit_live_r39we_pick(fut, "direction_score", default=0.0), 0.0))
+    velocity = abs(_b1_profit_live_r39we_float(_b1_profit_live_r39we_pick(fut, "velocity_ratio", default=0.0), 0.0))
+    velocity_component = _b1_profit_live_r39we_clamp01(velocity if velocity <= 1.0 else velocity - 1.0)
+    weighted_ofi = abs(_b1_profit_live_r39we_float(_b1_profit_live_r39we_pick(fut, "weighted_ofi", default=0.0), 0.0))
+    weighted_persist = abs(_b1_profit_live_r39we_float(_b1_profit_live_r39we_pick(fut, "weighted_ofi_persist", default=0.0), 0.0))
+    event_rate = abs(_b1_profit_live_r39we_float(_b1_profit_live_r39we_pick(fut, "event_rate_spike_ratio", default=0.0), 0.0))
+    volume_norm = abs(_b1_profit_live_r39we_float(_b1_profit_live_r39we_pick(fut, "volume_norm", default=0.0), 0.0))
+    cvd_delta = abs(_b1_profit_live_r39we_float(_b1_profit_live_r39we_pick(fut, "cvd_delta", default=0.0), 0.0))
+
+    if side == "CALL":
+        vwap_aligned = _b1_profit_live_r39we_bool(_b1_profit_live_r39we_pick(fut, "vwap_alignment_call", default=False))
+        flow_ok = _b1_profit_live_r39we_bool(_b1_profit_live_r39we_pick(fut, "bullish_flow_ok", default=False))
+    elif side == "PUT":
+        vwap_aligned = _b1_profit_live_r39we_bool(_b1_profit_live_r39we_pick(fut, "vwap_alignment_put", default=False))
+        flow_ok = _b1_profit_live_r39we_bool(_b1_profit_live_r39we_pick(fut, "bearish_flow_ok", default=False))
+    else:
+        vwap_aligned = _b1_profit_live_r39we_bool(_b1_profit_live_r39we_pick(fut, "vwap_alignment_call", "vwap_alignment_put", default=False))
+        flow_ok = _b1_profit_live_r39we_bool(_b1_profit_live_r39we_pick(fut, "bullish_flow_ok", "bearish_flow_ok", default=False))
+
+    futures_impulse_score = max(
+        _b1_profit_live_r39we_clamp01(_b1_profit_live_r39we_pick(surface, "futures_impulse_score", default=0.0)),
+        _b1_profit_live_r39we_clamp01(_b1_profit_live_r39we_pick(fut, "futures_impulse_score", default=0.0)),
+        _b1_profit_live_r39we_clamp01(setup),
+        _b1_profit_live_r39we_clamp01(trend),
+        _b1_profit_live_r39we_clamp01(direction),
+        _b1_profit_live_r39we_clamp01(velocity_component),
+        _b1_profit_live_r39we_clamp01(weighted_ofi),
+        _b1_profit_live_r39we_clamp01(weighted_persist),
+        _b1_profit_live_r39we_clamp01(event_rate),
+        _b1_profit_live_r39we_clamp01(volume_norm),
+        _b1_profit_live_r39we_clamp01(cvd_delta),
+        _b1_profit_live_r39we_score_bool(vwap_aligned, 0.25),
+        _b1_profit_live_r39we_score_bool(flow_ok, 0.20),
+    )
+
+    breakout_score = max(
+        _b1_profit_live_r39we_clamp01(_b1_profit_live_r39we_pick(surface, "breakout_score", "breakout_trigger_score", default=0.0)),
+        _b1_profit_live_r39we_clamp01(_b1_profit_live_r39we_pick(fut, "breakout_score", "breakout_trigger_score", default=0.0)),
+        _b1_profit_live_r39we_clamp01(setup),
+        _b1_profit_live_r39we_clamp01(velocity_component),
+        _b1_profit_live_r39we_clamp01(event_rate),
+        _b1_profit_live_r39we_clamp01(weighted_ofi),
+        _b1_profit_live_r39we_score_bool(_b1_profit_live_r39we_pick(surface, "breakout_triggered", "breakout_trigger", default=False), 0.35),
+        _b1_profit_live_r39we_score_bool(_b1_profit_live_r39we_pick(surface, "breakout_accepted", "breakout_acceptance", default=False), 0.45),
+        _b1_profit_live_r39we_score_bool(_b1_profit_live_r39we_pick(surface, "shelf_valid", "breakout_shelf_valid", default=False), 0.15),
+        _b1_profit_live_r39we_score_bool(_b1_profit_live_r39we_pick(surface, "futures_bias_ok", default=False), 0.15),
+    )
+
+    pullback_resume_score = max(
+        _b1_profit_live_r39we_clamp01(_b1_profit_live_r39we_pick(surface, "pullback_resume_score", "resume_score", default=0.0)),
+        _b1_profit_live_r39we_clamp01(_b1_profit_live_r39we_pick(fut, "pullback_resume_score", "resume_score", default=0.0)),
+        _b1_profit_live_r39we_clamp01(setup),
+        _b1_profit_live_r39we_clamp01(trend),
+        _b1_profit_live_r39we_clamp01(direction),
+        _b1_profit_live_r39we_clamp01(weighted_persist),
+        _b1_profit_live_r39we_score_bool(_b1_profit_live_r39we_pick(surface, "resume_confirmed", "continuation_support", default=False), 0.35),
+    )
+
+    response_eff = _b1_profit_live_r39we_float(
+        _b1_profit_live_r39we_pick(selected, "response_efficiency", default=_b1_profit_live_r39we_pick(opt, "response_efficiency", default=_b1_profit_live_r39we_pick(fut, "response_efficiency", default=0.0))),
+        0.0,
+    )
+    opt_delta = abs(_b1_profit_live_r39we_float(
+        _b1_profit_live_r39we_pick(selected, "delta_3", default=_b1_profit_live_r39we_pick(opt, "delta_3", default=_b1_profit_live_r39we_pick(fut, "delta_3", default=0.0))),
+        0.0,
+    ))
+    tradability = _b1_profit_live_r39we_bool(surface.get("option_tradability_pass") or surface.get("tradability_ok"))
+    quote_present = _b1_profit_live_r39we_bool(_b1_profit_live_r39we_pick(selected, "quote_present", default=_b1_profit_live_r39we_pick(fut, "quote_present", default=False)))
+    book_present = _b1_profit_live_r39we_bool(_b1_profit_live_r39we_pick(selected, "book_present", default=_b1_profit_live_r39we_pick(fut, "book_present", default=False)))
+    fresh = _b1_profit_live_r39we_bool(_b1_profit_live_r39we_pick(selected, "fresh", default=_b1_profit_live_r39we_pick(fut, "fresh", default=False)))
+
+    option_confirmation_score = max(
+        _b1_profit_live_r39we_clamp01(_b1_profit_live_r39we_pick(surface, "option_confirmation_score", "option_response_score", "option_confirm_score", default=0.0)),
+        _b1_profit_live_r39we_clamp01(_b1_profit_live_r39we_pick(fut, "option_confirmation_score", "option_response_score", "option_confirm_score", default=0.0)),
+        _b1_profit_live_r39we_clamp01(response_eff),
+        _b1_profit_live_r39we_clamp01(opt_delta / 5.0),
+        _b1_profit_live_r39we_score_bool(tradability, 0.25),
+        _b1_profit_live_r39we_score_bool(quote_present, 0.10),
+        _b1_profit_live_r39we_score_bool(book_present, 0.10),
+        _b1_profit_live_r39we_score_bool(fresh, 0.10),
+    )
+
+    surface.setdefault("futures_impulse_score", futures_impulse_score)
+    surface.setdefault("breakout_score", breakout_score)
+    surface.setdefault("breakout_trigger_score", breakout_score)
+    surface.setdefault("pullback_resume_score", pullback_resume_score)
+    surface.setdefault("resume_score", pullback_resume_score)
+    surface.setdefault("option_confirmation_score", option_confirmation_score)
+    surface.setdefault("option_response_score", option_confirmation_score)
+    surface.setdefault("option_confirm_score", option_confirmation_score)
+
+    fut.setdefault("futures_impulse_score", futures_impulse_score)
+    fut.setdefault("breakout_score", breakout_score)
+    fut.setdefault("breakout_trigger_score", breakout_score)
+    fut.setdefault("pullback_resume_score", pullback_resume_score)
+    fut.setdefault("resume_score", pullback_resume_score)
+    fut.setdefault("option_confirmation_score", option_confirmation_score)
+
+    surface.setdefault("r39we_dynamic_score_aliases", {
+        "source": "existing_surface_fields_only",
+        "family_id": fam,
+        "branch_id": side,
+        "futures_impulse_score": futures_impulse_score,
+        "breakout_score": breakout_score,
+        "pullback_resume_score": pullback_resume_score,
+        "option_confirmation_score": option_confirmation_score,
+        "thresholds_changed": False,
+        "candidate_forced": False,
+    })
+    return surface
+
+def _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames):
+    if not isinstance(family_frames, dict):
+        return family_frames
+    for _r39we_key, _r39we_frame in list(family_frames.items()):
+        if not isinstance(_r39we_frame, dict):
+            continue
+        _r39we_surface = _r39we_frame.get("surface")
+        if isinstance(_r39we_surface, dict):
+            _b1_profit_live_r39we_publish_aliases_on_surface(
+                _r39we_surface,
+                family_id=_r39we_frame.get("family_id"),
+                branch_id=_r39we_frame.get("branch_id"),
+            )
+    return family_frames
+# B1_PROFIT_LIVE_R39WE_DYNAMIC_SCORE_SURFACE_ALIAS_PATCH_END
+
+
 def _batch26o16_surface_for_branch(
     family_surfaces: Mapping[str, Any],
     family_id: str,
@@ -3998,6 +4188,7 @@ class FeaturesService:
             "selected_option": selected,
         }
 
+        family_frames = _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames)
         hash_payload = {
             "frame_id": _safe_str(payload.get("frame_id")),
             "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
@@ -6764,6 +6955,7 @@ if "_BATCH26O16G_R2_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "Feat
                 "selected_option": selected,
             }
 
+            family_frames = _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames)
             hash_payload = {
                 "frame_id": _safe_str(payload.get("frame_id")),
                 "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
@@ -7045,6 +7237,7 @@ if "_BATCH26O16H_R2_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "Feat
                 "selected_option": selected,
             }
 
+            family_frames = _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames)
             hash_payload = {
                 "frame_id": _safe_str(payload.get("frame_id")),
                 "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
@@ -7206,6 +7399,7 @@ if "_BATCH26O17A_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "Feature
             "selected_option_rich": rich,
         }
 
+        family_frames = _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames)
         hash_payload = {
             "frame_id": _safe_str(payload.get("frame_id")),
             "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
@@ -7395,6 +7589,7 @@ if "_BATCH26O17B_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "Feature
             "selected_option": common_sanitized["selected_option"],
         }
 
+        family_frames = _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames)
         hash_payload = {
             "frame_id": _safe_str(payload.get("frame_id")),
             "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),

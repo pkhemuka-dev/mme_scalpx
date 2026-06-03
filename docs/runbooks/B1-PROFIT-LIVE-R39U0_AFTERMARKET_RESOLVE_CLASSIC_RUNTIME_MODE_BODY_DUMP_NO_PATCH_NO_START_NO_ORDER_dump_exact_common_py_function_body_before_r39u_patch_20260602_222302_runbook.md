@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39U0_AFTERMARKET_RESOLVE_CLASSIC_RUNTIME_MODE_BODY_DUMP_NO_PATCH_NO_START_NO_ORDER_dump_exact_common_py_function_body_before_r39u_patch_20260602_222302
+If PASS, apply R39U narrow common.py observe-only runtime-mode patch.

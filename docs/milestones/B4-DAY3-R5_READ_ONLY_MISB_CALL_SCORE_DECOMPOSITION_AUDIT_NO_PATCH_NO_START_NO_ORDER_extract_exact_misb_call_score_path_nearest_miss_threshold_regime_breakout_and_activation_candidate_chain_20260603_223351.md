@@ -1,0 +1,7 @@
+# B4-DAY3-R5_READ_ONLY_MISB_CALL_SCORE_DECOMPOSITION_AUDIT_NO_PATCH_NO_START_NO_ORDER_extract_exact_misb_call_score_path_nearest_miss_threshold_regime_breakout_and_activation_candidate_chain_20260603_223351
+
+Classification: `WARN_B4_DAY3_R5_SCORE_DECOMPOSITION_INCOMPLETE_REVIEW_RAW_NO_PATCH_NO_START_NO_ORDER`
+
+Read-only MISB CALL score decomposition audit completed.
+
+Paper remains blocked.

@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39W1_AFTERMARKET_SUPERVISOR_CHILD_ENV_AUDIT_NO_PATCH_NO_START_NO_ORDER_verify_capture_supervisor_preserves_b1_classic_runtime_observe_only_env_to_child_processes_20260602_223925
+If PASS, tomorrow can run pauto_start from shell with both env flags exported. If WARN, review raw before market.

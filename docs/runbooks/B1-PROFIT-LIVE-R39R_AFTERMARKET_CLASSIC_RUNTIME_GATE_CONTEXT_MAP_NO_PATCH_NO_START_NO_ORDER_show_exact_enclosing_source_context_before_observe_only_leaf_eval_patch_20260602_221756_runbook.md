@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39R_AFTERMARKET_CLASSIC_RUNTIME_GATE_CONTEXT_MAP_NO_PATCH_NO_START_NO_ORDER_show_exact_enclosing_source_context_before_observe_only_leaf_eval_patch_20260602_221756
+Review raw context before R39S patch plan.

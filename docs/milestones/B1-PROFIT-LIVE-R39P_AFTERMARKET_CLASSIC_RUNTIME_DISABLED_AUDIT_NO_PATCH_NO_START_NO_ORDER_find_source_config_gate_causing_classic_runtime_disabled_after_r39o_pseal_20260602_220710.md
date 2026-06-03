@@ -1,0 +1,5 @@
+# B1-PROFIT-LIVE-R39P_AFTERMARKET_CLASSIC_RUNTIME_DISABLED_AUDIT_NO_PATCH_NO_START_NO_ORDER_find_source_config_gate_causing_classic_runtime_disabled_after_r39o_pseal_20260602_220710
+
+Verdict: `PASS_R39P_CLASSIC_RUNTIME_DISABLED_SOURCE_AUDIT_CAPTURED_DIAGNOSTIC_GATE_LIKELY`
+
+Read-only audit for classic_runtime_disabled after pseal. Paper remains blocked.

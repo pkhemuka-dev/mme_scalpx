@@ -1,0 +1,7 @@
+# B1-PROFIT-LIVE-R38ZU_STRIP_REPAIR_METADATA_KEYS_BEFORE_FAMILY_CONTRACT_VALIDATE_NO_START_NO_STOP_NO_ORDER_remove_r38zb_r38zf_top_level_diagnostic_keys_from_strategy_consumer_exact_key_payload_20260601_100422
+
+Verdict: `PASS_R38ZU_PATCH_APPLIED_COMPILE_IMPORT_SAFETY_OK`
+
+Purpose: clear exact-key FeatureFamilyContractError caused by R38Z repair diagnostic metadata.
+
+Paper/live remains blocked.

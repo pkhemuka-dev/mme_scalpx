@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39T_AFTERMARKET_COMMON_RUNTIME_MODE_CONTEXT_PATCH_PLAN_NO_PATCH_NO_START_NO_ORDER_inspect_resolve_classic_runtime_mode_common_py_before_narrow_observe_only_patch_20260602_222135
+Review common.py context before R39U shared helper patch.

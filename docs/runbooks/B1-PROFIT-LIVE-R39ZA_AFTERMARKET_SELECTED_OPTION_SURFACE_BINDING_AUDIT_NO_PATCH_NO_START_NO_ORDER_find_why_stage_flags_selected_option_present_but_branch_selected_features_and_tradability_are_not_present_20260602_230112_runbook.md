@@ -1,0 +1,2 @@
+# B1-PROFIT-LIVE-R39ZA_AFTERMARKET_SELECTED_OPTION_SURFACE_BINDING_AUDIT_NO_PATCH_NO_START_NO_ORDER_find_why_stage_flags_selected_option_present_but_branch_selected_features_and_tradability_are_not_present_20260602_230112
+Review raw before any R39ZB patch. Do not patch FAILOVER_ACTIVE readiness directly.
