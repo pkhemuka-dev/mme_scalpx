@@ -68,3 +68,4 @@ bin/praw_capture_v31_loop
 bin/praw_capture_v31_once
 bin/praw_capture_v31_status
 bin/ptomorrow_v31_preflight
+bin/praw_capture_v31_init_tail
