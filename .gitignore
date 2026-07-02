@@ -42,3 +42,29 @@ ai_patch_runner/review_bundles/
 # Local oversized evidence/milestone files excluded from GitHub push
 docs/milestones/LANE-X-R37D_LIVE_SHADOW_CANDIDATE_AND_BLOCKER_WATCH_NO_ORDER_NO_PAPER_watch_same_session_live_shadow_candidates_near_candidates_hold_reasons_provider_tradability_blockers_without_order_paper_risk_execution_replay_20260615_093643.md
 docs/milestones/LANE-X-R37D-R2_ULTRACOMPACT_CANDIDATE_BLOCKER_FINALIZER_NO_START_NO_STOP_NO_PATCH_NO_ORDER_NO_PAPER_finish_candidate_blocker_watch_after_r37d_r1_paste_corruption_from_current_same_session_live_capture_20260615_100109.md
+
+# Repo hygiene: local generated captures/proofs/logs/backups
+$JSONL
+$LOG
+$PROOF
+$RAW
+$REPORT
+*.bak
+*.bak_*
+*_backup*
+*backup_*
+*.r*_backup*
+*bad_patch_copy*
+*.py.r*_backup*
+*.sh.bak_*
+*.sh.r*_backup*
+data/instruments/dhan/api_scrip_master_detailed.csv
+data/instruments/*.bak_*
+docs/runbooks/LANE-X-R37D_LIVE_SHADOW_CANDIDATE_AND_BLOCKER_WATCH_NO_ORDER_NO_PAPER_watch_same_session_live_shadow_candidates_near_candidates_hold_reasons_provider_tradability_blockers_without_order_paper_risk_execution_replay_20260615_093643_runbook.md
+
+# New V31 local trial helpers: do not commit until reviewed
+bin/praw_capture_v31.py
+bin/praw_capture_v31_loop
+bin/praw_capture_v31_once
+bin/praw_capture_v31_status
+bin/ptomorrow_v31_preflight
