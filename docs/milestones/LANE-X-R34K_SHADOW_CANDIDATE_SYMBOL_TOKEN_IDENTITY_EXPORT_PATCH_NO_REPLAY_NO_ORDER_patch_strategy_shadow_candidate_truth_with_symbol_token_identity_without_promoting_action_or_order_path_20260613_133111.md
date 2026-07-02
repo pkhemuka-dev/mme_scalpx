@@ -1,0 +1,20 @@
+# LANE-X-R34K_SHADOW_CANDIDATE_SYMBOL_TOKEN_IDENTITY_EXPORT_PATCH_NO_REPLAY_NO_ORDER_patch_strategy_shadow_candidate_truth_with_symbol_token_identity_without_promoting_action_or_order_path_20260613_133111
+
+classification: PASS_R34K_SYMBOL_TOKEN_IDENTITY_EXPORT_PATCHED_NO_REPLAY_NO_ORDER
+proof: `run/proofs/LANE-X-R34K_SHADOW_CANDIDATE_SYMBOL_TOKEN_IDENTITY_EXPORT_PATCH_NO_REPLAY_NO_ORDER_patch_strategy_shadow_candidate_truth_with_symbol_token_identity_without_promoting_action_or_order_path_20260613_133111.json`
+diff: `run/audits/LANE-X-R34K_SHADOW_CANDIDATE_SYMBOL_TOKEN_IDENTITY_EXPORT_PATCH_NO_REPLAY_NO_ORDER_patch_strategy_shadow_candidate_truth_with_symbol_token_identity_without_promoting_action_or_order_path_20260613_133111/strategy_diff_post.patch`
+static_assertions: `run/audits/LANE-X-R34K_SHADOW_CANDIDATE_SYMBOL_TOKEN_IDENTITY_EXPORT_PATCH_NO_REPLAY_NO_ORDER_patch_strategy_shadow_candidate_truth_with_symbol_token_identity_without_promoting_action_or_order_path_20260613_133111/static_assertions.json`
+
+## RCs
+- compile_pre_rc: 0
+- patch_rc: 0
+- compile_post_rc: 0
+- static_rc: 0
+
+## Safety
+- pre orders/risk/execution: 0 / 0 / 0
+- post orders/risk/execution: 0 / 0 / 0
+- post risk/execution proc: 0 / 0
+
+## Next
+Run R34K-R1 identity source smoke. Then rerun R34G/R34H/R34I before R34J.

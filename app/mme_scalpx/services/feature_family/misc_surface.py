@@ -299,7 +299,26 @@ def _batch26e_compression_box(
     width_max = _threshold_float(thresholds, "COMPRESSION_MAX_WIDTH_PCT", DEFAULT_COMPRESSION_WIDTH_MAX)
 
     explicit = high is not None and low is not None
-    valid = bool(explicit and count >= min_count and width_pct >= width_min and width_pct <= width_max)
+    # R38DK_MISC_COMPRESSION_DIAG_ENV_PATCH_NO_FORCE_NO_ORDER
+    # Default behavior is unchanged. These env hooks only allow explicit
+    # future diagnostics/tuning without another source edit. They do not
+    # force candidates, do not bypass breakout/retest/resume gates, and do
+    # not touch risk/execution/order paths.
+    _r38dk_env_min = _safe_float_or_none(__import__("os").environ.get("SCALPX_MISC_COMPRESSION_WIDTH_MIN_PCT", ""))
+    _r38dk_env_max = _safe_float_or_none(__import__("os").environ.get("SCALPX_MISC_COMPRESSION_WIDTH_MAX_PCT", ""))
+    _r38dk_env_count = _safe_float_or_none(__import__("os").environ.get("SCALPX_MISC_COMPRESSION_MIN_COUNT", ""))
+    _r38dk_width_min_effective = _r38dk_env_min if _r38dk_env_min is not None else width_min
+    _r38dk_width_max_effective = _r38dk_env_max if _r38dk_env_max is not None else width_max
+    _r38dk_min_count_effective = int(_r38dk_env_count) if _r38dk_env_count is not None else min_count
+    _r38dk_width_below_min = bool(width_pct < _r38dk_width_min_effective)
+    _r38dk_width_above_max = bool(width_pct > _r38dk_width_max_effective)
+    _r38dk_count_below_min = bool(count < _r38dk_min_count_effective)
+    valid = bool(
+        explicit
+        and count >= _r38dk_min_count_effective
+        and width_pct >= _r38dk_width_min_effective
+        and width_pct <= _r38dk_width_max_effective
+    )
     missing_reason = (
         ""
         if valid
@@ -316,6 +335,17 @@ def _batch26e_compression_box(
         "compression_mid": mid,
         "compression_width": width,
         "compression_width_pct": width_pct,
+        # R38DK_MISC_COMPRESSION_DIAG_ENV_PATCH_NO_FORCE_NO_ORDER
+        "compression_width_min_threshold": _r38dk_width_min_effective,
+        "compression_width_max_threshold": _r38dk_width_max_effective,
+        "compression_min_count_threshold": _r38dk_min_count_effective,
+        "compression_width_below_min": _r38dk_width_below_min,
+        "compression_width_above_max": _r38dk_width_above_max,
+        "compression_count_below_min": _r38dk_count_below_min,
+        "compression_width_env_override_active": bool(_r38dk_env_min is not None or _r38dk_env_max is not None or _r38dk_env_count is not None),
+        "compression_width_original_min_threshold": width_min,
+        "compression_width_original_max_threshold": width_max,
+        "compression_original_min_count_threshold": min_count,
         "compression_snapshot_count": count,
         "compression_valid": valid,
         "compression_missing_reason": missing_reason,
@@ -541,6 +571,21 @@ def build_misc_branch_surface(
     compression_valid = _safe_bool(_pick(compression_box, "compression_valid"), False)
     prebreak_proximity_ok = prebreak_distance <= prebreak_proximity_tol
     directional_bias_ok = _directional_ok(fut_delta, branch_id) and _directional_ok(fut_ema9_slope, branch_id)
+
+    # R38AU_R5_MISC_COMPRESSION_SHADOW_BRIDGE
+    # Evidence from R38AU-R2/R3 showed valid compression boxes existed, but the
+    # production compression_detection formula stayed false. These shadow fields
+    # expose whether the box itself is usable without changing the production
+    # compression_detection, candidate route, risk route, execution route, or orders.
+    compression_snapshot_count_value = _safe_float(_pick(compression_box, "compression_snapshot_count"), 0.0)
+    compression_width_ok_shadow = bool(
+        compression_valid
+        and compression_snapshot_count_value >= 8.0
+        and compression_width_pct > 0.0
+        and compression_width_pct <= 0.13
+    )
+    compression_detected_shadow = bool(compression_width_ok_shadow and prebreak_proximity_ok)
+
     compression_detection = (
         compression_valid
         and prebreak_proximity_ok
@@ -737,8 +782,12 @@ def build_misc_branch_surface(
         "compression_width": compression_width,
         "compression_width_pct": compression_width_pct,
         "compression_snapshot_count": _pick(compression_box, "compression_snapshot_count"),
+        "compression_snapshot_count_value": compression_snapshot_count_value,
         "compression_missing_reason": _pick(compression_box, "compression_missing_reason"),
         "compression_valid": compression_valid,
+        "compression_width_ok_shadow": compression_width_ok_shadow,
+        "compression_detected_shadow": compression_detected_shadow,
+        "compression_bridge_patch_version": "R38AU_R5_SHADOW_ONLY_NO_ROUTE_NO_ORDER",
         "prebreak_distance": prebreak_distance,
         "prebreak_proximity_ok": prebreak_proximity_ok,
         "directional_bias_ok": directional_bias_ok,

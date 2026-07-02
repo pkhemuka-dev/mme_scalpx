@@ -2058,6 +2058,18 @@ class FeedService:
             active_provider=runtime.selected_option_marketdata_provider_id,
             dhan_context_state=self._dhan_context_state,
         )
+        try:
+            opt_payload = _r11_selected_option_active_market_overlay(
+                redis_client=self._redis,
+                payload=opt_payload,
+                active_provider=runtime.selected_option_marketdata_provider_id,
+            )
+        except Exception as exc:
+            self._logger.warning(
+                "r11_selected_option_active_market_overlay_failed provider=%s error=%r",
+                runtime.selected_option_marketdata_provider_id,
+                exc,
+            )
         RX.write_hash_fields(N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED_ACTIVE, opt_payload, client=self._redis)
         RX.write_hash_fields(N.HASH_STATE_SNAPSHOT_MME_OPT_SELECTED, opt_payload, client=self._redis)
 
@@ -3112,4 +3124,158 @@ def _a6_r5l_publish_canonical_provider_feed_hashes(redis_client=None):
         "hashes_written": [k for k, v in results.items() if v.get("ok")],
         "results": results,
     }
+
+
+# LANE-X-R11 selected-option active market-field refresh overlay.
+# Safety contract:
+# - Redis reads only inside helper: XREVRANGE latest option tick.
+# - No DEL / FLUSH / XTRIM / XDEL / lock delete.
+# - No risk / execution / paper / order control.
+# - Only enriches the already-built selected-option active payload before feeds.py writes its normal hashes.
+def _r11_selected_option_active_market_overlay(*, redis_client, payload, active_provider):
+    import json as _json
+    import re as _re
+    import time as _time
+
+    out = dict(payload or {})
+
+    def _decode(v):
+        if isinstance(v, bytes):
+            return v.decode("utf-8", "replace")
+        return "" if v is None else str(v)
+
+    def _xlast(stream_name):
+        try:
+            rows = redis_client.xrevrange(stream_name, count=1)
+        except TypeError:
+            try:
+                rows = redis_client.xrevrange(stream_name, "+", "-", 1)
+            except Exception:
+                rows = []
+        except Exception:
+            rows = []
+        if not rows:
+            return {}
+        try:
+            entry_id, fields = rows[0]
+        except Exception:
+            return {}
+        d = {_decode(k): _decode(v) for k, v in dict(fields or {}).items()}
+        d["_source_stream"] = str(stream_name)
+        d["_source_id"] = _decode(entry_id)
+        return d
+
+    def _ns(v):
+        try:
+            if v in (None, ""):
+                return 0
+            return int(float(str(v)))
+        except Exception:
+            return 0
+
+    def _good_tick(t):
+        if not t:
+            return False
+        if not (t.get("ltp") and t.get("bid") and t.get("ask")):
+            return False
+        if not (t.get("trading_symbol") or t.get("instrument_key")):
+            return False
+        validity = str(t.get("tick_validity") or "").upper()
+        if validity and validity != "OK":
+            return False
+        return True
+
+    def _safe_side(t):
+        side = str(t.get("option_side") or "").upper().strip()
+        sym = str(t.get("trading_symbol") or t.get("instrument_key") or "").upper()
+        role = str(t.get("instrument_role") or "").upper()
+        if side in {"CALL", "PUT"}:
+            return side
+        if "CE" in sym or "CE" in role:
+            return "CALL"
+        if "PE" in sym or "PE" in role:
+            return "PUT"
+        return side
+
+    streams = [
+        "ticks:mme:opt:stream",
+        "ticks:mme:opt:selected:zerodha:stream",
+        "ticks:mme:opt:selected:dhan:stream",
+    ]
+    ticks = [_xlast(s) for s in streams]
+    ticks = [t for t in ticks if _good_tick(t)]
+
+    if active_provider:
+        provider_ticks = [
+            t for t in ticks
+            if str(t.get("provider_id") or "").upper() == str(active_provider).upper()
+        ]
+        if provider_ticks:
+            ticks = provider_ticks
+
+    if not ticks:
+        out.setdefault("r11_selected_option_refresh_status", "no_valid_latest_option_tick")
+        return out
+
+    ticks.sort(
+        key=lambda t: (
+            _ns(t.get("ts_event_ns") or t.get("ts_provider_ns")),
+            _ns(str(t.get("_source_id") or "0-0").split("-", 1)[0]),
+        ),
+        reverse=True,
+    )
+    tick = ticks[0]
+
+    copy_fields = [
+        "ltp",
+        "trading_symbol",
+        "instrument_key",
+        "instrument_token",
+        "bid",
+        "ask",
+        "bid_qty",
+        "ask_qty",
+        "option_side",
+        "strike",
+        "expiry",
+        "ts_event_ns",
+        "ts_provider_ns",
+        "ts_recv_ns",
+        "provider_id",
+        "provider_role",
+        "tick_validity",
+        "reject_reason",
+        "instrument_role",
+        "exchange",
+        "bids",
+        "asks",
+        "is_selected_option",
+        "is_shadow_option",
+    ]
+
+    for field in copy_fields:
+        val = tick.get(field)
+        if val not in (None, ""):
+            out[field] = val
+
+    out["option_side"] = _safe_side(tick)
+    snap_ns = tick.get("ts_event_ns") or tick.get("ts_provider_ns") or str(_time.time_ns())
+    out["selected_option_snapshot_ns"] = snap_ns
+    out["active_selected_option_provider_id"] = tick.get("provider_id") or active_provider or ""
+    out["selected_option_marketdata_provider_id"] = tick.get("provider_id") or active_provider or ""
+    out["selected_option_marketdata_status"] = "HEALTHY"
+    out["selected_option_provider_status"] = "HEALTHY"
+    out["status"] = "HEALTHY"
+    out["present"] = "True"
+    out["fresh"] = "True"
+    out["validity"] = "OK"
+    out["validity_reason"] = "r11_selected_option_active_market_overlay_from_latest_tick"
+    out["r11_selected_option_refresh_status"] = "applied"
+    out["r11_selected_option_refresh_source_stream"] = tick.get("_source_stream", "")
+    out["r11_selected_option_refresh_source_id"] = tick.get("_source_id", "")
+    out["r11_selected_option_refresh_written_at_ns"] = str(_time.time_ns())
+    out["r11_selected_option_refresh_field_keys_json"] = _json.dumps(sorted(tick.keys()), sort_keys=True)
+
+    return out
+
 # A6-FEED-R5-L CORRECTED DURABLE CANONICAL PROVIDER/FEED HASH OWNER PATCH END

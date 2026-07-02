@@ -693,7 +693,45 @@ class MonitorService:
             client=self._redis,
         )
         if not ok:
-            raise MonitorError("monitor singleton lock refresh failed")
+            # R9I_MONITOR_LOCK_SAFE_REACQUIRE
+            # Redis lock refresh can fail when the key expired/vanished under pressure.
+            # Reacquire only if absent, or extend only if still same owner. Never steal.
+            owner = _safe_str(self._redis.get(N.KEY_LOCK_MONITOR))
+            reacquired = False
+
+            if owner == "":
+                try:
+                    reacquired = bool(
+                        self._redis.set(
+                            N.KEY_LOCK_MONITOR,
+                            self._lock_owner,
+                            nx=True,
+                            px=int(self.config.lock_ttl_ms),
+                        )
+                    )
+                except Exception:
+                    reacquired = False
+            elif owner == self._lock_owner:
+                try:
+                    reacquired = bool(
+                        self._redis.pexpire(
+                            N.KEY_LOCK_MONITOR,
+                            int(self.config.lock_ttl_ms),
+                        )
+                    )
+                except Exception:
+                    reacquired = False
+
+            if not reacquired:
+                raise MonitorError("monitor singleton lock refresh failed")
+
+            self._owns_lock = True
+            with contextlib.suppress(Exception):
+                self.log.warning(
+                    "r9i_monitor_lock_reacquired_or_extended=true previous_owner=%s owner=%s no_order=true",
+                    owner,
+                    self._lock_owner,
+                )
         self._last_lock_refresh_ns = now_ns
 
     def _release_lock(self) -> None:
@@ -916,7 +954,11 @@ class MonitorService:
                 f"position:{position.position_side}:entry_mode={position.entry_mode or N.ENTRY_MODE_UNKNOWN}"
             )
 
-        runtime_mode = _safe_str(runtime_state.get("runtime_mode"))
+        runtime_mode = _safe_str(
+
+            runtime_state.get("effective_runtime_mode") or runtime_state.get("runtime_mode")
+
+        )
         if runtime_mode:
             summary_items.append(f"runtime_mode={runtime_mode}")
 
@@ -924,6 +966,11 @@ class MonitorService:
 
         diagnostics = {
             "services_observed": len(services),
+            "runtime_mode_effective": runtime_mode,
+            "configured_runtime_mode": _safe_str(runtime_state.get("configured_runtime_mode")),
+            "observe_only_effective": _safe_str(runtime_state.get("observe_only_effective")),
+            "live_orders_allowed_effective": _safe_str(runtime_state.get("live_orders_allowed_effective")),
+            "broker_orders_allowed_effective": _safe_str(runtime_state.get("broker_orders_allowed_effective")),
             "execution_mode": execution_mode,
             "control_mode": control_mode,
             "risk_veto_entries": risk_veto_entries,

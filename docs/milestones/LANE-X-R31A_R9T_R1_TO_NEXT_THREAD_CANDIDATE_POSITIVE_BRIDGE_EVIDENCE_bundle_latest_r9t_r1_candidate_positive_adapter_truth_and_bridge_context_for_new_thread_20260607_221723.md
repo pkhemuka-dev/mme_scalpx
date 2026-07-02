@@ -1,0 +1,22 @@
+# LANE-X-R31A_R9T_R1_TO_NEXT_THREAD_CANDIDATE_POSITIVE_BRIDGE_EVIDENCE_bundle_latest_r9t_r1_candidate_positive_adapter_truth_and_bridge_context_for_new_thread_20260607_221723
+
+classification: PASS_LANE-X-R31A_R9T_R1_TO_NEXT_THREAD_CANDIDATE_POSITIVE_BRIDGE_EVIDENCE_BUNDLE_CREATED_NO_ORDER
+
+- redis_ok: 1
+- orders: 0
+- risk_stream: 0
+- execution_stream: 0
+- exec_stream: 0
+- replay_proc: 0
+- risk_proc: 0
+- execution_proc: 0
+- safe: 1
+- bundle: `run/evidence_bundles/LANE-X-R31A_R9T_R1_TO_NEXT_THREAD_CANDIDATE_POSITIVE_BRIDGE_EVIDENCE_bundle_latest_r9t_r1_candidate_positive_adapter_truth_and_bridge_context_for_new_thread_20260607_221723.tar.gz`
+- sha: `run/evidence_bundles/LANE-X-R31A_R9T_R1_TO_NEXT_THREAD_CANDIDATE_POSITIVE_BRIDGE_EVIDENCE_bundle_latest_r9t_r1_candidate_positive_adapter_truth_and_bridge_context_for_new_thread_20260607_221723.tar.gz.sha256`
+- manifest: `run/evidence_bundles/LANE-X-R31A_R9T_R1_TO_NEXT_THREAD_CANDIDATE_POSITIVE_BRIDGE_EVIDENCE_bundle_latest_r9t_r1_candidate_positive_adapter_truth_and_bridge_context_for_new_thread_20260607_221723_manifest.txt`
+- filelist: `run/evidence_bundles/LANE-X-R31A_R9T_R1_TO_NEXT_THREAD_CANDIDATE_POSITIVE_BRIDGE_EVIDENCE_bundle_latest_r9t_r1_candidate_positive_adapter_truth_and_bridge_context_for_new_thread_20260607_221723_filelist.txt`
+
+Use this bundle in the new ChatGPT thread as the prime source of truth.
+
+Next command in new thread should be:
+LANE-X-R31A-R9T-R2_REPLAY_BRIDGE_VS_DIRECT_ADAPTER_CANDIDATE_FIELD_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER

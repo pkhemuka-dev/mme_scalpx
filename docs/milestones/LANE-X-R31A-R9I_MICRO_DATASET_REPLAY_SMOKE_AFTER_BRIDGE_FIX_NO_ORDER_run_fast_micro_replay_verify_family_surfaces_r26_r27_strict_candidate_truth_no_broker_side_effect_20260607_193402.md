@@ -1,0 +1,35 @@
+# LANE-X-R31A-R9I_MICRO_DATASET_REPLAY_SMOKE_AFTER_BRIDGE_FIX_NO_ORDER_run_fast_micro_replay_verify_family_surfaces_r26_r27_strict_candidate_truth_no_broker_side_effect_20260607_193402
+
+classification: REVIEW_LANE_X_R31A_R9I_MICRO_REPLAY_SMOKE_NEEDS_INSPECTION_NO_ORDER
+
+- pre_safe: 1
+- dataset_root: `run/replay/staging/LANE-X-R31A-R9H_MICRO_REPLAY_DATASET_SLICE_BUILD_NO_PATCH_NO_REPLAY_NO_ORDER_build_tiny_dataset_slice_for_fast_family_bridge_replay_smoke_without_touching_source_dataset_20260607_193229_micro_dataset`
+- runroot: `run/replay/lane_x_r31a_r9i/LANE-X-R31A-R9I_MICRO_DATASET_REPLAY_SMOKE_AFTER_BRIDGE_FIX_NO_ORDER_run_fast_micro_replay_verify_family_surfaces_r26_r27_strict_candidate_truth_no_broker_side_effect_20260607_193402`
+- outdir: `run/replay/lane_x_r31a_r9i/LANE-X-R31A-R9I_MICRO_DATASET_REPLAY_SMOKE_AFTER_BRIDGE_FIX_NO_ORDER_run_fast_micro_replay_verify_family_surfaces_r26_r27_strict_candidate_truth_no_broker_side_effect_20260607_193402/replay_locked_single_day_lane-x-r31a-r9i_micro_dataset_replay_smoke_after_bridge_fix_no_order_run_fast_micro_replay_verify_family_surfaces_r26_r27_strict_candidate_truth_no_broker_side_effect_20260607_193402_20260607_140403_9091c0aa`
+- replay_started: 1
+- replay_rc: 0
+- smoke_rc: 0
+- feature_rows: 12000
+- strategy_rows: 12000
+- feature_family_rows: 12000
+- feature_r26_rows: 6000
+- feature_r27_rows: 6000
+- adapter_invoked_rows: 12000
+- candidate_report_count: 120000
+- surface_available_count: 120000
+- candidate_present_raw_true_count: 120000
+- candidate_present_true_count: 211
+- strict_candidate_count: 211
+- post_orders: 0
+- post_risk_stream: 0
+- post_execution_stream: 0
+- replay_log: `run/logs/LANE-X-R31A-R9I_MICRO_DATASET_REPLAY_SMOKE_AFTER_BRIDGE_FIX_NO_ORDER_run_fast_micro_replay_verify_family_surfaces_r26_r27_strict_candidate_truth_no_broker_side_effect_20260607_193402_replay.log`
+- smoke_json: `run/audits/LANE-X-R31A-R9I_MICRO_DATASET_REPLAY_SMOKE_AFTER_BRIDGE_FIX_NO_ORDER_run_fast_micro_replay_verify_family_surfaces_r26_r27_strict_candidate_truth_no_broker_side_effect_20260607_193402_artifact_smoke.json`
+- smoke_txt: `run/audits/LANE-X-R31A-R9I_MICRO_DATASET_REPLAY_SMOKE_AFTER_BRIDGE_FIX_NO_ORDER_run_fast_micro_replay_verify_family_surfaces_r26_r27_strict_candidate_truth_no_broker_side_effect_20260607_193402_artifact_smoke.txt`
+
+Interpretation:
+- PASS means the bridge issue is fixed in completed replay artifacts.
+- It still does not prove profitability.
+- Next after PASS: blocker/opportunity distribution, then research shadow PnL.
+
+Boundary: offline micro replay smoke only; no broker order, no paper/live, no risk/execution service start, no threshold tuning, no candidate forcing.

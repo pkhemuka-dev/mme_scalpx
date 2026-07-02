@@ -1,0 +1,18 @@
+# LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011
+
+Observe-only capture restart/reuse after stale tape completed.
+
+Proof:
+- run/proofs/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011.json
+
+Report:
+- run/audits/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011_report.md
+
+Safety:
+- no source patch
+- no replay
+- no broker order
+- no paper/live
+- no risk/execution start
+- no Redis delete
+- no lock delete

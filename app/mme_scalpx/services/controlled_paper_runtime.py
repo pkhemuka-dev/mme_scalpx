@@ -17,7 +17,7 @@ POSITION_GUARD = PROJECT_ROOT / "run/proofs/controlled_paper_enablement_position
 
 ENV_FLAG = "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"
 ENV_ACK = "SCALPX_CONTROLLED_PAPER_SCOPE_ACK"
-ACK_VALUE = "I_ACCEPT_MIST_CALL_1LOT_PAPER_ONLY"
+ACK_VALUE = "I ACKNOWLEDGE CONTROLLED PAPER ONLY: NO REAL LIVE, NO BROKER ORDER, NO REAL MONEY, ONE APPROVED SCOPE ONLY, POSITION MUST START FLAT"
 
 
 @dataclass(frozen=True)
@@ -242,15 +242,21 @@ def controlled_execution_entry_allowed() -> bool:
     """
     Fail-closed execution-entry arming contract.
 
-    Current safety state:
-    - observe_only / HOLD-report-only remains default
-    - paper_armed is blocked
-    - real live trading is blocked
-
-    This function intentionally returns False in Batch 26B.
-    Any future change to True requires a separate explicit proof batch.
+    R38KG:
+    Allow execution ENTRY only when the controlled-paper truth contract is enabled.
+    This remains paper-only and still requires:
+    - exact official controlled-paper env ACK
+    - safe entry window
+    - enablement yaml
+    - enablement/prep/provider/flat-position proofs
+    - real-live false
+    - real-orders false
+    - selected MIST CALL one-lot paper scope
     """
-    return False
+    try:
+        return bool(controlled_paper_truth(ignore_time_gate=False).enabled)
+    except Exception:
+        return False
 # END BATCH26B_CONTROLLED_EXECUTION_ENTRY_ARMING_CONTRACT
 
 # --- BEGIN LANE A6-R3 CONTROLLED PAPER SANDBOX ROUTE ---

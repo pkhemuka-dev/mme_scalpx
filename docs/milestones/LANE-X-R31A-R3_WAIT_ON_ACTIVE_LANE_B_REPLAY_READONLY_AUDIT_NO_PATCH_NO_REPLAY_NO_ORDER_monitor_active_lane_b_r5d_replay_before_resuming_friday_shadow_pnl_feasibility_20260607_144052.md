@@ -1,0 +1,21 @@
+# LANE-X-R31A-R3_WAIT_ON_ACTIVE_LANE_B_REPLAY_READONLY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_monitor_active_lane_b_r5d_replay_before_resuming_friday_shadow_pnl_feasibility_20260607_144052
+
+classification: REVIEW_LANE_X_R31A_R3_ACTIVE_LANE_B_REPLAY_STILL_RUNNING_WAIT_NO_PATCH_NO_ORDER
+
+- pid_present_t0: 2
+- pid_present_t30: 2
+- orders: 0
+- risk_stream: 0
+- execution_stream: 0
+- runroot: `run/replay/lane_b_r5d/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907/baseline_pre_r27e_r27g`
+
+Evidence:
+- process_t0: `run/audits/LANE-X-R31A-R3_WAIT_ON_ACTIVE_LANE_B_REPLAY_READONLY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_monitor_active_lane_b_r5d_replay_before_resuming_friday_shadow_pnl_feasibility_20260607_144052_process_t0.txt`
+- process_t30: `run/audits/LANE-X-R31A-R3_WAIT_ON_ACTIVE_LANE_B_REPLAY_READONLY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_monitor_active_lane_b_r5d_replay_before_resuming_friday_shadow_pnl_feasibility_20260607_144052_process_t30.txt`
+- runroot_audit: `run/audits/LANE-X-R31A-R3_WAIT_ON_ACTIVE_LANE_B_REPLAY_READONLY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_monitor_active_lane_b_r5d_replay_before_resuming_friday_shadow_pnl_feasibility_20260607_144052_lane_b_r5d_runroot_audit.txt`
+
+Decision:
+- If still running: wait; do not run R31A.
+- If gone: resume with R31A-R4 short feasibility audit.
+
+Boundary: no patch, no replay started by this batch, no order, no paper/live, no risk/execution.

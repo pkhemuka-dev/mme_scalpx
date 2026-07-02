@@ -721,6 +721,53 @@ def build_misr_branch_surface(
         "runtime_mode_surface": mode,
         "active_zone": active_zone_map,
         "active_zone_valid": active_zone_valid,
+        # R38DL_MISR_TRAP_ZONE_DIAG_PATCH_NO_FORCE_NO_ORDER
+        # Diagnostic-only: explains active_trap_zone_selection failures.
+        # Does not relax MISR gates, does not force candidates, and does not touch
+        # risk/execution/order paths.
+        "misr_trap_zone_diag_patch": "R38DL_MISR_TRAP_ZONE_DIAG_PATCH_NO_FORCE_NO_ORDER",
+        "misr_trap_zone_failure_reason": (
+            "active_zone_missing"
+            if not bool(locals().get("active_zone_valid", False))
+            else "trap_event_id_missing"
+            if not bool(locals().get("trap_event_id_valid", False))
+            else "fake_break_missing"
+            if not bool(locals().get("fake_break", False))
+            else "absorption_missing"
+            if not bool(locals().get("absorption", False))
+            else "range_reentry_missing"
+            if not bool(locals().get("range_reentry", False))
+            else "flow_flip_missing"
+            if not bool(locals().get("flow_flip", False))
+            else "hold_proof_missing"
+            if not bool(locals().get("hold_proof", False))
+            else "reversal_impulse_missing"
+            if not bool(locals().get("reversal_impulse", False))
+            else "trap_zone_inputs_present"
+        ),
+        "misr_trap_zone_diag": {
+            "active_zone_present": bool(locals().get("active_zone")),
+            "active_zone_valid": bool(locals().get("active_zone_valid", False)),
+            "trap_zone_level": locals().get("trap_zone_level"),
+            "fake_break_distance": locals().get("fake_break_distance"),
+            "fake_break_start_ts_ms": locals().get("fake_break_start_ts_ms"),
+            "fake_break_extreme_ts_ms": locals().get("fake_break_extreme_ts_ms"),
+            "fake_break_timestamps_valid": bool(locals().get("fake_break_timestamps_valid", False)),
+            "trap_event_id": locals().get("trap_event_id"),
+            "trap_event_id_valid": bool(locals().get("trap_event_id_valid", False)),
+            "fake_break": bool(locals().get("fake_break", False)),
+            "absorption": bool(locals().get("absorption", False)),
+            "absorption_elapsed_sec": locals().get("absorption_elapsed_sec"),
+            "range_reentry": bool(locals().get("range_reentry", False)),
+            "flow_flip": bool(locals().get("flow_flip", False)),
+            "hold_proof": bool(locals().get("hold_proof", False)),
+            "hold_proof_elapsed_sec": locals().get("hold_proof_elapsed_sec"),
+            "hold_inside_band": bool(locals().get("hold_inside_band", False)),
+            "no_mans_land_cleared": bool(locals().get("no_mans_land_cleared", False)),
+            "reversal_impulse": bool(locals().get("reversal_impulse", False)),
+            "zone_quality": locals().get("zone_quality"),
+            "absorption_window_sec": locals().get("absorption_window_sec"),
+        },
         "trap_zone_level": trap_zone_level,
         "fake_break_distance": fake_break_distance,
         "fake_break_start_ts_ms": fb_start_ms,

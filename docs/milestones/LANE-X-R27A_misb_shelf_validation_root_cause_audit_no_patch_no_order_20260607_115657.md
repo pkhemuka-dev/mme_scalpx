@@ -1,0 +1,284 @@
+# R27A MISB Shelf Validation Root-Cause Audit
+
+## Inputs
+- csvs: ['run/audits/LANE-X-R10_rolling_nearest_miss_sampler_20260604_100336_samples.csv', 'run/audits/LANE-X-R11_final_live_close_window_sampler_20260604_152512_samples.csv']
+- r25n_report: run/audits/LANE-X-R25N_shadow_opportunity_snapshot_freeze_no_patch_no_order_20260605_134052_report.txt
+- r15_report: run/audits/LANE-X-R15_misb_shelf_width_distribution_audit_no_patch_no_replay_no_order_20260604_203827_report.md
+- total_misb_csv_rows: 48
+
+## MISB CALL
+- rows: 24
+- score_stats: {'n': 24, 'min': -0.19, 'max': -0.19, 'mean': -0.19, 'median': -0.19}
+- shelf_width_pct_stats: {'n': 12, 'min': 0.0, 'max': 0.06812627204523584, 'mean': 0.0450280493779027, 'median': 0.047268347608321576}
+- shelf_count_stats: {'n': 24, 'min': 1.0, 'max': 18.0, 'mean': 14.958333333333334, 'median': 16.0}
+- failed_stage_counts: {'shelf_validation': 24}
+- blocker_counts: {'shelf_width_out_of_bounds': 23, 'missing_explicit_shelf': 1}
+- shelf_missing_counts: {'shelf_width_out_of_bounds': 23, 'missing_explicit_shelf': 1}
+- activation_reason_counts: {'view_data_invalid': 4, 'no_candidate': 20}
+
+## MISB PUT
+- rows: 24
+- score_stats: {'n': 24, 'min': 0.31, 'max': 0.31, 'mean': 0.31, 'median': 0.31}
+- shelf_width_pct_stats: {'n': 12, 'min': 0.0, 'max': 0.06812627204523584, 'mean': 0.0450280493779027, 'median': 0.047268347608321576}
+- shelf_count_stats: {'n': 24, 'min': 1.0, 'max': 18.0, 'mean': 14.958333333333334, 'median': 16.0}
+- failed_stage_counts: {'shelf_validation': 24}
+- blocker_counts: {'shelf_width_out_of_bounds': 23, 'missing_explicit_shelf': 1}
+- shelf_missing_counts: {'shelf_width_out_of_bounds': 23, 'missing_explicit_shelf': 1}
+- activation_reason_counts: {'view_data_invalid': 4, 'no_candidate': 20}
+
+## Day-5 shadow report MISB clues
+- MIST | PUT | 0.6600000000000001 | 0.0 | None | shadow_strong_near_candidate | futures_impulse | 
+- MISB | PUT | 0.46 | 0.0 | None | shadow_medium_near_candidate | shelf_validation | 
+- MISB | CALL | -0.009999999999997455 | 0.0 | None |  | shelf_validation | 
+-       "shadow_band": "shadow_strong_near_candidate",
+-       "failed_stage": "shelf_validation",
+-       "family": "MISB",
+-       "failed_stage": "shelf_validation",
+-       "family": "MISB",
+-       "shadow_band": "shadow_medium_near_candidate",
+-       "shadow_medium_near_candidate": 1,
+-       "shadow_strong_near_candidate": 1
+-       "MISB:PUT": 1,
+-     "near_candidate_count": 2,
+-         "shadow_band": "shadow_strong_near_candidate",
+-         "failed_stage": "shelf_validation",
+-         "family": "MISB",
+-         "shadow_band": "shadow_medium_near_candidate",
+-         "failed_stage": "shelf_validation",
+-         "family": "MISB",
+
+## Prior MISB shelf distribution report clues
+- # MISB Shelf Width Distribution Audit
+- ## MISB CALL
+- - shelf_n_stats: {'n': 24, 'min': 1.0, 'max': 18.0, 'mean': 14.958333333333334}
+- - shelf_width_pct_stats: {'n': 12, 'min': 0.0, 'max': 0.06812627204523584, 'mean': 0.0450280493779027}
+- - shelf_src_counts: Counter({'micro_shelf': 24})
+- - shelf_missing_counts: Counter({'shelf_width_out_of_bounds': 23, 'missing_explicit_shelf': 1})
+- - failed_stage_counts: Counter({'shelf_validation': 24})
+- ## MISB PUT
+- - shelf_n_stats: {'n': 24, 'min': 1.0, 'max': 18.0, 'mean': 14.958333333333334}
+- - shelf_width_pct_stats: {'n': 12, 'min': 0.0, 'max': 0.06812627204523584, 'mean': 0.0450280493779027}
+- - shelf_src_counts: Counter({'micro_shelf': 24})
+- - shelf_missing_counts: Counter({'shelf_width_out_of_bounds': 23, 'missing_explicit_shelf': 1})
+- - failed_stage_counts: Counter({'shelf_validation': 24})
+- - DEFAULT_SHELF_WIDTH_MIN:
+-   - L51: DEFAULT_SHELF_WIDTH_MIN: Final[float] = 0.10
+-   - L262: width_min = _threshold_float(thresholds, "BREAKOUT_SHELF_MIN_WIDTH_PCT", DEFAULT_SHELF_WIDTH_MIN)
+-   - L485: DEFAULT_SHELF_WIDTH_MIN,
+- - DEFAULT_SHELF_WIDTH_MAX:
+-   - L50: DEFAULT_SHELF_WIDTH_MAX: Final[float] = 12.0
+-   - L263: width_max = _threshold_float(thresholds, "BREAKOUT_SHELF_MAX_WIDTH_PCT", DEFAULT_SHELF_WIDTH_MAX)
+-   - L480: DEFAULT_SHELF_WIDTH_MAX,
+- - BREAKOUT_SHELF_MIN_WIDTH_PCT:
+-   - L262: width_min = _threshold_float(thresholds, "BREAKOUT_SHELF_MIN_WIDTH_PCT", DEFAULT_SHELF_WIDTH_MIN)
+- - BREAKOUT_SHELF_MAX_WIDTH_PCT:
+-   - L263: width_max = _threshold_float(thresholds, "BREAKOUT_SHELF_MAX_WIDTH_PCT", DEFAULT_SHELF_WIDTH_MAX)
+-   - L259: _pick(thresholds, "BREAKOUT_MIN_VALID_SNAPSHOTS", "BREAKOUT_SHELF_MIN_VALID_SNAPSHOTS"),
+- - BREAKOUT_SHELF_MIN_VALID_SNAPSHOTS:
+-   - L259: _pick(thresholds, "BREAKOUT_MIN_VALID_SNAPSHOTS", "BREAKOUT_SHELF_MIN_VALID_SNAPSHOTS"),
+- ## Preliminary conclusion
+- - MISB shelf failure is stable and mostly shelf_width_out_of_bounds.
+- - missing_explicit_shelf appears transient, not persistent.
+- - Observed shelf_width_pct range: 0.0 to 0.06812627204523584.
+- - Next source question: compare observed shelf_width_pct against active LOWVOL MISB threshold surface before any patch.
+
+## misb_surface.py threshold/source clues
+- L13: - gate-ready booleans for the MISB shelf -> trigger -> acceptance -> continuation stack
+- L33: MISB is the breakout / continuation sibling:
+- L34: shelf compression -> breakout trigger -> breakout acceptance -> continuation entry.
+- L35: This module therefore focuses on breakout-shelf validity, directional trigger,
+- L50: DEFAULT_SHELF_WIDTH_MAX: Final[float] = 12.0
+- L51: DEFAULT_SHELF_WIDTH_MIN: Final[float] = 0.10
+- L52: DEFAULT_BREAKOUT_BUFFER_MIN: Final[float] = 0.20
+- L53: DEFAULT_BREAKOUT_VEL_RATIO_MIN: Final[float] = 1.15
+- L54: DEFAULT_BREAKOUT_VOL_NORM_MIN: Final[float] = 1.10
+- L55: DEFAULT_BREAKOUT_EVENT_RATE_MIN: Final[float] = 1.00
+- L175: def _breakout_ref_price(
+- L182: Deterministic breakout reference proxy.
+- L184: Since the shared-core seam does not yet publish a dedicated shelf-high /
+- L185: shelf-low structure, use a conservative proxy around current futures price
+- L194: def _batch26e_breakout_shelf(
+- L200: """Return explicit rolling breakout-shelf facts; never invent a proxy shelf."""
+- L203: "breakout_shelf_high",
+- L204: "shelf_high",
+- L211: "breakout_shelf_low",
+- L212: "shelf_low",
+- L219: "breakout_shelf_mid",
+- L220: "shelf_mid",
+- L228: "breakout_shelf_snapshot_count",
+- L229: "shelf_snapshot_count",
+- L230: "valid_snapshot_count",
+- L244: width = max((high - low), 0.0) if high is not None and low is not None else 0.0
+- L245: width_pct_in = _safe_float_or_none(_pick(
+- L247: "breakout_shelf_width_pct",
+- L248: "shelf_width_pct",
+- L249: "rolling_width_pct",
+- L250: "range_width_pct",
+- L252: width_pct = (
+- L253: width_pct_in
+- L254: if width_pct_in is not None
+- L255: else (0.0 if abs(mid) <= EPSILON else (width / max(abs(mid), EPSILON)) * 100.0)
+- L259: _pick(thresholds, "BREAKOUT_MIN_VALID_SNAPSHOTS", "BREAKOUT_SHELF_MIN_VALID_SNAPSHOTS"),
+- L262: width_min = _threshold_float(thresholds, "BREAKOUT_SHELF_MIN_WIDTH_PCT", DEFAULT_SHELF_WIDTH_MIN)
+- L263: width_max = _threshold_float(thresholds, "BREAKOUT_SHELF_MAX_WIDTH_PCT", DEFAULT_SHELF_WIDTH_MAX)
+- L266: valid = bool(explicit and count >= min_count and width_pct >= width_min and width_pct <= width_max)
+- L270: else "missing_explicit_shelf"
+- L272: else "insufficient_shelf_snapshots"
+- L274: else "shelf_width_out_of_bounds"
+- L278: "breakout_shelf_high": high,
+- L279: "breakout_shelf_low": low,
+- L280: "breakout_shelf_mid": mid,
+- L281: "breakout_shelf_width": width,
+- L282: "breakout_shelf_width_pct": width_pct,
+- L283: "breakout_shelf_snapshot_count": count,
+- L284: "breakout_shelf_valid": valid,
+- L285: "breakout_shelf_missing_reason": missing_reason,
+- L336: and _safe_bool(_pick(surface, "shelf_valid"), False)
+- L337: and _safe_bool(_pick(surface, "breakout_trigger"), False)
+- L338: and _safe_bool(_pick(surface, "breakout_acceptance"), False)
+- L435: bull_ofi_min = _threshold_float(thresholds, "BREAKOUT_OFI_MIN", DEFAULT_BULL_OFI_MIN)
+- L436: bear_ofi_max = _threshold_float(thresholds, "BREAKOUT_OFI_MAX_BEAR", DEFAULT_BEAR_OFI_MAX)
+- L437: breakout_vel_min = _threshold_float(
+- L439: "BREAKOUT_VEL_RATIO_MIN",
+- L440: DEFAULT_BREAKOUT_VEL_RATIO_MIN,
+- L442: breakout_vol_min = _threshold_float(
+- L444: "BREAKOUT_VOL_SPIKE_MIN",
+- L445: DEFAULT_BREAKOUT_VOL_NORM_MIN,
+- L447: breakout_event_min = _threshold_float(
+- L450: DEFAULT_BREAKOUT_EVENT_RATE_MIN,
+- L454: "BREAKOUT_EXTENSION_MIN",
+- L459: "MAX_BREAKOUT_EXTENSION_PCT",
+- L477: shelf_width_max = _threshold_float(
+- L479: "SHELF_WIDTH_MAX",
+- L480: DEFAULT_SHELF_WIDTH_MAX,
+- L482: shelf_width_min = _threshold_float(
+- L484: "SHELF_WIDTH_MIN",
+- L485: DEFAULT_SHELF_WIDTH_MIN,
+- L487: breakout_buffer_min = _threshold_float(
+- L489: "BREAKOUT_TRIGGER_BUFFER_PCT",
+- L490: DEFAULT_BREAKOUT_BUFFER_MIN,
+- L493: shelf = _batch26e_breakout_shelf(
+- L498: shelf_width = _safe_float(_pick(shelf, "breakout_shelf_width_pct"), 0.0)
+- L499: shelf_valid = _safe_bool(_pick(shelf, "breakout_shelf_valid"), False)
+- L514: breakout_trigger = (
+- L516: and shelf_valid
+- L517: and fut_velocity_ratio >= breakout_vel_min
+- L518: and fut_volume_norm >= breakout_vol_min
+- L519: and fut_event_rate_spike_ratio >= breakout_event_min
+- L524: breakout_ref = (
+- L525: _safe_float(_pick(shelf, "breakout_shelf_high"), fut_ltp)
+- L527: else _safe_float(_pick(shelf, "breakout_shelf_low"), fut_ltp)
+- L529: breakout_extension = abs(fut_ltp - breakout_ref)
+- L530: breakout_buffer_ok = breakout_extension >= breakout_buffer_min
+- L531: breakout_not_overextended = breakout_extension <= acceptance_ext_max
+- L533: breakout_acceptance = (
+- L534: breakout_trigger
+- L535: and breakout_buffer_ok
+- L536: and breakout_not_overextended
+- L537: and breakout_extension >= acceptance_ext_min
+- L542: breakout_acceptance
+- L567: + (0.10 if shelf_valid else 0.0)
+- L568: + (0.10 if breakout_trigger else 0.0)
+- L577: and shelf_valid
+- L578: and breakout_trigger
+- L579: and breakout_acceptance
+- L609: "shelf_width": shelf_width,
+- L610: "breakout_shelf_high": _pick(shelf, "breakout_shelf_high"),
+- L611: "breakout_shelf_low": _pick(shelf, "breakout_shelf_low"),
+- L612: "breakout_shelf_mid": _pick(shelf, "breakout_shelf_mid"),
+- L613: "breakout_shelf_width": _pick(shelf, "breakout_shelf_width"),
+- L614: "breakout_shelf_width_pct": _pick(shelf, "breakout_shelf_width_pct"),
+- L615: "breakout_shelf_snapshot_count": _pick(shelf, "breakout_shelf_snapshot_count"),
+- L616: "breakout_shelf_valid": shelf_valid,
+- L617: "breakout_shelf_missing_reason": _pick(shelf, "breakout_shelf_missing_reason"),
+- L618: "shelf_confirmed": shelf_valid,
+- L619: "shelf_valid": shelf_valid,
+- L620: "breakout_triggered": breakout_trigger,
+- L621: "breakout_trigger": breakout_trigger,
+- L622: "breakout_ref": breakout_ref,
+- L623: "breakout_extension": breakout_extension,
+- L624: "breakout_buffer_ok": breakout_buffer_ok,
+- L625: "breakout_not_overextended": breakout_not_overextended,
+- L626: "breakout_accepted": breakout_acceptance,
+- L627: "breakout_acceptance": breakout_acceptance,
+- L658: ("shelf_validation", shelf_valid),
+- L659: ("breakout_trigger", breakout_trigger),
+- L660: ("breakout_acceptance", breakout_acceptance),
+- L672: else "shelf_validation"
+- L673: if not shelf_valid
+- L674: else "breakout_trigger"
+- L675: if not breakout_trigger
+- L676: else "breakout_acceptance"
+- L677: if not breakout_acceptance
+
+## features.py shelf producer clues
+- L3766: values.get("shelf_confirmed")
+- L3982: _b1_profit_live_r39we_score_bool(_b1_profit_live_r39we_pick(surface, "shelf_valid", "breakout_shelf_valid", default=False), 0.15),
+- L8927: # B4_R5P_MICRO_SHELF_PRODUCER_PATCH_BEGIN
+- L8929: # - Add explicit micro-shelf fields for MISB/MISB-like breakout consumers.
+- L8930: # - R5K/R5M4 proved MISB had provider_ready=true but failed shelf_validation
+- L8931: #   because breakout_shelf_high/low/count were missing.
+- L8936: # - No shelf_valid/breakout_trigger/breakout_accepted forcing.
+- L8938: # - Existing explicit shelf fields remain authoritative via setdefault.
+- L8943: _B4_R5P_MICRO_SHELF_WINDOW_NS = 45_000_000_000
+- L8944: _B4_R5P_MICRO_SHELF_MAX_SAMPLES = 96
+- L8945: _B4_R5P_MICRO_SHELF_MIN_SNAPSHOTS = 3
+- L8979: def _b4_r5p_micro_existing_shelf(surface):
+- L8981: _b4_r5p_micro_pick(surface, "breakout_shelf_high", "shelf_high", "rolling_high", "lookback_high", "range_high") is not None
+- L8982: and _b4_r5p_micro_pick(surface, "breakout_shelf_low", "shelf_low", "rolling_low", "lookback_low", "range_low") is not None
+- L9011: def _b4_r5p_apply_micro_shelf(self, surface):
+- L9014: # Do not override a real explicit shelf if one is already supplied upstream.
+- L9015: if _b4_r5p_micro_existing_shelf(out):
+- L9016: out.setdefault("breakout_shelf_source", "upstream_explicit_shelf")
+- L9021: out.setdefault("breakout_shelf_source", "micro_shelf_no_valid_price")
+- L9029: history = getattr(self, "_b4_r5p_micro_shelf_history", None)
+- L9032: setattr(self, "_b4_r5p_micro_shelf_history", history)
+- L9037: cutoff = event_ns - _B4_R5P_MICRO_SHELF_WINDOW_NS if event_ns > 0 else 0
+- L9043: samples = samples[-_B4_R5P_MICRO_SHELF_MAX_SAMPLES:]
+- L9047: out.setdefault("breakout_shelf_source", "micro_shelf")
+- L9048: out.setdefault("breakout_shelf_window_seconds", int(_B4_R5P_MICRO_SHELF_WINDOW_NS / 1_000_000_000))
+- L9049: out.setdefault("breakout_shelf_snapshot_count", count)
+- L9052: out.setdefault("shelf_snapshot_count", count)
+- L9054: if count < _B4_R5P_MICRO_SHELF_MIN_SNAPSHOTS:
+- L9055: out.setdefault("breakout_shelf_missing_reason_hint", "micro_shelf_warming")
+- L9065: # Explicit MISB shelf fields.
+- L9066: out.setdefault("breakout_shelf_high", high)
+- L9067: out.setdefault("breakout_shelf_low", low)
+- L9068: out.setdefault("breakout_shelf_mid", mid)
+- L9069: out.setdefault("breakout_shelf_width", width)
+- L9070: out.setdefault("breakout_shelf_width_pct", width_pct)
+- L9072: # Compatibility aliases accepted by misb_surface._batch26e_breakout_shelf().
+- L9073: out.setdefault("shelf_high", high)
+- L9074: out.setdefault("shelf_low", low)
+- L9075: out.setdefault("shelf_mid", mid)
+- L9076: out.setdefault("shelf_width_pct", width_pct)
+- L9093: def _b4_r5p_futures_surface_with_micro_shelf(
+- L9106: return _b4_r5p_apply_micro_shelf(self, surface)
+- L9109: def _b4_r5p_contract_futures_block_with_shelf_passthrough(self, surface):
+- L9118: "breakout_shelf_high",
+- L9119: "breakout_shelf_low",
+- L9120: "breakout_shelf_mid",
+- L9121: "breakout_shelf_width",
+- L9122: "breakout_shelf_width_pct",
+- L9123: "breakout_shelf_snapshot_count",
+- L9124: "breakout_shelf_source",
+- L9125: "breakout_shelf_window_seconds",
+- L9126: "shelf_high",
+- L9127: "shelf_low",
+- L9128: "shelf_mid",
+- L9129: "shelf_width_pct",
+- L9130: "shelf_snapshot_count",
+- L9153: FeatureEngine._futures_surface = _b4_r5p_futures_surface_with_micro_shelf
+- L9154: FeatureEngine._contract_futures_block = _b4_r5p_contract_futures_block_with_shelf_passthrough
+- L9155: # B4_R5P_MICRO_SHELF_PRODUCER_PATCH_END
+
+## Preliminary interpretation
+- has_micro_shelf_producer: True
+- has_width_min_threshold_surface: True
+- observed_min_shelf_width_pct: 0.0
+- observed_max_shelf_width_pct: 0.06812627204523584
+- If observed shelf widths remain below the active minimum while shelf shape/count are otherwise present, the next step is not blind threshold reduction.
+- Next step should be a producer/scale audit: confirm whether shelf_width_pct is expressed in pct-units, decimal-units, points, or wrongly normalized units.
+- No patch is recommended from this audit alone.
+
+R27A_MISB_SHELF_ROOT_CAUSE_AUDIT_OK=True

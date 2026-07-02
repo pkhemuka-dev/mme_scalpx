@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+cd /home/Lenovo/scalpx/projects/mme_scalpx || exit 1
+set +e
+
+TARGET_SAMPLES="${1:-10}"
+WAIT_TRIES="${2:-60}"
+LOOP_DURATION_SEC="${3:-180}"
+SLEEP_SEC="${4:-5}"
+
+TAG="PSHADOW_LIFECYCLE_V23_COLLECT_${TARGET_SAMPLES}_$(date +%Y%m%d_%H%M%S)"
+ROOT="run/audits/${TAG}"
+mkdir -p "$ROOT"/{outputs,summary}
+
+switch_off() {
+  cat > run/controls/pshadowgate_auto_paper_switch.env <<'EOF'
+# pshadowgate switch file
+# LOCAL SHADOW-PAPER ONLY. NO BROKER. NO RISK/EXECUTION.
+PSHADOWGATE_AUTO_PAPER=0
+PSHADOWGATE_ONE_EVENT_ONLY=1
+PSHADOWGATE_MAX_PACKET_AGE_MS=15000
+PSHADOWGATE_MIN_SCORE=0.0
+PSHADOWGATE_NOTE=switched_off_by_v23_collector_no_broker
+EOF
+}
+trap switch_off EXIT INT TERM
+
+echo "PSHADOW_LIFECYCLE_V23_COLLECT_START=$(date -Is)"
+echo "ROOT=$ROOT"
+echo "TARGET_SAMPLES=$TARGET_SAMPLES"
+echo "BROKER_ORDER=0"
+echo "PAPER_ENGINE_ORDER=0"
+echo "RISK_STARTED=0"
+echo "EXECUTION_STARTED=0"
+
+SAMPLES_WRITTEN=0
+
+for sample in $(seq 1 "$TARGET_SAMPLES"); do
+  echo
+  echo "===== V23_SAMPLE_${sample}_START $(date -Is) ====="
+
+  STATE="run/state/pshadowgate_lifecycle_v23/open_position.json"
+  if [ -f "$STATE" ] && grep -q '"status": "OPEN"' "$STATE"; then
+    echo "OPEN_POSITION_EXISTS_BEFORE_SAMPLE=$sample"
+    PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadow_lifecycle_v23_loop "$LOOP_DURATION_SEC" "$SLEEP_SEC" \
+      | tee "$ROOT/outputs/sample_${sample}_close_existing_position_loop.txt"
+  fi
+
+  cat > run/controls/pshadowgate_auto_paper_switch.env <<EOF
+# pshadowgate switch file
+# LOCAL SHADOW-PAPER ONLY. NO BROKER. NO RISK/EXECUTION.
+PSHADOWGATE_AUTO_PAPER=1
+PSHADOWGATE_ONE_EVENT_ONLY=0
+PSHADOWGATE_MAX_PACKET_AGE_MS=15000
+PSHADOWGATE_MIN_SCORE=0.0
+PSHADOWGATE_NOTE=temporary_v23_sample_${sample}_fresh_event_no_broker
+EOF
+
+  EVENT_WRITTEN=0
+  for i in $(seq 1 "$WAIT_TRIES"); do
+    TRY_ROOT="$ROOT/outputs/sample_${sample}_pshadowgate_try_$i"
+    mkdir -p "$TRY_ROOT"
+
+    PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadowgate --root "$TRY_ROOT" --auto-paper \
+      | tee "$TRY_ROOT/pshadowgate.txt"
+
+    if grep -q '^SHADOW_PAPER_EVENT_WRITTEN=1' "$TRY_ROOT/pshadowgate.txt"; then
+      EVENT_WRITTEN=1
+      echo "SAMPLE_${sample}_FRESH_EVENT_WRITTEN_ON_TRY=$i" | tee "$ROOT/summary/sample_${sample}_event.txt"
+      break
+    fi
+
+    sleep 2
+  done
+
+  switch_off
+
+  if [ "$EVENT_WRITTEN" != "1" ]; then
+    echo "SAMPLE_${sample}_NO_FRESH_EVENT_WRITTEN=1" | tee -a "$ROOT/summary/sample_${sample}_event.txt"
+    continue
+  fi
+
+  PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadow_lifecycle_v23_once \
+    | tee "$ROOT/outputs/sample_${sample}_v23_once.txt"
+
+  ACTION="$(grep '^V23_ACTION=' "$ROOT/outputs/sample_${sample}_v23_once.txt" | tail -1 | cut -d= -f2 | tr -d '[:space:]')"
+  echo "SAMPLE_${sample}_ACTION_AFTER_ONCE=${ACTION:-UNKNOWN}" | tee "$ROOT/summary/sample_${sample}_action.txt"
+
+  if [ "${ACTION:-}" = "ENTRY_WRITTEN" ] || [ "${ACTION:-}" = "POSITION_UPDATED" ]; then
+    PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadow_lifecycle_v23_loop "$LOOP_DURATION_SEC" "$SLEEP_SEC" \
+      | tee "$ROOT/outputs/sample_${sample}_v23_loop.txt"
+  fi
+
+  if tail -80 "run/paper_shadow_lifecycle_v23/exits_$(date +%Y%m%d).ndjson" 2>/dev/null | grep -q 'pshadow_lifecycle_v23_exit.v1'; then
+    SAMPLES_WRITTEN=$((SAMPLES_WRITTEN + 1))
+  fi
+
+  echo "SAMPLE_${sample}_DONE=$(date -Is)"
+  sleep 3
+done
+
+echo
+echo "===== V23 FINAL STATE ====="
+cat run/state/pshadowgate_lifecycle_v23/open_position.json 2>/dev/null | tee "$ROOT/outputs/final_state.json" || true
+
+echo
+echo "===== V23 FINAL ENTRIES ====="
+tail -20 run/paper_shadow_lifecycle_v23/entries_$(date +%Y%m%d).ndjson 2>/dev/null | tee "$ROOT/outputs/final_entries_tail.ndjson" || true
+
+echo
+echo "===== V23 FINAL EXITS ====="
+tail -20 run/paper_shadow_lifecycle_v23/exits_$(date +%Y%m%d).ndjson 2>/dev/null | tee "$ROOT/outputs/final_exits_tail.ndjson" || true
+
+echo
+echo "===== V23 FINAL SUMMARY ====="
+cat run/paper_shadow_lifecycle_v23/summary_$(date +%Y%m%d).json 2>/dev/null | tee "$ROOT/outputs/final_summary.json" || true
+
+echo
+echo "FINAL_CLASSIFICATION=PSHADOW_LIFECYCLE_V23_COLLECT_COMPLETE_NO_BROKER_ORDER"
+echo "TARGET_SAMPLES=$TARGET_SAMPLES"
+echo "SAMPLES_WRITTEN_COUNTER=$SAMPLES_WRITTEN"
+echo "BROKER_ORDER=0"
+echo "PAPER_ENGINE_ORDER=0"
+echo "RISK_STARTED=0"
+echo "EXECUTION_STARTED=0"
+echo "SERVICE_STOP_RESTART=0"
+echo "REDIS_DESTRUCTIVE=0"
+echo "ROOT=$ROOT" | tee "$ROOT/summary/V23_COLLECT_FINAL.txt"

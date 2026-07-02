@@ -1,0 +1,22 @@
+# LANE-X-R34N_MONDAY_LIVE_SHADOW_REHEARSAL_READINESS_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r34f_r34k_r34m_candidate_truth_identity_patch_stack_ready_for_live_shadow_not_paper_gate_20260613_135146
+
+classification: PASS_R34N_READY_FOR_MONDAY_LIVE_SHADOW_REHEARSAL_NOT_FINAL_PAPER_GATE
+proof: `run/proofs/LANE-X-R34N_MONDAY_LIVE_SHADOW_REHEARSAL_READINESS_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r34f_r34k_r34m_candidate_truth_identity_patch_stack_ready_for_live_shadow_not_paper_gate_20260613_135146.json`
+audit_dir: `run/audits/LANE-X-R34N_MONDAY_LIVE_SHADOW_REHEARSAL_READINESS_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r34f_r34k_r34m_candidate_truth_identity_patch_stack_ready_for_live_shadow_not_paper_gate_20260613_135146`
+
+## Readiness checks
+- compile_rc: 0
+- markers_ok: 1
+- danger_hits: 0
+- latest_r34m_r1: run/proofs/LANE-X-R34M-R1_EXACT_RUNTIME_IDENTITY_SOURCE_SMOKE_NO_PATCH_NO_REPLAY_NO_ORDER_prove_r34m_identity_source_shape_exports_symbol_token_from_selected_option_and_side_fields_20260613_135022.json
+- latest_r34m: run/proofs/LANE-X-R34M_EXACT_RUNTIME_IDENTITY_SOURCE_PATCH_NO_REPLAY_NO_ORDER_pass_selected_option_view_common_and_view_dict_to_shadow_identity_helper_without_promoting_action_20260613_134921.json
+- latest_r34k_r2b: run/proofs/LANE-X-R34K-R2B_BASH_DURABLE_IDENTITY_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_bash_only_locate_enter_rows_and_symbol_token_identity_in_friday_durable_without_heredoc_20260613_133653.json
+
+## Safety
+- orders/risk/execution: 0 / 0 / 0
+- risk/execution proc: 0 / 0
+
+## Decision
+Ready for Monday live-shadow observe-only rehearsal if PASS.
+Not final paper gate yet because old Friday durable had identity_rows=0.
+Final paper gate requires fresh live shadow proof that candidate truth rows include symbol/token.

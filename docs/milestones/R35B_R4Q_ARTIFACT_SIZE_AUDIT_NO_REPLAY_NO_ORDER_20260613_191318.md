@@ -1,0 +1,35 @@
+# R35B_R4Q_ARTIFACT_SIZE_AUDIT_NO_REPLAY_NO_ORDER_20260613_191318
+
+classification: PASS_R35B_R4Q_ARTIFACT_SIZE_AUDIT_DONE_NO_REPLAY_NO_ORDER
+proof: `run/proofs/R35B_R4Q_ARTIFACT_SIZE_AUDIT_NO_REPLAY_NO_ORDER_20260613_191318.json`
+
+safety pre=0/0/0 post=0/0/0 proc=0/0
+
+## disk
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       155G  112G   44G  72% /
+
+## R4J artifact sizes
+2566314450 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/strategy_decisions.json
+1072312817 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/features_rows.json
+145134880 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/risk_outputs.json
+64541043 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/execution_shadow_results.json
+11468 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/02_scope_profile.json
+10361 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/economics_summary.json
+7748 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/03_integrity_report.json
+6543 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/01_dataset_summary.json
+4977 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/engine_result.json
+3738 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/00_manifest.json
+2477 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/10_run_summary.json
+2307 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/17_effective_inputs.json
+953 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/11_run_summary.csv
+751 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/b3_r32_analysis_exports_status.json
+269 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/18_effective_overrides_flat.json
+202 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/06_candidate_audit.csv
+113 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/blocker_distribution.csv
+81 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/artifacts/family_side_summary.csv
+59 run/replay/r35b_r4j/20260613_181431/replay_locked_single_day_r35b_r4j_20260613_124433_7a2d5c32/04_metrics_summary.json
+
+## R35B evidence bundle
+-rw-rw-r-- 1 Lenovo Lenovo 7.7K Jun 13 19:12 run/evidence_bundles/R35B_FINAL_SHADOW_PNL_EVIDENCE_20260613_191226.tar.gz
+-rw-rw-r-- 1 Lenovo Lenovo  141 Jun 13 19:12 run/evidence_bundles/R35B_FINAL_SHADOW_PNL_EVIDENCE_20260613_191226.tar.gz.sha256

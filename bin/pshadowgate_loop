@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+cd /home/Lenovo/scalpx/projects/mme_scalpx || exit 1
+set +e
+
+DURATION_SEC="${1:-300}"
+SLEEP_SEC="${2:-5}"
+AUTO_FLAG="${3:-}"
+
+END=$(( $(date +%s) + DURATION_SEC ))
+TAG="PSHADOWGATE_LOOP_$(date +%Y%m%d_%H%M%S)"
+ROOT="run/audits/${TAG}"
+mkdir -p "$ROOT"
+
+echo "PSHADOWGATE_LOOP_START=$(date -Is)"
+echo "ROOT=$ROOT"
+echo "DURATION_SEC=$DURATION_SEC"
+echo "SLEEP_SEC=$SLEEP_SEC"
+echo "AUTO_FLAG=$AUTO_FLAG"
+echo "BROKER_ORDER=0"
+echo "RISK_EXECUTION_START=0"
+
+while [ "$(date +%s)" -lt "$END" ]; do
+  RUN_ROOT="$ROOT/run_$(date +%H%M%S)"
+  if [ "$AUTO_FLAG" = "--auto-paper" ]; then
+    PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadowgate --root "$RUN_ROOT" --auto-paper
+  else
+    PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadowgate --root "$RUN_ROOT"
+  fi
+  echo "---"
+  sleep "$SLEEP_SEC"
+done
+
+echo "PSHADOWGATE_LOOP_END=$(date -Is)"
+echo "ROOT=$ROOT"

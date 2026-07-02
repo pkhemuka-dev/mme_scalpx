@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+cd /home/Lenovo/scalpx/projects/mme_scalpx || exit 1
+set +e
+
+# Observe-only regime snapshot helper.
+# Reads recent futures ticks from likely streams and writes a local regime snapshot.
+# Does not start services, does not trade, does not write Redis.
+
+if [ -x "${MME_VENV_PY:-}" ]; then
+  PY="$MME_VENV_PY"
+elif [ -x ".venv/bin/python" ]; then
+  PY=".venv/bin/python"
+else
+  PY="$(command -v python3)"
+fi
+
+PYTHONPATH="$PWD:${PYTHONPATH:-}" "$PY" - <<'PY'
+import json, time
+from pathlib import Path
+
+from app.mme_scalpx.core.redisx import get_redis_client
+
+r = get_redis_client()
+streams = [
+    "ticks:mme:fut:zerodha:stream",
+    "ticks:mme:fut:stream",
+    "ticks:mme:futures:zerodha:stream",
+    "futures:mme:stream",
+]
+
+def dec(x):
+    return x.decode("utf-8", errors="replace") if isinstance(x, bytes) else str(x)
+
+def price_from_fields(fields):
+    d = {dec(k): dec(v) for k,v in fields.items()}
+    for k in ["ltp", "price", "last_price", "last_traded_price", "close"]:
+        if k in d:
+            try:
+                return float(d[k])
+            except Exception:
+                pass
+    for k,v in d.items():
+        lk=k.lower()
+        if "ltp" in lk or "price" in lk:
+            try:
+                return float(v)
+            except Exception:
+                pass
+    return None
+
+chosen = None
+points = []
+for s in streams:
+    try:
+        rows = r.xrevrange(s, count=80)
+    except Exception:
+        rows = []
+    vals = []
+    for rid, fields in reversed(rows):
+        px = price_from_fields(fields)
+        if px is not None and px > 0:
+            vals.append((dec(rid), px))
+    if len(vals) >= 10:
+        chosen = s
+        points = vals
+        break
+
+now_ms = int(time.time()*1000)
+if not points:
+    out = {
+        "schema": "regime_direction_v26.snapshot.v1",
+        "source": "pregime_v26_once",
+        "market_regime": "UNKNOWN",
+        "trend_bias": "NO_TRADE",
+        "created_at_ms": now_ms,
+        "reason": "NO_FUTURES_TICK_STREAM_WITH_ENOUGH_PRICES",
+        "points_count": 0,
+    }
+else:
+    first = points[0][1]
+    last = points[-1][1]
+    hi = max(x[1] for x in points)
+    lo = min(x[1] for x in points)
+    delta = last - first
+    rng = hi - lo
+    # Conservative intraday micro-regime. Thresholds are intentionally modest but fail to RANGE when weak.
+    if delta >= 15 and last >= first and (rng == 0 or abs(delta) >= 0.35 * rng):
+        regime = "UPTREND"
+        bias = "CALL_ONLY"
+    elif delta <= -15 and last <= first and (rng == 0 or abs(delta) >= 0.35 * rng):
+        regime = "DOWNTREND"
+        bias = "PUT_ONLY"
+    else:
+        regime = "RANGE"
+        bias = "NO_TRADE"
+
+    out = {
+        "schema": "regime_direction_v26.snapshot.v1",
+        "source": f"pregime_v26_once:{chosen}",
+        "market_regime": regime,
+        "trend_bias": bias,
+        "created_at_ms": now_ms,
+        "points_count": len(points),
+        "first_price": first,
+        "last_price": last,
+        "high": hi,
+        "low": lo,
+        "delta_points": round(delta, 4),
+        "range_points": round(rng, 4),
+        "note": "observe-only derived futures micro-regime; not live promotion proof by itself",
+    }
+
+p = Path("run/state/regime_direction_v26/current.json")
+p.parent.mkdir(parents=True, exist_ok=True)
+p.write_text(json.dumps(out, indent=2, sort_keys=True), encoding="utf-8")
+print("FINAL_CLASSIFICATION=PREGIME_V26_SNAPSHOT_WRITTEN_NO_ORDER")
+print(json.dumps(out, indent=2, sort_keys=True))
+print("BROKER_ORDER=0")
+print("PAPER_ENGINE_ORDER=0")
+print("RISK_STARTED=0")
+print("EXECUTION_STARTED=0")
+print("REDIS_DESTRUCTIVE=0")
+PY

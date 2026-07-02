@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd /home/Lenovo/scalpx/projects/mme_scalpx
+PYTHONPATH=. python3 -m app.mme_scalpx.services.controlled_paper_status_publication "$@"

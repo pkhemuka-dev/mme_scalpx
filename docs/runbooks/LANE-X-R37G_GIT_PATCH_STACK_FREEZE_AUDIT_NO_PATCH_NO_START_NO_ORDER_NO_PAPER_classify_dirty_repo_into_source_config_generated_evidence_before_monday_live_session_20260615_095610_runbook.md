@@ -1,0 +1,5 @@
+# LANE-X-R37G_GIT_PATCH_STACK_FREEZE_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_classify_dirty_repo_into_source_config_generated_evidence_before_monday_live_session_20260615_095610 runbook
+
+Next:
+
+Inspect source/config dirty list. Accept, commit/tag, or rollback before any controlled-paper readiness step.

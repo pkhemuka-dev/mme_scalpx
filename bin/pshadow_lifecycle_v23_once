@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+cd /home/Lenovo/scalpx/projects/mme_scalpx || exit 1
+set +e
+if [ -x "${MME_VENV_PY:-}" ]; then
+  PY="$MME_VENV_PY"
+elif [ -x ".venv/bin/python" ]; then
+  PY=".venv/bin/python"
+else
+  PY="$(command -v python3)"
+fi
+PYTHONPATH="$PWD:${PYTHONPATH:-}" "$PY" -m app.mme_scalpx.shadow_paper.lifecycle_v23 "$@"

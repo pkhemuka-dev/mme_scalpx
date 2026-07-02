@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+cd /home/Lenovo/scalpx/projects/mme_scalpx || exit 1
+set +e
+
+# V2.7 wrapper around original pshadowgate.
+# Flow:
+# original probe without event write
+# -> v2.6 regime/direction gate
+# -> v2.7 entry-quality gate
+# -> original pshadowgate auto-paper only if both gates allow.
+# No broker. No paper engine. No risk/execution.
+
+ORIG="$(ls -1t bin/pshadowgate_pre_v26_* 2>/dev/null | head -1)"
+if [ -z "$ORIG" ] || [ ! -x "$ORIG" ]; then
+  echo "FINAL_CLASSIFICATION=PSHADOWGATE_V27_WRAPPER_ERROR_ORIGINAL_NOT_FOUND"
+  echo "BROKER_ORDER=0"
+  echo "PAPER_ENGINE_ORDER=0"
+  echo "RISK_STARTED=0"
+  echo "EXECUTION_STARTED=0"
+  echo "REDIS_DESTRUCTIVE=0"
+  exit 2
+fi
+
+AUTO_REQ=0
+ARGS=()
+ROOT_ARG=""
+SKIP_NEXT=0
+for arg in "$@"; do
+  if [ "$SKIP_NEXT" = "1" ]; then
+    ROOT_ARG="$arg"
+    ARGS+=("$arg")
+    SKIP_NEXT=0
+    continue
+  fi
+  if [ "$arg" = "--auto-paper" ]; then
+    AUTO_REQ=1
+    continue
+  fi
+  if [ "$arg" = "--root" ]; then
+    ARGS+=("$arg")
+    SKIP_NEXT=1
+    continue
+  fi
+  ARGS+=("$arg")
+done
+
+if [ "${PSHADOWGATE_AUTO_PAPER:-}" = "1" ]; then
+  AUTO_REQ=1
+fi
+
+if [ "$AUTO_REQ" != "1" ]; then
+  exec "$ORIG" "$@"
+fi
+
+if [ -z "$ROOT_ARG" ]; then
+  ROOT_ARG="run/audits/PSHADOWGATE_V27_WRAPPER_$(date +%Y%m%d_%H%M%S)"
+fi
+mkdir -p "$ROOT_ARG"/{v27_probe,v26_gate,v27_entry_quality,v27_final}
+
+SWITCH="run/controls/pshadowgate_auto_paper_switch.env"
+SWITCH_BAK="$ROOT_ARG/v27_entry_quality/pshadowgate_auto_paper_switch.env.bak"
+if [ -f "$SWITCH" ]; then
+  cp -a "$SWITCH" "$SWITCH_BAK"
+fi
+
+restore_switch() {
+  if [ -f "$SWITCH_BAK" ]; then
+    cp -a "$SWITCH_BAK" "$SWITCH"
+  fi
+}
+trap restore_switch EXIT INT TERM
+
+cat > "$SWITCH" <<'EOF'
+# temporary v2.7 probe switch
+PSHADOWGATE_AUTO_PAPER=0
+PSHADOWGATE_ONE_EVENT_ONLY=1
+PSHADOWGATE_MAX_PACKET_AGE_MS=15000
+PSHADOWGATE_MIN_SCORE=0.0
+PSHADOWGATE_NOTE=v27_probe_no_write
+EOF
+
+"$ORIG" --root "$ROOT_ARG/v27_probe" "${ARGS[@]}" 2>&1 | tee "$ROOT_ARG/v27_probe/pshadowgate_probe.txt"
+
+ACTION="$(grep '^PACKET_ACTION=' "$ROOT_ARG/v27_probe/pshadowgate_probe.txt" | tail -1 | cut -d= -f2- | tr -d '[:space:]')"
+FAMILY="$(grep '^PACKET_FAMILY=' "$ROOT_ARG/v27_probe/pshadowgate_probe.txt" | tail -1 | cut -d= -f2- | tr -d '[:space:]')"
+SYMBOL="$(grep '^PACKET_SYMBOL=' "$ROOT_ARG/v27_probe/pshadowgate_probe.txt" | tail -1 | cut -d= -f2- | tr -d '[:space:]')"
+TOKEN="$(grep '^PACKET_TOKEN=' "$ROOT_ARG/v27_probe/pshadowgate_probe.txt" | tail -1 | cut -d= -f2- | tr -d '[:space:]')"
+SCORE="$(grep '^PACKET_SCORE=' "$ROOT_ARG/v27_probe/pshadowgate_probe.txt" | tail -1 | cut -d= -f2- | tr -d '[:space:]')"
+SOURCE_AGE="$(grep '^PACKET_SOURCE_AGE_MS=' "$ROOT_ARG/v27_probe/pshadowgate_probe.txt" | tail -1 | cut -d= -f2- | tr -d '[:space:]')"
+
+if [ -x "${MME_VENV_PY:-}" ]; then
+  PY="$MME_VENV_PY"
+elif [ -x ".venv/bin/python" ]; then
+  PY=".venv/bin/python"
+else
+  PY="$(command -v python3)"
+fi
+
+PYTHONPATH="$PWD:${PYTHONPATH:-}" "$PY" -m app.mme_scalpx.shadow_paper.regime_direction_gate_v26 \
+  --action "$ACTION" \
+  --family "$FAMILY" \
+  --symbol "$SYMBOL" \
+  --score "$SCORE" \
+  --source-age-ms "$SOURCE_AGE" \
+  2>&1 | tee "$ROOT_ARG/v26_gate/verdict.txt"
+V26_EXIT=${PIPESTATUS[0]}
+
+if [ "$V26_EXIT" != "0" ]; then
+  echo "FINAL_CLASSIFICATION=PSHADOWGATE_V27_PREWRITE_BLOCKED_BY_V26_REGIME_DIRECTION_NO_SHADOW_EVENT_NO_ORDER"
+  echo "V26_BLOCKED_ACTION=$ACTION"
+  echo "V26_BLOCKED_FAMILY=$FAMILY"
+  echo "V26_BLOCKED_SYMBOL=$SYMBOL"
+  echo "SHADOW_PAPER_EVENT_WRITTEN=0"
+  echo "BROKER_ORDER=0"
+  echo "PAPER_ENGINE_ORDER=0"
+  echo "RISK_STARTED=0"
+  echo "EXECUTION_STARTED=0"
+  echo "REDIS_DESTRUCTIVE=0"
+  echo "ROOT=$ROOT_ARG"
+  exit 0
+fi
+
+PYTHONPATH="$PWD:${PYTHONPATH:-}" "$PY" -m app.mme_scalpx.shadow_paper.entry_quality_gate_v27 \
+  --action "$ACTION" \
+  --family "$FAMILY" \
+  --symbol "$SYMBOL" \
+  --token "$TOKEN" \
+  --score "$SCORE" \
+  --source-age-ms "$SOURCE_AGE" \
+  2>&1 | tee "$ROOT_ARG/v27_entry_quality/verdict.txt"
+V27_EXIT=${PIPESTATUS[0]}
+
+if [ "$V27_EXIT" != "0" ]; then
+  echo "FINAL_CLASSIFICATION=PSHADOWGATE_V27_PREWRITE_BLOCKED_BY_ENTRY_QUALITY_NO_SHADOW_EVENT_NO_ORDER"
+  echo "V27_BLOCKED_ACTION=$ACTION"
+  echo "V27_BLOCKED_FAMILY=$FAMILY"
+  echo "V27_BLOCKED_SYMBOL=$SYMBOL"
+  echo "V27_BLOCKED_TOKEN=$TOKEN"
+  echo "SHADOW_PAPER_EVENT_WRITTEN=0"
+  echo "BROKER_ORDER=0"
+  echo "PAPER_ENGINE_ORDER=0"
+  echo "RISK_STARTED=0"
+  echo "EXECUTION_STARTED=0"
+  echo "REDIS_DESTRUCTIVE=0"
+  echo "ROOT=$ROOT_ARG"
+  exit 0
+fi
+
+restore_switch
+
+"$ORIG" --root "$ROOT_ARG/v27_final" --auto-paper "${ARGS[@]}" 2>&1 | tee "$ROOT_ARG/v27_final/pshadowgate_final.txt"
+ORIG_EXIT=${PIPESTATUS[0]}
+
+echo "FINAL_CLASSIFICATION=PSHADOWGATE_V27_PREWRITE_ALLOWED_ORIGINAL_COMPLETED_NO_BROKER_ORDER"
+echo "V27_ALLOWED_ACTION=$ACTION"
+echo "V27_ALLOWED_FAMILY=$FAMILY"
+echo "V27_ALLOWED_SYMBOL=$SYMBOL"
+echo "V27_ALLOWED_TOKEN=$TOKEN"
+echo "BROKER_ORDER=0"
+echo "PAPER_ENGINE_ORDER=0"
+echo "RISK_STARTED=0"
+echo "EXECUTION_STARTED=0"
+echo "REDIS_DESTRUCTIVE=0"
+echo "ROOT=$ROOT_ARG"
+exit "$ORIG_EXIT"

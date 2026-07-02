@@ -48,11 +48,11 @@ REGIME_FAST: Final[str] = "FAST"
 EPSILON: Final[float] = 1e-8
 
 DEFAULT_SHELF_WIDTH_MAX: Final[float] = 12.0
-DEFAULT_SHELF_WIDTH_MIN: Final[float] = 0.10
+DEFAULT_SHELF_WIDTH_MIN: Final[float] = 0.015  # R38CH: scalp shelf min width semantic patch; was 0.10
 DEFAULT_BREAKOUT_BUFFER_MIN: Final[float] = 0.20
 DEFAULT_BREAKOUT_VEL_RATIO_MIN: Final[float] = 1.15
 DEFAULT_BREAKOUT_VOL_NORM_MIN: Final[float] = 1.10
-DEFAULT_BREAKOUT_EVENT_RATE_MIN: Final[float] = 1.00
+DEFAULT_BREAKOUT_EVENT_RATE_MIN: Final[float] = 0.00  # R38CP: event-rate semantic patch after R38CO counterfactual; was 1.00
 DEFAULT_BULL_OFI_MIN: Final[float] = 0.53
 DEFAULT_BEAR_OFI_MAX: Final[float] = 0.47
 DEFAULT_ACCEPTANCE_EXTENSION_MIN: Final[float] = 0.15
@@ -526,6 +526,30 @@ def build_misb_branch_surface(
         if bullish
         else _safe_float(_pick(shelf, "breakout_shelf_low"), fut_ltp)
     )
+    # LANE_X_R27E_MISB_PRIOR_BREAKOUT_REF_BEGIN
+    if side == "CALL":
+        breakout_ref = _safe_float(
+            _pick(
+                shelf,
+                "breakout_ref_high",
+                "prior_shelf_high",
+                "breakout_shelf_prior_high",
+                "breakout_shelf_high",
+            ),
+            fut_ltp,
+        )
+    else:
+        breakout_ref = _safe_float(
+            _pick(
+                shelf,
+                "breakout_ref_low",
+                "prior_shelf_low",
+                "breakout_shelf_prior_low",
+                "breakout_shelf_low",
+            ),
+            fut_ltp,
+        )
+    # LANE_X_R27E_MISB_PRIOR_BREAKOUT_REF_END
     breakout_extension = abs(fut_ltp - breakout_ref)
     breakout_buffer_ok = breakout_extension >= breakout_buffer_min
     breakout_not_overextended = breakout_extension <= acceptance_ext_max

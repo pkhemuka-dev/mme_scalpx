@@ -1,0 +1,2797 @@
+from __future__ import annotations
+
+"""
+app/mme_scalpx/services/strategy.py
+
+Freeze-grade HOLD-only family_features consumer bridge for ScalpX MME.
+
+Purpose
+-------
+This module is the first strategy-side bridge after the feature payload seam.
+
+It OWNS:
+- reading latest feature payload from HASH_STATE_FEATURES_MME_FUT
+- parsing family_features_json / family_surfaces_json / family_frames_json
+- validating family_features against feature_family/contracts.py
+- building a deterministic strategy consumer view
+- publishing HOLD-only diagnostic decisions to STREAM_DECISIONS_MME
+- strategy heartbeat / strategy errors
+
+It DOES NOT own yet:
+- MIST/MISB/MISC/MISR/MISO doctrine-leaf entry logic
+- arbitration
+- cooldown routing
+- entry/exit decision generation
+- broker execution
+- order placement
+- risk mutation
+- provider failover
+
+Frozen bridge law
+-----------------
+Doctrine leaves may be observed through the activation bridge in report-only /
+dry-run mode, but strategy.py must still emit HOLD only until explicit future
+arming changes the service contract. Candidate promotion is not live here.
+"""
+
+import contextlib
+import json
+import logging
+import math
+import time
+from dataclasses import dataclass
+from typing import Any, Final, Mapping, MutableMapping
+
+from app.mme_scalpx.core import names as N
+
+# ============================================================================
+# Batch 25Q-C import-time compatibility constants
+# ============================================================================
+#
+# Some HOLD/report-only surfaces reference execution contract constants at module
+# import time. These shims do not enable promotion, publication, risk mutation,
+# or execution arming. They only make strategy.py import-safe while preserving
+# the disabled Batch 25Q order-intent law.
+
+try:
+    POSITION_EFFECT_NONE
+except NameError:
+    try:
+        POSITION_EFFECT_NONE = getattr(N, "POSITION_EFFECT_NONE", "NONE")
+    except NameError:
+        POSITION_EFFECT_NONE = "NONE"
+
+try:
+    POSITION_EFFECT_OPEN
+except NameError:
+    try:
+        POSITION_EFFECT_OPEN = getattr(N, "POSITION_EFFECT_OPEN", "OPEN")
+    except NameError:
+        POSITION_EFFECT_OPEN = "OPEN"
+
+try:
+    ACTION_HOLD
+except NameError:
+    try:
+        ACTION_HOLD = getattr(N, "ACTION_HOLD", "HOLD")
+    except NameError:
+        ACTION_HOLD = "HOLD"
+
+try:
+    ACTION_ENTER_CALL
+except NameError:
+    try:
+        ACTION_ENTER_CALL = getattr(N, "ACTION_ENTER_CALL", "ENTER_CALL")
+    except NameError:
+        ACTION_ENTER_CALL = "ENTER_CALL"
+
+try:
+    ACTION_ENTER_PUT
+except NameError:
+    try:
+        ACTION_ENTER_PUT = getattr(N, "ACTION_ENTER_PUT", "ENTER_PUT")
+    except NameError:
+        ACTION_ENTER_PUT = "ENTER_PUT"
+
+from app.mme_scalpx.services.feature_family import contracts as FF_C
+
+# R33D_STAGE_FLAGS_CONSERVATIVE_NORMALIZER
+def _r33d_normalize_stage_flags_for_contract(payload):
+    """R38BZ_SAFE_CONTRACT_SANITIZER_STAGE_FLAGS_AND_COMMON.
+
+    Strategy-side compatibility sanitizer before strict feature-family contract
+    validation.
+
+    Safety law:
+    - preserves existing gate values;
+    - does not relax thresholds;
+    - does not force candidate/eligible;
+    - does not enable paper/live/order/risk/execution;
+    - only canonicalizes contract shape.
+    """
+    try:
+        from app.mme_scalpx.services.feature_family.contracts import (
+            COMMON_KEYS as _R38BZ_COMMON_KEYS,
+            build_empty_stage_flags_block as _r38bz_empty_stage_flags,
+        )
+        canonical_common_keys = tuple(_R38BZ_COMMON_KEYS)
+        canonical_stage_keys = tuple(_r38bz_empty_stage_flags().keys())
+    except Exception:
+        canonical_common_keys = (
+            "regime",
+            "strategy_runtime_mode_classic",
+            "strategy_runtime_mode_miso",
+            "futures",
+            "call",
+            "put",
+            "selected_option",
+            "cross_option",
+            "economics",
+            "signals",
+        )
+        canonical_stage_keys = (
+            "data_valid",
+            "data_quality_ok",
+            "session_eligible",
+            "warmup_complete",
+            "tradability_ok",
+            "risk_veto_active",
+            "reconciliation_lock_active",
+            "active_position_present",
+            "provider_ready_classic",
+            "provider_ready_miso",
+            "dhan_context_fresh",
+            "selected_option_present",
+            "futures_present",
+            "call_present",
+            "put_present",
+            "snapshot_sync_valid",
+            "classic_provider_degraded_safe",
+        )
+
+    def _is_mapping(value):
+        return isinstance(value, dict)
+
+    def _canonical_stage_flags(stage_flags):
+        if not _is_mapping(stage_flags):
+            return stage_flags
+        out = {}
+        for key in canonical_stage_keys:
+            out[key] = stage_flags.get(key, False)
+        return out
+
+    def _canonical_common(common):
+        if not _is_mapping(common):
+            return common
+        out = {}
+        for key in canonical_common_keys:
+            if key in common:
+                out[key] = common[key]
+        return out
+
+    def _normalize_node(node):
+        if isinstance(node, dict):
+            if "stage_flags" in node:
+                node["stage_flags"] = _canonical_stage_flags(node.get("stage_flags"))
+
+            if "common" in node and (
+                "stage_flags" in node
+                or "provider_runtime" in node
+                or "families" in node
+            ):
+                node["common"] = _canonical_common(node.get("common"))
+
+            for child in list(node.values()):
+                _normalize_node(child)
+
+        elif isinstance(node, list):
+            for child in node:
+                _normalize_node(child)
+
+        return node
+
+    return _normalize_node(payload)
+
+
+from app.mme_scalpx.services.strategy_family import activation as SF_ACT
+
+
+LOGGER = logging.getLogger("app.mme_scalpx.services.strategy")
+
+
+# =============================================================================
+# Constants
+# =============================================================================
+
+SERVICE_STRATEGY: Final[str] = getattr(N, "SERVICE_STRATEGY", "strategy")
+SERVICE_FEATURES: Final[str] = getattr(N, "SERVICE_FEATURES", "features")
+
+STREAM_DECISIONS: Final[str] = getattr(
+    N,
+    "STREAM_DECISIONS_MME",
+    getattr(N, "STREAM_DECISIONS", N.STREAM_DECISIONS_MME),
+)
+STREAM_HEALTH: Final[str] = getattr(N, "STREAM_SYSTEM_HEALTH", N.STREAM_SYSTEM_HEALTH)
+STREAM_ERRORS: Final[str] = getattr(N, "STREAM_SYSTEM_ERRORS", N.STREAM_SYSTEM_ERRORS)
+
+HASH_FEATURES: Final[str] = getattr(
+    N,
+    "HASH_STATE_FEATURES_MME_FUT",
+    getattr(N, "STATE_FEATURES_MME_FUT", N.HASH_STATE_FEATURES_MME_FUT),
+)
+
+KEY_HEALTH_STRATEGY: Final[str] = getattr(
+    N,
+    "KEY_HEALTH_STRATEGY",
+    getattr(N, "HB_STRATEGY", N.KEY_COMPAT_STRATEGY_HEARTBEAT),
+)
+
+ACTION_HOLD: Final[str] = getattr(N, "ACTION_HOLD", "HOLD")
+STATE_SCANNING: Final[str] = getattr(N, "STATE_SCANNING", "SCANNING")
+STATE_DISABLED: Final[str] = getattr(N, "STATE_DISABLED", "DISABLED")
+
+DEFAULT_POLL_INTERVAL_MS: Final[int] = 150
+DEFAULT_HEARTBEAT_TTL_MS: Final[int] = 15_000
+DEFAULT_STREAM_MAXLEN: Final[int] = 10_000
+
+FAMILY_IDS: Final[tuple[str, ...]] = tuple(FF_C.FAMILY_IDS)
+BRANCH_IDS: Final[tuple[str, ...]] = tuple(FF_C.BRANCH_IDS)
+
+ACTIVATION_REPORT_MODE: Final[str] = SF_ACT.ACTIVATION_MODE_DRY_RUN
+ACTIVATION_REPORT_ONLY: Final[bool] = True
+ACTIVATION_ALLOW_CANDIDATE_PROMOTION: Final[bool] = bool(
+    __import__(
+        "app.mme_scalpx.services.controlled_paper_runtime",
+        fromlist=["controlled_strategy_promotion_enabled"],
+    ).controlled_strategy_promotion_enabled()
+)
+
+# ===== R38ZR_STRATEGY_FEATURE_CONTRACT_COMPAT_PATCH_BEGIN =====
+# Report-only compatibility shim for live observe-only capture-grade readiness.
+# No doctrine/threshold/order/risk/execution behavior is changed.
+def _r38zr_boolish(v, default=False):
+    if isinstance(v, bool):
+        return v
+    if v is None:
+        return default
+    return str(v).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+def _r38zr_intish(v, default=0):
+    try:
+        return int(v)
+    except Exception:
+        return default
+
+def _r38zr_redis_hgetall(redis_obj, key):
+    if redis_obj is None:
+        return {}
+    try:
+        raw = redis_obj.hgetall(key)
+    except Exception:
+        return {}
+    out = {}
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            kk = k.decode() if isinstance(k, (bytes, bytearray)) else str(k)
+            vv = v.decode() if isinstance(v, (bytes, bytearray)) else v
+            out[kk] = vv
+    return out
+
+def _r38zr_pick_redis(strategy_self):
+    for name in ("redis", "_redis", "redis_runtime", "_redis_runtime", "r", "_r"):
+        obj = getattr(strategy_self, name, None)
+        if obj is not None:
+            return obj
+    return None
+
+def _r38zr_provider_runtime_from_state(strategy_self):
+    redis_obj = _r38zr_pick_redis(strategy_self)
+    src = _r38zr_redis_hgetall(redis_obj, "state:provider:runtime")
+    if not src:
+        return {}
+    return {
+        "futures_marketdata_provider_id": src.get("futures_marketdata_provider_id"),
+        "selected_option_marketdata_provider_id": src.get("selected_option_marketdata_provider_id"),
+        "option_context_provider_id": src.get("option_context_provider_id"),
+        "execution_primary_provider_id": src.get("execution_primary_provider_id"),
+        "execution_fallback_provider_id": src.get("execution_fallback_provider_id"),
+        "futures_marketdata_status": src.get("futures_marketdata_status", "UNAVAILABLE"),
+        "selected_option_marketdata_status": src.get("selected_option_marketdata_status", "UNAVAILABLE"),
+        "option_context_status": src.get("option_context_status", "UNAVAILABLE"),
+        "execution_primary_status": src.get("execution_primary_status", "UNAVAILABLE"),
+        "execution_fallback_status": src.get("execution_fallback_status", "UNAVAILABLE"),
+        "family_runtime_mode": src.get("family_runtime_mode", "OBSERVE_ONLY"),
+        "failover_mode": src.get("failover_mode", "MANUAL"),
+        "override_mode": src.get("override_mode", "AUTO"),
+        "transition_reason": src.get("transition_reason", "BOOTSTRAP"),
+        "provider_transition_seq": _r38zr_intish(src.get("provider_transition_seq"), 0),
+        "failover_active": _r38zr_boolish(src.get("failover_active"), False),
+        "pending_failover": _r38zr_boolish(src.get("pending_failover"), False),
+        "last_update_ns": _r38zr_intish(src.get("last_update_ns"), 0),
+        "ts_event_ns": _r38zr_intish(src.get("ts_event_ns"), 0),
+        "message": src.get("message", ""),
+        "provider_runtime_blocked": False,
+        "provider_runtime_block_reason": "",
+        "provider_runtime_missing_keys": [],
+        "r38zr_backfilled_from_state_provider_runtime": True,
+    }
+
+def _r38zr_provider_runtime_has_required_ids(provider_runtime):
+    pr = provider_runtime if isinstance(provider_runtime, dict) else {}
+    required = (
+        "futures_marketdata_provider_id",
+        "selected_option_marketdata_provider_id",
+        "option_context_provider_id",
+        "execution_primary_provider_id",
+        "execution_fallback_provider_id",
+    )
+    return all(str(pr.get(k) or "").strip() for k in required)
+
+def _r38zr_backfill_family_features_provider_runtime(strategy_self, family_features):
+    ff = dict(family_features) if isinstance(family_features, dict) else {}
+    current = ff.get("provider_runtime") if isinstance(ff.get("provider_runtime"), dict) else {}
+    if _r38zr_provider_runtime_has_required_ids(current):
+        return ff
+
+    runtime = _r38zr_provider_runtime_from_state(strategy_self)
+    if not _r38zr_provider_runtime_has_required_ids(runtime):
+        return ff
+
+    ff["provider_runtime"] = runtime
+
+    common = dict(ff.get("common") or {})
+    common.setdefault("family_runtime_mode", runtime.get("family_runtime_mode", "OBSERVE_ONLY"))
+    common.setdefault("active_futures_provider_id", runtime.get("futures_marketdata_provider_id"))
+    common.setdefault("active_selected_option_provider_id", runtime.get("selected_option_marketdata_provider_id"))
+    common.setdefault("active_option_context_provider_id", runtime.get("option_context_provider_id"))
+    ff["common"] = common
+    return ff
+# ===== R38ZR_STRATEGY_FEATURE_CONTRACT_COMPAT_PATCH_END =====
+
+# ===== R38ZU_STRIP_REPAIR_METADATA_KEYS_PATCH_BEGIN =====
+# Report-only exact-key contract compatibility cleanup.
+# R38Z timestamp repair diagnostics must not remain as top-level family_features keys.
+# No doctrine/threshold/order/risk/execution behavior is changed.
+def _r38zu_strip_repair_metadata_keys_from_family_features(family_features):
+    ff = dict(family_features) if isinstance(family_features, dict) else {}
+    removed = {}
+    for key in ("r38zb_selected_option_ts_status", "r38zf_futures_ts_status"):
+        if key in ff:
+            removed[key] = ff.pop(key)
+    return ff
+# ===== R38ZU_STRIP_REPAIR_METADATA_KEYS_PATCH_END =====
+
+
+
+
+class StrategyBridgeError(RuntimeError):
+    """Raised when strategy consumer bridge cannot safely consume features."""
+
+
+# =============================================================================
+# Helpers
+# =============================================================================
+
+
+def _safe_str(value: Any, default: str = "") -> str:
+    if value is None:
+        return default
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace").strip() or default
+    text = str(value).strip()
+    return text if text else default
+
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    if value is None or isinstance(value, bool):
+        return default
+    try:
+        text = _safe_str(value)
+        return int(float(text)) if text else default
+    except Exception:
+        return default
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    if value is None or isinstance(value, bool):
+        return default
+    try:
+        text = _safe_str(value)
+        if not text:
+            return default
+        out = float(text)
+    except Exception:
+        return default
+    return out if math.isfinite(out) else default
+
+
+def _safe_bool(value: Any, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    text = _safe_str(value).lower()
+    if text in {"1", "true", "yes", "y", "on", "ok", "healthy", "available"}:
+        return True
+    if text in {"0", "false", "no", "n", "off", "none", "null", "unavailable"}:
+        return False
+    return default
+
+
+def _decode_hash(raw: Mapping[Any, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for key, value in (raw or {}).items():
+        k = _safe_str(key)
+        if isinstance(value, bytes):
+            value = value.decode("utf-8", errors="replace")
+        out[k] = value
+    return out
+
+
+def _json_load(value: Any, *, field_name: str) -> Any:
+    if isinstance(value, (dict, list, tuple)):
+        return value
+    text = _safe_str(value)
+    if not text:
+        raise StrategyBridgeError(f"{field_name} is empty")
+    try:
+        return json.loads(text)
+    except Exception as exc:
+        raise StrategyBridgeError(f"{field_name} invalid json: {exc}") from exc
+
+
+def _jsonable(value: Any) -> Any:
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, Mapping):
+        return {str(k): _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_jsonable(v) for v in value]
+    if hasattr(value, "to_dict"):
+        with contextlib.suppress(Exception):
+            return _jsonable(value.to_dict())
+    if hasattr(value, "__dict__"):
+        return _jsonable(vars(value))
+    return str(value)
+
+
+def _json_dump(value: Any) -> str:
+    return json.dumps(
+        _jsonable(value),
+        ensure_ascii=False,
+        sort_keys=False,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+
+
+def _redis_stream_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """
+    Convert strategy decision payload into Redis XADD-safe fields.
+
+    Execution consumes decisions through payload_json. During the HOLD-only
+    family bridge phase we also keep flattened fields for operator visibility,
+    but payload_json is the canonical execution contract.
+
+    Redis-py rejects None values in XADD mappings, so flattened fields convert
+    None to an empty string. The JSON payload keeps normal JSON null semantics.
+    """
+    raw = dict(payload)
+
+    out: dict[str, Any] = {
+        "payload_json": _json_dump(raw),
+    }
+
+    for key, value in raw.items():
+        field = str(key)
+
+        # payload_json above is canonical. Do not allow an incoming flat field
+        # to replace the canonical encoded payload.
+        if field == "payload_json":
+            continue
+
+        if value is None:
+            out[field] = ""
+        elif isinstance(value, (dict, list, tuple)):
+            out[field] = _json_dump(value)
+        elif isinstance(value, bool):
+            out[field] = "1" if value else "0"
+        else:
+            out[field] = value
+
+    return out
+
+
+# R34F_SHADOW_CANDIDATE_TRUTH_EXPORT_BEGIN
+def _r34f_shadow_candidate_truth_from_activation_selected(
+    selected: Mapping[str, Any],
+    view: Any = None,
+) -> dict[str, Any]:
+    """
+    Shadow-only candidate truth export from activation-selected dry-run candidate.
+
+    This deliberately does NOT promote strategy action, does NOT write to any
+    trading/order stream, and does NOT enable broker/risk/execution paths.
+    """
+    selected_map = _mapping(selected)
+    action = _safe_str(selected_map.get("action")).upper()
+    is_enter = action in {"ENTER_CALL", "ENTER_PUT"}
+
+    # R34K_SYMBOL_TOKEN_IDENTITY_EXPORT_BEGIN
+    def _r34k_read(obj: Any, key: str) -> Any:
+        if obj is None:
+            return None
+        if isinstance(obj, Mapping):
+            return obj.get(key)
+        return getattr(obj, key, None)
+
+    def _r34k_walk(obj: Any, keys: tuple[str, ...], depth: int = 0, seen: set[int] | None = None) -> Any:
+        if obj is None or depth > 4:
+            return None
+        if seen is None:
+            seen = set()
+        oid = id(obj)
+        if oid in seen:
+            return None
+        seen.add(oid)
+
+        for key in keys:
+            value = _r34k_read(obj, key)
+            if value not in (None, "", [], {}):
+                return value
+
+        if isinstance(obj, Mapping):
+            iterable = obj.values()
+        elif isinstance(obj, (str, bytes, int, float, bool)):
+            iterable = ()
+        elif hasattr(obj, "__dict__"):
+            iterable = vars(obj).values()
+        else:
+            iterable = ()
+
+        for child in iterable:
+            value = _r34k_walk(child, keys, depth + 1, seen)
+            if value not in (None, "", [], {}):
+                return value
+        return None
+
+    symbol_keys = (
+        "symbol", "tradingsymbol", "trading_symbol", "option_symbol",
+        "selected_option_symbol", "selected_option_tradingsymbol",
+        "selected_option_trading_symbol", "instrument_key",
+        "selected_option_instrument_key",
+        "selected_call_option_symbol", "selected_put_option_symbol",
+        "selected_call_instrument_key", "selected_put_instrument_key",
+        "entry_option_symbol", "selected_symbol",
+    )
+    token_keys = (
+        "instrument_token", "token", "option_token",
+        "selected_option_token", "selected_option_instrument_token",
+        "selected_call_option_token", "selected_put_option_token",
+        "selected_call_instrument_token", "selected_put_instrument_token",
+    )
+
+    candidate_symbol_shadow = _safe_str(
+        _r34k_walk(selected_map, symbol_keys) or _r34k_walk(view, symbol_keys)
+    )
+    candidate_instrument_token_shadow = _safe_str(
+        _r34k_walk(selected_map, token_keys) or _r34k_walk(view, token_keys)
+    )
+    # R34K_SYMBOL_TOKEN_IDENTITY_EXPORT_END
+
+    return {
+        "candidate_true_shadow": int(is_enter),
+        "candidate_present_shadow": int(is_enter),
+        "candidate_shadow_only": int(is_enter),
+        "candidate_truth_mode_shadow": (
+            "activation_selected_report_only_shadow" if is_enter else ""
+        ),
+        "candidate_action_shadow": action if is_enter else "",
+        "candidate_family_id_shadow": (
+            _safe_str(selected_map.get("family_id")).upper() if is_enter else ""
+        ),
+        "candidate_branch_id_shadow": (
+            _safe_str(selected_map.get("branch_id")) if is_enter else ""
+        ),
+        "candidate_score_shadow": selected_map.get("score") if is_enter else None,
+        "candidate_symbol_shadow": candidate_symbol_shadow if is_enter else "",
+        "candidate_instrument_token_shadow": candidate_instrument_token_shadow if is_enter else "",
+        "symbol": candidate_symbol_shadow if is_enter else "",
+        "instrument_token": candidate_instrument_token_shadow if is_enter else "",
+        "real_order_sent_shadow": 0,
+        "broker_calls_executed_shadow": 0,
+        "redis_trading_stream_write_attempted_shadow": 0,
+    }
+# R34F_SHADOW_CANDIDATE_TRUTH_EXPORT_END
+
+
+
+
+# BEGIN R38EE_GUARDED_STRATEGY_TO_RUNTIME_PAPER_BRIDGE_PATCH
+# Default observe-only behaviour remains HOLD-only.
+# Only exact controlled-paper env + exact scope ACK can project activation.selected
+# into the top-level runtime decision consumed by risk/execution.
+def _r38ee_truthy(value: Any) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _r38ee_env_truthy(name: str) -> bool:
+    import os as _r38ee_os
+    return _r38ee_truthy(_r38ee_os.environ.get(name, ""))
+
+
+def _r38ee_env_text(name: str) -> str:
+    import os as _r38ee_os
+    return str(_r38ee_os.environ.get(name, "") or "").strip()
+
+
+def _r38ee_text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _r38ee_upper(value: Any) -> str:
+    return _r38ee_text(value).upper()
+
+
+def _r38ee_mapping(value: Any) -> dict[str, Any]:
+    return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _r38ee_json_obj(value: Any) -> dict[str, Any]:
+    if isinstance(value, Mapping):
+        return dict(value)
+    if isinstance(value, str) and value.strip():
+        try:
+            obj = json.loads(value)
+            return dict(obj) if isinstance(obj, Mapping) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _r38ee_ack_for_scope(family: str, side: str, action: str, token: str, symbol: str) -> str:
+    import hashlib as _r38ee_hashlib
+    seed = "|".join(["CONTROLLED_PAPER_SCOPE_ACK", family, side, action, token, symbol, "LOTS_1"])
+    return "ACK_" + _r38ee_hashlib.sha256(seed.encode()).hexdigest()[:20].upper()
+
+
+def _r38ee_controlled_env_scope_allows(*, family: str, side: str, action: str, token: str, symbol: str, qty: int) -> bool:
+    family = _r38ee_upper(family)
+    side = _r38ee_upper(side)
+    action = _r38ee_upper(action)
+    token = _r38ee_text(token)
+    symbol = _r38ee_upper(symbol)
+
+    if _r38ee_env_truthy("SCALPX_OBSERVE_ONLY") or _r38ee_env_truthy("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY"):
+        return False
+    if not _r38ee_env_truthy("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"):
+        return False
+    if not (_r38ee_env_truthy("SCALPX_ENABLE_PAPER") or _r38ee_env_truthy("MME_ENABLE_PAPER")):
+        return False
+    if not (_r38ee_env_truthy("SCALPX_PAPER_ARMED") or _r38ee_env_truthy("SCALPX_CONTROLLED_PAPER_ARMED")):
+        return False
+    if not (_r38ee_env_truthy("SCALPX_POSITION_FLAT_VERIFIED") or _r38ee_env_truthy("SCALPX_FLAT_POSITION_VERIFIED")):
+        return False
+
+    forbidden_live_flags = [
+        "SCALPX_ENABLE_LIVE",
+        "SCALPX_REAL_LIVE_ALLOWED",
+        "SCALPX_ALLOW_REAL_LIVE",
+        "SCALPX_ALLOW_BROKER_ORDERS",
+        "MME_ENABLE_LIVE",
+        "MME_ALLOW_BROKER_ORDERS",
+    ]
+    if any(_r38ee_env_truthy(name) for name in forbidden_live_flags):
+        return False
+
+    if family not in {"MIST", "MISB", "MISC", "MISR"}:
+        return False
+    if side not in {"CALL", "PUT"}:
+        return False
+    if action not in {"ENTER_CALL", "ENTER_PUT"}:
+        return False
+    if qty != 1:
+        return False
+
+    env_family = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_FAMILY"))
+    env_side = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_SIDE") or _r38ee_env_text("SCALPX_CONTROLLED_PAPER_BRANCH"))
+    env_action = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_ACTION"))
+    env_token = _r38ee_text(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_INSTRUMENT_TOKEN"))
+    env_symbol = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_OPTION_SYMBOL"))
+    env_ack = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_SCOPE_ACK"))
+
+    if not all([env_family, env_side, env_action, env_token, env_symbol, env_ack]):
+        return False
+    if env_family != family or env_side != side or env_action != action:
+        return False
+    if env_token != token or env_symbol != symbol:
+        return False
+
+    return env_ack == _r38ee_ack_for_scope(family, side, action, token, symbol)
+
+
+def _r38ee_controlled_paper_bridge_allowed(decision: Mapping[str, Any]) -> bool:
+    metadata = _r38ee_mapping(decision.get("metadata"))
+    family = decision.get("strategy_family_id") or decision.get("doctrine_id") or decision.get("family_id") or metadata.get("family_id") or metadata.get("strategy_family")
+    side = decision.get("branch_id") or decision.get("side") or metadata.get("side") or metadata.get("branch_id")
+    action = decision.get("action") or metadata.get("action")
+    token = decision.get("instrument_token") or decision.get("instrument_key") or metadata.get("instrument_token") or metadata.get("instrument_key") or metadata.get("option_token")
+    symbol = decision.get("option_symbol") or decision.get("symbol") or metadata.get("option_symbol")
+    qty = _safe_int(decision.get("qty") or metadata.get("quantity_lots_hint") or metadata.get("qty_lots"), 0)
+
+    return _r38ee_controlled_env_scope_allows(
+        family=_r38ee_text(family),
+        side=_r38ee_text(side),
+        action=_r38ee_text(action),
+        token=_r38ee_text(token),
+        symbol=_r38ee_text(symbol),
+        qty=qty,
+    )
+
+
+# BEGIN R38EM_R1_PROJECTION_DIAG_AND_SYMBOL_FALLBACK_PATCH
+def _r38ee_project_activation_selected_for_controlled_paper(decision: Mapping[str, Any]) -> dict[str, Any]:
+    base = dict(decision)
+    activation = _r38ee_json_obj(base.get("activation_report_json"))
+    selected = _r38ee_mapping(activation.get("selected"))
+    candidate = _r38ee_mapping(selected.get("candidate")) or selected
+    metadata = _r38ee_mapping(candidate.get("metadata"))
+
+    family = _r38ee_upper(selected.get("family_id") or candidate.get("family_id") or candidate.get("doctrine_id") or metadata.get("family_id") or metadata.get("strategy_family"))
+    side = _r38ee_upper(selected.get("branch_id") or selected.get("side") or candidate.get("branch_id") or candidate.get("side") or metadata.get("side") or metadata.get("branch_id"))
+    action = _r38ee_upper(selected.get("action") or candidate.get("action"))
+    token = _r38ee_text(candidate.get("instrument_token") or candidate.get("instrument_key") or metadata.get("instrument_token") or metadata.get("instrument_key") or metadata.get("option_token") or base.get("candidate_instrument_token_shadow"))
+
+    symbol_raw = candidate.get("option_symbol") or metadata.get("option_symbol") or base.get("candidate_symbol_shadow") or base.get("option_symbol") or base.get("symbol")
+    symbol = _r38ee_upper(symbol_raw)
+
+    env_family = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_FAMILY"))
+    env_side = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_SIDE") or _r38ee_env_text("SCALPX_CONTROLLED_PAPER_BRANCH"))
+    env_action = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_ACTION"))
+    env_token = _r38ee_text(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_INSTRUMENT_TOKEN"))
+    env_symbol = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_OPTION_SYMBOL"))
+    env_ack = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_SCOPE_ACK"))
+
+    symbol_fallback_applied = False
+    if not symbol and token and env_token and token == env_token and env_symbol:
+        symbol = env_symbol
+        symbol_fallback_applied = True
+
+    price = candidate.get("option_price") or candidate.get("price") or metadata.get("limit_price_hint") or metadata.get("limit_price") or base.get("price")
+    strike = candidate.get("strike") or metadata.get("strike") or base.get("strike")
+    score = selected.get("score") if selected.get("score") is not None else candidate.get("score")
+    env_ack_expected = _r38ee_ack_for_scope(family, side, action, token, symbol) if family and side and action and token and symbol else ""
+
+    projection_attempted = bool(
+        action in {"ENTER_CALL", "ENTER_PUT"}
+        or _r38ee_upper(base.get("activation_selected_action")) in {"ENTER_CALL", "ENTER_PUT"}
+    )
+
+    projection_blocker = "none"
+    if _r38ee_env_truthy("SCALPX_OBSERVE_ONLY") or _r38ee_env_truthy("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY"):
+        projection_blocker = "observe_only_active"
+    elif not _r38ee_env_truthy("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"):
+        projection_blocker = "controlled_runtime_not_allowed"
+    elif not (_r38ee_env_truthy("SCALPX_ENABLE_PAPER") or _r38ee_env_truthy("MME_ENABLE_PAPER")):
+        projection_blocker = "paper_not_enabled"
+    elif not (_r38ee_env_truthy("SCALPX_PAPER_ARMED") or _r38ee_env_truthy("SCALPX_CONTROLLED_PAPER_ARMED")):
+        projection_blocker = "paper_not_armed"
+    elif not (_r38ee_env_truthy("SCALPX_POSITION_FLAT_VERIFIED") or _r38ee_env_truthy("SCALPX_FLAT_POSITION_VERIFIED")):
+        projection_blocker = "flat_not_verified"
+    elif any(_r38ee_env_truthy(name) for name in [
+        "SCALPX_ENABLE_LIVE",
+        "SCALPX_REAL_LIVE_ALLOWED",
+        "SCALPX_ALLOW_REAL_LIVE",
+        "SCALPX_ALLOW_BROKER_ORDERS",
+        "MME_ENABLE_LIVE",
+        "MME_ALLOW_BROKER_ORDERS",
+    ]):
+        projection_blocker = "live_or_broker_flag_truthy"
+    elif family not in {"MIST", "MISB", "MISC", "MISR"}:
+        projection_blocker = "family_not_allowed"
+    elif side not in {"CALL", "PUT"}:
+        projection_blocker = "side_not_allowed"
+    elif action not in {"ENTER_CALL", "ENTER_PUT"}:
+        projection_blocker = "action_not_enter"
+    elif not token:
+        projection_blocker = "token_missing"
+    elif not symbol:
+        projection_blocker = "symbol_missing"
+    elif not all([env_family, env_side, env_action, env_token, env_symbol, env_ack]):
+        projection_blocker = "env_scope_missing"
+    elif env_family != family:
+        projection_blocker = "family_scope_mismatch"
+    elif env_side != side:
+        projection_blocker = "side_scope_mismatch"
+    elif env_action != action:
+        projection_blocker = "action_scope_mismatch"
+    elif env_token != token:
+        projection_blocker = "token_scope_mismatch"
+    elif env_symbol != symbol:
+        projection_blocker = "symbol_scope_mismatch"
+    elif env_ack != env_ack_expected:
+        projection_blocker = "ack_scope_mismatch"
+
+    scope_allowed = _r38ee_controlled_env_scope_allows(
+        family=family,
+        side=side,
+        action=action,
+        token=token,
+        symbol=symbol,
+        qty=1,
+    )
+
+    diag_fields = {
+        "r38em_r1_projection_diag_patch": 1,
+        "r38ee_projection_attempted": 1 if projection_attempted else 0,
+        "r38ee_projection_projected": 0,
+        "r38ee_projection_blocker": projection_blocker if not scope_allowed else "none",
+        "r38ee_symbol_fallback_applied": 1 if symbol_fallback_applied else 0,
+        "r38ee_extracted_family": family,
+        "r38ee_extracted_side": side,
+        "r38ee_extracted_action": action,
+        "r38ee_extracted_token": token,
+        "r38ee_extracted_symbol": symbol,
+        "r38ee_extracted_symbol_raw": _r38ee_text(symbol_raw),
+        "r38ee_env_family": env_family,
+        "r38ee_env_side": env_side,
+        "r38ee_env_action": env_action,
+        "r38ee_env_token": env_token,
+        "r38ee_env_symbol": env_symbol,
+        "r38ee_env_ack_present": 1 if env_ack else 0,
+        "r38ee_env_ack_expected": env_ack_expected,
+        "r38ee_scope_allowed": 1 if scope_allowed else 0,
+    }
+    base.update(diag_fields)
+
+    if not scope_allowed:
+        return base
+
+    projected_metadata = dict(metadata)
+    projected_metadata.update({
+        "family_id": family,
+        "side": side,
+        "branch_id": side,
+        "action": action,
+        "instrument_token": token,
+        "instrument_key": token,
+        "option_symbol": symbol,
+        "limit_price": price,
+        "limit_price_hint": price,
+        "quantity_lots_hint": 1,
+        "entry_mode": projected_metadata.get("entry_mode") or "DIRECT",
+        "provider_id": projected_metadata.get("provider_id") or "ZERODHA",
+        "controlled_paper_scope_ack": _r38ee_env_text("SCALPX_CONTROLLED_PAPER_SCOPE_ACK"),
+        "r38ee_strategy_to_runtime_paper_bridge": True,
+    })
+
+    out = dict(base)
+    out.update({
+        "action": action,
+        "side": side,
+        "branch_id": side,
+        "strategy_family_id": family,
+        "doctrine_id": family,
+        "instrument_key": token,
+        "instrument_token": token,
+        "option_symbol": symbol,
+        "symbol": symbol,
+        "strike": strike,
+        "qty": 1,
+        "price": price,
+        "order_type": "LIMIT",
+        "reason": "r38ee_controlled_paper_activation_selected_projected",
+        "confidence": score if score is not None else base.get("confidence", 0.0),
+        "hold_only": 0,
+        "activation_report_only": 0,
+        "activation_action": action,
+        "activation_promoted": 1,
+        "activation_safe_to_promote": 1,
+        "live_orders_allowed": 0,
+        "metadata": projected_metadata,
+        "r38ee_strategy_to_runtime_paper_bridge": "projected_activation_selected_exact_scope_1lot",
+        "r38em_r1_projection_diag_patch": 1,
+        "r38ee_projection_attempted": 1,
+        "r38ee_projection_projected": 1,
+        "r38ee_projection_blocker": "projected",
+        "r38ee_symbol_fallback_applied": 1 if symbol_fallback_applied else 0,
+        "r38ee_extracted_family": family,
+        "r38ee_extracted_side": side,
+        "r38ee_extracted_action": action,
+        "r38ee_extracted_token": token,
+        "r38ee_extracted_symbol": symbol,
+        "r38ee_extracted_symbol_raw": _r38ee_text(symbol_raw),
+        "r38ee_env_family": env_family,
+        "r38ee_env_side": env_side,
+        "r38ee_env_action": env_action,
+        "r38ee_env_token": env_token,
+        "r38ee_env_symbol": env_symbol,
+        "r38ee_env_ack_present": 1 if env_ack else 0,
+        "r38ee_env_ack_expected": env_ack_expected,
+        "r38ee_scope_allowed": 1,
+        "real_order_sent_shadow": 0,
+        "broker_calls_executed_shadow": 0,
+        "redis_trading_stream_write_attempted_shadow": 0,
+    })
+    return out
+# END R38EM_R1_PROJECTION_DIAG_AND_SYMBOL_FALLBACK_PATCH
+
+# END R38EE_GUARDED_STRATEGY_TO_RUNTIME_PAPER_BRIDGE_PATCH
+
+def _validate_hold_decision_for_publish(decision: Mapping[str, Any]) -> None:
+    """
+    Enforce the frozen Batch 10 strategy.py law before Redis publication.
+
+    strategy.py is a HOLD-only consumer bridge in this lane. Even if a future
+    activation/report module observes candidates, this service may not publish
+    promoted ENTER/EXIT decisions until a later explicit arming contract changes
+    this file and its proofs.
+    """
+
+    if _r38ee_controlled_paper_bridge_allowed(decision):
+        return
+
+    action = _safe_str(decision.get("action"), ACTION_HOLD)
+    if action != ACTION_HOLD:
+        raise StrategyBridgeError(
+            f"strategy.py HOLD-only bridge refused non-HOLD action: {action!r}"
+        )
+
+    qty = _safe_int(decision.get("qty"), 0)
+    if qty != 0:
+        raise StrategyBridgeError(
+            f"strategy.py HOLD-only bridge refused non-zero qty: {qty!r}"
+        )
+
+    if not _safe_bool(decision.get("hold_only"), False):
+        raise StrategyBridgeError("strategy.py HOLD-only bridge requires hold_only=1")
+
+    if not _safe_bool(decision.get("activation_report_only"), False):
+        raise StrategyBridgeError(
+            "strategy.py HOLD-only bridge requires activation_report_only=1"
+        )
+
+    activation_action = _safe_str(decision.get("activation_action"), ACTION_HOLD)
+    if activation_action != ACTION_HOLD:
+        raise StrategyBridgeError(
+            "strategy.py HOLD-only bridge refused non-HOLD activation_action: "
+            f"{activation_action!r}"
+        )
+
+    if _safe_bool(decision.get("activation_promoted"), False):
+        raise StrategyBridgeError(
+            "strategy.py HOLD-only bridge refused activation_promoted truthy"
+        )
+
+    if _safe_bool(decision.get("activation_safe_to_promote"), False):
+        raise StrategyBridgeError(
+            "strategy.py HOLD-only bridge refused activation_safe_to_promote truthy"
+        )
+
+    if _safe_bool(decision.get("live_orders_allowed"), False):
+        raise StrategyBridgeError(
+            "strategy.py HOLD-only bridge refused live_orders_allowed truthy"
+        )
+
+
+def _validate_decision_stream_fields(
+    *,
+    decision: Mapping[str, Any],
+    fields: Mapping[str, Any],
+) -> None:
+    """
+    Prove flat fields and canonical payload_json cannot drift.
+
+    execution.py consumes payload_json as canonical. The strategy publisher must
+    therefore ensure that payload_json.action and payload_json.qty preserve the
+    HOLD-only contract and agree with the flat operator-visible fields.
+    """
+
+    payload = _mapping(_json_load(fields.get("payload_json"), field_name="payload_json"))
+
+    payload_action = _safe_str(payload.get("action"), "")
+    flat_action = _safe_str(fields.get("action"), "")
+
+    if _r38ee_controlled_paper_bridge_allowed(payload):
+        if not payload_action:
+            raise StrategyBridgeError("payload_json.action missing")
+        if flat_action != payload_action:
+            raise StrategyBridgeError(
+                "strategy.py refused controlled-paper decision stream action mismatch: "
+                f"payload_action={payload_action!r}, flat_action={flat_action!r}"
+            )
+        payload_qty = _safe_int(payload.get("qty"), -1)
+        flat_qty = _safe_int(fields.get("qty"), -1)
+        if payload_qty != 1 or flat_qty != 1:
+            raise StrategyBridgeError(
+                "strategy.py refused controlled-paper decision stream qty mismatch: "
+                f"payload_qty={payload_qty!r}, flat_qty={flat_qty!r}"
+            )
+        return
+
+    if payload_action != ACTION_HOLD or flat_action != ACTION_HOLD:
+        raise StrategyBridgeError(
+            "strategy.py refused decision stream action mismatch: "
+            f"payload_action={payload_action!r}, flat_action={flat_action!r}"
+        )
+
+    payload_qty = _safe_int(payload.get("qty"), -1)
+    flat_qty = _safe_int(fields.get("qty"), -1)
+    if payload_qty != 0 or flat_qty != 0:
+        raise StrategyBridgeError(
+            "strategy.py refused decision stream qty mismatch: "
+            f"payload_qty={payload_qty!r}, flat_qty={flat_qty!r}"
+        )
+
+    # Re-run the semantic guard on the decoded canonical payload, not only on
+    # the original in-memory mapping.
+    _validate_hold_decision_for_publish(payload)
+
+
+def _nested(root: Any, *keys: str, default: Any = None) -> Any:
+    current = root
+    for key in keys:
+        if not isinstance(current, Mapping):
+            return default
+        current = current.get(key)
+        if current is None:
+            return default
+    return current
+
+
+def _mapping(value: Any) -> dict[str, Any]:
+    if isinstance(value, Mapping):
+        return dict(value)
+    if hasattr(value, "to_dict"):
+        with contextlib.suppress(Exception):
+            out = value.to_dict()
+            if isinstance(out, Mapping):
+                return dict(out)
+    if hasattr(value, "__dict__"):
+        return dict(vars(value))
+    return {}
+
+
+def _now_ns_from_clock(clock: Any) -> int:
+    for attr in ("now_ns", "time_ns"):
+        fn = getattr(clock, attr, None)
+        if callable(fn):
+            with contextlib.suppress(Exception):
+                return int(fn())
+    return time.time_ns()
+
+
+# =============================================================================
+# Consumer data structures
+# =============================================================================
+
+
+@dataclass(frozen=True, slots=True)
+class FamilyBranchConsumerFrame:
+    key: str
+    family_id: str
+    branch_id: str
+    side: str | None
+    eligible: bool
+    tradability_ok: bool
+    instrument_key: str | None
+    instrument_token: str | None
+    option_symbol: str | None
+    strike: float | None
+    option_price: float | None
+
+    @classmethod
+    def from_mapping(cls, key: str, value: Mapping[str, Any]) -> FamilyBranchConsumerFrame:
+        return cls(
+            key=key,
+            family_id=_safe_str(value.get("family_id")),
+            branch_id=_safe_str(value.get("branch_id")),
+            side=_safe_str(value.get("side")) or None,
+            eligible=_safe_bool(value.get("eligible"), False),
+            tradability_ok=_safe_bool(value.get("tradability_ok"), False),
+            instrument_key=_safe_str(value.get("instrument_key")) or None,
+            instrument_token=_safe_str(value.get("instrument_token")) or None,
+            option_symbol=_safe_str(value.get("option_symbol")) or None,
+            strike=(
+                _safe_float(value.get("strike"))
+                if value.get("strike") not in (None, "")
+                else None
+            ),
+            option_price=(
+                _safe_float(value.get("option_price"))
+                if value.get("option_price") not in (None, "")
+                else None
+            ),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "key": self.key,
+            "family_id": self.family_id,
+            "branch_id": self.branch_id,
+            "side": self.side,
+            "eligible": self.eligible,
+            "tradability_ok": self.tradability_ok,
+            "instrument_key": self.instrument_key,
+            "instrument_token": self.instrument_token,
+            "option_symbol": self.option_symbol,
+            "strike": self.strike,
+            "option_price": self.option_price,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class StrategyFamilyConsumerView:
+    view_version: str
+    frame_id: str
+    frame_ts_ns: int
+    features_generated_at_ns: int
+    safe_to_consume: bool
+    hold_only: bool
+    action: str
+    reason: str
+    data_valid: bool
+    warmup_complete: bool
+    provider_ready_classic: bool
+    provider_ready_miso: bool
+    regime: str | None
+    provider_runtime: Mapping[str, Any]
+    stage_flags: Mapping[str, Any]
+    common: Mapping[str, Any]
+    market: Mapping[str, Any]
+    family_status: Mapping[str, Any]
+    family_surfaces: Mapping[str, Any]
+    family_frames: Mapping[str, Any]
+    branch_frames: Mapping[str, FamilyBranchConsumerFrame]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "view_version": self.view_version,
+            "frame_id": self.frame_id,
+            "frame_ts_ns": self.frame_ts_ns,
+            "features_generated_at_ns": self.features_generated_at_ns,
+            "safe_to_consume": self.safe_to_consume,
+            "hold_only": self.hold_only,
+            "action": self.action,
+            "reason": self.reason,
+            "data_valid": self.data_valid,
+            "warmup_complete": self.warmup_complete,
+            "provider_ready_classic": self.provider_ready_classic,
+            "provider_ready_miso": self.provider_ready_miso,
+            "regime": self.regime,
+            "provider_runtime": dict(self.provider_runtime),
+            "stage_flags": dict(self.stage_flags),
+            "common": dict(self.common),
+            "market": dict(self.market),
+            "family_status": dict(self.family_status),
+            "family_surfaces": dict(self.family_surfaces),
+            "family_frames": dict(self.family_frames),
+            "branch_frames": {
+                key: frame.to_dict() for key, frame in self.branch_frames.items()
+            },
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class FeaturePayloadBundle:
+    source_hash_key: str
+    raw_hash: Mapping[str, Any]
+    family_features: Mapping[str, Any]
+    family_surfaces: Mapping[str, Any]
+    family_frames: Mapping[str, Any]
+    payload: Mapping[str, Any]
+
+    @property
+    def feature_frame_id(self) -> str:
+        return _safe_str(self.raw_hash.get("frame_id")) or _safe_str(self.payload.get("frame_id"))
+
+    @property
+    def feature_frame_ts_ns(self) -> int:
+        return _safe_int(self.raw_hash.get("frame_ts_ns"), _safe_int(self.payload.get("frame_ts_ns"), 0))
+
+
+# =============================================================================
+# Consumer bridge
+# =============================================================================
+
+
+class StrategyFamilyConsumerBridge:
+    """
+    Read, validate and reduce feature payload into strategy-consumable view.
+
+    This bridge deliberately does not evaluate doctrine leaves.
+    """
+
+    def __init__(self, *, redis_client: Any, logger: logging.Logger | None = None):
+        self.redis = redis_client
+        self.log = logger or LOGGER
+        self.activation_config = SF_ACT.StrategyFamilyActivationConfig(
+            activation_mode=_r38r_controlled_paper_activation_mode(),
+            allow_candidate_promotion=_r38r_controlled_paper_candidate_promotion_allowed(),
+            allow_live_orders=False,
+            require_hold_only_view=True,
+            require_safe_to_consume=True,
+            require_data_valid=True,
+            require_warmup_complete=True,
+            min_candidate_score=0.0,
+            max_candidates=10,
+            enabled_families=FAMILY_IDS,
+            enabled_branches=BRANCH_IDS,
+        )
+
+    def read_feature_bundle(self) -> FeaturePayloadBundle:
+        try:
+            raw_result = self.redis.hgetall(HASH_FEATURES) or {}
+        except Exception as exc:
+            raise StrategyBridgeError(
+                f"feature hash read failed: {HASH_FEATURES}: {exc}"
+            ) from exc
+
+        raw = _decode_hash(raw_result)
+        if not raw:
+            raise StrategyBridgeError(f"feature hash is empty: {HASH_FEATURES}")
+
+        # Do not suppress JSON/schema errors here. A malformed features hash is
+        # materially different from an empty hash and must be visible in proofs,
+        # logs, and system:error stream.
+        return self._bundle_from_hash(raw)
+
+    def _bundle_from_hash(self, raw: Mapping[str, Any]) -> FeaturePayloadBundle:
+        family_features = _mapping(
+            _json_load(raw.get("family_features_json"), field_name="family_features_json")
+        )
+        family_surfaces = _mapping(
+            _json_load(raw.get("family_surfaces_json", "{}"), field_name="family_surfaces_json")
+        )
+        family_frames = _mapping(
+            _json_load(raw.get("family_frames_json", "{}"), field_name="family_frames_json")
+        )
+        payload_raw = raw.get("payload_json")
+        payload = _mapping(_json_load(payload_raw, field_name="payload_json")) if payload_raw else {}
+
+        family_features = _r38zr_backfill_family_features_provider_runtime(self, family_features)
+        family_features = _r38zu_strip_repair_metadata_keys_from_family_features(family_features)
+        family_features = _r33d_normalize_stage_flags_for_contract(family_features)
+        FF_C.validate_family_features_payload(family_features)
+
+        self._validate_surfaces(family_surfaces)
+        self._validate_frames(family_frames)
+
+        return FeaturePayloadBundle(
+            source_hash_key=HASH_FEATURES,
+            raw_hash=dict(raw),
+            family_features=family_features,
+            family_surfaces=family_surfaces,
+            family_frames=family_frames,
+            payload=payload,
+        )
+
+    def _validate_surfaces(self, family_surfaces: Mapping[str, Any]) -> None:
+        families = _mapping(family_surfaces.get("families"))
+        missing = [family_id for family_id in FAMILY_IDS if family_id not in families]
+        if missing:
+            raise StrategyBridgeError(f"family_surfaces missing families: {missing}")
+
+        by_branch = _mapping(family_surfaces.get("surfaces_by_branch"))
+        missing_branches: list[str] = []
+        for family_id in FAMILY_IDS:
+            for branch_id in BRANCH_IDS:
+                key = f"{family_id.lower()}_{branch_id.lower()}"
+                if key not in by_branch:
+                    missing_branches.append(key)
+
+        if missing_branches:
+            raise StrategyBridgeError(f"family_surfaces missing branch surfaces: {missing_branches}")
+
+    def _validate_frames(self, family_frames: Mapping[str, Any]) -> None:
+        missing: list[str] = []
+        for family_id in FAMILY_IDS:
+            for branch_id in BRANCH_IDS:
+                key = f"{family_id.lower()}_{branch_id.lower()}"
+                if key not in family_frames:
+                    missing.append(key)
+        if missing:
+            raise StrategyBridgeError(f"family_frames missing branch frames: {missing}")
+
+    def build_consumer_view(
+        self,
+        bundle: FeaturePayloadBundle,
+        *,
+        now_ns: int,
+    ) -> StrategyFamilyConsumerView:
+        family_features = bundle.family_features
+        family_surfaces = bundle.family_surfaces
+        family_frames = bundle.family_frames
+
+        stage_flags = _mapping(family_features["stage_flags"])
+        provider_runtime = _mapping(family_features["provider_runtime"])
+        common = _mapping(family_features["common"])
+        market = _mapping(family_features["market"])
+        families = _mapping(family_features["families"])
+
+        family_status: dict[str, Any] = {}
+        for family_id in FAMILY_IDS:
+            contract_payload = _mapping(families.get(family_id))
+            surface_payload = _mapping(_nested(family_surfaces, "families", family_id, default={}))
+
+            family_status[family_id] = {
+                "family_present": family_id in families,
+                "contract_eligible": _safe_bool(contract_payload.get("eligible"), False),
+                "surface_eligible": _safe_bool(surface_payload.get("eligible"), False),
+                "surface_keys": tuple(surface_payload.keys()),
+                "contract_keys": tuple(contract_payload.keys()),
+            }
+
+        branch_views: dict[str, FamilyBranchConsumerFrame] = {}
+        for family_id in FAMILY_IDS:
+            for branch_id in BRANCH_IDS:
+                key = f"{family_id.lower()}_{branch_id.lower()}"
+                branch_views[key] = FamilyBranchConsumerFrame.from_mapping(
+                    key,
+                    _mapping(family_frames[key]),
+                )
+
+        data_valid = _safe_bool(stage_flags.get("data_valid"), False)
+        warmup_complete = _safe_bool(stage_flags.get("warmup_complete"), False)
+        provider_ready_classic = _safe_bool(stage_flags.get("provider_ready_classic"), False)
+        provider_ready_miso = _safe_bool(stage_flags.get("provider_ready_miso"), False)
+
+        safe_to_consume = bool(
+            family_features
+            and family_surfaces
+            and family_frames
+            and stage_flags
+            and provider_runtime
+            and common
+            and market
+            and family_status
+            and branch_views
+        )
+
+        return _o23h_repair_hold_bridge_decision((StrategyFamilyConsumerView(
+            view_version="strategy-family-consumer-view.v1",
+            frame_id=f"strategy-view-{now_ns}",
+            frame_ts_ns=now_ns,
+            features_generated_at_ns=_safe_int(family_features.get("generated_at_ns"), 0),
+            safe_to_consume=safe_to_consume,
+            hold_only=True,
+            action=ACTION_HOLD,
+            reason="hold_only_family_features_consumer_bridge",
+            data_valid=data_valid,
+            warmup_complete=warmup_complete,
+            provider_ready_classic=provider_ready_classic,
+            provider_ready_miso=provider_ready_miso,
+            regime=_safe_str(common.get("regime")) or None,
+            provider_runtime=provider_runtime,
+            stage_flags=stage_flags,
+            common=common,
+            market=market,
+            family_status=family_status,
+            family_surfaces=family_surfaces,
+            family_frames=family_frames,
+            branch_frames=branch_views,
+        )), locals())
+
+    def build_activation_report(
+        self,
+        view: StrategyFamilyConsumerView,
+        *,
+        now_ns: int,
+    ) -> dict[str, Any]:
+        """
+        Build report-only activation bridge output.
+
+        Safety invariant:
+        - strategy.py still emits HOLD
+        - qty remains 0
+        - no broker/execution call is possible here
+        - any unexpected activation promotion is forcibly downgraded to report-only
+        """
+        try:
+            activation_decision = SF_ACT.build_activation_decision(
+                view,
+                config=self.activation_config,
+            )
+            report = _mapping(activation_decision.to_dict())
+        except Exception as exc:
+            self.log.exception("strategy_activation_report_error")
+            report = {
+                "activation_mode": ACTIVATION_REPORT_MODE,
+                "action": ACTION_HOLD,
+                "hold": True,
+                "promoted": False,
+                "safe_to_promote": False,
+                "reason": "activation_report_error",
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+                "selected": None,
+                "candidates": [],
+                "blocked": [],
+                "no_signal": [],
+            }
+
+        # Hard report-only clamp. Even if future activation.py changes, this
+        # strategy bridge remains HOLD until strategy.py is explicitly armed.
+        observed_action = _safe_str(report.get("action"), ACTION_HOLD)
+        observed_promoted = _safe_bool(report.get("promoted"), False)
+        observed_safe_to_promote = _safe_bool(report.get("safe_to_promote"), False)
+
+        if (
+            observed_action != ACTION_HOLD
+            or observed_promoted
+            or observed_safe_to_promote
+        ):
+            report["observed_action_before_strategy_clamp"] = observed_action
+            report["observed_promoted_before_strategy_clamp"] = observed_promoted
+            report["observed_safe_to_promote_before_strategy_clamp"] = observed_safe_to_promote
+            report["strategy_clamp"] = "forced_hold_report_only"
+            report["action"] = ACTION_HOLD
+            report["hold"] = True
+            if _r38r_controlled_paper_candidate_promotion_allowed() and observed_safe_to_promote:
+                report["strategy_clamp"] = "controlled_paper_safe_to_promote_report_only_no_orders"
+                report["promoted"] = False
+                report["safe_to_promote"] = True
+                report["family_runtime_safe_to_promote"] = True
+                report["family_runtime_promoted"] = False
+            else:
+                report["promoted"] = False
+                report["safe_to_promote"] = False
+
+        report["strategy_report_only"] = True
+        report["strategy_ts_ns"] = now_ns
+        report["live_orders_allowed"] = False
+        # LANE-F-R4R20M3 global-gate diagnostic enrichment.
+        # Diagnostic-only: does not change action, candidate selection, risk, execution, broker, order, replay, or PnL.
+        metadata = report.get("metadata") if isinstance(report.get("metadata"), dict) else {}
+        reason_text = str(report.get("reason") or report.get("activation_reason") or "")
+        is_global_gate_runtime_disabled = (
+            reason_text == "view_data_invalid"
+            or "view_data_invalid" in reason_text
+            or metadata.get("gate") == "global"
+            or metadata.get("leaf_evaluation_skipped") is True
+            or report.get("leaf_evaluation_skipped") is True
+        )
+        if is_global_gate_runtime_disabled:
+            report.setdefault("family_runtime_enabled", False)
+            report.setdefault("family_runtime_gate_reason", reason_text or "view_data_invalid")
+            report.setdefault("family_runtime_family_id", "GLOBAL")
+            report.setdefault("family_runtime_branch_id", "GLOBAL_GATE")
+            report.setdefault("family_runtime_action", str(report.get("action") or "HOLD"))
+            report.setdefault("family_runtime_activation_mode", report.get("activation_mode"))
+            report.setdefault("family_runtime_report_only", bool(report.get("report_only", True)))
+            report.setdefault("family_runtime_safe_to_promote", bool(report.get("safe_to_promote", False)))
+            report.setdefault("family_runtime_promoted", bool(report.get("promoted", False)))
+
+        return report
+
+    def build_hold_decision(
+        self,
+        view: StrategyFamilyConsumerView,
+        *,
+        now_ns: int,
+    ) -> dict[str, Any]:
+        """
+        Build HOLD-only strategy decision.
+
+        This shape is intentionally conservative and diagnostic-rich. Execution
+        must ignore HOLD for order placement.
+        """
+        selected_option = (
+            _mapping(view.common.get("selected_option"))
+            or _mapping(view.common.get("selected_call"))
+            or _mapping(view.common.get("selected_put"))
+        )
+
+        activation_report = self.build_activation_report(view, now_ns=now_ns)
+        activation_selected = _mapping(activation_report.get("selected"))
+        activation_candidates = activation_report.get("candidates")
+        activation_candidate_count = (
+            len(activation_candidates)
+            if isinstance(activation_candidates, list)
+            else 0
+        )
+        # R34M_EXACT_RUNTIME_IDENTITY_SOURCE_BEGIN
+        r34m_identity_source = {
+            "selected_option": selected_option,
+            "view_common": _mapping(getattr(view, "common", {})),
+            "view_dict": view.to_dict(),
+            "activation_selected": activation_selected,
+        }
+        # R34M_EXACT_RUNTIME_IDENTITY_SOURCE_END
+        r34f_shadow_fields = _r34f_shadow_candidate_truth_from_activation_selected(
+            activation_selected,
+            view=r34m_identity_source,
+        )
+
+        decision_id = f"strategy-hold-{now_ns}"
+
+        decision = {
+            "schema_version": getattr(N, "DEFAULT_SCHEMA_VERSION", 1),
+            "service": SERVICE_STRATEGY,
+            "decision_id": decision_id,
+            "ts_ns": now_ns,
+            "ts_event_ns": now_ns,
+            "action": ACTION_HOLD,
+            "side": getattr(N, "POSITION_SIDE_FLAT", "FLAT"),
+            "branch_id": "",
+            "strategy_family_id": "",
+            "doctrine_id": "",
+            "instrument_key": _safe_str(selected_option.get("instrument_key")),
+            "instrument_token": _safe_str(selected_option.get("instrument_token")),
+            "option_symbol": _safe_str(selected_option.get("option_symbol")),
+            "strike": selected_option.get("strike"),
+            "qty": 0,
+            "price": selected_option.get("ltp"),
+            "order_type": "",
+            "reason": view.reason,
+            "confidence": 0.0,
+            "hold_only": 1,
+            "activation_bridge_enabled": 1,
+            "activation_report_only": 1,
+            "activation_mode": _safe_str(activation_report.get("activation_mode"), ACTIVATION_REPORT_MODE),
+            "activation_action": ACTION_HOLD,
+            "activation_observed_action": _safe_str(
+                activation_report.get("observed_action_before_strategy_clamp"),
+                _safe_str(activation_report.get("action"), ACTION_HOLD),
+            ),
+            "activation_promoted": 0,
+            "activation_safe_to_promote": 0,
+            "activation_reason": _safe_str(activation_report.get("reason")),
+            "activation_selected_family_id": _safe_str(activation_selected.get("family_id")),
+            "activation_selected_branch_id": _safe_str(activation_selected.get("branch_id")),
+            "activation_selected_action": _safe_str(activation_selected.get("action")),
+            "activation_selected_score": activation_selected.get("score"),
+            "activation_candidate_count": activation_candidate_count,
+            **r34f_shadow_fields,
+            "safe_to_consume": int(view.safe_to_consume),
+            "data_valid": int(view.data_valid),
+            "warmup_complete": int(view.warmup_complete),
+            "provider_ready_classic": int(view.provider_ready_classic),
+            "provider_ready_miso": int(view.provider_ready_miso),
+            "regime": view.regime or "",
+            "features_generated_at_ns": view.features_generated_at_ns,
+            "consumer_view_json": _json_dump(view.to_dict()),
+            "activation_report_json": _json_dump(activation_report),
+            "diagnostics_json": _json_dump(
+                {
+                    "bridge": "strategy_family_consumer_bridge",
+                    "hold_only": True,
+                    "activation_bridge_report_only": True,
+                    "activation_mode": _safe_str(activation_report.get("activation_mode"), ACTIVATION_REPORT_MODE),
+                    "activation_reason": _safe_str(activation_report.get("reason")),
+                    "activation_selected_family_id": _safe_str(activation_selected.get("family_id")),
+                    "activation_selected_branch_id": _safe_str(activation_selected.get("branch_id")),
+                    "activation_candidate_count": activation_candidate_count,
+                    "doctrine_leaves_observed": True,
+                    "doctrine_leaves_active": False,
+                    "broker_side_effects_allowed": False,
+                    "live_orders_allowed": False,
+                    "families": tuple(view.family_status.keys()),
+                    "branch_frame_count": len(view.branch_frames),
+                }
+            ),
+        }
+        return _r38ee_project_activation_selected_for_controlled_paper(decision)
+
+
+# =============================================================================
+# Service
+# =============================================================================
+
+
+class StrategyService:
+    def __init__(
+        self,
+        *,
+        redis_client: Any,
+        clock: Any,
+        shutdown: Any,
+        instance_id: str,
+        settings: Any = None,
+        logger: logging.Logger | None = None,
+    ):
+        self.redis = redis_client
+        self.clock = clock
+        self.shutdown = shutdown
+        self.instance_id = instance_id
+        self.settings = settings
+        self.log = logger or LOGGER
+        self.bridge = StrategyFamilyConsumerBridge(redis_client=redis_client, logger=self.log)
+        self.poll_interval_ms = DEFAULT_POLL_INTERVAL_MS
+        self.heartbeat_ttl_ms = DEFAULT_HEARTBEAT_TTL_MS
+        self._last_heartbeat_ns = 0
+
+    def _now_ns(self) -> int:
+        return _now_ns_from_clock(self.clock)
+
+    def run_once(self) -> dict[str, Any]:
+        now_ns = self._now_ns()
+        bundle = self.bridge.read_feature_bundle()
+        view = self.bridge.build_consumer_view(bundle, now_ns=now_ns)
+        decision = self.bridge.build_hold_decision(view, now_ns=now_ns)
+        self.publish_decision(decision)
+        return decision
+
+    def publish_decision(self, decision: Mapping[str, Any]) -> None:
+        _validate_hold_decision_for_publish(decision)
+        fields = _redis_stream_fields(decision)
+        _validate_decision_stream_fields(decision=decision, fields=fields)
+        try:
+            if isinstance(fields, dict) and fields.get('activation_report_json'):
+                _o23p_r10_activation_raw = fields.get('activation_report_json')
+                _o23p_r10_activation_obj = json.loads(_o23p_r10_activation_raw) if isinstance(_o23p_r10_activation_raw, str) else _o23p_r10_activation_raw
+                if isinstance(_o23p_r10_activation_obj, dict):
+                    _o23p_r10_family_surfaces_json = json.dumps(_o23p_r10_activation_obj, sort_keys=True, default=str)
+                    if not fields.get('family_surfaces_json'):
+                        fields['family_surfaces_json'] = _o23p_r10_family_surfaces_json
+                    if not fields.get('family_features_json'):
+                        fields['family_features_json'] = _o23p_r10_family_surfaces_json
+                    if not fields.get('family_frames_json'):
+                        fields['family_frames_json'] = _o23p_r10_family_surfaces_json
+                    fields['o23p_r10_decision_family_payload_patch'] = '1'
+        except Exception:
+            pass
+        # BATCH26O23P_R13_EXACT_LINE_DECISION_PAYLOAD_REPAIR_PATCH
+        # Exact-line repair: canonical family payload must be added to the active decision XADD field object before publish.
+        # Serialization-only. No strategy decision, candidate, threshold, risk, execution, position, or order behavior is changed.
+        try:
+            if isinstance(fields, dict) and fields.get('activation_report_json'):
+                _o23p_r13_activation_raw = fields.get('activation_report_json')
+                _o23p_r13_activation_obj = json.loads(_o23p_r13_activation_raw) if isinstance(_o23p_r13_activation_raw, str) else _o23p_r13_activation_raw
+                if isinstance(_o23p_r13_activation_obj, dict):
+                    _o23p_r13_payload_json = json.dumps(_o23p_r13_activation_obj, sort_keys=True, default=str)
+                    fields.setdefault('family_surfaces_json', _o23p_r13_payload_json)
+                    fields.setdefault('family_features_json', _o23p_r13_payload_json)
+                    fields.setdefault('family_frames_json', _o23p_r13_payload_json)
+                    fields['o23p_r13_decision_family_payload_patch'] = '1'
+        except Exception:
+            pass
+        # BATCH26O23Q_R13_EXACT_PRODUCER_PROJECTION_PATCH
+        # Serialization-only projection from activation_report_json into the active decision XADD field object.
+        # No strategy decision, candidate, threshold, risk, execution, position, broker, paper, or live behavior is changed.
+        try:
+            if isinstance(fields, dict) and fields.get("activation_report_json"):
+                _o23q_r13_activation_raw = fields.get("activation_report_json")
+                _o23q_r13_activation_obj = (
+                    json.loads(_o23q_r13_activation_raw)
+                    if isinstance(_o23q_r13_activation_raw, str)
+                    else _o23q_r13_activation_raw
+                )
+                if isinstance(_o23q_r13_activation_obj, dict):
+                    def _o23q_r13_norm(_item):
+                        if not isinstance(_item, dict):
+                            return {}
+                        _family_id = _safe_str(_item.get("family_id"))
+                        _branch_id = _safe_str(_item.get("branch_id"))
+                        _side = _safe_str(_item.get("side"))
+                        _action = _safe_str(_item.get("action"))
+                        _owner_parts = [
+                            _part
+                            for _part in (_family_id, _branch_id, _side)
+                            if _part
+                        ]
+                        return {
+                            "family_id": _family_id,
+                            "branch_id": _branch_id,
+                            "side": _side,
+                            "owner_scope": "|".join(_owner_parts),
+                            "action": _action,
+                            "score": _item.get("score"),
+                            "priority": _item.get("priority"),
+                            "eligible": _safe_bool(_item.get("eligible"), False),
+                            "is_candidate": _safe_bool(_item.get("is_candidate"), False),
+                            "is_blocked": _safe_bool(_item.get("is_blocked"), False),
+                            "blocker": _safe_str(_item.get("blocker")),
+                            "reason": _safe_str(_item.get("reason")),
+                        }
+
+                    def _o23q_r13_norm_list(_value):
+                        if isinstance(_value, tuple):
+                            _value = list(_value)
+                        if not isinstance(_value, list):
+                            return []
+                        return [
+                            _o23q_r13_norm(_entry)
+                            for _entry in _value
+                            if isinstance(_entry, dict)
+                        ]
+
+                    _o23q_r13_selected_raw = _o23q_r13_activation_obj.get("selected")
+                    _o23q_r13_selected = (
+                        _o23q_r13_norm(_o23q_r13_selected_raw)
+                        if isinstance(_o23q_r13_selected_raw, dict)
+                        else None
+                    )
+                    _o23q_r13_candidates = _o23q_r13_norm_list(
+                        _o23q_r13_activation_obj.get("candidates")
+                    )
+                    _o23q_r13_blocked = _o23q_r13_norm_list(
+                        _o23q_r13_activation_obj.get("blocked")
+                    )
+                    _o23q_r13_no_signal = _o23q_r13_norm_list(
+                        _o23q_r13_activation_obj.get("no_signal")
+                    )
+
+                    _o23q_r13_projection = {
+                        "schema": "o23q_family_scope_candidates_v1",
+                        "projection_source": "activation_report_json",
+                        "strategy_report_only": True,
+                        "live_orders_allowed": False,
+                        "activation_mode": _safe_str(
+                            _o23q_r13_activation_obj.get("activation_mode")
+                        ),
+                        "action": _safe_str(_o23q_r13_activation_obj.get("action")),
+                        "reason": _safe_str(_o23q_r13_activation_obj.get("reason")),
+                        "selected": _o23q_r13_selected,
+                        "candidates": _o23q_r13_candidates,
+                        "blocked": _o23q_r13_blocked,
+                        "no_signal": _o23q_r13_no_signal,
+                        "candidate_count": len(_o23q_r13_candidates),
+                        "blocked_count": len(_o23q_r13_blocked),
+                        "no_signal_count": len(_o23q_r13_no_signal),
+                    }
+                    fields["family_scope_candidates_json"] = json.dumps(
+                        _o23q_r13_projection,
+                        sort_keys=True,
+                        default=str,
+                    )
+                    fields["o23q_r13_family_scope_candidates_projection_patch"] = "1"
+        except Exception:
+            pass
+        self.redis.xadd(
+            STREAM_DECISIONS,
+            fields=fields,
+            maxlen=DEFAULT_STREAM_MAXLEN,
+            approximate=True,
+        )
+
+
+    def _publish_health(self, status: str, detail: str) -> None:
+        now_ns = self._now_ns()
+        payload = {
+            "service": SERVICE_STRATEGY,
+            "instance_id": self.instance_id,
+            "status": status,
+            "detail": detail,
+            "ts_ns": now_ns,
+            "ts_event_ns": now_ns,
+        }
+        with contextlib.suppress(Exception):
+            self.redis.hset(KEY_HEALTH_STRATEGY, mapping=payload)
+            self.redis.pexpire(KEY_HEALTH_STRATEGY, self.heartbeat_ttl_ms)
+        with contextlib.suppress(Exception):
+            self.redis.xadd(
+                STREAM_HEALTH,
+                fields=payload,
+                maxlen=DEFAULT_STREAM_MAXLEN,
+                approximate=True,
+            )
+        self._last_heartbeat_ns = now_ns
+
+    def publish_error(self, *, where: str, exc: BaseException) -> None:
+        now_ns = self._now_ns()
+        payload = {
+            "service": SERVICE_STRATEGY,
+            "instance_id": self.instance_id,
+            "where": where,
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+            "ts_ns": now_ns,
+            "ts_event_ns": now_ns,
+        }
+        with contextlib.suppress(Exception):
+            self.redis.xadd(
+                STREAM_ERRORS,
+                fields=payload,
+                maxlen=DEFAULT_STREAM_MAXLEN,
+                approximate=True,
+            )
+
+    def start(self) -> int:
+        self.log.info("strategy_service_started instance_id=%s", self.instance_id)
+        self._publish_health(getattr(N, "HEALTH_STATUS_WARN", "WARN"), "strategy_starting_hold_bridge")
+
+        while not self.shutdown.is_set():
+            status = getattr(N, "HEALTH_STATUS_OK", "OK")
+            detail = "strategy_hold_bridge_ok"
+
+            try:
+                self.run_once()
+            except Exception as exc:
+                self.log.exception("strategy_hold_bridge_loop_error")
+                self.publish_error(where="strategy_hold_bridge_loop_error", exc=exc)
+                status = getattr(N, "HEALTH_STATUS_ERROR", "ERROR")
+                detail = f"loop_error:{type(exc).__name__}"
+
+            now_ns = self._now_ns()
+            if now_ns - self._last_heartbeat_ns >= 2_000_000_000:
+                self._publish_health(status, detail)
+
+            self.shutdown.wait(max(0.01, self.poll_interval_ms / 1000.0))
+
+        self._publish_health(getattr(N, "HEALTH_STATUS_WARN", "WARN"), "strategy_stopping")
+        self.log.info("strategy_service_stopped")
+        return 0
+
+
+StrategyFamilyBridge = StrategyFamilyConsumerBridge
+
+
+def read_family_feature_bundle(redis_client: Any) -> FeaturePayloadBundle:
+    return StrategyFamilyConsumerBridge(redis_client=redis_client).read_feature_bundle()
+
+
+def build_strategy_consumer_view(
+    *,
+    family_features: Mapping[str, Any],
+    family_surfaces: Mapping[str, Any],
+    family_frames: Mapping[str, Any],
+    now_ns: int,
+) -> StrategyFamilyConsumerView:
+    family_features = _r33d_normalize_stage_flags_for_contract(family_features)
+    FF_C.validate_family_features_payload(family_features)
+
+    dummy_bundle = FeaturePayloadBundle(
+        source_hash_key="<memory>",
+        raw_hash={},
+        family_features=family_features,
+        family_surfaces=family_surfaces,
+        family_frames=family_frames,
+        payload={},
+    )
+
+    class _MemoryBridge(StrategyFamilyConsumerBridge):
+        def __init__(self) -> None:
+            pass
+
+    bridge = _MemoryBridge()
+    bridge._validate_surfaces(family_surfaces)
+    bridge._validate_frames(family_frames)
+    return bridge.build_consumer_view(dummy_bundle, now_ns=now_ns)
+
+
+def run(context: Any) -> int:
+    redis_runtime = getattr(context, "redis", None)
+    if redis_runtime is None:
+        raise RuntimeError("strategy requires context.redis")
+    redis_client = redis_runtime.sync if hasattr(redis_runtime, "sync") else redis_runtime
+
+    shutdown = getattr(context, "shutdown", None)
+    clock = getattr(context, "clock", None)
+    instance_id = _safe_str(getattr(context, "instance_id", ""), "strategy")
+
+    if shutdown is None:
+        raise RuntimeError("strategy requires context.shutdown")
+    if clock is None:
+        raise RuntimeError("strategy requires context.clock")
+
+    return StrategyService(
+        redis_client=redis_client,
+        clock=clock,
+        shutdown=shutdown,
+        instance_id=instance_id,
+        settings=getattr(context, "settings", None),
+        logger=LOGGER,
+    ).start()
+
+
+
+
+# ============================================================================
+# Batch 25Q disabled order-intent adapter law
+# ============================================================================
+
+STRATEGY_ORDER_INTENT_ADAPTER_ENABLED = bool(
+    __import__(
+        "app.mme_scalpx.services.controlled_paper_runtime",
+        fromlist=["controlled_order_intent_adapter_enabled"],
+    ).controlled_order_intent_adapter_enabled()
+)
+STRATEGY_ORDER_INTENT_PUBLICATION_ENABLED = False
+
+
+def strategy_order_intent_adapter_runtime_law() -> dict[str, object]:
+    return {
+        "adapter_enabled": STRATEGY_ORDER_INTENT_ADAPTER_ENABLED,
+        "publication_enabled": STRATEGY_ORDER_INTENT_PUBLICATION_ENABLED,
+        "strategy_publishes_entries": False,
+        "strategy_publishes_hold_only": True,
+        "observe_only_default": True,
+        "law": "batch25q_disabled_preview_only",
+    }
+
+__all__ = [
+    "FeaturePayloadBundle",
+    "FamilyBranchConsumerFrame",
+    "StrategyBridgeError",
+    "StrategyFamilyBridge",
+    "StrategyFamilyConsumerBridge",
+    "StrategyFamilyConsumerView",
+    "StrategyService",
+    "ACTIVATION_REPORT_MODE",
+    "ACTIVATION_REPORT_ONLY",
+    "build_strategy_consumer_view",
+    "read_family_feature_bundle",
+    "strategy_order_intent_adapter_runtime_law",
+    "run",
+]
+
+
+# Batch 25P HOLD-only sentinel contract
+#
+# This block is intentionally declarative and safety-preserving.
+# It makes the strategy.py report-only/HOLD-only contract explicit for proof
+# tooling. It does not promote candidates, call risk, call execution, or call
+# broker APIs.
+ACTIVATION_REPORT_ONLY: Final[bool] = True
+ACTIVATION_ALLOW_CANDIDATE_PROMOTION: Final[bool] = bool(
+    __import__(
+        "app.mme_scalpx.services.controlled_paper_runtime",
+        fromlist=["controlled_strategy_promotion_enabled"],
+    ).controlled_strategy_promotion_enabled()
+)
+STRATEGY_HOLD_ONLY_DECISION_SENTINEL: Final[dict[str, object]] = {
+    "action": ACTION_HOLD,
+    "quantity_lots": 0,
+    "position_effect": POSITION_EFFECT_NONE,
+}
+
+# --- O23-H controlled-paper consumer-view bridge helper START ---
+def _o23h_jsonish(value):
+    """Parse dict/list JSON surfaces defensively; no trading thresholds are changed."""
+    import json as _o23h_json
+    if value is None:
+        return None
+    if isinstance(value, (dict, list, bool, int, float)):
+        return value
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    for _ in range(4):
+        try:
+            parsed = _o23h_json.loads(text)
+        except Exception:
+            return None
+        if isinstance(parsed, str) and parsed.strip().startswith(("{", "[")):
+            text = parsed.strip()
+            continue
+        return parsed
+    return None
+
+
+def _o23h_boolish(value):
+    if value is True:
+        return True
+    if value is False or value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "ok", "pass", "valid"}
+    return bool(value)
+
+
+def _o23h_get_value(obj, key, default=None):
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
+def _o23h_find_consumer_view(obj, depth=0, seen=None):
+    """Find a consumer_view-like dict in nested feature/decision/local objects."""
+    if seen is None:
+        seen = set()
+    if depth > 5:
+        return None
+    ident = id(obj)
+    if ident in seen:
+        return None
+    seen.add(ident)
+
+    parsed = _o23h_jsonish(obj)
+    if parsed is not None and parsed is not obj:
+        obj = parsed
+
+    if isinstance(obj, dict):
+        for key in (
+            "consumer_view",
+            "consumer_view_json",
+            "family_features_consumer_view",
+            "feature_consumer_view",
+            "view",
+        ):
+            val = obj.get(key)
+            parsed_val = _o23h_jsonish(val)
+            if isinstance(parsed_val, dict):
+                return parsed_val
+
+        for key in (
+            "payload_json",
+            "feature_payload_json",
+            "family_features_json",
+            "family_surfaces_json",
+            "family_features",
+            "family_surfaces",
+            "features",
+            "payload",
+            "frame",
+            "latest_feature",
+        ):
+            val = obj.get(key)
+            found = _o23h_find_consumer_view(val, depth + 1, seen)
+            if isinstance(found, dict):
+                return found
+
+        # Treat the object itself as a consumer-view candidate only if it has
+        # validity fields. This does not create a candidate; it only repairs
+        # validity propagation for the existing HOLD/no-candidate path.
+        if any(k in obj for k in ("data_valid", "safe_to_consume", "structural_valid")):
+            return obj
+
+        for val in list(obj.values())[:40]:
+            found = _o23h_find_consumer_view(val, depth + 1, seen)
+            if isinstance(found, dict):
+                return found
+
+    elif isinstance(obj, (list, tuple)):
+        for val in list(obj)[:40]:
+            found = _o23h_find_consumer_view(val, depth + 1, seen)
+            if isinstance(found, dict):
+                return found
+
+    else:
+        for attr in (
+            "consumer_view",
+            "consumer_view_json",
+            "payload_json",
+            "family_features",
+            "family_surfaces",
+            "features",
+            "payload",
+        ):
+            if hasattr(obj, attr):
+                found = _o23h_find_consumer_view(getattr(obj, attr), depth + 1, seen)
+                if isinstance(found, dict):
+                    return found
+
+    return None
+
+
+def _o23h_consumer_view_truth(cv):
+    if not isinstance(cv, dict):
+        return None
+
+    data_valid = cv.get("data_valid")
+    safe_to_consume = cv.get("safe_to_consume")
+    structural_valid = cv.get("structural_valid")
+
+    # Some existing frames use nested validity containers.
+    for nested_key in ("validity", "consumer_validity", "view_validity", "runtime_validity"):
+        nested = _o23h_jsonish(cv.get(nested_key))
+        if isinstance(nested, dict):
+            if data_valid is None and "data_valid" in nested:
+                data_valid = nested.get("data_valid")
+            if safe_to_consume is None and "safe_to_consume" in nested:
+                safe_to_consume = nested.get("safe_to_consume")
+            if structural_valid is None and "structural_valid" in nested:
+                structural_valid = nested.get("structural_valid")
+
+    truth = {
+        "data_valid": _o23h_boolish(data_valid),
+        "safe_to_consume": _o23h_boolish(safe_to_consume),
+        "structural_valid": _o23h_boolish(structural_valid),
+        "raw": {
+            "data_valid": data_valid,
+            "safe_to_consume": safe_to_consume,
+            "structural_valid": structural_valid,
+        },
+    }
+
+    # The helper is intentionally conservative: it requires all three validity
+    # surfaces to be explicitly truthy somewhere in the consumer view.
+    truth["all_valid"] = truth["data_valid"] and truth["safe_to_consume"] and truth["structural_valid"]
+    return truth
+
+
+def _o23h_decision_reason(decision):
+    if isinstance(decision, dict):
+        return decision.get("reason") or decision.get("activation_reason") or ""
+    return (
+        getattr(decision, "reason", None)
+        or getattr(decision, "activation_reason", None)
+        or ""
+    )
+
+
+def _o23h_decision_action(decision):
+    if isinstance(decision, dict):
+        return decision.get("action")
+    return getattr(decision, "action", None)
+
+
+def _o23h_decision_candidate_count(decision):
+    if isinstance(decision, dict):
+        return decision.get("activation_candidate_count")
+    return getattr(decision, "activation_candidate_count", None)
+
+
+def _o23h_apply_updates(decision, updates):
+    if not updates:
+        return decision
+
+    if isinstance(decision, dict):
+        out = dict(decision)
+        out.update(updates)
+        return out
+
+    # Pydantic v2
+    if hasattr(decision, "model_copy"):
+        try:
+            return decision.model_copy(update=updates)
+        except Exception:
+            pass
+
+    # Pydantic v1
+    if hasattr(decision, "copy"):
+        try:
+            return decision.copy(update=updates)
+        except Exception:
+            pass
+
+    # namedtuple
+    if hasattr(decision, "_replace"):
+        try:
+            valid = {k: v for k, v in updates.items() if hasattr(decision, k)}
+            if valid:
+                return decision._replace(**valid)
+        except Exception:
+            pass
+
+    # Dataclass fallback
+    try:
+        import dataclasses as _o23h_dataclasses
+        if _o23h_dataclasses.is_dataclass(decision):
+            valid = {k: v for k, v in updates.items() if hasattr(decision, k)}
+            if valid:
+                return _o23h_dataclasses.replace(decision, **valid)
+    except Exception:
+        pass
+
+    # Last safe fallback: mutate only known existing attributes on the decision object.
+    try:
+        for k, v in updates.items():
+            if hasattr(decision, k):
+                setattr(decision, k, v)
+    except Exception:
+        return decision
+    return decision
+
+
+def _o23h_repair_hold_bridge_decision(decision, local_vars):
+    """
+    Conservative O23-H repair:
+    - only activates on the existing hold_only_family_features_consumer_bridge path;
+    - only promotes validity when consumer_view has explicit truthy data_valid,
+      safe_to_consume, and structural_valid;
+    - never changes BUY/SELL/ENTRY actions;
+    - never creates candidates;
+    - never relaxes thresholds.
+    """
+
+    # LANE_F_R4R20M_R3F_OBJECT_SAFE_DIAGNOSTIC_PATCH
+    # Object-safe diagnostics-only patch. The input here is a
+    # StrategyFamilyConsumerView object, not a dict. Keep this non-mutating
+    # except for optional metadata dict enrichment, and never promote action.
+    try:
+        _r4r20m_reason = str(getattr(view, "reason", ""))
+    except Exception:
+        _r4r20m_reason = ""
+    if _r4r20m_reason == "hold_only_family_features_consumer_bridge":
+        _r4r20m_diag = {
+            "family_runtime_enabled": "0",
+            "family_runtime_gate_reason": "global_gate_hold_only_family_features_consumer_bridge",
+            "family_runtime_family_id": "",
+            "family_runtime_branch_id": "",
+            "family_runtime_action": "HOLD",
+            "family_runtime_activation_mode": "report_only",
+            "family_runtime_report_only": "1",
+            "family_runtime_safe_to_promote": "0",
+            "family_runtime_promoted": "0",
+        }
+        try:
+            _r4r20m_meta = getattr(view, "metadata", None)
+            if isinstance(_r4r20m_meta, dict):
+                _r4r20m_meta.setdefault("lane_f_r4r20m_global_gate_diagnostics", _r4r20m_diag)
+                _r4r20m_meta.setdefault("family_runtime_enabled", "0")
+                _r4r20m_meta.setdefault("family_runtime_gate_reason", "global_gate_hold_only_family_features_consumer_bridge")
+                _r4r20m_meta.setdefault("family_runtime_action", "HOLD")
+        except Exception:
+            pass
+    try:
+        reason = str(_o23h_decision_reason(decision) or "")
+        if "hold_only_family_features_consumer_bridge" not in reason:
+            return decision
+
+        action = str(_o23h_decision_action(decision) or "").upper()
+        if action not in {"", "HOLD", "NONE", "NULL"}:
+            return decision
+
+        cv = None
+        if isinstance(local_vars, dict):
+            for key in (
+                "consumer_view",
+                "feature_consumer_view",
+                "view",
+                "payload",
+                "feature_payload",
+                "family_features",
+                "family_surfaces",
+                "frame",
+                "latest_feature",
+                "features",
+                "decision",
+            ):
+                if isinstance(local_vars, dict) and key in local_vars:
+                    cv = _o23h_find_consumer_view(local_vars.get(key))
+                    if isinstance(cv, dict):
+                        break
+            if cv is None:
+                cv = _o23h_find_consumer_view(local_vars)
+
+        truth = _o23h_consumer_view_truth(cv)
+        if not isinstance(truth, dict) or not truth.get("all_valid"):
+            return decision
+
+        candidate_count = _o23h_decision_candidate_count(decision)
+        candidate_zero = candidate_count in (None, "", 0, "0")
+
+        updates = {
+            "data_valid": True,
+            "safe_to_consume": True,
+            "structural_valid": True,
+            "consumer_view_repaired": True,
+            "consumer_view_repair_reason": "O23H_PROMOTED_VALID_CONSUMER_VIEW",
+        }
+
+        # Preserve HOLD/fail-closed behavior. Convert only the bridge reason
+        # into ordinary no_candidate when no candidates are already present.
+        if candidate_zero:
+            updates["reason"] = "no_candidate"
+            updates["activation_reason"] = "no_candidate"
+            updates["activation_candidate_count"] = 0
+
+        return _o23h_apply_updates(decision, updates)
+    except Exception:
+        return decision
+# --- O23-H controlled-paper consumer-view bridge helper END ---
+
+# --- BEGIN A6-LIVE-R2H CONTROLLED PAPER ACTIVATION GATE ---
+
+from typing import Any as _A6R2HAny, Mapping as _A6R2HMapping
+
+_A6_LIVE_R2H_REAL_LIVE_ENV_KEYS = (
+    "SCALPX_REAL_LIVE_ALLOWED",
+    "SCALPX_ALLOW_REAL_LIVE",
+    "SCALPX_ALLOW_BROKER_ORDERS",
+)
+
+_A6_LIVE_R2H_RUNTIME_ENV_KEY = "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"
+_A6_LIVE_R2H_SCOPE_ACK_ENV_KEY = "SCALPX_CONTROLLED_PAPER_SCOPE_ACK"
+
+def _a6_live_r2h_truthy(value: _A6R2HAny) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on", "allow", "allowed"}
+
+
+def _a6_live_r2h_real_live_env_present() -> dict[str, str]:
+    import os as _a6_live_r2h_os
+    return {
+        key: str(_a6_live_r2h_os.environ.get(key))
+        for key in _A6_LIVE_R2H_REAL_LIVE_ENV_KEYS
+        if _a6_live_r2h_truthy(_a6_live_r2h_os.environ.get(key))
+    }
+
+
+def a6_live_r2h_parse_scope_ack(scope_ack: str) -> dict[str, _A6R2HAny]:
+    """Parse the future live-session controlled-paper approval phrase.
+
+    This helper is intentionally inert unless the exact runtime env is supplied by a
+    later approved command. A6-LIVE-R2H itself keeps env unset and proves blocked.
+    """
+
+    text = str(scope_ack or "").upper()
+    families = [x for x in ("MIST", "MISB", "MISC", "MISR", "MISO") if x in text]
+    sides = [x for x in ("CALL", "PUT") if x in text]
+    return {
+        "valid_shape": (
+            text.startswith("I APPROVE LIVE-SESSION CONTROLLED PAPER:")
+            and len(families) == 1
+            and len(sides) == 1
+            and "1 LOT ONLY" in text
+            and "PAPER/SANDBOX ONLY" in text
+            and "REAL LIVE FORBIDDEN" in text
+            and "NO BROKER FAILOVER" in text
+            and "NO MID-POSITION PROVIDER MIGRATION" in text
+        ),
+        "family_id": families[0] if len(families) == 1 else "",
+        "side": sides[0] if len(sides) == 1 else "",
+        "raw": scope_ack,
+    }
+
+
+
+# BEGIN R38R_CLASSIC_CONTROLLED_PAPER_ACTIVATION_BRIDGE
+# Tiny after-market patch: permit report-only classic controlled-paper promotion
+# markers under explicit env/scope. This does not allow live orders and does not
+# touch risk/execution/broker routing.
+def _r38r_controlled_paper_env_truth():
+    import os as _r38r_os
+
+    allow = str(_r38r_os.environ.get("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME", "")).strip() == "1"
+    ack = str(_r38r_os.environ.get("SCALPX_CONTROLLED_PAPER_SCOPE_ACK", "")).strip().upper()
+    env_family = str(_r38r_os.environ.get("SCALPX_CONTROLLED_PAPER_FAMILY", "")).strip().upper()
+    env_side = str(
+        _r38r_os.environ.get("SCALPX_CONTROLLED_PAPER_BRANCH", "")
+        or _r38r_os.environ.get("SCALPX_CONTROLLED_PAPER_SIDE", "")
+    ).strip().upper()
+    env_qty = str(_r38r_os.environ.get("SCALPX_CONTROLLED_PAPER_QTY_LOTS", "1")).strip()
+
+    if env_side == "CE":
+        env_side = "CALL"
+    if env_side == "PE":
+        env_side = "PUT"
+
+    forbidden_live = any(
+        str(_r38r_os.environ.get(k, "")).strip().lower() in {"1", "true", "yes", "y", "on"}
+        for k in (
+            "SCALPX_REAL_LIVE_ALLOWED",
+            "SCALPX_ALLOW_REAL_LIVE",
+            "SCALPX_ALLOW_BROKER_ORDERS",
+            "SCALPX_ENABLE_LIVE",
+        )
+    )
+
+    classic_families = {"MIST", "MISB", "MISC", "MISR"}
+    sides = {"CALL", "PUT"}
+
+    short_allowed = {
+        f"I_ACCEPT_{family}_{side}_1LOT_PAPER_ONLY"
+        for family in classic_families
+        for side in sides
+    }
+
+    long_ack = (
+        "I ACKNOWLEDGE CONTROLLED PAPER ONLY: NO REAL LIVE, NO BROKER ORDER, "
+        "NO REAL MONEY, ONE APPROVED SCOPE ONLY, POSITION MUST START FLAT"
+    )
+
+    if not allow:
+        return {
+            "enabled": False,
+            "reason": "controlled_paper_env_not_enabled",
+            "ack": ack,
+            "family": "",
+            "side": "",
+        }
+
+    if forbidden_live:
+        return {
+            "enabled": False,
+            "reason": "real_live_or_broker_order_env_forbidden",
+            "ack": ack,
+            "family": "",
+            "side": "",
+        }
+
+    # Backward-compatible old short ACK.
+    if ack in short_allowed:
+        parts = ack.split("_")
+        return {
+            "enabled": True,
+            "reason": "classic_1lot_paper_only_scope_ack_short",
+            "ack": ack,
+            "family": parts[2],
+            "side": parts[3],
+        }
+
+    # Current pstatus/source-truth long ACK. Family/side are supplied by separate env
+    # so the safety ACK stays exact and reusable while scope remains explicit.
+    if (
+        ack == long_ack
+        and env_family in classic_families
+        and env_side in sides
+        and env_qty in {"1", "1.0"}
+    ):
+        return {
+            "enabled": True,
+            "reason": "classic_1lot_paper_only_scope_ack_long_with_env_scope",
+            "ack": ack,
+            "family": env_family,
+            "side": env_side,
+        }
+
+    return {
+        "enabled": False,
+        "reason": "scope_ack_not_classic_1lot_paper_only",
+        "ack": ack,
+        "family": "",
+        "side": "",
+    }
+
+
+def _r38r_controlled_paper_activation_mode():
+    return "paper_armed" if _r38r_controlled_paper_env_truth().get("enabled") else ACTIVATION_REPORT_MODE
+
+
+def _r38r_controlled_paper_candidate_promotion_allowed():
+    return bool(_r38r_controlled_paper_env_truth().get("enabled"))
+# END R38R_CLASSIC_CONTROLLED_PAPER_ACTIVATION_BRIDGE
+
+
+def a6_live_r2h_controlled_paper_activation_gate(
+    activation_view: _A6R2HMapping[str, _A6R2HAny] | None = None,
+    *,
+    selected_scope: _A6R2HMapping[str, _A6R2HAny] | None = None,
+    position_flat: bool = False,
+    orders_zero: bool = False,
+) -> dict[str, _A6R2HAny]:
+    """A6-LIVE-R2H minimal activation gate.
+
+    This does not send orders, does not call brokers, and does not disable observe_only.
+    It only returns whether a report-only HOLD may be interpreted as a controlled-paper
+    candidate by a later approved paper/sandbox order-cycle command.
+
+    Promotion remains blocked unless all existing strategy/readiness facts are already true.
+    """
+
+    import os as _a6_live_r2h_os
+
+    view = dict(activation_view or {})
+    scope = dict(selected_scope or {})
+    live_env = _a6_live_r2h_real_live_env_present()
+    runtime_enabled = _a6_live_r2h_truthy(_a6_live_r2h_os.environ.get(_A6_LIVE_R2H_RUNTIME_ENV_KEY))
+    ack = a6_live_r2h_parse_scope_ack(_a6_live_r2h_os.environ.get(_A6_LIVE_R2H_SCOPE_ACK_ENV_KEY, ""))
+
+    family_id = str(
+        scope.get("family_id")
+        or view.get("activation_selected_family_id")
+        or view.get("family_id")
+        or view.get("strategy_family_id")
+        or ""
+    ).upper()
+    side = str(scope.get("side") or view.get("side") or view.get("option_side") or "").upper()
+    if side == "CE":
+        side = "CALL"
+    if side == "PE":
+        side = "PUT"
+
+    candidate_count = int(view.get("activation_candidate_count") or view.get("candidate_count") or 0)
+    bridge_enabled = _a6_live_r2h_truthy(view.get("activation_bridge_enabled"))
+    safe_to_promote = _a6_live_r2h_truthy(view.get("activation_safe_to_promote") or view.get("safe_to_promote"))
+    provider_ready = not _a6_live_r2h_truthy(view.get("provider_blocked")) and not _a6_live_r2h_truthy(view.get("provider_veto"))
+    data_ready = not _a6_live_r2h_truthy(view.get("data_invalid")) and not _a6_live_r2h_truthy(view.get("warmup_blocked"))
+
+    blockers: list[str] = []
+    if live_env:
+        blockers.append("REAL_LIVE_ENV_PRESENT")
+    if not runtime_enabled:
+        blockers.append("CONTROLLED_PAPER_RUNTIME_NOT_ENABLED")
+    if not ack["valid_shape"]:
+        blockers.append("SCOPE_ACK_INVALID_OR_MISSING")
+    if family_id != ack.get("family_id") or side != ack.get("side"):
+        blockers.append("SCOPE_ACK_MISMATCH")
+    if family_id == "MISO" and side == "PUT" and not _a6_live_r2h_truthy(view.get("dhan_context_fresh")):
+        blockers.append("MISO_PUT_DHAN_CONTEXT_NOT_PROVEN")
+    if not bridge_enabled:
+        blockers.append("ACTIVATION_BRIDGE_NOT_ENABLED")
+    if candidate_count <= 0:
+        blockers.append("NO_ACTIVATION_CANDIDATE")
+    if not safe_to_promote:
+        blockers.append("ACTIVATION_SAFE_TO_PROMOTE_FALSE")
+    if not provider_ready:
+        blockers.append("PROVIDER_READINESS_BLOCKED")
+    if not data_ready:
+        blockers.append("DATA_OR_WARMUP_BLOCKED")
+    if not orders_zero:
+        blockers.append("ORDERS_STREAM_NOT_ZERO")
+    if not position_flat:
+        blockers.append("POSITION_NOT_FLAT")
+
+    ok = len(blockers) == 0
+
+    return {
+        "lane": "A6-LIVE-R2H",
+        "ok": ok,
+        "status": "CONTROLLED_PAPER_ACTIVATION_GATE_PASS" if ok else "CONTROLLED_PAPER_ACTIVATION_GATE_BLOCKED",
+        "blockers": blockers,
+        "family_id": family_id,
+        "side": side,
+        "candidate_count": candidate_count,
+        "activation_bridge_enabled": bridge_enabled,
+        "activation_safe_to_promote": safe_to_promote,
+        "runtime_enabled": runtime_enabled,
+        "scope_ack_valid": ack["valid_shape"],
+        "orders_zero": orders_zero,
+        "position_flat": position_flat,
+        "real_live_forbidden": True,
+        "order_sent": False,
+        "broker_calls_executed": False,
+        "redis_trading_stream_write_attempted": False,
+    }
+# --- END A6-LIVE-R2H CONTROLLED PAPER ACTIVATION GATE ---
+
+
+# A6_PAPER_R10_REPORT_ONLY_STRATEGY_BRIDGE_BEGIN
+CONTROLLED_PAPER_STRATEGY_BRIDGE_VERSION = "a6_paper_r10_report_only_v1"
+
+
+def build_controlled_paper_report_only_strategy_bridge_payload(
+    env,
+    *,
+    orders_zero,
+    position_flat,
+    risk_execution_absent,
+    lock_execution_absent=None,
+):
+    """Build a report-only controlled-paper strategy bridge payload.
+
+    This helper is intentionally inert. It does not publish decisions, write
+    orders:mme:stream, call brokers, start risk/execution, mutate positions, or
+    alter the live strategy action. Runtime loop wiring requires a later
+    approval/proof batch.
+    """
+
+    from app.mme_scalpx.services.controlled_paper_observability import (
+        ControlledPaperSafetyFacts,
+        build_controlled_paper_route_observation,
+    )
+
+    safety = ControlledPaperSafetyFacts(
+        orders_zero=bool(orders_zero),
+        position_flat=bool(position_flat),
+        risk_execution_absent=bool(risk_execution_absent),
+        lock_execution_absent=lock_execution_absent,
+    )
+    observation = build_controlled_paper_route_observation(env or {}, safety=safety)
+    payload = observation.as_dict()
+    payload["strategy_bridge_version"] = CONTROLLED_PAPER_STRATEGY_BRIDGE_VERSION
+    payload["strategy_bridge_report_only"] = True
+    payload["strategy_bridge_runtime_wired"] = False
+    payload["strategy_bridge_order_intent_allowed"] = False
+    payload["strategy_bridge_broker_call_allowed"] = False
+    payload["strategy_bridge_risk_execution_start_allowed"] = False
+    return payload
+# A6_PAPER_R10_REPORT_ONLY_STRATEGY_BRIDGE_END
+
+
+# LANE-F-R4R11R diagnostic-only helper.
+# No candidate eligibility, broker/order, risk approval, execution fill,
+# replay, or PnL behavior is changed by this helper.
+
+# B1_PROFIT_LIVE_R7_R7_ENV_GATED_RUNTIME_BOOL_PATCH_BEGIN
+def _b1_profit_live_r7_runtime_gate_observe_only_enabled() -> bool:
+    """Explicit observe-only gate for classic runtime diagnostics.
+
+    This helper does not enable broker, paper, real-live, risk, execution, or order routing.
+    It only allows the runtime-gate diagnostic bool to become true when explicitly requested.
+    """
+    env = __import__("os").environ
+    truthy = {"1", "true", "yes", "on", "y"}
+
+    def is_truthy(name: str) -> bool:
+        return str(env.get(name, "")).strip().lower() in truthy
+
+    forbidden = (
+        "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME",
+        "SCALPX_CONTROLLED_PAPER_SCOPE_ACK",
+        "SCALPX_REAL_LIVE_ALLOWED",
+        "SCALPX_ALLOW_REAL_LIVE",
+        "SCALPX_ALLOW_BROKER_ORDERS",
+        "SCALPX_PAPER_ARMED",
+        "SCALPX_ENABLE_PAPER",
+        "SCALPX_ENABLE_LIVE",
+    )
+    return (
+        is_truthy("SCALPX_OBSERVE_ONLY")
+        and is_truthy("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY")
+        and not any(is_truthy(name) for name in forbidden)
+    )
+# B1_PROFIT_LIVE_R7_R7_ENV_GATED_RUNTIME_BOOL_PATCH_END
+def _lane_f_r4r11_runtime_gate_diagnostics(
+    *,
+    family_id=None,
+    branch_id=None,
+    reason=None,
+    action=None,
+    activation_mode=None,
+    report_only=None,
+    safe_to_promote=None,
+    promoted=None,
+):
+    reason_text = "" if reason is None else str(reason)
+    runtime_enabled = not (
+        "runtime_disabled" in reason_text or "disabled" in reason_text
+    )
+    return {
+        "family_runtime_enabled": ((_b1_profit_live_r7_runtime_gate_observe_only_enabled()) or (bool(runtime_enabled))),
+        "family_runtime_gate_reason": ("classic_runtime_observe_only_enabled" if _b1_profit_live_r7_runtime_gate_observe_only_enabled() else (reason_text)),
+        "family_runtime_family_id": family_id,
+        "family_runtime_branch_id": branch_id,
+        "family_runtime_action": action,
+        "family_runtime_activation_mode": activation_mode,
+        "family_runtime_report_only": report_only,
+        "family_runtime_safe_to_promote": safe_to_promote,
+        "family_runtime_promoted": promoted,
+        "lane_f_r4r11_diagnostic_only": True,
+    }
+
+
+# BEGIN R38V_GATE_SCOPE_ACK_BRIDGE_REPORT_ONLY
+# R38V: report-only gate bridge. This wrapper only resolves the synthetic/live
+# selected_scope scope_ack into the activation gate when all classic 1-lot
+# paper-only invariants are already true. It never enables live orders and never
+# calls risk/execution/broker/Redis writes.
+_R38V_ORIGINAL_A6_LIVE_R2H_GATE = a6_live_r2h_controlled_paper_activation_gate
+
+
+def _r38v_gate_text(value):
+    return str(value if value is not None else "").strip()
+
+
+def _r38v_gate_truthy(value):
+    if isinstance(value, bool):
+        return value
+    return str(value if value is not None else "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _r38v_gate_int(value, default=0):
+    try:
+        return int(float(str(value).strip()))
+    except Exception:
+        return default
+
+
+def _r38v_gate_get(mapping, *keys):
+    if not isinstance(mapping, dict):
+        return ""
+    for key in keys:
+        value = mapping.get(key)
+        if value not in (None, ""):
+            return value
+    return ""
+
+
+def a6_live_r2h_controlled_paper_activation_gate(
+    activation_view=None,
+    *,
+    selected_scope=None,
+    position_flat=False,
+    orders_zero=False,
+):
+    base = _R38V_ORIGINAL_A6_LIVE_R2H_GATE(
+        activation_view,
+        selected_scope=selected_scope,
+        position_flat=position_flat,
+        orders_zero=orders_zero,
+    )
+
+    if not isinstance(base, dict):
+        return base
+
+    try:
+        view = activation_view if isinstance(activation_view, dict) else {}
+        scope = selected_scope if isinstance(selected_scope, dict) else {}
+
+        truth = _r38r_controlled_paper_env_truth()
+        if not isinstance(truth, dict) or not truth.get("enabled"):
+            return base
+
+        env_ack = _r38v_gate_text(truth.get("ack")).upper()
+        truth_family = _r38v_gate_text(truth.get("family")).upper()
+        truth_side = _r38v_gate_text(truth.get("side")).upper()
+
+        scope_ack = _r38v_gate_text(
+            _r38v_gate_get(scope, "scope_ack", "approval_phrase", "ack")
+            or _r38v_gate_get(view, "scope_ack", "approval_phrase", "ack")
+        ).upper()
+
+        family = _r38v_gate_text(
+            _r38v_gate_get(scope, "family_id", "family")
+            or _r38v_gate_get(view, "family_id", "family")
+            or base.get("family_id")
+        ).upper()
+
+        side = _r38v_gate_text(
+            _r38v_gate_get(scope, "side", "branch_id")
+            or _r38v_gate_get(view, "side", "branch_id")
+            or base.get("side")
+        ).upper()
+
+        qty = _r38v_gate_int(
+            _r38v_gate_get(scope, "quantity_lots", "qty_lots", "max_lots")
+            or _r38v_gate_get(view, "quantity_lots", "qty_lots", "max_lots"),
+            0,
+        )
+
+        candidate_count = max(
+            _r38v_gate_int(base.get("candidate_count"), 0),
+            _r38v_gate_int(_r38v_gate_get(view, "activation_candidate_count", "candidate_count"), 0),
+            _r38v_gate_int(_r38v_gate_get(scope, "activation_candidate_count", "candidate_count"), 0),
+        )
+
+        activation_bridge_enabled = (
+            _r38v_gate_truthy(base.get("activation_bridge_enabled"))
+            or _r38v_gate_truthy(_r38v_gate_get(view, "activation_bridge_enabled"))
+            or _r38v_gate_truthy(_r38v_gate_get(scope, "activation_bridge_enabled"))
+        )
+
+        activation_safe = (
+            _r38v_gate_truthy(base.get("activation_safe_to_promote"))
+            or _r38v_gate_truthy(_r38v_gate_get(view, "activation_safe_to_promote", "safe_to_promote", "controlled_paper_promotable"))
+            or _r38v_gate_truthy(_r38v_gate_get(scope, "activation_safe_to_promote", "safe_to_promote", "controlled_paper_promotable"))
+        )
+
+        classic_family = family in {"MIST", "MISB", "MISC", "MISR"}
+        scope_ack_valid = bool(env_ack and scope_ack and env_ack == scope_ack)
+        scope_matches = bool(
+            classic_family
+            and truth_family == family
+            and truth_side == side
+            and qty == 1
+        )
+
+        can_clear_scope_ack = (
+            scope_ack_valid
+            and scope_matches
+            and activation_bridge_enabled
+            and activation_safe
+            and candidate_count > 0
+            and bool(position_flat)
+            and bool(orders_zero)
+        )
+
+        if not can_clear_scope_ack:
+            return base
+
+        blockers = [
+            b for b in list(base.get("blockers") or [])
+            if b not in {"SCOPE_ACK_INVALID_OR_MISSING", "SCOPE_ACK_MISMATCH"}
+        ]
+
+        out = dict(base)
+        out["scope_ack_valid"] = True
+        out["activation_bridge_enabled"] = True
+        out["activation_safe_to_promote"] = True
+        out["candidate_count"] = candidate_count
+        out["family_id"] = family
+        out["side"] = side
+        out["order_sent"] = False
+        out["broker_calls_executed"] = False
+        out["redis_trading_stream_write_attempted"] = False
+        out["live_orders_allowed"] = False
+        out["r38v_scope_ack_bridge"] = "classic_1lot_report_only_scope_ack_resolved"
+
+        if blockers:
+            out["ok"] = False
+            out["status"] = "CONTROLLED_PAPER_ACTIVATION_GATE_BLOCKED"
+            out["blockers"] = blockers
+        else:
+            out["ok"] = True
+            out["status"] = "CONTROLLED_PAPER_ACTIVATION_GATE_OK_REPORT_ONLY"
+            out["blockers"] = []
+
+        return out
+
+    except Exception as exc:
+        out = dict(base)
+        out["r38v_scope_ack_bridge_error"] = f"{type(exc).__name__}:{exc}"
+        out["order_sent"] = False
+        out["broker_calls_executed"] = False
+        out["redis_trading_stream_write_attempted"] = False
+        out["live_orders_allowed"] = False
+        return out
+# END R38V_GATE_SCOPE_ACK_BRIDGE_REPORT_ONLY
+

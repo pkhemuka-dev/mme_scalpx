@@ -1,0 +1,12 @@
+# LANE-MIV-R3B-R0_INTERRUPTED_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3b_paste_did_not_run_replay_order_risk_execution_or_mutate_source_20260611_233932
+
+Result: interrupted R3B paste side-effect audit completed.
+
+Proof:
+- run/proofs/LANE-MIV-R3B-R0_INTERRUPTED_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3b_paste_did_not_run_replay_order_risk_execution_or_mutate_source_20260611_233932.json
+
+Report:
+- run/audits/LANE-MIV-R3B-R0_INTERRUPTED_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3b_paste_did_not_run_replay_order_risk_execution_or_mutate_source_20260611_233932_report.md
+
+Next:
+- Retry R3B using smaller/chunked command only after this audit is PASS.

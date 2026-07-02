@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+cd /home/Lenovo/scalpx/projects/mme_scalpx || exit 1
+set +e
+
+DURATION_SEC="${1:-300}"
+SLEEP_SEC="${2:-5}"
+
+END=$(( $(date +%s) + DURATION_SEC ))
+TAG="PSHADOW_LIFECYCLE_LOOP_$(date +%Y%m%d_%H%M%S)"
+ROOT="run/audits/${TAG}"
+mkdir -p "$ROOT"
+
+echo "PSHADOW_LIFECYCLE_LOOP_START=$(date -Is)"
+echo "ROOT=$ROOT"
+echo "DURATION_SEC=$DURATION_SEC"
+echo "SLEEP_SEC=$SLEEP_SEC"
+echo "BROKER_ORDER=0"
+echo "PAPER_ENGINE_ORDER=0"
+echo "RISK_STARTED=0"
+echo "EXECUTION_STARTED=0"
+
+while [ "$(date +%s)" -lt "$END" ]; do
+  echo "--- TICK $(date -Is) ---"
+  PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadow_lifecycle_once | tee -a "$ROOT/lifecycle_loop.log"
+  sleep "$SLEEP_SEC"
+done
+
+echo "PSHADOW_LIFECYCLE_LOOP_END=$(date -Is)"
+echo "ROOT=$ROOT"

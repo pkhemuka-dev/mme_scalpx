@@ -1,0 +1,33 @@
+# LANE-X-R31A-R9G_GUARDED_REPLAY_SMOKE_AFTER_FAMILY_BRIDGE_FIX_NO_ORDER_prove_replay_artifacts_now_have_family_surfaces_strict_candidate_truth_no_broker_side_effect_20260607_192539
+
+classification: REVIEW_LANE_X_R31A_R9G_GUARDED_REPLAY_SMOKE_NEEDS_INSPECTION_NO_ORDER
+
+- pre_safe: 1
+- dataset_root: `run/replay/staging/B3-R61D_A7_NORMALIZED_TS_EVENT_SYMBOL_REPLAY_SMOKE_NO_REDIS_NO_PATCH_NO_ORDER_rebuild_a7_dataset_with_ts_event_symbol_from_ts_event_ns_trading_symbol_then_run_replay_exports_audit_20260602_222337`
+- runroot: `run/replay/lane_x_r31a_r9g/LANE-X-R31A-R9G_GUARDED_REPLAY_SMOKE_AFTER_FAMILY_BRIDGE_FIX_NO_ORDER_prove_replay_artifacts_now_have_family_surfaces_strict_candidate_truth_no_broker_side_effect_20260607_192539`
+- outdir: `run/replay/lane_x_r31a_r9g/LANE-X-R31A-R9G_GUARDED_REPLAY_SMOKE_AFTER_FAMILY_BRIDGE_FIX_NO_ORDER_prove_replay_artifacts_now_have_family_surfaces_strict_candidate_truth_no_broker_side_effect_20260607_192539/replay_locked_single_day_lane-x-r31a-r9g_guarded_replay_smoke_after_family_bridge_fix_no_order_prove_replay_artifacts_now_have_family_surfaces_strict_candidate_truth_no_broker_side_effect_20260607_192539_20260607_135557_bc02b85a`
+- replay_started: 1
+- replay_rc: 124
+- smoke_rc: 0
+- feature_family_rows: 0
+- feature_r26_rows: 0
+- feature_r27_rows: 0
+- adapter_invoked_rows: 0
+- candidate_report_count: 0
+- surface_available_count: 0
+- candidate_present_raw_true_count: 0
+- candidate_present_true_count: 0
+- strict_candidate_count: 0
+- post_orders: 0
+- post_risk_stream: 0
+- post_execution_stream: 0
+- replay_log: `run/logs/LANE-X-R31A-R9G_GUARDED_REPLAY_SMOKE_AFTER_FAMILY_BRIDGE_FIX_NO_ORDER_prove_replay_artifacts_now_have_family_surfaces_strict_candidate_truth_no_broker_side_effect_20260607_192539_replay.log`
+- smoke_json: `run/audits/LANE-X-R31A-R9G_GUARDED_REPLAY_SMOKE_AFTER_FAMILY_BRIDGE_FIX_NO_ORDER_prove_replay_artifacts_now_have_family_surfaces_strict_candidate_truth_no_broker_side_effect_20260607_192539_artifact_smoke.json`
+- smoke_txt: `run/audits/LANE-X-R31A-R9G_GUARDED_REPLAY_SMOKE_AFTER_FAMILY_BRIDGE_FIX_NO_ORDER_prove_replay_artifacts_now_have_family_surfaces_strict_candidate_truth_no_broker_side_effect_20260607_192539_artifact_smoke.txt`
+
+Interpretation:
+- PASS means replay now emits family surfaces and R26/R27 fields while preserving strict candidate truth.
+- This still does not prove profitability.
+- If PASS, next is blocker/opportunity distribution, then controlled counterfactual PnL research.
+
+Boundary: offline replay smoke only; no broker order, no paper/live, no risk/execution service start, no threshold tuning, no candidate forcing.

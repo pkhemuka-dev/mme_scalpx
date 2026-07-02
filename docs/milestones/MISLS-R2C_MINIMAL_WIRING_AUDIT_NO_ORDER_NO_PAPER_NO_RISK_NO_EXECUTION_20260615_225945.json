@@ -1,0 +1,54 @@
+{
+  "activation_family_order": [
+    "MIST",
+    "MISB",
+    "MISC",
+    "MISR",
+    "MISO"
+  ],
+  "canonical_lists_clean": true,
+  "classification": "PASS_MISLS_R2C_DORMANT_NOT_WIRED_NO_ORDER",
+  "common_family_order": [
+    "MIST",
+    "MISB",
+    "MISC",
+    "MISR",
+    "MISO"
+  ],
+  "compile_success": true,
+  "doctrine_ids": [
+    "MIST",
+    "MISB",
+    "MISC",
+    "MISR",
+    "MISO"
+  ],
+  "import_success": true,
+  "no_execution_start": true,
+  "no_order": true,
+  "no_paper": true,
+  "no_redis_delete": true,
+  "no_replay_started": true,
+  "no_risk_start": true,
+  "no_service_started": true,
+  "registry_family_module_keys": [
+    "MIST",
+    "MISB",
+    "MISC",
+    "MISR",
+    "MISO"
+  ],
+  "sample_action": "HOLD",
+  "sample_blocker": "MISLS_RESEARCH_ONLY_NO_PROMOTION",
+  "sample_eval_clean": true,
+  "sample_is_blocked": true,
+  "sample_is_candidate": false,
+  "strategy_family_ids": [
+    "MIST",
+    "MISB",
+    "MISC",
+    "MISR",
+    "MISO"
+  ],
+  "target": "app/mme_scalpx/services/strategy_family/misls.py"
+}

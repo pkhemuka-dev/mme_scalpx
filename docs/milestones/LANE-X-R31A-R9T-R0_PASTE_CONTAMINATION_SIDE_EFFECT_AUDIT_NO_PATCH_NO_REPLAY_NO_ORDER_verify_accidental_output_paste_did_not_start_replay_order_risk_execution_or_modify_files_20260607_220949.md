@@ -1,0 +1,20 @@
+# LANE-X-R31A-R9T-R0_PASTE_CONTAMINATION_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_accidental_output_paste_did_not_start_replay_order_risk_execution_or_modify_files_20260607_220949
+
+classification: PASS_LANE_X_R31A_R9T_R0_PASTE_CONTAMINATION_NO_SIDE_EFFECT_NO_PATCH_NO_REPLAY_NO_ORDER
+
+- redis_ok: 1
+- orders: 0
+- risk_stream: 0
+- execution_stream: 0
+- exec_stream: 0
+- replay_proc: 0
+- risk_proc: 0
+- execution_proc: 0
+- safe_no_side_effect: 1
+
+This batch only audits the accidental paste contamination. It applies no patch and starts no replay.
+
+Evidence:
+- process_snapshot: `run/audits/LANE-X-R31A-R9T-R0_PASTE_CONTAMINATION_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_accidental_output_paste_did_not_start_replay_order_risk_execution_or_modify_files_20260607_220949_process_snapshot.txt`
+- git_status: `run/audits/LANE-X-R31A-R9T-R0_PASTE_CONTAMINATION_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_accidental_output_paste_did_not_start_replay_order_risk_execution_or_modify_files_20260607_220949_git_status.txt`
+- artifact_scan: `run/audits/LANE-X-R31A-R9T-R0_PASTE_CONTAMINATION_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_accidental_output_paste_did_not_start_replay_order_risk_execution_or_modify_files_20260607_220949_latest_artifacts.txt`

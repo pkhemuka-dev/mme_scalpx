@@ -1,13 +1,13 @@
 # 26-O23-O-R3 — clean rerun read-only family surface sampler
 
-- generated_at_utc: 2026-05-07T09:48:56.494603+00:00
+- generated_at_utc: 2026-06-29T04:05:37.485810+00:00
 - proof: `run/proofs/proof_batch26o23_o_r3_clean_rerun_readonly_sampler.json`
-- session: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260507_151317/controlled_paper_o23o_r3_readonly_surface_session.json`
-- sample_review: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260507_151317/controlled_paper_o23o_r3_sample_review.json`
-- surface_matrix: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260507_151317/controlled_paper_o23o_r3_family_surface_matrix.json`
-- safety: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260507_151317/controlled_paper_o23o_r3_safety_readback.json`
-- log_review: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260507_151317/controlled_paper_o23o_r3_log_review.json`
-- next_decision: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260507_151317/controlled_paper_o23o_r3_next_decision.json`
+- session: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260629_093002/controlled_paper_o23o_r3_readonly_surface_session.json`
+- sample_review: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260629_093002/controlled_paper_o23o_r3_sample_review.json`
+- surface_matrix: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260629_093002/controlled_paper_o23o_r3_family_surface_matrix.json`
+- safety: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260629_093002/controlled_paper_o23o_r3_safety_readback.json`
+- log_review: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260629_093002/controlled_paper_o23o_r3_log_review.json`
+- next_decision: `run/live_capture/batch26o23_o_r3_clean_rerun_readonly_sampler_20260629_093002/controlled_paper_o23o_r3_next_decision.json`
 
 ## Scope
 - Clean rerun after O23-O-R2 recovery.
@@ -21,7 +21,7 @@
 ## Result
 - final_verdict: `FAIL_O23_O_R3_READONLY_SURFACE_SAMPLER_NOT_PROVEN`
 - classification: `O23O_R3_NO_STREAM_GROWTH_DURING_READONLY_SAMPLER`
-- false_keys: `['log_review_json_written']`
+- false_keys: `['readonly_services_started_alive', 'log_review_json_written']`
 - feature_entries_since_start: `0`
 - decision_entries_since_start: `0`
 - feature_payload_count: `0`
@@ -64,7 +64,7 @@
   "pre_orders_zero": true,
   "pre_position_flat": true,
   "production_source_patch_false": true,
-  "readonly_services_started_alive": true,
+  "readonly_services_started_alive": false,
   "real_live_false": true,
   "real_live_false_after": true,
   "safety_json_written": true,

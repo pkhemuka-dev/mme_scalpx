@@ -19,6 +19,7 @@ ENV_REAL_LIVE_ALLOWED = "SCALPX_REAL_LIVE_ALLOWED"
 ENV_ALLOW_REAL_LIVE = "SCALPX_ALLOW_REAL_LIVE"
 ENV_ALLOW_BROKER_ORDERS = "SCALPX_ALLOW_BROKER_ORDERS"
 ENV_PAPER_ARMED = "SCALPX_PAPER_ARMED"
+ENV_CONTROLLED_PAPER_ARMED = "SCALPX_CONTROLLED_PAPER_ARMED"
 ENV_ENABLE_PAPER = "SCALPX_ENABLE_PAPER"
 ENV_ENABLE_LIVE = "SCALPX_ENABLE_LIVE"
 
@@ -88,7 +89,7 @@ def evaluate_controlled_paper_route_env(
     observe_only = _env_truthy(env, ENV_OBSERVE_ONLY)
     controlled_runtime_allowed = _env_truthy(env, ENV_ALLOW_CONTROLLED_PAPER_RUNTIME)
     paper_enabled = _env_truthy(env, ENV_ENABLE_PAPER)
-    paper_armed = _env_truthy(env, ENV_PAPER_ARMED)
+    paper_armed = _env_truthy(env, ENV_PAPER_ARMED) or _env_truthy(env, ENV_CONTROLLED_PAPER_ARMED)
     scope_ack_ok = str(env.get(ENV_CONTROLLED_PAPER_SCOPE_ACK, "")).strip() == CONTROLLED_PAPER_SCOPE_ACK_EXPECTED
     broker_live_blocked = not any(_env_truthy(env, name) for name in LIVE_AND_BROKER_BLOCK_FLAGS)
 

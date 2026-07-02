@@ -1,0 +1,18 @@
+# LANE-X-R31A-R1_INTERRUPTED_SHADOW_PNL_FEASIBILITY_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r31a_created_no_replay_no_order_no_side_effect_20260607_143923
+
+classification: REVIEW_LANE_X_R31A_R1_INTERRUPTED_FEASIBILITY_SIDE_EFFECT_CHECK_NEEDED_NO_PATCH_NO_REPLAY_NO_ORDER
+
+- redis_ok: 1
+- orders: 0
+- risk_stream: 0
+- execution_stream: 0
+- exec_stream: 0
+- risk_proc: 0
+- execution_proc: 0
+- replay_proc: 1
+- safe_no_side_effect: 0
+
+R31A original feasibility command remains interrupted/incomplete. Do not mark R31A PASS from that paste.
+
+process_snapshot: `run/audits/LANE-X-R31A-R1_INTERRUPTED_SHADOW_PNL_FEASIBILITY_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r31a_created_no_replay_no_order_no_side_effect_20260607_143923_process_snapshot.txt`
+artifact_scan: `run/audits/LANE-X-R31A-R1_INTERRUPTED_SHADOW_PNL_FEASIBILITY_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r31a_created_no_replay_no_order_no_side_effect_20260607_143923_latest_r31a_artifacts.txt`

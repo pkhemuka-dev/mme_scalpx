@@ -1,0 +1,18 @@
+# LANE-B-R2F-R1_INTERRUPTED_REPLAY_FREEZE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r2f_heredoc_created_no_replay_no_order_no_side_effect_20260607_141459
+
+classification: PASS_LANE_B_R2F_R1_INTERRUPTED_FREEZE_NO_SIDE_EFFECT_NO_PATCH_NO_REPLAY_NO_ORDER
+
+- redis_ok: 1
+- orders: 0
+- risk_stream: 0
+- execution_stream: 0
+- exec_stream: 0
+- risk_proc: 0
+- execution_proc: 0
+- replay_proc: 0
+- safe_no_side_effect: 1
+
+R2F original freeze command remains interrupted/incomplete. Do not mark R2F PASS from that paste.
+
+process_snapshot: `run/audits/LANE-B-R2F-R1_INTERRUPTED_REPLAY_FREEZE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r2f_heredoc_created_no_replay_no_order_no_side_effect_20260607_141459_process_snapshot.txt`
+artifact_scan: `run/audits/LANE-B-R2F-R1_INTERRUPTED_REPLAY_FREEZE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r2f_heredoc_created_no_replay_no_order_no_side_effect_20260607_141459_latest_r2f_artifacts.txt`

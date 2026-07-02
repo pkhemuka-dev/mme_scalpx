@@ -1,0 +1,14 @@
+# LANE-X-R34H-R1_SHORT_ALL5_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_short_safe_audit_after_paste_corruption_candidate_identity_and_paper_gate_blockers_20260613_131632
+
+classification: REVIEW_R34H_R1_COMPILE_OR_AUDITOR_FAILED_NO_PATCH_NO_REPLAY_NO_ORDER
+
+proof: `run/proofs/LANE-X-R34H-R1_SHORT_ALL5_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_short_safe_audit_after_paste_corruption_candidate_identity_and_paper_gate_blockers_20260613_131632.json`
+summary: `run/audits/LANE-X-R34H-R1_SHORT_ALL5_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_short_safe_audit_after_paste_corruption_candidate_identity_and_paper_gate_blockers_20260613_131632/r34h_r1_summary.json`
+report: `run/audits/LANE-X-R34H-R1_SHORT_ALL5_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_short_safe_audit_after_paste_corruption_candidate_identity_and_paper_gate_blockers_20260613_131632/r34h_r1_report.md`
+
+## Safety
+pre orders/risk/execution: 0 / 0 / 0
+post orders/risk/execution: 0 / 0 / 0
+post risk/execution proc: 0 / 0
+
+## Embedded report

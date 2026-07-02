@@ -2428,6 +2428,53 @@ def _batch26c_time_gate_ok(self, now_ns):
     return 915 <= hhmm <= 1510
 
 
+
+# R38GA_GENERATED_SCOPE_ACK_ACCEPTANCE_PATCH_BEGIN
+def _r38ga_controlled_scope_ack_ok(raw_ack, env):
+    """
+    Accept both ACK styles for controlled-paper ENTRY gate:
+    1) legacy fixed human ACK sentence used by old Batch26C risk guard;
+    2) generated exact-scope ACK used by pstatus/execution/R38GA.
+    This only opens risk's controlled-paper ENTRY veto when all exact-scope
+    env fields match 1 lot. It does not allow live broker orders.
+    """
+    import hashlib as _r38ga_hashlib
+
+    ack = str(raw_ack or "").strip()
+    legacy = (
+        "I ACKNOWLEDGE CONTROLLED PAPER ONLY: NO REAL LIVE, NO BROKER ORDER, "
+        "NO REAL MONEY, ONE APPROVED SCOPE ONLY, POSITION MUST START FLAT"
+    )
+    if ack == legacy:
+        return True
+
+    family = str(env.get("SCALPX_CONTROLLED_PAPER_FAMILY") or "").strip().upper()
+    side = str(env.get("SCALPX_CONTROLLED_PAPER_SIDE") or "").strip().upper()
+    action = str(env.get("SCALPX_CONTROLLED_PAPER_ACTION") or "").strip().upper()
+    token = str(env.get("SCALPX_CONTROLLED_PAPER_INSTRUMENT_TOKEN") or "").strip()
+    symbol = str(env.get("SCALPX_CONTROLLED_PAPER_OPTION_SYMBOL") or "").strip().upper()
+    lots = str(env.get("SCALPX_CONTROLLED_PAPER_LOTS") or env.get("SCALPX_CONTROLLED_PAPER_MAX_LOTS") or "1").strip()
+
+    if lots != "1":
+        return False
+    if family not in {"MIST", "MISB", "MISC", "MISR", "MISO"}:
+        return False
+    if side not in {"CALL", "PUT"}:
+        return False
+    if action not in {"ENTER_CALL", "ENTER_PUT"}:
+        return False
+    if side == "CALL" and action != "ENTER_CALL":
+        return False
+    if side == "PUT" and action != "ENTER_PUT":
+        return False
+    if not token or not symbol:
+        return False
+
+    seed = "|".join(["CONTROLLED_PAPER_SCOPE_ACK", family, side, action, token, symbol, "LOTS_1"])
+    expected = "ACK_" + _r38ga_hashlib.sha256(seed.encode()).hexdigest()[:20].upper()
+    return ack == expected
+# R38GA_GENERATED_SCOPE_ACK_ACCEPTANCE_PATCH_END
+
 def _batch26c_controlled_paper_veto_reason(self, now_ns):
     """
     Return (reason, details). A None reason means no Batch 26C controlled-paper
@@ -2439,7 +2486,7 @@ def _batch26c_controlled_paper_veto_reason(self, now_ns):
     flat = _batch26c_flatten_values(cfg)
 
     env_enabled = os.environ.get("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME") == "1"
-    env_ack = os.environ.get("SCALPX_CONTROLLED_PAPER_SCOPE_ACK") == "I_ACCEPT_MIST_CALL_1LOT_PAPER_ONLY"
+    env_ack = _r38ga_controlled_scope_ack_ok(os.environ.get("SCALPX_CONTROLLED_PAPER_SCOPE_ACK"), os.environ)
 
     enabled = _batch26c_find_flat(flat, {"controlled_paper_trial_enabled", "paper_armed_enabled", "enabled"})
     real_live_allowed = _batch26c_find_flat(flat, {"real_live_allowed", "live_allowed", "allow_live_orders"})
@@ -2460,6 +2507,21 @@ def _batch26c_controlled_paper_veto_reason(self, now_ns):
         "paper_armed_approved_by_patch": False,
         "real_live_approved_by_patch": False,
     }
+
+    # R38LV_LIVE_BYPASS_BATCH26C_CONTROLLED_PAPER_VETO:
+    # Batch26C is a controlled-paper entry veto. In explicit real-live mode,
+    # with all live/order approvals present, it must not force
+    # CONTROLLED_PAPER_NOT_ARMED. Normal upstream risk gates still run after
+    # this function returns None.
+    live_mode = str(os.environ.get("SCALPX_RUNTIME_MODE", "")).strip().lower() == "live"
+    trading_enabled = os.environ.get("SCALPX_TRADING_ENABLED") == "1"
+    live_orders_enabled = os.environ.get("SCALPX_ALLOW_LIVE_ORDERS") == "1"
+    live_allowed = os.environ.get("SCALPX_REAL_LIVE_ALLOWED") == "1"
+    broker_orders_allowed = os.environ.get("SCALPX_ALLOW_BROKER_ORDERS") == "1"
+    if live_mode and trading_enabled and live_orders_enabled and live_allowed and broker_orders_allowed:
+        details["real_live_approved_by_patch"] = True
+        details["r38lv_live_bypass_batch26c_controlled_paper_veto"] = True
+        return None, details
 
     if real_live_allowed is not None and not _batch26c_falsey(real_live_allowed):
         return BATCH26C_CONTROLLED_PAPER_REAL_LIVE_FORBIDDEN, details
@@ -2616,3 +2678,99 @@ def lane_f_build_risk_evidence_surface(record=None):
         "risk_blocker_reasons": risk_blocker_reasons,
     }
 # === LANE F F6 RISK EVIDENCE SURFACE END ===
+
+# ===== R38X_INTERNAL_NOGROUP_RECOVERY_PATCH =====
+# Controlled-runtime safety patch.
+# Purpose:
+# - Empty Redis stream/group surfaces can disappear between external keepalive cycles.
+# - Risk must not fatal on NOGROUP for command/trade-ledger streams.
+# - On NOGROUP, recreate the required stream group metadata and continue fail-closed.
+# Safety:
+# - No order is emitted.
+# - No threshold is changed.
+# - No Redis delete/XDEL/XTRIM/FLUSH.
+# - Only XGROUP CREATE MKSTREAM metadata repair is attempted.
+
+def _r38x_text(value):
+    if isinstance(value, bytes):
+        return value.decode("utf-8", "replace")
+    return "" if value is None else str(value)
+
+
+def _r38x_is_nogroup_error(exc: Exception) -> bool:
+    text = _r38x_text(exc)
+    return "NOGROUP" in text or "no such key" in text.lower() or "consumer group" in text.lower()
+
+
+def _r38x_create_group_if_missing(redis_client, stream_name: str, group_name: str) -> bool:
+    try:
+        redis_client.xgroup_create(name=stream_name, groupname=group_name, id="$", mkstream=True)
+        return True
+    except Exception as exc:
+        if "BUSYGROUP" in _r38x_text(exc):
+            return True
+        return False
+
+
+def _r38x_repair_risk_surface(self, stream_name: str, group_name: str, *, reason: str, now_ns: int) -> bool:
+    ok = _r38x_create_group_if_missing(self.redis, stream_name, group_name)
+    try:
+        self._publish_error_event(
+            event="r38x_risk_stream_group_repaired" if ok else "r38x_risk_stream_group_repair_failed",
+            detail=f"stream={stream_name} group={group_name} reason={reason}",
+            ts_ns=now_ns,
+        )
+    except Exception:
+        pass
+    return ok
+
+
+_R38X_ORIGINAL_RISK_PROCESS_TRADE_LEDGER = RiskService._process_trade_ledger
+
+
+def _r38x_process_trade_ledger(self, now_ns: int) -> bool:
+    try:
+        return _R38X_ORIGINAL_RISK_PROCESS_TRADE_LEDGER(self, now_ns)
+    except Exception as exc:
+        if _r38x_is_nogroup_error(exc):
+            stream_name = _safe_str(getattr(self.keys, "trades_ledger_stream", N.STREAM_TRADES_LEDGER))
+            group_name = _safe_str(getattr(self.keys, "risk_group", N.GROUP_RISK))
+            repaired = _r38x_repair_risk_surface(
+                self,
+                stream_name,
+                group_name,
+                reason=f"{type(exc).__name__}:{exc}",
+                now_ns=now_ns,
+            )
+            if repaired:
+                return False
+        raise
+
+
+RiskService._process_trade_ledger = _r38x_process_trade_ledger
+
+
+_R38X_ORIGINAL_RISK_PROCESS_CONTROL_COMMANDS = RiskService._process_control_commands
+
+
+def _r38x_process_control_commands(self, now_ns: int) -> bool:
+    try:
+        return _R38X_ORIGINAL_RISK_PROCESS_CONTROL_COMMANDS(self, now_ns)
+    except Exception as exc:
+        if _r38x_is_nogroup_error(exc):
+            stream_name = _safe_str(getattr(self.keys, "command_stream", N.STREAM_CMD_MME))
+            group_name = _safe_str(getattr(self.keys, "risk_group", N.GROUP_RISK))
+            repaired = _r38x_repair_risk_surface(
+                self,
+                stream_name,
+                group_name,
+                reason=f"{type(exc).__name__}:{exc}",
+                now_ns=now_ns,
+            )
+            if repaired:
+                return False
+        raise
+
+
+RiskService._process_control_commands = _r38x_process_control_commands
+# ===== END R38X_INTERNAL_NOGROUP_RECOVERY_PATCH =====

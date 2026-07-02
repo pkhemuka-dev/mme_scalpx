@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import dataclasses
+import json
+import os
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+TRUTHY = {"1", "true", "yes", "on", "y", "enabled", "armed"}
+
+def truthy(name: str) -> bool:
+    return str(os.environ.get(name, "")).strip().lower() in TRUTHY
+
+def run_text(cmd: list[str], timeout: float = 3.0) -> str:
+    try:
+        p = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+        return (p.stdout or "").strip()
+    except Exception:
+        return ""
+
+def redis_xlen(stream: str) -> int:
+    out = run_text(["redis-cli", "XLEN", stream])
+    try:
+        return int(out or "0")
+    except Exception:
+        return 0
+
+def proc_count(patterns: list[str]) -> int:
+    out = run_text(["ps", "-eo", "args"], timeout=3.0)
+    n = 0
+    for line in out.splitlines():
+        text = line.strip()
+        if not text or "grep" in text:
+            continue
+        if any(pat in text for pat in patterns):
+            n += 1
+    return n
+
+def as_plain(obj: Any) -> Any:
+    if dataclasses.is_dataclass(obj):
+        return dataclasses.asdict(obj)
+    if hasattr(obj, "to_dict") and callable(obj.to_dict):
+        try:
+            return obj.to_dict()
+        except Exception:
+            pass
+    if hasattr(obj, "as_dict") and callable(obj.as_dict):
+        try:
+            return obj.as_dict()
+        except Exception:
+            pass
+    if hasattr(obj, "__dict__"):
+        try:
+            return dict(obj.__dict__)
+        except Exception:
+            pass
+    return obj
+
+def imported_controlled_route_verdict() -> dict[str, Any]:
+    try:
+        from app.mme_scalpx.services import controlled_paper_route as cpr
+    except Exception as e:
+        return {"import_ok": False, "error": repr(e)}
+
+    names = [
+        "evaluate_controlled_paper_route",
+        "build_controlled_paper_route_verdict",
+        "controlled_paper_route_verdict",
+        "build_fail_closed_controlled_paper_verdict",
+    ]
+    for name in names:
+        fn = getattr(cpr, name, None)
+        if not callable(fn):
+            continue
+        try:
+            val = fn()
+            return {"import_ok": True, "function": name, "result": as_plain(val)}
+        except TypeError as e:
+            continue
+        except Exception as e:
+            return {"import_ok": True, "function": name, "error": repr(e)}
+    return {"import_ok": True, "function": None, "error": "no_zero_argument_verdict_function_found"}
+
+
+# R10D_REDIS_POLICY_AND_POSITION_HASH_FAIL_CLOSED
+def redis_config_value(name: str) -> str:
+    out = run_text(["redis-cli", "CONFIG", "GET", name], timeout=3.0)
+    lines = [x.strip() for x in out.splitlines() if x.strip()]
+    if len(lines) >= 2:
+        return lines[-1]
+    return ""
+
+
+def redis_hgetall(key: str) -> dict[str, str]:
+    out = run_text(["redis-cli", "HGETALL", key], timeout=3.0)
+    vals = [x.strip() for x in out.splitlines()]
+    return {vals[i]: vals[i + 1] for i in range(0, len(vals) - 1, 2)}
+
+
+def strict_position_hash_flat(pos: dict[str, str]) -> bool:
+    return (
+        str(pos.get("has_position", "")).strip() == "0"
+        and str(pos.get("position_side", "")).strip().upper() == "FLAT"
+        and str(pos.get("qty_lots", "")).strip() in {"0", "0.0"}
+        and str(pos.get("qty_units", "")).strip() in {"0", "0.0"}
+    )
+
+def fallback_gate(env: dict[str, str], streams: dict[str, int], procs: dict[str, int]) -> dict[str, Any]:
+    observe_only = truthy("SCALPX_OBSERVE_ONLY") or truthy("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY")
+    paper_enabled = truthy("SCALPX_ENABLE_PAPER")
+    live_enabled = truthy("SCALPX_ENABLE_LIVE")
+    runtime_allowed = truthy("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME")
+    paper_armed = truthy("SCALPX_PAPER_ARMED") or truthy("SCALPX_CONTROLLED_PAPER_ARMED")
+    position_flat_verified = truthy("SCALPX_POSITION_FLAT_VERIFIED") or truthy("SCALPX_FLAT_POSITION_VERIFIED")
+    scope_ack = str(os.environ.get("SCALPX_CONTROLLED_PAPER_SCOPE_ACK", "")).strip()
+
+    reason = "FAIL_CLOSED_UNKNOWN"
+    allowed = False
+
+    if observe_only:
+        reason = "OBSERVE_ONLY_ACTIVE"
+    elif not runtime_allowed:
+        reason = "CONTROLLED_PAPER_RUNTIME_NOT_ALLOWED"
+    elif not scope_ack:
+        reason = "CONTROLLED_PAPER_SCOPE_ACK_MISSING_OR_INVALID"
+    elif not paper_enabled:
+        reason = "PAPER_NOT_ENABLED"
+    elif not paper_armed:
+        reason = "PAPER_NOT_ARMED"
+    elif live_enabled:
+        reason = "BROKER_OR_LIVE_FLAG_ACTIVE"
+    elif int(streams.get("orders", 0)) != 0:
+        reason = "ORDERS_STREAM_NOT_ZERO"
+    elif int(streams.get("risk", 0)) != 0 or int(streams.get("execution", 0)) != 0:
+        reason = "RISK_OR_EXECUTION_STREAM_NOT_ZERO"
+    elif int(procs.get("risk", 0)) != 0 or int(procs.get("execution", 0)) != 0:
+        reason = "RISK_OR_EXECUTION_ALREADY_RUNNING"
+    elif not position_flat_verified:
+        reason = "POSITION_FLAT_UNVERIFIED_FAIL_CLOSED"
+    else:
+        reason = "CONTROLLED_PAPER_ROUTE_ALLOWED_BY_PSTATUS_GATES"
+        allowed = True
+
+    return {
+        "paper_route_allowed": allowed,
+        "reason": reason,
+        "observe_only": observe_only,
+        "paper_enabled": paper_enabled,
+        "paper_armed": paper_armed,
+        "controlled_runtime_allowed": runtime_allowed,
+        "scope_ack_present": bool(scope_ack),
+        "live_enabled": live_enabled,
+        "position_flat_verified": position_flat_verified,
+        "fail_closed": True,
+    }
+
+def main() -> int:
+    streams = {
+        "orders": redis_xlen("orders:mme:stream"),
+        "risk": redis_xlen("risk:mme:stream"),
+        "execution": redis_xlen("execution:mme:stream"),
+    }
+    procs = {
+        "risk": proc_count(["--service risk", "risk_service", "services/risk"]),
+        "execution": proc_count(["--service execution", "execution_service", "services/execution"]),
+        "replay": proc_count(["bin/replay_run.py"]),
+    }
+    env_keys = [
+        "SCALPX_OBSERVE_ONLY",
+        "B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY",
+        "SCALPX_ENABLE_PAPER",
+        "SCALPX_ENABLE_LIVE",
+        "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME",
+        "SCALPX_CONTROLLED_PAPER_SCOPE_ACK",
+        "SCALPX_PAPER_ARMED",
+        "SCALPX_CONTROLLED_PAPER_ARMED",
+    ]
+    env = {k: os.environ.get(k, "") for k in env_keys}
+    imported = imported_controlled_route_verdict()
+    fallback = fallback_gate(env, streams, procs)
+
+    redis_policy = redis_config_value("maxmemory-policy")
+    redis_policy_waiver = truthy("SCALPX_ALLOW_CONTROLLED_PAPER_ALLKEYS_LRU_WAIVER")
+    position_hash = redis_hgetall("state:position:mme")
+    position_hash_strict_flat = strict_position_hash_flat(position_hash)
+
+    if bool(fallback.get("paper_route_allowed")) and redis_policy == "allkeys-lru" and not redis_policy_waiver:
+        fallback = dict(fallback)
+        fallback["paper_route_allowed"] = False
+        fallback["reason"] = "CONTROLLED_PAPER_REDIS_POLICY_UNSAFE_ALLKEYS_LRU"
+        fallback["fail_closed"] = True
+        fallback["r10d_redis_policy_fail_closed"] = True
+
+    if bool(fallback.get("paper_route_allowed")) and not position_hash_strict_flat:
+        fallback = dict(fallback)
+        fallback["paper_route_allowed"] = False
+        fallback["reason"] = "CONTROLLED_PAPER_POSITION_HASH_NOT_STRICT_FLAT"
+        fallback["fail_closed"] = True
+        fallback["r10d_position_hash_fail_closed"] = True
+
+    status = {
+        "schema_version": "pstatus_fail_closed_runtime_verdict_v1",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "project_root": str(ROOT),
+        "safety": {
+            "orders_risk_execution": f"{streams['orders']}/{streams['risk']}/{streams['execution']}",
+            "streams": streams,
+            "processes": procs,
+            "no_order_stream": streams["orders"] == 0,
+            "no_risk_stream": streams["risk"] == 0,
+            "no_execution_stream": streams["execution"] == 0,
+            "risk_execution_not_running": procs["risk"] == 0 and procs["execution"] == 0,
+        },
+        "env": env,
+        "controlled_paper_route_imported": imported,
+        "paper_runtime_verdict": fallback,
+        "r10d_redis_policy": {
+            "maxmemory_policy": redis_policy,
+            "allkeys_lru_waiver": redis_policy_waiver,
+            "fail_closed_if_unsafe": True,
+        },
+        "r10d_position_hash": {
+            "hash_present": bool(position_hash),
+            "strict_flat": position_hash_strict_flat,
+            "hash": position_hash,
+            "fail_closed_if_not_strict_flat": True,
+        },
+        "paper_live_enabled": False,
+        "broker_order_attempted": False,
+        "redis_write_attempted": False,
+        "redis_delete_attempted": False,
+        "classification": "PSTATUS_FAIL_CLOSED_RUNTIME_VERDICT_READY",
+    }
+    print(json.dumps(status, indent=2, sort_keys=True, default=str))
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())

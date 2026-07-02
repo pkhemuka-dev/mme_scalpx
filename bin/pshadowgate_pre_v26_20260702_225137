@@ -1,0 +1,453 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import time
+from pathlib import Path
+from typing import Any
+
+ENTER_ACTIONS = {
+    "ENTER_CALL", "ENTER_PUT", "CALL_ENTRY", "PUT_ENTRY",
+    "BUY_CALL", "BUY_PUT", "LONG_CALL", "LONG_PUT",
+}
+BRANCHES = {"CALL", "PUT", "CE", "PE"}
+
+SAFETY_STREAMS = {
+    "risk": "risk:mme:stream",
+    "execution": "execution:mme:stream",
+    "orders": "orders:mme:stream",
+    "trades": "trades:ledger:stream",
+    "cmd": "cmd:mme:stream",
+}
+
+KEYS = {
+    "shadow_action": ["candidate_action_shadow", "activation_selected_action"],
+    "family_id": ["candidate_family_id_shadow", "activation_selected_family_id"],
+    "branch_id": ["candidate_branch_id_shadow", "activation_selected_branch_id", "r38ee_extracted_side"],
+    "symbol": ["candidate_symbol_shadow", "r38ee_extracted_symbol", "symbol", "option_symbol", "tradingsymbol"],
+    "instrument_token": ["candidate_instrument_token_shadow", "r38ee_extracted_token", "instrument_token", "option_token"],
+    "score": ["candidate_score_shadow", "activation_selected_score", "score"],
+    "candidate_present": ["candidate_present_shadow", "candidate_true_shadow"],
+    "activation_mode": ["activation_mode"],
+    "activation_reason": ["activation_reason", "reason"],
+    "activation_safe_to_promote": ["activation_safe_to_promote"],
+    "activation_promoted": ["activation_promoted"],
+}
+
+def dec(x: Any) -> str:
+    return x.decode("utf-8", "replace") if isinstance(x, bytes) else str(x)
+
+def truthy(x: Any) -> bool:
+    return str(x).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+def safe_float(x: Any) -> float | None:
+    try:
+        return float(str(x).strip())
+    except Exception:
+        return None
+
+def parse_json_maybe(v: Any) -> Any | None:
+    if isinstance(v, (dict, list)):
+        return v
+    s = str(v).strip()
+    if not s or s[0] not in "[{":
+        return None
+    try:
+        return json.loads(s)
+    except Exception:
+        return None
+
+def flatten(obj: Any, prefix: str = "", out: list[tuple[str, Any]] | None = None, limit: int = 40000):
+    if out is None:
+        out = []
+    if len(out) >= limit:
+        return out
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            p = f"{prefix}.{k}" if prefix else str(k)
+            out.append((p, v))
+            parsed = parse_json_maybe(v)
+            if parsed is not None and parsed is not v:
+                flatten(parsed, p + "$json", out, limit)
+            else:
+                flatten(v, p, out, limit)
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj[:100]):
+            p = f"{prefix}[{i}]"
+            out.append((p, v))
+            flatten(v, p, out, limit)
+    return out
+
+def path_matches(path: str, key: str) -> bool:
+    p = path.lower().replace("$json", "")
+    k = key.lower()
+    return p == k or p.endswith("." + k) or p.endswith("]." + k)
+
+def pick(flat: list[tuple[str, Any]], keys: list[str]) -> tuple[str, str]:
+    for key in keys:
+        for path, value in flat:
+            if path_matches(path, key):
+                text = str(value).strip()
+                if text and text.upper() not in {"NONE", "NULL", "N/A"}:
+                    return text, path
+    return "", ""
+
+def msg_age_ms(msg_id: str) -> int | None:
+    try:
+        return int(time.time() * 1000) - int(msg_id.split("-", 1)[0])
+    except Exception:
+        return None
+
+def load_env(path: str) -> dict[str, str]:
+    data: dict[str, str] = {}
+    p = Path(path)
+    if not p.exists():
+        return data
+    for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export "):]
+        if "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        data[k.strip()] = v.strip().strip('"').strip("'")
+    return data
+
+def seed_env(path: str) -> None:
+    for k, v in load_env(path).items():
+        os.environ.setdefault(k, v)
+
+def first_env(keys: list[str]) -> str:
+    for k in keys:
+        if os.environ.get(k):
+            return os.environ[k]
+    return ""
+
+def get_clients():
+    from app.mme_scalpx.core.redisx import get_redis_client
+    try:
+        from app.mme_scalpx.core import names
+        decision_stream = getattr(names, "STREAM_DECISIONS_MME", "decisions:mme:stream")
+    except Exception:
+        decision_stream = "decisions:mme:stream"
+    return get_redis_client(), decision_stream
+
+def xlen(r: Any, stream: str) -> int:
+    try:
+        return int(r.xlen(stream))
+    except Exception:
+        return -1
+
+def extract_packet(msg_id: str, fields: dict[str, str], decision_stream: str, max_age_ms: int, min_score: float) -> dict[str, Any] | None:
+    age_ms = msg_age_ms(msg_id)
+    if age_ms is None:
+        return None
+
+    flat = flatten(fields)
+
+    main_action = str(fields.get("action") or "").strip().upper()
+    main_side = str(fields.get("side") or "").strip().upper()
+    main_reason = str(fields.get("reason") or "").strip()
+
+    shadow_action, shadow_action_path = pick(flat, KEYS["shadow_action"])
+    family_id, family_path = pick(flat, KEYS["family_id"])
+    branch_id, branch_path = pick(flat, KEYS["branch_id"])
+    symbol, symbol_path = pick(flat, KEYS["symbol"])
+    token, token_path = pick(flat, KEYS["instrument_token"])
+    score_text, score_path = pick(flat, KEYS["score"])
+    candidate_present_text, candidate_present_path = pick(flat, KEYS["candidate_present"])
+    activation_mode, activation_mode_path = pick(flat, KEYS["activation_mode"])
+    activation_reason, activation_reason_path = pick(flat, KEYS["activation_reason"])
+    safe_to_promote_text, safe_to_promote_path = pick(flat, KEYS["activation_safe_to_promote"])
+    promoted_text, promoted_path = pick(flat, KEYS["activation_promoted"])
+
+    shadow_action_u = shadow_action.upper()
+    branch_u = branch_id.upper()
+    score = safe_float(score_text)
+    candidate_present = truthy(candidate_present_text) or shadow_action_u in ENTER_ACTIONS
+
+    if main_action != "HOLD":
+        return None
+    if "hold_only_family_features_consumer_bridge" not in main_reason:
+        return None
+    if shadow_action_u not in ENTER_ACTIONS:
+        return None
+    if branch_u not in BRANCHES:
+        return None
+    if not symbol and not token:
+        return None
+    if not candidate_present:
+        return None
+    if score is not None and score < min_score:
+        return None
+
+    return {
+        "packet_schema": "pshadowgate_candidate_no_order.v1",
+        "created_at_ms": int(time.time() * 1000),
+        "source_decision_id": msg_id,
+        "source_age_ms": age_ms,
+        "max_allowed_age_ms": max_age_ms,
+        "fresh_packet_pass": age_ms <= max_age_ms,
+        "source_stream": decision_stream,
+        "source_main_action": main_action,
+        "source_main_side": main_side,
+        "source_reason": main_reason,
+        "shadow_action": shadow_action_u,
+        "family_id": family_id,
+        "branch_id": branch_u,
+        "symbol": symbol,
+        "instrument_token": token,
+        "score": score,
+        "activation_mode": activation_mode,
+        "activation_reason": activation_reason,
+        "activation_safe_to_promote": truthy(safe_to_promote_text),
+        "activation_promoted": truthy(promoted_text),
+        "candidate_present": candidate_present,
+        "extraction_paths": {
+            "shadow_action": shadow_action_path,
+            "family_id": family_path,
+            "branch_id": branch_path,
+            "symbol": symbol_path,
+            "instrument_token": token_path,
+            "score": score_path,
+            "candidate_present": candidate_present_path,
+            "activation_mode": activation_mode_path,
+            "activation_reason": activation_reason_path,
+            "activation_safe_to_promote": safe_to_promote_path,
+            "activation_promoted": promoted_path,
+        },
+        "safety": {
+            "advisory_only_for_manual_review": True,
+            "local_shadow_paper_only": True,
+            "no_broker_order": True,
+            "broker_order_allowed": False,
+            "paper_engine_allowed": False,
+            "risk_execution_allowed": False,
+            "main_decision_stream_modified": False,
+            "fake_entry": False,
+            "threshold_changed": False,
+        },
+    }
+
+def zerodha_readonly_recheck() -> dict[str, Any]:
+    for f in [
+        "common/secrets/brokers/zerodha/credentials.env",
+        "common/secrets/brokers/zerodha/session.env",
+        "/home/Lenovo/scalpx/common/secrets/brokers/zerodha/credentials.env",
+        "/home/Lenovo/scalpx/common/secrets/brokers/zerodha/session.env",
+    ]:
+        seed_env(f)
+
+    result = {
+        "session_valid": False,
+        "position_flat": False,
+        "open_orders_zero": False,
+        "pending_orders_zero": False,
+        "open_positions_count": None,
+        "open_orders_count": None,
+        "error": "",
+    }
+    try:
+        from kiteconnect import KiteConnect
+        api_key = first_env(["ZERODHA_API_KEY", "KITE_API_KEY", "KITE_CONNECT_API_KEY"])
+        access_token = first_env(["ZERODHA_ACCESS_TOKEN", "KITE_ACCESS_TOKEN", "ZERODHA_KITE_ACCESS_TOKEN"])
+        kite = KiteConnect(api_key=api_key)
+        kite.set_access_token(access_token)
+
+        result["session_valid"] = bool(kite.profile())
+
+        net = kite.positions().get("net", [])
+        open_positions = [p for p in net if int(p.get("quantity") or 0) != 0]
+        result["open_positions_count"] = len(open_positions)
+        result["position_flat"] = len(open_positions) == 0
+
+        live_statuses = {
+            "OPEN", "OPEN PENDING", "TRIGGER PENDING", "VALIDATION PENDING",
+            "PUT ORDER REQ RECEIVED", "MODIFY PENDING", "CANCEL PENDING", "AMO REQ RECEIVED",
+        }
+        open_orders = []
+        for o in kite.orders():
+            status = str(o.get("status") or "").upper()
+            pending_qty = int(o.get("pending_quantity") or 0)
+            if status in live_statuses or pending_qty > 0:
+                open_orders.append(o)
+        result["open_orders_count"] = len(open_orders)
+        result["open_orders_zero"] = len(open_orders) == 0
+        result["pending_orders_zero"] = len(open_orders) == 0
+    except Exception as e:
+        result["error"] = repr(e)
+    return result
+
+def write_local_shadow_paper_event(packet: dict[str, Any], root: Path, one_event_only: bool) -> dict[str, Any]:
+    day = time.strftime("%Y%m%d")
+    state_dir = Path("run/state/pshadowgate_auto_paper")
+    ledger_dir = Path("run/paper_shadow")
+    state_dir.mkdir(parents=True, exist_ok=True)
+    ledger_dir.mkdir(parents=True, exist_ok=True)
+
+    done_flag = state_dir / f"one_event_done_{day}.flag"
+    ledger = ledger_dir / f"pshadowgate_shadow_paper_events_{day}.ndjson"
+
+    if one_event_only and done_flag.exists():
+        return {
+            "shadow_paper_event_written": False,
+            "reason": "one_event_already_done_today",
+            "done_flag": str(done_flag),
+            "ledger": str(ledger),
+        }
+
+    event = {
+        "event_schema": "pshadowgate_local_shadow_paper_event.v1",
+        "event_id": f"PSHADOW-{day}-{int(time.time()*1000)}",
+        "created_at_ms": int(time.time() * 1000),
+        "mode": "LOCAL_SHADOW_PAPER_ONLY_NO_BROKER",
+        "action": packet.get("shadow_action"),
+        "symbol": packet.get("symbol"),
+        "instrument_token": packet.get("instrument_token"),
+        "branch_id": packet.get("branch_id"),
+        "family_id": packet.get("family_id"),
+        "score": packet.get("score"),
+        "source_decision_id": packet.get("source_decision_id"),
+        "source_age_ms": packet.get("source_age_ms"),
+        "qty_lots": 1,
+        "broker_order_sent": False,
+        "risk_execution_used": False,
+        "real_paper_engine_used": False,
+        "note": "local ledger event only; not a broker/paper/risk/execution order",
+    }
+
+    with ledger.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(event, sort_keys=True) + "\n")
+
+    if one_event_only:
+        done_flag.write_text(json.dumps(event, indent=2, sort_keys=True), encoding="utf-8")
+
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "shadow_paper_event.json").write_text(json.dumps(event, indent=2, sort_keys=True), encoding="utf-8")
+
+    return {
+        "shadow_paper_event_written": True,
+        "event": event,
+        "done_flag": str(done_flag),
+        "ledger": str(ledger),
+    }
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", default="")
+    ap.add_argument("--count", type=int, default=4000)
+    ap.add_argument("--max-age-ms", type=int, default=0)
+    ap.add_argument("--min-score", type=float, default=-1.0)
+    ap.add_argument("--auto-paper", action="store_true")
+    ap.add_argument("--json", action="store_true")
+    args = ap.parse_args()
+
+    switch_path = Path("run/controls/pshadowgate_auto_paper_switch.env")
+    switch = load_env(str(switch_path))
+    max_age_ms = args.max_age_ms or int(switch.get("PSHADOWGATE_MAX_PACKET_AGE_MS", "15000"))
+    min_score = args.min_score if args.min_score >= 0 else float(switch.get("PSHADOWGATE_MIN_SCORE", "0.0"))
+    auto_paper_switch = truthy(switch.get("PSHADOWGATE_AUTO_PAPER", "0"))
+    one_event_only = truthy(switch.get("PSHADOWGATE_ONE_EVENT_ONLY", "1"))
+
+    root = Path(args.root) if args.root else Path("run/audits") / f"PSHADOWGATE_RUN_{time.strftime('%Y%m%d_%H%M%S')}"
+    root.mkdir(parents=True, exist_ok=True)
+
+    r, decision_stream = get_clients()
+
+    safety = {k: xlen(r, s) for k, s in SAFETY_STREAMS.items()}
+    safety_zero = all(v == 0 for v in safety.values())
+
+    rows = r.xrevrange(decision_stream, "+", "-", count=args.count)
+    packet = None
+    for msg_id_raw, raw_fields in rows:
+        msg_id = dec(msg_id_raw)
+        fields = {dec(k): dec(v) for k, v in raw_fields.items()}
+        packet = extract_packet(msg_id, fields, decision_stream, max_age_ms, min_score)
+        if packet:
+            break
+
+    packet_ok = bool(packet and packet.get("fresh_packet_pass"))
+
+    zerodha = zerodha_readonly_recheck()
+    zerodha_ok = bool(
+        zerodha.get("session_valid")
+        and zerodha.get("position_flat")
+        and zerodha.get("open_orders_zero")
+        and zerodha.get("pending_orders_zero")
+    )
+
+    manual_review_gate = bool(packet_ok and safety_zero and zerodha_ok)
+
+    auto_paper_result = {
+        "auto_paper_requested": bool(args.auto_paper),
+        "auto_paper_switch_on": bool(auto_paper_switch),
+        "shadow_paper_event_written": False,
+        "reason": "not_requested_or_gate_no",
+    }
+
+    if args.auto_paper and auto_paper_switch and manual_review_gate and packet:
+        auto_paper_result = write_local_shadow_paper_event(packet, root, one_event_only)
+        auto_paper_result["auto_paper_requested"] = True
+        auto_paper_result["auto_paper_switch_on"] = True
+    elif args.auto_paper and not auto_paper_switch:
+        auto_paper_result["reason"] = "switch_off"
+    elif args.auto_paper and not manual_review_gate:
+        auto_paper_result["reason"] = "manual_review_gate_no"
+
+    summary = {
+        "final_classification": "PSHADOWGATE_COMPLETE_NO_BROKER_ORDER",
+        "manual_review_gate": manual_review_gate,
+        "packet_ok": packet_ok,
+        "safety_zero": safety_zero,
+        "safety": safety,
+        "zerodha_ok": zerodha_ok,
+        "zerodha": zerodha,
+        "packet": packet,
+        "auto_paper": auto_paper_result,
+        "broker_order": 0,
+        "paper_engine_order": 0,
+        "risk_started": 0,
+        "execution_started": 0,
+        "redis_destructive": 0,
+    }
+
+    (root / "pshadowgate_summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
+    if packet:
+        (root / "pshadowgate_packet.json").write_text(json.dumps(packet, indent=2, sort_keys=True), encoding="utf-8")
+
+    if args.json:
+        print(json.dumps(summary, sort_keys=True))
+    else:
+        print("FINAL_CLASSIFICATION=PSHADOWGATE_COMPLETE_NO_BROKER_ORDER")
+        print("MANUAL_REVIEW_GATE=" + ("YES" if manual_review_gate else "NO"))
+        print("PACKET_OK=" + str(int(packet_ok)))
+        if packet:
+            print("PACKET_SOURCE_AGE_MS=" + str(packet.get("source_age_ms")))
+            print("PACKET_ACTION=" + str(packet.get("shadow_action")))
+            print("PACKET_SYMBOL=" + str(packet.get("symbol")))
+            print("PACKET_TOKEN=" + str(packet.get("instrument_token")))
+            print("PACKET_SCORE=" + str(packet.get("score")))
+            print("PACKET_FAMILY=" + str(packet.get("family_id")))
+        print("SAFETY_ZERO=" + str(int(safety_zero)))
+        print("SAFETY=" + json.dumps(safety, sort_keys=True))
+        print("ZERODHA_OK=" + str(int(zerodha_ok)))
+        print("ZERODHA=" + json.dumps(zerodha, sort_keys=True))
+        print("AUTO_PAPER_SWITCH_ON=" + str(int(auto_paper_switch)))
+        print("AUTO_PAPER_REQUESTED=" + str(int(args.auto_paper)))
+        print("SHADOW_PAPER_EVENT_WRITTEN=" + str(int(bool(auto_paper_result.get("shadow_paper_event_written")))))
+        print("AUTO_PAPER_RESULT=" + json.dumps(auto_paper_result, sort_keys=True))
+        print("BROKER_ORDER=0")
+        print("PAPER_ENGINE_ORDER=0")
+        print("RISK_STARTED=0")
+        print("EXECUTION_STARTED=0")
+        print("REDIS_DESTRUCTIVE=0")
+        print("ROOT=" + str(root))
+
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())

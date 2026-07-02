@@ -1,0 +1,14 @@
+# LANE-MIV-LIVE-R5_INSTRUMENT_METADATA_STALE_ROUTE_LOCATOR_NO_PATCH_NO_START_NO_STOP_NO_ORDER_confirm_nfo_metadata_stale_root_cause_and_find_existing_safe_refresh_command_without_mutation_20260612_094836
+
+Read-only instrument metadata stale route locator completed.
+
+Proof:
+- run/proofs/LANE-MIV-LIVE-R5_INSTRUMENT_METADATA_STALE_ROUTE_LOCATOR_NO_PATCH_NO_START_NO_STOP_NO_ORDER_confirm_nfo_metadata_stale_root_cause_and_find_existing_safe_refresh_command_without_mutation_20260612_094836.json
+
+Report:
+- run/audits/LANE-MIV-LIVE-R5_INSTRUMENT_METADATA_STALE_ROUTE_LOCATOR_NO_PATCH_NO_START_NO_STOP_NO_ORDER_confirm_nfo_metadata_stale_root_cause_and_find_existing_safe_refresh_command_without_mutation_20260612_094836/report.md
+
+If PASS:
+- stale NFO metadata is the blocker
+- run controlled data-only refresh next
+- then observe-only feed restart/reuse

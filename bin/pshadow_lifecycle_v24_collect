@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+cd /home/Lenovo/scalpx/projects/mme_scalpx || exit 1
+set +e
+
+TARGET_ACCEPTED="${1:-10}"
+MAX_ATTEMPTS="${2:-40}"
+WAIT_TRIES_PER_ATTEMPT="${3:-20}"
+LOOP_DURATION_SEC="${4:-180}"
+SLEEP_SEC="${5:-5}"
+
+TAG="PSHADOW_LIFECYCLE_V24_MIST_CALL_COLLECT_${TARGET_ACCEPTED}_$(date +%Y%m%d_%H%M%S)"
+ROOT="run/audits/${TAG}"
+mkdir -p "$ROOT"/{outputs,summary}
+
+if [ -x "${MME_VENV_PY:-}" ]; then
+  PY="$MME_VENV_PY"
+elif [ -x ".venv/bin/python" ]; then
+  PY=".venv/bin/python"
+else
+  PY="$(command -v python3)"
+fi
+
+switch_off() {
+  cat > run/controls/pshadowgate_auto_paper_switch.env <<'EOF'
+# pshadowgate switch file
+# LOCAL SHADOW-PAPER ONLY. NO BROKER. NO RISK/EXECUTION.
+PSHADOWGATE_AUTO_PAPER=0
+PSHADOWGATE_ONE_EVENT_ONLY=1
+PSHADOWGATE_MAX_PACKET_AGE_MS=15000
+PSHADOWGATE_MIN_SCORE=0.0
+PSHADOWGATE_NOTE=switched_off_by_v24_mist_call_collector_no_broker
+EOF
+}
+trap switch_off EXIT INT TERM
+
+SESSION_MIN_MS="$("$PY" - <<'PY'
+import time
+print(int(time.time()*1000))
+PY
+)"
+mkdir -p run/state/pshadowgate_lifecycle_v24
+echo "$SESSION_MIN_MS" > run/state/pshadowgate_lifecycle_v24/session_min_event_ms.txt
+: > run/state/pshadowgate_lifecycle_v24/expected_event_id.txt
+
+echo "PSHADOW_LIFECYCLE_V24_MIST_CALL_COLLECT_START=$(date -Is)"
+echo "ROOT=$ROOT"
+echo "TARGET_ACCEPTED=$TARGET_ACCEPTED"
+echo "MAX_ATTEMPTS=$MAX_ATTEMPTS"
+echo "SESSION_MIN_MS=$SESSION_MIN_MS"
+echo "BROKER_ORDER=0"
+echo "PAPER_ENGINE_ORDER=0"
+echo "RISK_STARTED=0"
+echo "EXECUTION_STARTED=0"
+
+ACCEPTED=0
+ATTEMPTS=0
+
+while [ "$ACCEPTED" -lt "$TARGET_ACCEPTED" ] && [ "$ATTEMPTS" -lt "$MAX_ATTEMPTS" ]; do
+  ATTEMPTS=$((ATTEMPTS + 1))
+  echo
+  echo "===== V24_ATTEMPT_${ATTEMPTS}_START $(date -Is) ACCEPTED=$ACCEPTED ====="
+
+  STATE="run/state/pshadowgate_lifecycle_v24/open_position.json"
+  if [ -f "$STATE" ] && grep -q '"status": "OPEN"' "$STATE"; then
+    echo "OPEN_POSITION_EXISTS_BEFORE_ATTEMPT=$ATTEMPTS"
+    PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadow_lifecycle_v24_loop "$LOOP_DURATION_SEC" "$SLEEP_SEC" \
+      | tee "$ROOT/outputs/attempt_${ATTEMPTS}_close_existing_position_loop.txt"
+  fi
+
+  : > run/state/pshadowgate_lifecycle_v24/expected_event_id.txt
+
+  cat > run/controls/pshadowgate_auto_paper_switch.env <<EOF
+# pshadowgate switch file
+# LOCAL SHADOW-PAPER ONLY. NO BROKER. NO RISK/EXECUTION.
+PSHADOWGATE_AUTO_PAPER=1
+PSHADOWGATE_ONE_EVENT_ONLY=0
+PSHADOWGATE_MAX_PACKET_AGE_MS=15000
+PSHADOWGATE_MIN_SCORE=0.0
+PSHADOWGATE_NOTE=temporary_v24_mist_call_attempt_${ATTEMPTS}_fresh_event_no_broker
+EOF
+
+  EVENT_WRITTEN=0
+  for i in $(seq 1 "$WAIT_TRIES_PER_ATTEMPT"); do
+    TRY_ROOT="$ROOT/outputs/attempt_${ATTEMPTS}_pshadowgate_try_$i"
+    mkdir -p "$TRY_ROOT"
+
+    PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadowgate --root "$TRY_ROOT" --auto-paper \
+      | tee "$TRY_ROOT/pshadowgate.txt"
+
+    if grep -q '^SHADOW_PAPER_EVENT_WRITTEN=1' "$TRY_ROOT/pshadowgate.txt"; then
+      EVENT_WRITTEN=1
+      echo "ATTEMPT_${ATTEMPTS}_EVENT_WRITTEN_ON_TRY=$i" | tee "$ROOT/summary/attempt_${ATTEMPTS}_event.txt"
+
+      PYTHONPATH="$PWD:${PYTHONPATH:-}" "$PY" - <<'PY' | tee -a "$ROOT/summary/attempt_EVENT_EXTRACT.tmp"
+import json, time
+from pathlib import Path
+
+day = time.strftime("%Y%m%d")
+session_path = Path("run/state/pshadowgate_lifecycle_v24/session_min_event_ms.txt")
+session_min = int(session_path.read_text().strip()) if session_path.exists() else 0
+ledger = Path(f"run/paper_shadow/pshadowgate_shadow_paper_events_{day}.ndjson")
+rows = []
+if ledger.exists():
+    for line in ledger.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            r = json.loads(line)
+            if int(r.get("created_at_ms") or 0) >= session_min:
+                rows.append(r)
+        except Exception:
+            pass
+if rows:
+    ev = rows[-1]
+    Path("run/state/pshadowgate_lifecycle_v24/expected_event_id.txt").write_text(str(ev.get("event_id") or ""), encoding="utf-8")
+    print("EXPECTED_EVENT_ID=" + str(ev.get("event_id") or ""))
+    print("EXPECTED_EVENT_ACTION=" + str(ev.get("action") or ""))
+    print("EXPECTED_EVENT_FAMILY=" + str(ev.get("family_id") or ""))
+    print("EXPECTED_EVENT_SYMBOL=" + str(ev.get("symbol") or ""))
+else:
+    print("EXPECTED_EVENT_ID=")
+PY
+
+      cp -a "$ROOT/summary/attempt_EVENT_EXTRACT.tmp" "$ROOT/summary/attempt_${ATTEMPTS}_expected_event.txt" 2>/dev/null || true
+      rm -f "$ROOT/summary/attempt_EVENT_EXTRACT.tmp"
+      break
+    fi
+
+    sleep 2
+  done
+
+  switch_off
+
+  if [ "$EVENT_WRITTEN" != "1" ]; then
+    echo "ATTEMPT_${ATTEMPTS}_NO_EVENT_WRITTEN=1" | tee -a "$ROOT/summary/attempt_${ATTEMPTS}_event.txt"
+    continue
+  fi
+
+  BEFORE_EXITS="$(wc -l < "run/paper_shadow_lifecycle_v24/exits_$(date +%Y%m%d).ndjson" 2>/dev/null || echo 0)"
+
+  PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadow_lifecycle_v24_once \
+    | tee "$ROOT/outputs/attempt_${ATTEMPTS}_v24_once.txt"
+
+  ACTION="$(grep '^V24_ACTION=' "$ROOT/outputs/attempt_${ATTEMPTS}_v24_once.txt" | tail -1 | cut -d= -f2 | tr -d '[:space:]')"
+  REASON="$(grep '^REASON=' "$ROOT/outputs/attempt_${ATTEMPTS}_v24_once.txt" | tail -1 | cut -d= -f2-)"
+  echo "ATTEMPT_${ATTEMPTS}_ACTION_AFTER_ONCE=${ACTION:-UNKNOWN}" | tee "$ROOT/summary/attempt_${ATTEMPTS}_action.txt"
+  echo "ATTEMPT_${ATTEMPTS}_REASON_AFTER_ONCE=${REASON:-}" | tee -a "$ROOT/summary/attempt_${ATTEMPTS}_action.txt"
+
+  if [ "${ACTION:-}" = "ENTRY_WRITTEN" ] || [ "${ACTION:-}" = "POSITION_UPDATED" ]; then
+    PYTHONPATH="$PWD:${PYTHONPATH:-}" bin/pshadow_lifecycle_v24_loop "$LOOP_DURATION_SEC" "$SLEEP_SEC" \
+      | tee "$ROOT/outputs/attempt_${ATTEMPTS}_v24_loop.txt"
+
+    AFTER_EXITS="$(wc -l < "run/paper_shadow_lifecycle_v24/exits_$(date +%Y%m%d).ndjson" 2>/dev/null || echo 0)"
+    if [ "$AFTER_EXITS" -gt "$BEFORE_EXITS" ]; then
+      ACCEPTED=$((ACCEPTED + 1))
+      echo "ACCEPTED_AFTER_ATTEMPT_${ATTEMPTS}=$ACCEPTED" | tee -a "$ROOT/summary/accepted_count.txt"
+    fi
+  else
+    echo "ATTEMPT_${ATTEMPTS}_BLOCKED_OR_IGNORED=1"
+  fi
+
+  sleep 2
+done
+
+echo
+echo "===== V24 FINAL STATE ====="
+cat run/state/pshadowgate_lifecycle_v24/open_position.json 2>/dev/null | tee "$ROOT/outputs/final_state.json" || true
+
+echo
+echo "===== V24 FINAL ENTRIES ====="
+tail -20 run/paper_shadow_lifecycle_v24/entries_$(date +%Y%m%d).ndjson 2>/dev/null | tee "$ROOT/outputs/final_entries_tail.ndjson" || true
+
+echo
+echo "===== V24 FINAL EXITS ====="
+tail -20 run/paper_shadow_lifecycle_v24/exits_$(date +%Y%m%d).ndjson 2>/dev/null | tee "$ROOT/outputs/final_exits_tail.ndjson" || true
+
+echo
+echo "===== V24 BLOCKED EVENTS ====="
+tail -80 run/paper_shadow_lifecycle_v24/blocked_events_$(date +%Y%m%d).ndjson 2>/dev/null | tee "$ROOT/outputs/final_blocked_events_tail.ndjson" || true
+
+echo
+echo "===== V24 FINAL SUMMARY ====="
+cat run/paper_shadow_lifecycle_v24/summary_$(date +%Y%m%d).json 2>/dev/null | tee "$ROOT/outputs/final_summary.json" || true
+
+echo
+{
+  echo "FINAL_CLASSIFICATION=PSHADOW_LIFECYCLE_V24_MIST_CALL_ONLY_COLLECT_COMPLETE_NO_BROKER_ORDER"
+  echo "TARGET_ACCEPTED=$TARGET_ACCEPTED"
+  echo "ACCEPTED=$ACCEPTED"
+  echo "ATTEMPTS=$ATTEMPTS"
+  echo "BROKER_ORDER=0"
+  echo "PAPER_ENGINE_ORDER=0"
+  echo "RISK_STARTED=0"
+  echo "EXECUTION_STARTED=0"
+  echo "SERVICE_STOP_RESTART=0"
+  echo "REDIS_DESTRUCTIVE=0"
+  echo "ROOT=$ROOT"
+} | tee "$ROOT/summary/V24_COLLECT_FINAL.txt"

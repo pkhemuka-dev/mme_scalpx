@@ -164,7 +164,139 @@ class _B1ExecutionShadowNoBrokerBroker:
         raise RuntimeError("b1_execution_shadow_no_broker_refuses_cancel_order")
 
 
+# R38KR_CONTROLLED_PAPER_NO_BROKER_ADAPTER
+def _r38kr_truthy(value: Any) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _r38kr_allow_controlled_paper_no_broker() -> bool:
+    official_ack = (
+        "I ACKNOWLEDGE CONTROLLED PAPER ONLY: NO REAL LIVE, NO BROKER ORDER, "
+        "NO REAL MONEY, ONE APPROVED SCOPE ONLY, POSITION MUST START FLAT"
+    )
+    return (
+        _r38kr_truthy(os.environ.get("SCALPX_ENABLE_PAPER"))
+        and _r38kr_truthy(os.environ.get("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"))
+        and _r38kr_truthy(os.environ.get("SCALPX_CONTROLLED_PAPER_ARMED"))
+        and _r38kr_truthy(os.environ.get("SCALPX_PAPER_ARMED"))
+        and os.environ.get("SCALPX_CONTROLLED_PAPER_SCOPE_ACK") == official_ack
+        and not _r38kr_truthy(os.environ.get("SCALPX_ENABLE_LIVE"))
+        and not _r38kr_truthy(os.environ.get("SCALPX_REAL_LIVE_ALLOWED"))
+        and not _r38kr_truthy(os.environ.get("SCALPX_ALLOW_REAL_LIVE"))
+        and not _r38kr_truthy(os.environ.get("SCALPX_ALLOW_BROKER_ORDERS"))
+        and not _r38kr_truthy(os.environ.get("MME_ENABLE_LIVE"))
+        and not _r38kr_truthy(os.environ.get("MME_BROKER_ORDER_ENABLED"))
+        and not _r38kr_truthy(os.environ.get("MME_ENABLE_BROKER_ORDERS"))
+    )
+
+
+class _R38KRControlledPaperNoBrokerBroker:
+    broker_id = "r38kr_controlled_paper_no_broker"
+    provider_id = "CONTROLLED_PAPER_NO_BROKER"
+    broker = "controlled_paper_no_broker"
+    is_r38kr_controlled_paper_no_broker = True
+
+    def __init__(self) -> None:
+        self._orders: dict[str, dict[str, Any]] = {}
+
+    def healthcheck(self) -> dict[str, Any]:
+        return {
+            "ok": True,
+            "broker": self.broker,
+            "provider_id": self.provider_id,
+            "paper_only": True,
+            "no_broker_order": True,
+            "r38kr_controlled_paper_no_broker": True,
+        }
+
+    def reconcile_position(self) -> dict[str, Any]:
+        return {
+            "ok": True,
+            "side": "FLAT",
+            "quantity_lots": 0,
+            "qty_lots": 0,
+            "qty_units": 0,
+            "has_position": 0,
+            "broker_order_id": "",
+            "source": self.broker_id,
+            "paper_only": True,
+            "no_broker_order": True,
+        }
+
+    def reconcile_open_orders(self) -> list[dict[str, Any]]:
+        return [
+            dict(order)
+            for order in self._orders.values()
+            if str(order.get("status", "")).upper() in {"OPEN", "TRIGGER PENDING", "PENDING"}
+        ]
+
+    def _paper_order(self, *, intent: str, **kwargs: Any) -> dict[str, Any]:
+        import time as _r38kr_time
+
+        extra = kwargs.get("extra_params") if isinstance(kwargs.get("extra_params"), dict) else {}
+        client_order_id = str(extra.get("client_order_id") or kwargs.get("tag") or "")
+        broker_order_id = f"R38KR-PAPER-{_r38kr_time.time_ns()}"
+        quantity = int(kwargs.get("quantity") or 0)
+        price = "" if kwargs.get("price") is None else str(kwargs.get("price"))
+
+        order = {
+            "ok": True,
+            "broker": self.broker,
+            "provider_id": self.provider_id,
+            "intent": intent,
+            "order_id": broker_order_id,
+            "broker_order_id": broker_order_id,
+            "client_order_id": client_order_id,
+            "status": "COMPLETE",
+            "broker_status": "COMPLETE",
+            "filled_quantity": quantity,
+            "filled_units": quantity,
+            "avg_fill_price": price,
+            "tradingsymbol": str(kwargs.get("tradingsymbol") or ""),
+            "exchange": str(kwargs.get("exchange") or ""),
+            "transaction_type": str(kwargs.get("transaction_type") or ""),
+            "quantity": quantity,
+            "product": str(kwargs.get("product") or ""),
+            "order_type": str(kwargs.get("order_type") or ""),
+            "price": price,
+            "tag": str(kwargs.get("tag") or ""),
+            "paper_only": True,
+            "no_broker_order": True,
+            "r38kr_controlled_paper_no_broker": True,
+            "detail": "controlled paper fill simulated locally; no Kite/broker order sent",
+        }
+        self._orders[broker_order_id] = order
+        return dict(order)
+
+    def place_entry_order(self, **kwargs: Any) -> dict[str, Any]:
+        return self._paper_order(intent="entry", **kwargs)
+
+    def place_exit_order(self, **kwargs: Any) -> dict[str, Any]:
+        return self._paper_order(intent="exit", **kwargs)
+
+    def get_order(self, broker_order_id: str) -> dict[str, Any] | None:
+        return self._orders.get(str(broker_order_id))
+
+    def cancel_order(self, broker_order_id: str) -> dict[str, Any]:
+        order = self._orders.get(str(broker_order_id), {})
+        out = dict(order)
+        out.update({
+            "ok": True,
+            "broker_order_id": str(broker_order_id),
+            "status": "CANCELLED",
+            "broker_status": "CANCELLED",
+            "paper_only": True,
+            "no_broker_order": True,
+            "detail": "controlled paper cancel simulated locally; no broker cancel sent",
+        })
+        self._orders[str(broker_order_id)] = out
+        return out
+
+
+
 def _b1_resolve_execution_shadow_broker(service_name: str, broker: Any | None) -> Any | None:
+    if service_name == "execution" and _r38kr_allow_controlled_paper_no_broker():
+        return _R38KRControlledPaperNoBrokerBroker()
     if broker is not None:
         return broker
     if service_name == "execution" and _b1_allow_execution_shadow_no_broker():
@@ -177,6 +309,12 @@ DEFAULT_SERVICE: Final[str] = "all"
 REPLAY_START_ENV_VAR: Final[str] = "MME_REPLAY_START_WALL_TIME_NS"
 BOOTSTRAP_PROVIDER_ENV_VAR: Final[str] = "MME_BOOTSTRAP_PROVIDER"
 PROVIDER_RUNTIME_STRICT_ENV_VAR: Final[str] = "MME_PROVIDER_RUNTIME_STRICT"
+R38RP_DISABLE_REPORT_SERVICE_ENV_VAR: Final[str] = "SCALPX_DISABLE_REPORT_SERVICE"
+R38RP_DISABLE_REPORT_ACK_ENV_VAR: Final[str] = "SCALPX_DISABLE_REPORT_SERVICE_ACK"
+R38RP_DISABLE_REPORT_ACK_VALUE: Final[str] = "R38RP_DISABLE_REPORT_FOR_REDIS_TIMEOUT_BLOCKER_LEAN_RUNTIME"
+R38TV_DISABLE_MONITOR_SERVICE_ENV_VAR: Final[str] = "SCALPX_DISABLE_MONITOR_SERVICE"
+R38TV_DISABLE_MONITOR_ACK_ENV_VAR: Final[str] = "SCALPX_DISABLE_MONITOR_SERVICE_ACK"
+R38TV_DISABLE_MONITOR_ACK_VALUE: Final[str] = "R38TV_DISABLE_MONITOR_FOR_EXTERNAL_LIVE_GUARD_ONE_EVENT"
 ALLOW_LEGACY_PROVIDER_ALIAS_ENV_VAR: Final[str] = "MME_ALLOW_LEGACY_PROVIDER_ALIAS"
 THREAD_JOIN_TIMEOUT_S: Final[float] = 5.0
 SUPERVISOR_POLL_INTERVAL_S: Final[float] = 0.25
@@ -296,6 +434,48 @@ def _parse_simple_bool_text(value: str | None) -> bool | None:
     return None
 
 
+
+# R38RB: effective observe-only runtime label/gate helpers.
+# Purpose: if SCALPX_OBSERVE_ONLY=1, exposed runtime state must not look LIVE.
+# This is reporting/gating metadata only; it does not enable broker, paper, live, risk, or execution.
+_R38RB_EFFECTIVE_MODE_VERSION = "r38rb_effective_observe_only_runtime_mode_v1"
+
+def _r38rb_env_truthy(name: str) -> bool:
+    return str(os.environ.get(name, "")).strip().lower() in {"1", "true", "yes", "on", "y"}
+
+def _r38rb_observe_only_effective() -> bool:
+    return _r38rb_env_truthy("SCALPX_OBSERVE_ONLY") or _r38rb_env_truthy("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY")
+
+def _r38rb_effective_runtime_mode(configured_runtime_mode: object) -> str:
+    configured = str(configured_runtime_mode or "").strip() or "unknown"
+    if _r38rb_observe_only_effective():
+        return "OBSERVE_ONLY"
+    return configured
+
+def _r38rb_runtime_state_fields(configured_runtime_mode: object) -> dict[str, str]:
+    configured = str(configured_runtime_mode or "").strip() or "unknown"
+    observe_only = _r38rb_observe_only_effective()
+    live_allowed = False if observe_only else (
+        _r38rb_env_truthy("SCALPX_ALLOW_LIVE_ORDERS")
+        or _r38rb_env_truthy("SCALPX_REAL_LIVE_ALLOWED")
+        or _r38rb_env_truthy("SCALPX_ALLOW_REAL_LIVE")
+        or _r38rb_env_truthy("MME_ENABLE_LIVE")
+    )
+    broker_allowed = False if observe_only else (
+        _r38rb_env_truthy("SCALPX_ALLOW_BROKER_ORDERS")
+        or _r38rb_env_truthy("MME_ALLOW_BROKER_ORDERS")
+    )
+    return {
+        "runtime_mode": _r38rb_effective_runtime_mode(configured),
+        "effective_runtime_mode": _r38rb_effective_runtime_mode(configured),
+        "configured_runtime_mode": configured,
+        "observe_only_effective": "1" if observe_only else "0",
+        "live_orders_allowed_effective": "1" if live_allowed else "0",
+        "broker_orders_allowed_effective": "1" if broker_allowed else "0",
+        "r38rb_effective_mode_version": _R38RB_EFFECTIVE_MODE_VERSION,
+    }
+
+
 def _read_runtime_yaml_policy_snapshot(path: Path | None = None) -> dict[str, Any]:
     """Best-effort simple runtime.yaml snapshot.
 
@@ -359,11 +539,18 @@ def _effective_runtime_truth_report(
     runtime_yaml = _read_runtime_yaml_policy_snapshot()
     env_mme_runtime_mode = os.environ.get("MME_RUNTIME_MODE")
     env_scalpx_runtime_mode = os.environ.get("SCALPX_RUNTIME_MODE")
+    configured_runtime_mode = str(settings.runtime.runtime_mode)
+    runtime_state_fields = _r38rb_runtime_state_fields(configured_runtime_mode)
 
     return {
         "source_of_truth": "settings.py/MME_* plus explicit CLI flags; runtime_yaml_observed_not_authoritative",
-        "settings_runtime_mode": settings.runtime.runtime_mode,
-        "effective_runtime_mode": settings.runtime.runtime_mode,
+        "settings_runtime_mode": configured_runtime_mode,
+        "configured_runtime_mode": runtime_state_fields["configured_runtime_mode"],
+        "effective_runtime_mode": runtime_state_fields["effective_runtime_mode"],
+        "observe_only_effective": runtime_state_fields["observe_only_effective"],
+        "live_orders_allowed_effective": runtime_state_fields["live_orders_allowed_effective"],
+        "broker_orders_allowed_effective": runtime_state_fields["broker_orders_allowed_effective"],
+        "r38rb_effective_mode_version": runtime_state_fields["r38rb_effective_mode_version"],
         "settings_is_replay": settings.runtime.is_replay,
         "env_mme_runtime_mode": env_mme_runtime_mode,
         "env_scalpx_runtime_mode": env_scalpx_runtime_mode,
@@ -1287,6 +1474,81 @@ def _validate_target_service(target_service: str) -> str:
     return service
 
 
+def _r38rp_report_service_disabled_for_lean_runtime() -> bool:
+    """Return True only for the explicit R38RP report-disable lean runtime gate."""
+    raw = os.environ.get(R38RP_DISABLE_REPORT_SERVICE_ENV_VAR, "")
+    requested = str(raw).strip().lower() in {"1", "true", "yes", "on", "y"}
+    if not requested:
+        return False
+
+    ack = str(os.environ.get(R38RP_DISABLE_REPORT_ACK_ENV_VAR, "")).strip()
+    if ack != R38RP_DISABLE_REPORT_ACK_VALUE:
+        raise MainError(
+            "R38RP_DISABLE_REPORT_SERVICE_REQUIRES_EXACT_ACK "
+            f"set {R38RP_DISABLE_REPORT_ACK_ENV_VAR}={R38RP_DISABLE_REPORT_ACK_VALUE}"
+        )
+    return True
+
+
+def _r38rp_runtime_service_names_for_all() -> tuple[str, ...]:
+    """Frozen runtime services with exact-ACK lean exclusions for report/monitor."""
+    names_tuple = tuple(_runtime_service_names())
+
+    report_raw = os.environ.get(R38RP_DISABLE_REPORT_SERVICE_ENV_VAR, "")
+    report_requested = str(report_raw).strip().lower() in {"1", "true", "yes", "on", "y"}
+
+    monitor_raw = os.environ.get(R38TV_DISABLE_MONITOR_SERVICE_ENV_VAR, "")
+    monitor_requested = str(monitor_raw).strip().lower() in {"1", "true", "yes", "on", "y"}
+
+    if report_requested:
+        report_ack = str(os.environ.get(R38RP_DISABLE_REPORT_ACK_ENV_VAR, "")).strip()
+        if report_ack != R38RP_DISABLE_REPORT_ACK_VALUE:
+            raise MainError(
+                "R38RP_DISABLE_REPORT_SERVICE_REQUIRES_EXACT_ACK "
+                f"set {R38RP_DISABLE_REPORT_ACK_ENV_VAR}={R38RP_DISABLE_REPORT_ACK_VALUE}"
+            )
+
+    if monitor_requested:
+        monitor_ack = str(os.environ.get(R38TV_DISABLE_MONITOR_ACK_ENV_VAR, "")).strip()
+        if monitor_ack != R38TV_DISABLE_MONITOR_ACK_VALUE:
+            raise MainError(
+                "R38TV_DISABLE_MONITOR_SERVICE_REQUIRES_EXACT_ACK "
+                f"set {R38TV_DISABLE_MONITOR_ACK_ENV_VAR}={R38TV_DISABLE_MONITOR_ACK_VALUE}"
+            )
+        if not report_requested:
+            raise MainError("R38TV_MONITOR_DISABLE_REQUIRES_REPORT_DISABLE_TOO")
+
+    selected = names_tuple
+    if report_requested:
+        selected = tuple(service_name for service_name in selected if service_name != "report")
+    if monitor_requested:
+        selected = tuple(service_name for service_name in selected if service_name != "monitor")
+
+    required = {"feeds", "features", "strategy", "execution", "risk"}
+    if not monitor_requested:
+        required.add("monitor")
+    if not report_requested:
+        required.add("report")
+
+    missing = sorted(required.difference(selected))
+    if missing:
+        raise MainError("R38TV_INTERNAL_ERROR_REQUIRED_SERVICE_MISSING " + ",".join(missing))
+
+    if report_requested:
+        LOGGER.warning(
+            "R38RP_LEAN_RUNTIME_REPORT_SERVICE_DISABLED services=%s ack=%s",
+            ",".join(selected),
+            os.environ.get(R38RP_DISABLE_REPORT_ACK_ENV_VAR, ""),
+        )
+    if monitor_requested:
+        LOGGER.warning(
+            "R38TV_EXTERNAL_GUARD_MONITOR_SERVICE_DISABLED services=%s ack=%s",
+            ",".join(selected),
+            os.environ.get(R38TV_DISABLE_MONITOR_ACK_ENV_VAR, ""),
+        )
+
+    return selected
+
 def _validate_service_registry_surface() -> None:
     """
     Validate that names.SERVICE_REGISTRY remains the frozen ownership registry
@@ -1443,7 +1705,7 @@ def resolve_service_runner(module: ModuleType, *, service_name: str) -> ServiceR
 
 def _validate_frozen_service_modules() -> None:
     """Eagerly import and validate all frozen runtime service modules."""
-    for service_name in _runtime_service_names():
+    for service_name in _r38rp_runtime_service_names_for_all():
         module = load_service_module(service_name)
         _validate_service_module_contract(service_name, module)
 
@@ -1567,7 +1829,7 @@ def _publish_main_state(
                 "pid": str(app.pid),
                 "app_name": app.app_name,
                 "app_env": app.env,
-                "runtime_mode": app.settings.runtime.runtime_mode,
+                **_r38rb_runtime_state_fields(app.settings.runtime.runtime_mode),
                 "is_replay": "1" if app.settings.runtime.is_replay else "0",
                 "replay_start_wall_time_ns": (
                     "" if replay_start_wall_time_ns is None else str(replay_start_wall_time_ns)
@@ -1666,7 +1928,10 @@ def build_doctor_report(
         "project": getattr(names, "PROJECT_NAME", "mme_scalpx"),
         "contracts_version": getattr(names, "CONTRACTS_VERSION", None),
         "schema_version": getattr(names, "DEFAULT_SCHEMA_VERSION", None),
-        "runtime_mode": app.settings.runtime.runtime_mode,
+        "runtime_mode": _r38rb_effective_runtime_mode(app.settings.runtime.runtime_mode),
+        "configured_runtime_mode": str(app.settings.runtime.runtime_mode),
+        "effective_runtime_mode": _r38rb_effective_runtime_mode(app.settings.runtime.runtime_mode),
+        "observe_only_effective": "1" if _r38rb_observe_only_effective() else "0",
         "effective_runtime": _effective_runtime_truth_report(
             settings=app.settings,
             bootstrap_groups_enabled=bootstrap_groups_enabled,
@@ -1775,7 +2040,7 @@ def run_all_services(
     """Start all frozen runtime services in dedicated threads and supervise them."""
     records: list[ServiceThreadRecord] = []
 
-    for service_name in _runtime_service_names():
+    for service_name in _r38rp_runtime_service_names_for_all():
         context = build_runtime_context(
             app=app,
             shutdown=shutdown,
@@ -1993,6 +2258,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             enabled=not args.skip_group_bootstrap,
         )
 
+        # R38IJ_FAILCLOSE_BARE_DEFAULT_ALL_MAIN: prevent accidental bare `python -m app.mme_scalpx.main` from running all runtime services.
+        if target_service == DEFAULT_SERVICE and __import__('os').environ.get('SCALPX_ALLOW_ALL_SERVICE_MAIN') != '1':
+            print('FAIL_CLOSED_R38IJ_BARE_DEFAULT_ALL_MAIN_DISABLED set SCALPX_ALLOW_ALL_SERVICE_MAIN=1 only for explicit audited all-mode', flush=True)
+            return 78
         if target_service == DEFAULT_SERVICE:
             return run_all_services(
                 app=app,

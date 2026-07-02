@@ -1,0 +1,23 @@
+# LANE-X-R34X_MONDAY_R34O_READY_COMMAND_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_write_ready_to_run_monday_r34o_live_shadow_verifier_and_go_nogo_commands_after_r34w_cockpit_pass_20260613_145900
+
+classification: PASS_R34X_MONDAY_R34O_READY_COMMAND_PACKAGE_WRITTEN_NO_PATCH_NO_REPLAY_NO_ORDER
+proof: `run/proofs/LANE-X-R34X_MONDAY_R34O_READY_COMMAND_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_write_ready_to_run_monday_r34o_live_shadow_verifier_and_go_nogo_commands_after_r34w_cockpit_pass_20260613_145900.json`
+audit: `run/audits/LANE-X-R34X_MONDAY_R34O_READY_COMMAND_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_write_ready_to_run_monday_r34o_live_shadow_verifier_and_go_nogo_commands_after_r34w_cockpit_pass_20260613_145900`
+
+## Ready-to-run Monday command
+`run/audits/LANE-X-R34X_MONDAY_R34O_READY_COMMAND_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_write_ready_to_run_monday_r34o_live_shadow_verifier_and_go_nogo_commands_after_r34w_cockpit_pass_20260613_145900/MONDAY_R34O_READY_TO_RUN_COMMANDS.sh`
+
+Run on Monday:
+
+```bash
+bash run/audits/LANE-X-R34X_MONDAY_R34O_READY_COMMAND_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_write_ready_to_run_monday_r34o_live_shadow_verifier_and_go_nogo_commands_after_r34w_cockpit_pass_20260613_145900/MONDAY_R34O_READY_TO_RUN_COMMANDS.sh
+```
+
+## Safety
+- compile_rc: 0
+- orders/risk/execution: 0 / 0 / 0
+- risk/execution proc: 0 / 0
+
+## Important
+This package does not paper-arm. It only runs observe-only stack and R34O verifier.
+Controlled paper remains a separate micro-batch after R34O PASS.

@@ -1,0 +1,13 @@
+# LANE-MIV-R3_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_run_miv_zerodha_lite_evaluator_on_existing_r9h_r9l_r9x_artifact_rows_only_no_full_replay_20260611_232902 Runbook
+
+R3 consumes existing artifact rows only.
+
+It must not:
+- run replay_run.py
+- start services
+- send orders
+- mutate registries
+- touch Redis or locks
+
+Output root:
+- run/audits/LANE-MIV-R3_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_run_miv_zerodha_lite_evaluator_on_existing_r9h_r9l_r9x_artifact_rows_only_no_full_replay_20260611_232902_miv_existing_artifact_outputs

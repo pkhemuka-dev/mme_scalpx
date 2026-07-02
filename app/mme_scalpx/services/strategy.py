@@ -94,6 +94,105 @@ except NameError:
         ACTION_ENTER_PUT = "ENTER_PUT"
 
 from app.mme_scalpx.services.feature_family import contracts as FF_C
+
+# R33D_STAGE_FLAGS_CONSERVATIVE_NORMALIZER
+def _r33d_normalize_stage_flags_for_contract(payload):
+    """R38BZ_SAFE_CONTRACT_SANITIZER_STAGE_FLAGS_AND_COMMON.
+
+    Strategy-side compatibility sanitizer before strict feature-family contract
+    validation.
+
+    Safety law:
+    - preserves existing gate values;
+    - does not relax thresholds;
+    - does not force candidate/eligible;
+    - does not enable paper/live/order/risk/execution;
+    - only canonicalizes contract shape.
+    """
+    try:
+        from app.mme_scalpx.services.feature_family.contracts import (
+            COMMON_KEYS as _R38BZ_COMMON_KEYS,
+            build_empty_stage_flags_block as _r38bz_empty_stage_flags,
+        )
+        canonical_common_keys = tuple(_R38BZ_COMMON_KEYS)
+        canonical_stage_keys = tuple(_r38bz_empty_stage_flags().keys())
+    except Exception:
+        canonical_common_keys = (
+            "regime",
+            "strategy_runtime_mode_classic",
+            "strategy_runtime_mode_miso",
+            "futures",
+            "call",
+            "put",
+            "selected_option",
+            "cross_option",
+            "economics",
+            "signals",
+        )
+        canonical_stage_keys = (
+            "data_valid",
+            "data_quality_ok",
+            "session_eligible",
+            "warmup_complete",
+            "tradability_ok",
+            "risk_veto_active",
+            "reconciliation_lock_active",
+            "active_position_present",
+            "provider_ready_classic",
+            "provider_ready_miso",
+            "dhan_context_fresh",
+            "selected_option_present",
+            "futures_present",
+            "call_present",
+            "put_present",
+            "snapshot_sync_valid",
+            "classic_provider_degraded_safe",
+        )
+
+    def _is_mapping(value):
+        return isinstance(value, dict)
+
+    def _canonical_stage_flags(stage_flags):
+        if not _is_mapping(stage_flags):
+            return stage_flags
+        out = {}
+        for key in canonical_stage_keys:
+            out[key] = stage_flags.get(key, False)
+        return out
+
+    def _canonical_common(common):
+        if not _is_mapping(common):
+            return common
+        out = {}
+        for key in canonical_common_keys:
+            if key in common:
+                out[key] = common[key]
+        return out
+
+    def _normalize_node(node):
+        if isinstance(node, dict):
+            if "stage_flags" in node:
+                node["stage_flags"] = _canonical_stage_flags(node.get("stage_flags"))
+
+            if "common" in node and (
+                "stage_flags" in node
+                or "provider_runtime" in node
+                or "families" in node
+            ):
+                node["common"] = _canonical_common(node.get("common"))
+
+            for child in list(node.values()):
+                _normalize_node(child)
+
+        elif isinstance(node, list):
+            for child in node:
+                _normalize_node(child)
+
+        return node
+
+    return _normalize_node(payload)
+
+
 from app.mme_scalpx.services.strategy_family import activation as SF_ACT
 
 
@@ -405,6 +504,851 @@ def _redis_stream_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
+# R34F_SHADOW_CANDIDATE_TRUTH_EXPORT_BEGIN
+def _r34f_shadow_candidate_truth_from_activation_selected(
+    selected: Mapping[str, Any],
+    view: Any = None,
+) -> dict[str, Any]:
+    """
+    Shadow-only candidate truth export from activation-selected dry-run candidate.
+
+    This deliberately does NOT promote strategy action, does NOT write to any
+    trading/order stream, and does NOT enable broker/risk/execution paths.
+    """
+    selected_map = _mapping(selected)
+    action = _safe_str(selected_map.get("action")).upper()
+    is_enter = action in {"ENTER_CALL", "ENTER_PUT"}
+
+    # R34K_SYMBOL_TOKEN_IDENTITY_EXPORT_BEGIN
+    def _r34k_read(obj: Any, key: str) -> Any:
+        if obj is None:
+            return None
+        if isinstance(obj, Mapping):
+            return obj.get(key)
+        return getattr(obj, key, None)
+
+    def _r34k_walk(obj: Any, keys: tuple[str, ...], depth: int = 0, seen: set[int] | None = None) -> Any:
+        if obj is None or depth > 4:
+            return None
+        if seen is None:
+            seen = set()
+        oid = id(obj)
+        if oid in seen:
+            return None
+        seen.add(oid)
+
+        for key in keys:
+            value = _r34k_read(obj, key)
+            if value not in (None, "", [], {}):
+                return value
+
+        if isinstance(obj, Mapping):
+            iterable = obj.values()
+        elif isinstance(obj, (str, bytes, int, float, bool)):
+            iterable = ()
+        elif hasattr(obj, "__dict__"):
+            iterable = vars(obj).values()
+        else:
+            iterable = ()
+
+        for child in iterable:
+            value = _r34k_walk(child, keys, depth + 1, seen)
+            if value not in (None, "", [], {}):
+                return value
+        return None
+
+    symbol_keys = (
+        "symbol", "tradingsymbol", "trading_symbol", "option_symbol",
+        "selected_option_symbol", "selected_option_tradingsymbol",
+        "selected_option_trading_symbol", "instrument_key",
+        "selected_option_instrument_key",
+        "selected_call_option_symbol", "selected_put_option_symbol",
+        "selected_call_instrument_key", "selected_put_instrument_key",
+        "entry_option_symbol", "selected_symbol",
+    )
+    token_keys = (
+        "instrument_token", "token", "option_token",
+        "selected_option_token", "selected_option_instrument_token",
+        "selected_call_option_token", "selected_put_option_token",
+        "selected_call_instrument_token", "selected_put_instrument_token",
+    )
+
+    candidate_symbol_shadow = _safe_str(
+        _r34k_walk(selected_map, symbol_keys) or _r34k_walk(view, symbol_keys)
+    )
+    candidate_instrument_token_shadow = _safe_str(
+        _r34k_walk(selected_map, token_keys) or _r34k_walk(view, token_keys)
+    )
+    # R34K_SYMBOL_TOKEN_IDENTITY_EXPORT_END
+
+    return {
+        "candidate_true_shadow": int(is_enter),
+        "candidate_present_shadow": int(is_enter),
+        "candidate_shadow_only": int(is_enter),
+        "candidate_truth_mode_shadow": (
+            "activation_selected_report_only_shadow" if is_enter else ""
+        ),
+        "candidate_action_shadow": action if is_enter else "",
+        "candidate_family_id_shadow": (
+            _safe_str(selected_map.get("family_id")).upper() if is_enter else ""
+        ),
+        "candidate_branch_id_shadow": (
+            _safe_str(selected_map.get("branch_id")) if is_enter else ""
+        ),
+        "candidate_score_shadow": selected_map.get("score") if is_enter else None,
+        "candidate_symbol_shadow": candidate_symbol_shadow if is_enter else "",
+        "candidate_instrument_token_shadow": candidate_instrument_token_shadow if is_enter else "",
+        "symbol": candidate_symbol_shadow if is_enter else "",
+        "instrument_token": candidate_instrument_token_shadow if is_enter else "",
+        "real_order_sent_shadow": 0,
+        "broker_calls_executed_shadow": 0,
+        "redis_trading_stream_write_attempted_shadow": 0,
+    }
+# R34F_SHADOW_CANDIDATE_TRUTH_EXPORT_END
+
+
+
+
+# BEGIN R38EE_GUARDED_STRATEGY_TO_RUNTIME_PAPER_BRIDGE_PATCH
+# Default observe-only behaviour remains HOLD-only.
+# Only exact controlled-paper env + exact scope ACK can project activation.selected
+# into the top-level runtime decision consumed by risk/execution.
+def _r38ee_truthy(value: Any) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _r38ee_env_truthy(name: str) -> bool:
+    import os as _r38ee_os
+    return _r38ee_truthy(_r38ee_os.environ.get(name, ""))
+
+
+def _r38ee_env_text(name: str) -> str:
+    import os as _r38ee_os
+    return str(_r38ee_os.environ.get(name, "") or "").strip()
+
+
+def _r38ee_text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _r38ee_upper(value: Any) -> str:
+    return _r38ee_text(value).upper()
+
+
+def _r38ee_mapping(value: Any) -> dict[str, Any]:
+    return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _r38ee_json_obj(value: Any) -> dict[str, Any]:
+    if isinstance(value, Mapping):
+        return dict(value)
+    if isinstance(value, str) and value.strip():
+        try:
+            obj = json.loads(value)
+            return dict(obj) if isinstance(obj, Mapping) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _r38ee_ack_for_scope(family: str, side: str, action: str, token: str, symbol: str) -> str:
+    import hashlib as _r38ee_hashlib
+    seed = "|".join(["CONTROLLED_PAPER_SCOPE_ACK", family, side, action, token, symbol, "LOTS_1"])
+    return "ACK_" + _r38ee_hashlib.sha256(seed.encode()).hexdigest()[:20].upper()
+
+
+def _r38ee_controlled_env_scope_allows(*, family: str, side: str, action: str, token: str, symbol: str, qty: int) -> bool:
+    family = _r38ee_upper(family)
+    side = _r38ee_upper(side)
+    action = _r38ee_upper(action)
+    token = _r38ee_text(token)
+    symbol = _r38ee_upper(symbol)
+
+    if _r38ee_env_truthy("SCALPX_OBSERVE_ONLY") or _r38ee_env_truthy("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY"):
+        return False
+    if not _r38ee_env_truthy("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"):
+        return False
+    if not (_r38ee_env_truthy("SCALPX_ENABLE_PAPER") or _r38ee_env_truthy("MME_ENABLE_PAPER")):
+        return False
+    if not (_r38ee_env_truthy("SCALPX_PAPER_ARMED") or _r38ee_env_truthy("SCALPX_CONTROLLED_PAPER_ARMED")):
+        return False
+    if not (_r38ee_env_truthy("SCALPX_POSITION_FLAT_VERIFIED") or _r38ee_env_truthy("SCALPX_FLAT_POSITION_VERIFIED")):
+        return False
+
+    forbidden_live_flags = [
+        "SCALPX_ENABLE_LIVE",
+        "SCALPX_REAL_LIVE_ALLOWED",
+        "SCALPX_ALLOW_REAL_LIVE",
+        "SCALPX_ALLOW_BROKER_ORDERS",
+        "MME_ENABLE_LIVE",
+        "MME_ALLOW_BROKER_ORDERS",
+    ]
+    if any(_r38ee_env_truthy(name) for name in forbidden_live_flags):
+        return False
+
+    if family not in {"MIST", "MISB", "MISC", "MISR"}:
+        return False
+    if side not in {"CALL", "PUT"}:
+        return False
+    if action not in {"ENTER_CALL", "ENTER_PUT"}:
+        return False
+    if qty != 1:
+        return False
+
+    env_family = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_FAMILY"))
+    env_side = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_SIDE") or _r38ee_env_text("SCALPX_CONTROLLED_PAPER_BRANCH"))
+    env_action = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_ACTION"))
+    env_token = _r38ee_text(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_INSTRUMENT_TOKEN"))
+    env_symbol = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_OPTION_SYMBOL"))
+    env_ack = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_SCOPE_ACK"))
+
+    if not all([env_family, env_side, env_action, env_token, env_symbol, env_ack]):
+        return False
+    if env_family != family or env_side != side or env_action != action:
+        return False
+    if env_token != token or env_symbol != symbol:
+        return False
+
+    return env_ack == _r38ee_ack_for_scope(family, side, action, token, symbol)
+
+
+
+# ===== R33E_CONTROLLED_SCOPED_FRAME_PROJECTION_PATCH_BEGIN =====
+# Controlled-paper-only helper. This does not create candidates and does not
+# relax strategy thresholds. It only allows an already eligible family/branch
+# frame from the current consumer_view_json to be used when the runtime env is
+# exact-scope ACKed by R38EN.
+def _r33e_scoped_eligible_frame_from_consumer_view(
+    base: Mapping[str, Any],
+    *,
+    env_family: str,
+    env_side: str,
+    env_action: str,
+    env_token: str,
+    env_symbol: str,
+) -> dict[str, Any]:
+    if env_family not in {"MIST", "MISB", "MISC", "MISR"}:
+        return {}
+    if env_side not in {"CALL", "PUT"}:
+        return {}
+    if env_action not in {"ENTER_CALL", "ENTER_PUT"}:
+        return {}
+    if not env_token or not env_symbol:
+        return {}
+
+    cv = _r38ee_mapping(base.get("consumer_view_json"))
+    top_green = bool(
+        cv.get("safe_to_consume") is True
+        and cv.get("hold_only") is False
+        and cv.get("provider_ready_classic") is True
+        and cv.get("tradability_ok") is True
+    )
+    if not top_green:
+        return {}
+
+    for container_name in ("family_frames", "branch_frames"):
+        frames = _r38ee_mapping(cv.get(container_name))
+        for branch, raw_frame in frames.items():
+            frame = _r38ee_mapping(raw_frame)
+            family = _r38ee_upper(frame.get("family_id") or str(branch).split("_", 1)[0])
+            side = _r38ee_upper(frame.get("side") or frame.get("branch_id"))
+            token = _r38ee_text(frame.get("instrument_token") or frame.get("option_token"))
+            symbol = _r38ee_upper(frame.get("option_symbol") or frame.get("instrument_key"))
+            if ":" in symbol:
+                symbol = symbol.split(":", 1)[1]
+
+            eligible = _r38ee_env_truthy(str(frame.get("eligible"))) if not isinstance(frame.get("eligible"), bool) else bool(frame.get("eligible"))
+            tradable = frame.get("tradability_ok") is True
+            runtime_mode = _r38ee_upper(frame.get("runtime_mode") or frame.get("family_runtime_mode"))
+
+            if (
+                family == env_family
+                and side == env_side
+                and token == env_token
+                and symbol == env_symbol
+                and eligible
+                and tradable
+                and runtime_mode == "NORMAL"
+            ):
+                out = dict(frame)
+                out["_r33e_source_container"] = container_name
+                out["_r33e_source_branch"] = str(branch)
+                out["_r33e_top_green"] = True
+                return out
+    return {}
+
+
+def _r33e_controlled_projected_publish_allowed(decision: Mapping[str, Any]) -> bool:
+    if not _safe_bool(decision.get("r38ee_projection_projected"), False):
+        return False
+    if _safe_str(decision.get("r38ee_projection_blocker"), "") != "projected":
+        return False
+    if _safe_str(decision.get("action"), "") not in {"ENTER_CALL", "ENTER_PUT"}:
+        return False
+    if _safe_int(decision.get("qty"), 0) != 1:
+        return False
+    if _safe_bool(decision.get("live_orders_allowed"), False):
+        return False
+    if _safe_bool(decision.get("real_order_sent_shadow"), False):
+        return False
+    if _safe_bool(decision.get("broker_calls_executed_shadow"), False):
+        return False
+    if _safe_bool(decision.get("redis_trading_stream_write_attempted_shadow"), False):
+        return False
+    return bool(_r38ee_controlled_paper_bridge_allowed(decision))
+# ===== R33E_CONTROLLED_SCOPED_FRAME_PROJECTION_PATCH_END =====
+
+def _r38ee_controlled_paper_bridge_allowed(decision: Mapping[str, Any]) -> bool:
+    metadata = _r38ee_mapping(decision.get("metadata"))
+    family = decision.get("strategy_family_id") or decision.get("doctrine_id") or decision.get("family_id") or metadata.get("family_id") or metadata.get("strategy_family")
+    side = decision.get("branch_id") or decision.get("side") or metadata.get("side") or metadata.get("branch_id")
+    action = decision.get("action") or metadata.get("action")
+    token = decision.get("instrument_token") or decision.get("instrument_key") or metadata.get("instrument_token") or metadata.get("instrument_key") or metadata.get("option_token")
+    symbol = decision.get("option_symbol") or decision.get("symbol") or metadata.get("option_symbol")
+    qty = _safe_int(decision.get("qty") or metadata.get("quantity_lots_hint") or metadata.get("qty_lots"), 0)
+
+    return _r38ee_controlled_env_scope_allows(
+        family=_r38ee_text(family),
+        side=_r38ee_text(side),
+        action=_r38ee_text(action),
+        token=_r38ee_text(token),
+        symbol=_r38ee_text(symbol),
+        qty=qty,
+    )
+
+
+# BEGIN R38EM_R1_PROJECTION_DIAG_AND_SYMBOL_FALLBACK_PATCH
+
+# R38TZ: exact one-event real-live activation projection bridge.
+# This does not force entries. It only allows an already selected activation
+# candidate to be promoted when the explicit one-event live scope is present.
+_R38TZ_REAL_LIVE_SCOPE_ACK_PREFIX = "USER_APPROVED_ONE_REAL_LIVE_MICRO_EVENT_1LOT_NO_RETRY_NO_AVERAGING_STOP_AFTER_FIRST_ATTEMPT_"
+
+def _r38tz_env_int(name: str, default: int = 0) -> int:
+    try:
+        return int(_r38ee_env_text(name) or default)
+    except Exception:
+        return default
+
+def _r38tz_live_one_event_env_scope_allows(*, family: str, side: str, action: str, token: str, symbol: str, qty: int) -> bool:
+    family = _r38ee_upper(family)
+    side = _r38ee_upper(side)
+    action = _r38ee_upper(action)
+    token = _r38ee_text(token)
+    symbol = _r38ee_upper(symbol)
+    try:
+        qty_int = int(qty or 0)
+    except Exception:
+        qty_int = 0
+
+    if action not in {"ENTER_CALL", "ENTER_PUT"}:
+        return False
+    if not family or not action or not token or not symbol:
+        return False
+    if qty_int != 1:
+        return False
+
+    if _r38ee_env_truthy("SCALPX_OBSERVE_ONLY") or _r38ee_env_truthy("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY"):
+        return False
+
+    if not (_r38ee_env_truthy("SCALPX_ENABLE_LIVE") and _r38ee_env_truthy("MME_ENABLE_LIVE")):
+        return False
+    if not (_r38ee_env_truthy("SCALPX_REAL_LIVE_ALLOWED") and _r38ee_env_truthy("SCALPX_ALLOW_REAL_LIVE") and _r38ee_env_truthy("SCALPX_ALLOW_BROKER_ORDERS")):
+        return False
+
+    if _r38ee_env_truthy("SCALPX_ENABLE_PAPER") or _r38ee_env_truthy("MME_ENABLE_PAPER") or _r38ee_env_truthy("SCALPX_PAPER_ARMED") or _r38ee_env_truthy("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"):
+        return False
+
+    if not (_r38ee_env_truthy("SCALPX_POSITION_FLAT_VERIFIED") or _r38ee_env_truthy("SCALPX_FLAT_POSITION_VERIFIED")):
+        return False
+
+    if not _r38ee_env_truthy("SCALPX_LIVE_ONE_EVENT_ONLY"):
+        return False
+    if _r38tz_env_int("SCALPX_MAX_LIVE_EVENTS", 0) != 1:
+        return False
+    if _r38tz_env_int("SCALPX_MAX_ORDERS", 0) != 1:
+        return False
+    if _r38tz_env_int("SCALPX_ORDER_LOTS", 0) != 1:
+        return False
+    if _r38tz_env_int("SCALPX_ORDER_MAX_LOTS", 0) != 1:
+        return False
+    if _r38tz_env_int("MME_ORDER_LOTS", 0) != 1:
+        return False
+    if _r38tz_env_int("MME_MAX_LOTS", 0) != 1:
+        return False
+
+    if not (_r38ee_env_truthy("SCALPX_NO_RETRY") and _r38ee_env_truthy("SCALPX_DISABLE_RETRY")):
+        return False
+    if not (_r38ee_env_truthy("SCALPX_DISABLE_AVERAGING") and not _r38ee_env_truthy("SCALPX_AVERAGING_ENABLED")):
+        return False
+
+    ack = _r38ee_env_text("SCALPX_REAL_LIVE_SCOPE_ACK")
+    if not ack.startswith(_R38TZ_REAL_LIVE_SCOPE_ACK_PREFIX):
+        return False
+
+    return True
+
+def _r38tz_live_one_event_bridge_allowed(decision: Mapping[str, Any]) -> bool:
+    metadata = _r38ee_mapping(decision.get("metadata"))
+    family = _r38ee_text(
+        decision.get("r38ee_extracted_family")
+        or decision.get("r38fe_decision_family_evidence")
+        or decision.get("activation_selected_family_id")
+        or decision.get("candidate_family_id_shadow")
+        or decision.get("strategy_family_id")
+        or metadata.get("family_id")
+        or metadata.get("strategy_family")
+    )
+    side = _r38ee_text(
+        decision.get("r38ee_extracted_side")
+        or decision.get("r38fe_decision_side_evidence")
+        or decision.get("side")
+        or metadata.get("side")
+        or metadata.get("branch_id")
+    )
+    action = _r38ee_text(
+        decision.get("r38ee_extracted_action")
+        or decision.get("r38fe_decision_action_evidence")
+        or decision.get("activation_selected_action")
+        or decision.get("candidate_action_shadow")
+        or decision.get("action")
+    )
+    token = _r38ee_text(
+        decision.get("r38ee_extracted_token")
+        or decision.get("candidate_instrument_token_shadow")
+        or decision.get("instrument_token")
+        or decision.get("instrument_key")
+        or metadata.get("instrument_token")
+        or metadata.get("option_token")
+    )
+    symbol = _r38ee_text(
+        decision.get("r38ee_extracted_symbol")
+        or decision.get("candidate_symbol_shadow")
+        or decision.get("option_symbol")
+        or decision.get("symbol")
+        or metadata.get("option_symbol")
+        or metadata.get("symbol")
+    )
+    try:
+        qty = int(_r38ee_text(decision.get("qty") or metadata.get("qty") or 1) or 1)
+    except Exception:
+        qty = 1
+    return _r38tz_live_one_event_env_scope_allows(
+        family=family,
+        side=side,
+        action=action,
+        token=token,
+        symbol=symbol,
+        qty=qty,
+    )
+
+
+# R38TZD: execution entry-contract enrichment for projected real-live one-event ENTER.
+def _r38tzd_extract_strike_from_symbol(symbol: str) -> str:
+    import re as _r38tzd_re
+    s = _r38ee_upper(symbol)
+    m = _r38tzd_re.search(r"(\d+)(CE|PE)$", s)
+    if not m:
+        return ""
+    digits = m.group(1)
+    for width in (5, 4):
+        if len(digits) >= width:
+            candidate = digits[-width:]
+            try:
+                val = int(candidate)
+            except Exception:
+                continue
+            if 1000 <= val <= 100000:
+                return str(val)
+    return ""
+
+def _r38tzd_entry_contract_metadata(*, base: Mapping[str, Any], selected: Mapping[str, Any], candidate: Mapping[str, Any], symbol: str, token: str, price: str) -> dict[str, Any]:
+    meta = dict(_r38ee_mapping(base.get("metadata")))
+    meta.update(_r38ee_mapping(selected.get("metadata")))
+    meta.update(_r38ee_mapping(candidate.get("metadata")))
+
+    option_symbol = _r38ee_upper(
+        symbol
+        or candidate.get("option_symbol")
+        or candidate.get("trading_symbol")
+        or candidate.get("instrument_key")
+        or selected.get("option_symbol")
+        or selected.get("trading_symbol")
+        or base.get("option_symbol")
+        or base.get("symbol")
+        or meta.get("option_symbol")
+        or meta.get("symbol")
+    )
+    if ":" in option_symbol:
+        option_symbol = option_symbol.split(":", 1)[1]
+
+    option_token = _r38ee_text(
+        token
+        or candidate.get("option_token")
+        or candidate.get("instrument_token")
+        or candidate.get("instrument_key")
+        or selected.get("option_token")
+        or selected.get("instrument_token")
+        or base.get("instrument_token")
+        or base.get("instrument_key")
+        or meta.get("option_token")
+        or meta.get("instrument_token")
+    )
+
+    strike = _r38ee_text(
+        candidate.get("strike")
+        or selected.get("strike")
+        or base.get("strike")
+        or meta.get("strike")
+        or _r38tzd_extract_strike_from_symbol(option_symbol)
+    )
+
+    limit_price = _r38ee_text(
+        price
+        or candidate.get("limit_price")
+        or candidate.get("price")
+        or selected.get("limit_price")
+        or selected.get("price")
+        or base.get("limit_price")
+        or base.get("price")
+        or meta.get("limit_price")
+        or meta.get("price")
+    )
+
+    meta["option_symbol"] = option_symbol
+    meta["option_token"] = option_token
+    meta["strike"] = strike
+    meta["limit_price"] = limit_price
+    meta["r38tzd_entry_contract_enriched"] = True
+    return meta
+
+def _r38ee_project_activation_selected_for_controlled_paper(decision: Mapping[str, Any]) -> dict[str, Any]:
+    base = dict(decision)
+    activation = _r38ee_json_obj(base.get("activation_report_json"))
+    selected = _r38ee_mapping(activation.get("selected"))
+    candidate = _r38ee_mapping(selected.get("candidate")) or selected
+    metadata = _r38ee_mapping(candidate.get("metadata"))
+
+    family = _r38ee_upper(selected.get("family_id") or candidate.get("family_id") or candidate.get("doctrine_id") or metadata.get("family_id") or metadata.get("strategy_family"))
+    side = _r38ee_upper(selected.get("branch_id") or selected.get("side") or candidate.get("branch_id") or candidate.get("side") or metadata.get("side") or metadata.get("branch_id"))
+    action = _r38ee_upper(selected.get("action") or candidate.get("action"))
+    token = _r38ee_text(candidate.get("instrument_token") or candidate.get("instrument_key") or metadata.get("instrument_token") or metadata.get("instrument_key") or metadata.get("option_token") or base.get("candidate_instrument_token_shadow"))
+
+    symbol_raw = candidate.get("option_symbol") or metadata.get("option_symbol") or base.get("candidate_symbol_shadow") or base.get("option_symbol") or base.get("symbol")
+    symbol = _r38ee_upper(symbol_raw)
+
+    env_family = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_FAMILY"))
+    env_side = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_SIDE") or _r38ee_env_text("SCALPX_CONTROLLED_PAPER_BRANCH"))
+    env_action = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_ACTION"))
+    env_token = _r38ee_text(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_INSTRUMENT_TOKEN"))
+    env_symbol = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_OPTION_SYMBOL"))
+    env_ack = _r38ee_upper(_r38ee_env_text("SCALPX_CONTROLLED_PAPER_SCOPE_ACK"))
+
+    symbol_fallback_applied = False
+    if not symbol and token and env_token and token == env_token and env_symbol:
+        symbol = env_symbol
+        symbol_fallback_applied = True
+
+    price = candidate.get("option_price") or candidate.get("price") or metadata.get("limit_price_hint") or metadata.get("limit_price") or base.get("price")
+    strike = candidate.get("strike") or metadata.get("strike") or base.get("strike")
+    score = selected.get("score") if selected.get("score") is not None else candidate.get("score")
+    # BEGIN R38FE_ENV_SCOPE_FALLBACK_FOR_CONTROLLED_PROJECTION
+    # Use the already ACK-validated locked env scope as fallback only when the
+    # decision itself has matching ENTER evidence. This avoids fake candidates:
+    # no projection occurs without activation/ENTER evidence on the current row.
+    env_ack_expected_from_env = _r38ee_ack_for_scope(env_family, env_side, env_action, env_token, env_symbol) if all([env_family, env_side, env_action, env_token, env_symbol]) else ""
+    env_scope_self_valid = bool(
+        env_family in {"MIST", "MISB", "MISC", "MISR", "MISO"}
+        and env_side in {"CALL", "PUT"}
+        and env_action in {"ENTER_CALL", "ENTER_PUT"}
+        and env_token
+        and env_symbol
+        and env_ack
+        and env_ack == env_ack_expected_from_env
+    )
+
+    decision_action_evidence = _r38ee_upper(
+        selected.get("action") or candidate.get("action") or base.get("activation_selected_action") or base.get("action")
+    )
+    decision_family_evidence = _r38ee_upper(
+        selected.get("family_id") or candidate.get("family_id") or candidate.get("doctrine_id") or base.get("activation_selected_family_id")
+    )
+    decision_side_evidence = _r38ee_upper(
+        selected.get("branch_id") or selected.get("side") or candidate.get("branch_id") or candidate.get("side") or base.get("activation_selected_branch_id")
+    )
+
+    decision_has_enter_evidence = decision_action_evidence == env_action
+    decision_family_compatible = (not decision_family_evidence) or decision_family_evidence == env_family
+    decision_side_compatible = (not decision_side_evidence) or decision_side_evidence == env_side
+    extracted_scope_compatible = (
+        (not family or family == env_family or family not in {"MIST", "MISB", "MISC", "MISR", "MISO"})
+        and (not side or side == env_side)
+        and (not action or action == env_action)
+        and (not token or token == env_token)
+        and (not symbol or symbol == env_symbol)
+    )
+
+    env_scope_fallback_applied = 0
+    if env_scope_self_valid and decision_has_enter_evidence and decision_family_compatible and decision_side_compatible and extracted_scope_compatible:
+        if not family or family not in {"MIST", "MISB", "MISC", "MISR", "MISO"}:
+            family = env_family
+            env_scope_fallback_applied = 1
+        if not side:
+            side = env_side
+            env_scope_fallback_applied = 1
+        if not action:
+            action = env_action
+            env_scope_fallback_applied = 1
+        if not token:
+            token = env_token
+            env_scope_fallback_applied = 1
+        if not symbol:
+            symbol = env_symbol
+            env_scope_fallback_applied = 1
+
+    r33e_scoped_frame = _r33e_scoped_eligible_frame_from_consumer_view(
+        base,
+        env_family=env_family,
+        env_side=env_side,
+        env_action=env_action,
+        env_token=env_token,
+        env_symbol=env_symbol,
+    )
+    r33e_scoped_frame_applied = 0
+    if r33e_scoped_frame:
+        family = env_family
+        side = env_side
+        action = env_action
+        token = env_token
+        symbol = env_symbol
+        price = (
+            r33e_scoped_frame.get("option_price")
+            or r33e_scoped_frame.get("price")
+            or price
+        )
+        strike = r33e_scoped_frame.get("strike") or strike
+        score = r33e_scoped_frame.get("score") or r33e_scoped_frame.get("setup_score") or score
+        metadata = dict(metadata)
+        metadata.update({
+            "r33e_controlled_scoped_frame_projection": True,
+            "r33e_source_container": r33e_scoped_frame.get("_r33e_source_container"),
+            "r33e_source_branch": r33e_scoped_frame.get("_r33e_source_branch"),
+            "r33e_top_green": True,
+            "r33e_eligible": True,
+        })
+        env_scope_fallback_applied = 1
+        r33e_scoped_frame_applied = 1
+
+    env_ack_expected = _r38ee_ack_for_scope(family, side, action, token, symbol) if family and side and action and token and symbol else ""
+    # END R38FE_ENV_SCOPE_FALLBACK_FOR_CONTROLLED_PROJECTION
+
+    projection_attempted = bool(
+        action in {"ENTER_CALL", "ENTER_PUT"}
+        or _r38ee_upper(base.get("activation_selected_action")) in {"ENTER_CALL", "ENTER_PUT"}
+    )
+
+    r38tzd_price = _r38ee_text(
+        candidate.get("limit_price")
+        or candidate.get("price")
+        or selected.get("limit_price")
+        or selected.get("price")
+        or base.get("limit_price")
+        or base.get("price")
+        or base.get("candidate_price_shadow")
+    )
+    r38tzd_entry_meta = _r38tzd_entry_contract_metadata(
+        base=base,
+        selected=selected,
+        candidate=candidate,
+        symbol=symbol,
+        token=token,
+        price=r38tzd_price,
+    )
+
+    projection_blocker = "none"
+    try:
+        _r38tz_qty = int(_r38ee_text(candidate.get("qty") or base.get("qty") or 1) or 1)
+    except Exception:
+        _r38tz_qty = 1
+    live_one_event_scope_allowed = _r38tz_live_one_event_env_scope_allows(
+        family=family,
+        side=side,
+        action=action,
+        token=token,
+        symbol=symbol,
+        qty=_r38tz_qty,
+    )
+
+    if _r38ee_env_truthy("SCALPX_OBSERVE_ONLY") or _r38ee_env_truthy("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY"):
+        projection_blocker = "observe_only_active"
+    elif live_one_event_scope_allowed:
+        projection_blocker = "live_one_event_scope_allowed"
+    elif not _r38ee_env_truthy("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"):
+        projection_blocker = "controlled_runtime_not_allowed"
+    elif not (_r38ee_env_truthy("SCALPX_ENABLE_PAPER") or _r38ee_env_truthy("MME_ENABLE_PAPER")):
+        projection_blocker = "paper_not_enabled"
+    elif not (_r38ee_env_truthy("SCALPX_PAPER_ARMED") or _r38ee_env_truthy("SCALPX_CONTROLLED_PAPER_ARMED")):
+        projection_blocker = "paper_not_armed"
+    elif not (_r38ee_env_truthy("SCALPX_POSITION_FLAT_VERIFIED") or _r38ee_env_truthy("SCALPX_FLAT_POSITION_VERIFIED")):
+        projection_blocker = "flat_not_verified"
+    elif any(_r38ee_env_truthy(name) for name in [
+        "SCALPX_ENABLE_LIVE",
+        "SCALPX_REAL_LIVE_ALLOWED",
+        "SCALPX_ALLOW_REAL_LIVE",
+        "SCALPX_ALLOW_BROKER_ORDERS",
+        "MME_ENABLE_LIVE",
+        "MME_ALLOW_BROKER_ORDERS",
+    ]):
+        projection_blocker = "live_or_broker_flag_truthy"
+    elif family not in {"MIST", "MISB", "MISC", "MISR"}:
+        projection_blocker = "family_not_allowed"
+    elif side not in {"CALL", "PUT"}:
+        projection_blocker = "side_not_allowed"
+    elif action not in {"ENTER_CALL", "ENTER_PUT"}:
+        projection_blocker = "action_not_enter"
+    elif not token:
+        projection_blocker = "token_missing"
+    elif not symbol:
+        projection_blocker = "symbol_missing"
+    elif not all([env_family, env_side, env_action, env_token, env_symbol, env_ack]):
+        projection_blocker = "env_scope_missing"
+    elif env_family != family:
+        projection_blocker = "family_scope_mismatch"
+    elif env_side != side:
+        projection_blocker = "side_scope_mismatch"
+    elif env_action != action:
+        projection_blocker = "action_scope_mismatch"
+    elif env_token != token:
+        projection_blocker = "token_scope_mismatch"
+    elif env_symbol != symbol:
+        projection_blocker = "symbol_scope_mismatch"
+    elif env_ack != env_ack_expected:
+        projection_blocker = "ack_scope_mismatch"
+
+    controlled_scope_allowed = _r38ee_controlled_env_scope_allows(
+        family=family,
+        side=side,
+        action=action,
+        token=token,
+        symbol=symbol,
+        qty=1,
+    )
+    scope_allowed = bool(live_one_event_scope_allowed or controlled_scope_allowed)
+
+    diag_fields = {
+        "r38em_r1_projection_diag_patch": 1,
+        "r38ee_projection_attempted": 1 if projection_attempted else 0,
+        "r38ee_projection_projected": 0,
+        "r38ee_projection_blocker": projection_blocker if not scope_allowed else "none",
+        "r38ee_symbol_fallback_applied": 1 if symbol_fallback_applied else 0,
+        "r38ee_extracted_family": family,
+        "r38ee_extracted_side": side,
+        "r38ee_extracted_action": action,
+        "r38ee_extracted_token": token,
+        "r38ee_extracted_symbol": symbol,
+        "r38ee_extracted_symbol_raw": _r38ee_text(symbol_raw),
+        "r38ee_env_family": env_family,
+        "r38ee_env_side": env_side,
+        "r38ee_env_action": env_action,
+        "r38ee_env_token": env_token,
+        "r38ee_env_symbol": env_symbol,
+        "r38ee_env_ack_present": 1 if env_ack else 0,
+        "r38ee_env_ack_expected": env_ack_expected,
+        "r38ee_scope_allowed": 1 if scope_allowed else 0,
+        "r38fe_env_scope_fallback_patch": 1,
+        "r38fe_env_scope_fallback_applied": env_scope_fallback_applied,
+        "r38fe_env_scope_self_valid": 1 if env_scope_self_valid else 0,
+        "r38fe_decision_action_evidence": decision_action_evidence,
+        "r38fe_decision_family_evidence": decision_family_evidence,
+        "r38fe_decision_side_evidence": decision_side_evidence,
+        "r33e_scoped_frame_projection_patch": 1,
+        "r33e_scoped_frame_applied": r33e_scoped_frame_applied,
+    }
+    base.update(diag_fields)
+
+    if not scope_allowed:
+        return base
+
+    projected_metadata = dict(metadata)
+    projected_metadata.update({
+        "family_id": family,
+        "side": side,
+        "branch_id": side,
+        "action": action,
+        "instrument_token": token,
+        "instrument_key": token,
+        "option_symbol": symbol,
+        "limit_price": price,
+        "limit_price_hint": price,
+        "quantity_lots_hint": 1,
+        "entry_mode": projected_metadata.get("entry_mode") or "DIRECT",
+        "provider_id": projected_metadata.get("provider_id") or "ZERODHA",
+        "controlled_paper_scope_ack": _r38ee_env_text("SCALPX_CONTROLLED_PAPER_SCOPE_ACK"),
+        "r38ee_strategy_to_runtime_paper_bridge": True,
+    })
+
+    out = dict(base)
+    out.update({
+        "action": action,
+        "side": side,
+        "branch_id": side,
+        "strategy_family_id": family,
+        "doctrine_id": family,
+        "instrument_key": token,
+        "instrument_token": token,
+        "option_symbol": symbol,
+        "symbol": symbol,
+        "strike": strike,
+        "qty": 1,
+        "price": price,
+        "order_type": "LIMIT",
+        "reason": "r38ee_controlled_paper_activation_selected_projected",
+        "confidence": score if score is not None else base.get("confidence", 0.0),
+        "hold_only": 0,
+        "activation_report_only": 0,
+        "activation_action": action,
+        "activation_promoted": 1,
+        "activation_safe_to_promote": 1,
+        "live_orders_allowed": 0,
+        "metadata": projected_metadata,
+        "r38ee_strategy_to_runtime_paper_bridge": "projected_activation_selected_exact_scope_1lot",
+        "r38em_r1_projection_diag_patch": 1,
+        "r38ee_projection_attempted": 1,
+        "r38ee_projection_projected": 1,
+        "position_effect": POSITION_EFFECT_OPEN,
+        "entry_position_effect": POSITION_EFFECT_OPEN,
+        "order_position_effect": POSITION_EFFECT_OPEN,
+        "quantity_lots": 1,
+        "metadata": r38tzd_entry_meta,
+        "option_token": _r38ee_text(r38tzd_entry_meta.get("option_token")),
+        "strike": _r38ee_text(r38tzd_entry_meta.get("strike")),
+        "limit_price": _r38ee_text(r38tzd_entry_meta.get("limit_price")),
+        "r38tzd_entry_contract_patch": 1,
+        "r38ee_projection_blocker": "projected",
+        "r38ee_symbol_fallback_applied": 1 if symbol_fallback_applied else 0,
+        "r38ee_extracted_family": family,
+        "r38ee_extracted_side": side,
+        "r38ee_extracted_action": action,
+        "r38ee_extracted_token": token,
+        "r38ee_extracted_symbol": symbol,
+        "r38ee_extracted_symbol_raw": _r38ee_text(symbol_raw),
+        "r38ee_env_family": env_family,
+        "r38ee_env_side": env_side,
+        "r38ee_env_action": env_action,
+        "r38ee_env_token": env_token,
+        "r38ee_env_symbol": env_symbol,
+        "r38ee_env_ack_present": 1 if env_ack else 0,
+        "r38ee_env_ack_expected": env_ack_expected,
+        "r38ee_scope_allowed": 1,
+        "real_order_sent_shadow": 0,
+        "broker_calls_executed_shadow": 0,
+        "redis_trading_stream_write_attempted_shadow": 0,
+    })
+    return out
+# END R38EM_R1_PROJECTION_DIAG_AND_SYMBOL_FALLBACK_PATCH
+
+# END R38EE_GUARDED_STRATEGY_TO_RUNTIME_PAPER_BRIDGE_PATCH
+
 def _validate_hold_decision_for_publish(decision: Mapping[str, Any]) -> None:
     """
     Enforce the frozen Batch 10 strategy.py law before Redis publication.
@@ -414,6 +1358,12 @@ def _validate_hold_decision_for_publish(decision: Mapping[str, Any]) -> None:
     promoted ENTER/EXIT decisions until a later explicit arming contract changes
     this file and its proofs.
     """
+
+    if _r38ee_controlled_paper_bridge_allowed(decision) or _r38tz_live_one_event_bridge_allowed(decision):
+        return
+
+    if _r33e_controlled_projected_publish_allowed(decision):
+        return
 
     action = _safe_str(decision.get("action"), ACTION_HOLD)
     if action != ACTION_HOLD:
@@ -475,6 +1425,24 @@ def _validate_decision_stream_fields(
 
     payload_action = _safe_str(payload.get("action"), "")
     flat_action = _safe_str(fields.get("action"), "")
+
+    if _r38ee_controlled_paper_bridge_allowed(payload) or _r38tz_live_one_event_bridge_allowed(payload):
+        if not payload_action:
+            raise StrategyBridgeError("payload_json.action missing")
+        if flat_action != payload_action:
+            raise StrategyBridgeError(
+                "strategy.py refused controlled-paper decision stream action mismatch: "
+                f"payload_action={payload_action!r}, flat_action={flat_action!r}"
+            )
+        payload_qty = _safe_int(payload.get("qty"), -1)
+        flat_qty = _safe_int(fields.get("qty"), -1)
+        if payload_qty != 1 or flat_qty != 1:
+            raise StrategyBridgeError(
+                "strategy.py refused controlled-paper decision stream qty mismatch: "
+                f"payload_qty={payload_qty!r}, flat_qty={flat_qty!r}"
+            )
+        return
+
     if payload_action != ACTION_HOLD or flat_action != ACTION_HOLD:
         raise StrategyBridgeError(
             "strategy.py refused decision stream action mismatch: "
@@ -717,6 +1685,7 @@ class StrategyFamilyConsumerBridge:
 
         family_features = _r38zr_backfill_family_features_provider_runtime(self, family_features)
         family_features = _r38zu_strip_repair_metadata_keys_from_family_features(family_features)
+        family_features = _r33d_normalize_stage_flags_for_contract(family_features)
         FF_C.validate_family_features_payload(family_features)
 
         self._validate_surfaces(family_surfaces)
@@ -893,11 +1862,17 @@ class StrategyFamilyConsumerBridge:
             report["action"] = ACTION_HOLD
             report["hold"] = True
             if _r38r_controlled_paper_candidate_promotion_allowed() and observed_safe_to_promote:
-                report["strategy_clamp"] = "controlled_paper_safe_to_promote_report_only_no_orders"
-                report["promoted"] = False
+                # R38NB_CONTROLLED_PAPER_PROMOTION_METADATA_ONLY:
+                # Allow the strategy/family bridge to mark the candidate as promoted
+                # only inside the explicit controlled-paper arming envelope. This does
+                # not allow live broker orders; live_orders_allowed remains False below.
+                report["strategy_clamp"] = "controlled_paper_safe_to_promote_promoted_metadata_no_broker"
+                report["promoted"] = True
                 report["safe_to_promote"] = True
                 report["family_runtime_safe_to_promote"] = True
-                report["family_runtime_promoted"] = False
+                report["family_runtime_promoted"] = True
+                report["controlled_paper_promotion_metadata_only"] = True
+                report["broker_side_effects_allowed"] = False
             else:
                 report["promoted"] = False
                 report["safe_to_promote"] = False
@@ -955,10 +1930,22 @@ class StrategyFamilyConsumerBridge:
             if isinstance(activation_candidates, list)
             else 0
         )
+        # R34M_EXACT_RUNTIME_IDENTITY_SOURCE_BEGIN
+        r34m_identity_source = {
+            "selected_option": selected_option,
+            "view_common": _mapping(getattr(view, "common", {})),
+            "view_dict": view.to_dict(),
+            "activation_selected": activation_selected,
+        }
+        # R34M_EXACT_RUNTIME_IDENTITY_SOURCE_END
+        r34f_shadow_fields = _r34f_shadow_candidate_truth_from_activation_selected(
+            activation_selected,
+            view=r34m_identity_source,
+        )
 
         decision_id = f"strategy-hold-{now_ns}"
 
-        return {
+        decision = {
             "schema_version": getattr(N, "DEFAULT_SCHEMA_VERSION", 1),
             "service": SERVICE_STRATEGY,
             "decision_id": decision_id,
@@ -995,6 +1982,7 @@ class StrategyFamilyConsumerBridge:
             "activation_selected_action": _safe_str(activation_selected.get("action")),
             "activation_selected_score": activation_selected.get("score"),
             "activation_candidate_count": activation_candidate_count,
+            **r34f_shadow_fields,
             "safe_to_consume": int(view.safe_to_consume),
             "data_valid": int(view.data_valid),
             "warmup_complete": int(view.warmup_complete),
@@ -1023,6 +2011,130 @@ class StrategyFamilyConsumerBridge:
                 }
             ),
         }
+        # R38NN_HOLD_SAFE_R33I_PROJECTION_OVERLAY:
+        # Preserve the published HOLD decision, but attach a projected ENTER
+        # overlay for R33I to consume after HOLD validation passes. This does
+        # not write Redis, call risk/execution, call broker, or permit live order.
+        decision = _r38ee_project_activation_selected_for_controlled_paper(decision)
+        try:
+            _r38nn_env_allowed = _r38r_controlled_paper_candidate_promotion_allowed()
+            _r38nn_metadata_ok = (
+                _safe_bool(activation_report.get("controlled_paper_promotion_metadata_only"), False)
+                and _safe_bool(activation_report.get("family_runtime_promoted"), False)
+                and _safe_bool(activation_report.get("family_runtime_safe_to_promote"), False)
+            )
+            _r38nn_action = _safe_str(
+                activation_selected.get("action")
+                or activation_report.get("observed_action_before_strategy_clamp")
+                or activation_report.get("action"),
+                "",
+            ).upper()
+            _r38nn_side = _safe_str(
+                activation_selected.get("branch_id")
+                or activation_selected.get("side")
+                or activation_report.get("branch_id")
+                or activation_report.get("side"),
+                "",
+            ).upper()
+            if _r38nn_side == "CE":
+                _r38nn_side = "CALL"
+            if _r38nn_side == "PE":
+                _r38nn_side = "PUT"
+            if not _r38nn_side and _r38nn_action == ACTION_ENTER_CALL:
+                _r38nn_side = "CALL"
+            if not _r38nn_side and _r38nn_action == ACTION_ENTER_PUT:
+                _r38nn_side = "PUT"
+
+            _r38nn_family = _safe_str(
+                activation_selected.get("family_id")
+                or activation_selected.get("doctrine_id")
+                or activation_report.get("family_id")
+                or activation_report.get("doctrine_id"),
+                "",
+            ).upper()
+            _r38nn_token = _safe_str(
+                activation_selected.get("instrument_token")
+                or activation_selected.get("option_token")
+                or decision.get("instrument_token"),
+                "",
+            )
+            _r38nn_symbol = _safe_str(
+                activation_selected.get("option_symbol")
+                or activation_selected.get("trading_symbol")
+                or activation_selected.get("instrument_key")
+                or decision.get("option_symbol")
+                or decision.get("instrument_key"),
+                "",
+            ).upper()
+            if ":" in _r38nn_symbol:
+                _r38nn_symbol = _r38nn_symbol.split(":", 1)[1]
+
+            import os as _r38nn_os
+            _env_family = _safe_str(_r38nn_os.environ.get("SCALPX_CONTROLLED_PAPER_FAMILY"), "").upper()
+            _env_side = _safe_str(
+                _r38nn_os.environ.get("SCALPX_CONTROLLED_PAPER_SIDE")
+                or _r38nn_os.environ.get("SCALPX_CONTROLLED_PAPER_BRANCH"),
+                "",
+            ).upper()
+            _env_action = _safe_str(_r38nn_os.environ.get("SCALPX_CONTROLLED_PAPER_ACTION"), "").upper()
+            _env_token = _safe_str(_r38nn_os.environ.get("SCALPX_CONTROLLED_PAPER_INSTRUMENT_TOKEN"), "")
+            _env_symbol = _safe_str(_r38nn_os.environ.get("SCALPX_CONTROLLED_PAPER_OPTION_SYMBOL"), "").upper()
+            if ":" in _env_symbol:
+                _env_symbol = _env_symbol.split(":", 1)[1]
+
+            _scope_ok = (
+                _r38nn_family
+                and _r38nn_side in {"CALL", "PUT"}
+                and _r38nn_action in {ACTION_ENTER_CALL, ACTION_ENTER_PUT}
+                and _r38nn_action == "ENTER_" + _r38nn_side
+                and _env_family == _r38nn_family
+                and _env_side == _r38nn_side
+                and _env_action == _r38nn_action
+                and (not _env_token or _env_token == _r38nn_token)
+                and (not _env_symbol or _env_symbol == _r38nn_symbol)
+            )
+
+            if _r38nn_env_allowed and _r38nn_metadata_ok and _scope_ok:
+                decision.update(
+                    {
+                        "action": ACTION_HOLD,
+                        "activation_action": ACTION_HOLD,
+                        "activation_report_only": 1,
+                        "hold_only": 1,
+                        "live_orders_allowed": 0,
+                        "broker_live_order_allowed": 0,
+                        "real_live_allowed": 0,
+                        "real_order_sent_shadow": 0,
+                        "broker_calls_executed_shadow": 0,
+                        "redis_trading_stream_write_attempted_shadow": 0,
+                        "r38nn_projection_applied": 1,
+                        "r38nl_projection_applied": 1,
+                        "r38nn_projection_source": "controlled_paper_promoted_metadata_hold_safe",
+                        "r38nl_projected_action": _r38nn_action,
+                        "r38nl_projected_side": _r38nn_side,
+                        "r38nl_projected_branch_id": _r38nn_side,
+                        "r38nl_projected_strategy_family_id": _r38nn_family,
+                        "r38nl_projected_family_id": _r38nn_family,
+                        "r38nl_projected_instrument_token": _r38nn_token,
+                        "r38nl_projected_option_token": _r38nn_token,
+                        "r38nl_projected_option_symbol": _r38nn_symbol,
+                        "r38nl_projected_trading_symbol": _r38nn_symbol,
+                        "r38nl_projected_instrument_key": _r38nn_symbol,
+                        "r38nl_projected_qty": 1,
+                        "r38nl_projected_quantity_lots": 1,
+                        "r38nl_projected_lots": 1,
+                        "r38nl_projected_price": activation_selected.get("option_price") or activation_selected.get("price") or decision.get("price"),
+                        "r33e_scoped_frame_applied": 1,
+                        "r38ee_projection_projected": 1,
+                        "r38ee_projection_blocker": "projected",
+                        "paper": 1,
+                        "paper_only": 1,
+                        "controlled_paper": 1,
+                    }
+                )
+        except Exception as _r38nn_exc:
+            decision["r38nn_projection_error"] = f"{type(_r38nn_exc).__name__}:{_r38nn_exc}"
+        return decision
 
 
 # =============================================================================
@@ -1279,6 +2391,7 @@ def build_strategy_consumer_view(
     family_frames: Mapping[str, Any],
     now_ns: int,
 ) -> StrategyFamilyConsumerView:
+    family_features = _r33d_normalize_stage_flags_for_contract(family_features)
     FF_C.validate_family_features_payload(family_features)
 
     dummy_bundle = FeaturePayloadBundle(
@@ -1780,6 +2893,17 @@ def _r38r_controlled_paper_env_truth():
 
     allow = str(_r38r_os.environ.get("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME", "")).strip() == "1"
     ack = str(_r38r_os.environ.get("SCALPX_CONTROLLED_PAPER_SCOPE_ACK", "")).strip().upper()
+    env_family = str(_r38r_os.environ.get("SCALPX_CONTROLLED_PAPER_FAMILY", "")).strip().upper()
+    env_side = str(
+        _r38r_os.environ.get("SCALPX_CONTROLLED_PAPER_BRANCH", "")
+        or _r38r_os.environ.get("SCALPX_CONTROLLED_PAPER_SIDE", "")
+    ).strip().upper()
+    env_qty = str(_r38r_os.environ.get("SCALPX_CONTROLLED_PAPER_QTY_LOTS", "1")).strip()
+
+    if env_side == "CE":
+        env_side = "CALL"
+    if env_side == "PE":
+        env_side = "PUT"
 
     forbidden_live = any(
         str(_r38r_os.environ.get(k, "")).strip().lower() in {"1", "true", "yes", "y", "on"}
@@ -1791,13 +2915,19 @@ def _r38r_controlled_paper_env_truth():
         )
     )
 
-    # Accepted explicit scope acks:
-    # I_ACCEPT_MIST_CALL_1LOT_PAPER_ONLY, I_ACCEPT_MISB_PUT_1LOT_PAPER_ONLY, etc.
-    allowed = {
+    classic_families = {"MIST", "MISB", "MISC", "MISR"}
+    sides = {"CALL", "PUT"}
+
+    short_allowed = {
         f"I_ACCEPT_{family}_{side}_1LOT_PAPER_ONLY"
-        for family in ("MIST", "MISB", "MISC", "MISR")
-        for side in ("CALL", "PUT")
+        for family in classic_families
+        for side in sides
     }
+
+    long_ack = (
+        "I ACKNOWLEDGE CONTROLLED PAPER ONLY: NO REAL LIVE, NO BROKER ORDER, "
+        "NO REAL MONEY, ONE APPROVED SCOPE ONLY, POSITION MUST START FLAT"
+    )
 
     if not allow:
         return {
@@ -1817,23 +2947,39 @@ def _r38r_controlled_paper_env_truth():
             "side": "",
         }
 
-    if ack not in allowed:
+    # Backward-compatible old short ACK.
+    if ack in short_allowed:
+        parts = ack.split("_")
         return {
-            "enabled": False,
-            "reason": "scope_ack_not_classic_1lot_paper_only",
+            "enabled": True,
+            "reason": "classic_1lot_paper_only_scope_ack_short",
             "ack": ack,
-            "family": "",
-            "side": "",
+            "family": parts[2],
+            "side": parts[3],
         }
 
-    parts = ack.split("_")
-    # I ACCEPT FAMILY SIDE 1LOT PAPER ONLY
+    # Current pstatus/source-truth long ACK. Family/side are supplied by separate env
+    # so the safety ACK stays exact and reusable while scope remains explicit.
+    if (
+        ack == long_ack
+        and env_family in classic_families
+        and env_side in sides
+        and env_qty in {"1", "1.0"}
+    ):
+        return {
+            "enabled": True,
+            "reason": "classic_1lot_paper_only_scope_ack_long_with_env_scope",
+            "ack": ack,
+            "family": env_family,
+            "side": env_side,
+        }
+
     return {
-        "enabled": True,
-        "reason": "classic_1lot_paper_only_scope_ack",
+        "enabled": False,
+        "reason": "scope_ack_not_classic_1lot_paper_only",
         "ack": ack,
-        "family": parts[2],
-        "side": parts[3],
+        "family": "",
+        "side": "",
     }
 
 
@@ -2210,3 +3356,494 @@ def a6_live_r2h_controlled_paper_activation_gate(
         return out
 # END R38V_GATE_SCOPE_ACK_BRIDGE_REPORT_ONLY
 
+
+
+# ===== R33I_PROJECTED_PAPER_PUBLISHER_PATCH_BEGIN =====
+# Controlled-paper-only projected decision publisher bridge.
+# This wrapper is inactive in observe-only mode and does not change eligibility,
+# thresholds, candidate creation, broker/live execution, or risk/execution code.
+# It only writes one paper-only order-intent row when the existing decision is
+# already projected by R33E and the runtime has an exact R38EN scope ACK.
+def _r33i_truthy(value: object) -> bool:
+    if value is True:
+        return True
+    if value is False or value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _r33i_text(value: object) -> str:
+    return "" if value is None else str(value).strip()
+
+
+def _r33i_upper(value: object) -> str:
+    return _r33i_text(value).upper()
+
+
+def _r33i_int(value: object, default: int = 0) -> int:
+    try:
+        if value is None or value == "":
+            return default
+        return int(float(str(value)))
+    except Exception:
+        return default
+
+
+def _r33i_float_text(value: object) -> str:
+    try:
+        if value is None or value == "":
+            return ""
+        return str(float(str(value)))
+    except Exception:
+        return _r33i_text(value)
+
+
+def _r33i_decision_dict(decision: object) -> dict[str, object]:
+    if isinstance(decision, dict):
+        return dict(decision)
+    for method_name in ("to_dict", "model_dump", "dict"):
+        method = getattr(decision, method_name, None)
+        if callable(method):
+            try:
+                payload = method()
+                if isinstance(payload, dict):
+                    return dict(payload)
+            except Exception:
+                pass
+    raw = getattr(decision, "__dict__", None)
+    if isinstance(raw, dict):
+        return dict(raw)
+    return {}
+
+
+def _r33i_redis_type(redis_client, key: str) -> str:
+    try:
+        value = redis_client.type(key)
+        if isinstance(value, bytes):
+            value = value.decode("utf-8", "replace")
+        return str(value)
+    except Exception:
+        return ""
+
+
+def _r33i_redis_xlen(redis_client, key: str) -> int:
+    try:
+        if _r33i_redis_type(redis_client, key) != "stream":
+            return 0
+        return int(redis_client.xlen(key) or 0)
+    except Exception:
+        return -1
+
+
+def _r33i_hgetall_text(redis_client, key: str) -> dict[str, str]:
+    try:
+        raw = redis_client.hgetall(key) or {}
+    except Exception:
+        return {}
+    out: dict[str, str] = {}
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            kk = k.decode("utf-8", "replace") if isinstance(k, bytes) else str(k)
+            vv = v.decode("utf-8", "replace") if isinstance(v, bytes) else str(v)
+            out[kk] = vv
+    return out
+
+
+def _r33i_position_strict_flat(redis_client) -> bool:
+    pos = _r33i_hgetall_text(redis_client, "state:position:mme")
+    return bool(
+        pos
+        and _r33i_text(pos.get("has_position")) in {"0", "0.0"}
+        and _r33i_text(pos.get("qty_lots")) in {"0", "0.0"}
+        and _r33i_text(pos.get("qty_units")) in {"0", "0.0"}
+        and _r33i_upper(pos.get("position_side")) == "FLAT"
+    )
+
+
+def _r33i_streams_zero(redis_client) -> bool:
+    return (
+        _r33i_redis_xlen(redis_client, "orders:mme:stream") == 0
+        and _r33i_redis_xlen(redis_client, "risk:mme:stream") == 0
+        and _r33i_redis_xlen(redis_client, "execution:mme:stream") == 0
+        and _r33i_redis_xlen(redis_client, "trades:ledger:stream") == 0
+    )
+
+
+def _r33i_env_allows_controlled_paper() -> tuple[bool, str]:
+    import os as _r33i_os
+
+    if _r33i_truthy(_r33i_os.environ.get("SCALPX_OBSERVE_ONLY")) or _r33i_truthy(_r33i_os.environ.get("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY")):
+        return False, "OBSERVE_ONLY_ACTIVE"
+    if not _r33i_truthy(_r33i_os.environ.get("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME")):
+        return False, "CONTROLLED_RUNTIME_NOT_ALLOWED"
+    if not _r33i_truthy(_r33i_os.environ.get("SCALPX_ENABLE_PAPER")):
+        return False, "PAPER_NOT_ENABLED"
+    if not _r33i_truthy(_r33i_os.environ.get("MME_ENABLE_PAPER")):
+        return False, "MME_PAPER_NOT_ENABLED"
+    if not (_r33i_truthy(_r33i_os.environ.get("SCALPX_CONTROLLED_PAPER_ARMED")) and _r33i_truthy(_r33i_os.environ.get("SCALPX_PAPER_ARMED"))):
+        return False, "PAPER_NOT_ARMED"
+    if _r33i_truthy(_r33i_os.environ.get("SCALPX_ENABLE_LIVE")) or _r33i_truthy(_r33i_os.environ.get("MME_ENABLE_LIVE")):
+        return False, "LIVE_FLAG_ACTIVE"
+    if _r33i_truthy(_r33i_os.environ.get("SCALPX_ALLOW_BROKER_ORDERS")) or _r33i_truthy(_r33i_os.environ.get("MME_ALLOW_BROKER_ORDERS")):
+        return False, "BROKER_ORDER_FLAG_ACTIVE"
+    if not _r33i_text(_r33i_os.environ.get("SCALPX_CONTROLLED_PAPER_SCOPE_ACK")):
+        return False, "SCOPE_ACK_MISSING"
+    return True, "CONTROLLED_PAPER_ENV_OK"
+
+
+def _r33i_decision_allows_publish(fields: dict[str, object]) -> tuple[bool, str]:
+    import os as _r33i_os
+
+    action = _r33i_upper(fields.get("action") or fields.get("activation_selected_action"))
+    side = _r33i_upper(fields.get("side") or fields.get("branch_id") or fields.get("activation_selected_branch_id"))
+    family = _r33i_upper(fields.get("strategy_family_id") or fields.get("family_id") or fields.get("family") or fields.get("activation_selected_family_id"))
+    token = _r33i_text(fields.get("instrument_token") or fields.get("option_token"))
+    symbol = _r33i_upper(fields.get("option_symbol") or fields.get("trading_symbol") or fields.get("instrument_key"))
+    if ":" in symbol:
+        symbol = symbol.split(":", 1)[1]
+    qty = _r33i_int(fields.get("qty") or fields.get("quantity_lots") or fields.get("lots"), 0)
+
+    projected = (
+        _r33i_truthy(fields.get("r38ee_projection_projected"))
+        or _r33i_text(fields.get("r38ee_projection_blocker")) == "projected"
+    )
+    r33e_applied = _r33i_truthy(fields.get("r33e_scoped_frame_applied"))
+    # BEGIN R38OU_LINE_LOCATOR_R33I_ACCEPT_R38EE_PROJECTED_SCOPE_PATCH
+    # Accept exact-scope R38EE projected rows as controlled-paper projection evidence.
+    # Live/broker shadow checks remain above; env family/side/action/token/symbol checks remain below.
+    r38ee_projected_exact_scope = (
+        _r33i_truthy(fields.get("r38ee_projection_projected"))
+        and _r33i_text(fields.get("r38ee_projection_blocker")) == "projected"
+    )
+    if r38ee_projected_exact_scope:
+        r33e_applied = True
+    # END R38OU_LINE_LOCATOR_R33I_ACCEPT_R38EE_PROJECTED_SCOPE_PATCH
+    if not projected:
+        return False, "NOT_PROJECTED"
+    if not r33e_applied:
+        return False, "R33E_SCOPED_FRAME_NOT_APPLIED"
+    if action not in {"ENTER_CALL", "ENTER_PUT"}:
+        return False, "ACTION_NOT_ENTER"
+    if side not in {"CALL", "PUT"}:
+        return False, "SIDE_NOT_CALL_PUT"
+    if action != "ENTER_" + side:
+        return False, "ACTION_SIDE_MISMATCH"
+    if qty != 1:
+        return False, "QTY_NOT_ONE"
+    if _r33i_truthy(fields.get("live_orders_allowed")):
+        return False, "LIVE_ORDERS_ALLOWED_TRUE"
+    if _r33i_truthy(fields.get("real_order_sent_shadow")):
+        return False, "REAL_ORDER_SENT_SHADOW_TRUE"
+    if _r33i_truthy(fields.get("broker_calls_executed_shadow")):
+        return False, "BROKER_CALLS_SHADOW_TRUE"
+    if _r33i_truthy(fields.get("redis_trading_stream_write_attempted_shadow")):
+        return False, "REDIS_TRADING_WRITE_SHADOW_TRUE"
+
+    env_family = _r33i_upper(_r33i_os.environ.get("SCALPX_CONTROLLED_PAPER_FAMILY"))
+    env_side = _r33i_upper(_r33i_os.environ.get("SCALPX_CONTROLLED_PAPER_SIDE"))
+    env_action = _r33i_upper(_r33i_os.environ.get("SCALPX_CONTROLLED_PAPER_ACTION"))
+    env_token = _r33i_text(_r33i_os.environ.get("SCALPX_CONTROLLED_PAPER_INSTRUMENT_TOKEN"))
+    env_symbol = _r33i_upper(_r33i_os.environ.get("SCALPX_CONTROLLED_PAPER_OPTION_SYMBOL"))
+    if ":" in env_symbol:
+        env_symbol = env_symbol.split(":", 1)[1]
+
+    if family != env_family:
+        return False, "FAMILY_SCOPE_MISMATCH"
+    if side != env_side:
+        return False, "SIDE_SCOPE_MISMATCH"
+    if action != env_action:
+        return False, "ACTION_SCOPE_MISMATCH"
+    if token != env_token:
+        return False, "TOKEN_SCOPE_MISMATCH"
+    if symbol != env_symbol:
+        return False, "SYMBOL_SCOPE_MISMATCH"
+
+    return True, "R33I_PROJECTED_CONTROLLED_PAPER_PUBLISH_ALLOWED"
+
+
+def _r33i_build_order_intent(fields: dict[str, object]) -> dict[str, object]:
+    import os as _r33i_os
+    import time as _r33i_time
+
+    action = _r33i_upper(fields.get("action") or fields.get("activation_selected_action"))
+    side = _r33i_upper(fields.get("side") or fields.get("branch_id") or fields.get("activation_selected_branch_id"))
+    family = _r33i_upper(fields.get("strategy_family_id") or fields.get("family_id") or fields.get("family") or fields.get("activation_selected_family_id"))
+    token = _r33i_text(fields.get("instrument_token") or fields.get("option_token"))
+    symbol = _r33i_upper(fields.get("option_symbol") or fields.get("trading_symbol") or fields.get("instrument_key"))
+    if ":" in symbol:
+        symbol = symbol.split(":", 1)[1]
+    price = _r33i_float_text(fields.get("price") or fields.get("option_price"))
+    ts_ns = _r33i_text(fields.get("ts_ns") or fields.get("ts_event_ns") or int(_r33i_time.time_ns()))
+    decision_id = _r33i_text(fields.get("decision_id") or f"r33i-decision-{ts_ns}")
+    scope_ack = _r33i_text(_r33i_os.environ.get("SCALPX_CONTROLLED_PAPER_SCOPE_ACK"))
+
+    return {
+        "schema_version": "r33i_controlled_paper_order_intent_v1",
+        "service": "strategy",
+        "bridge": "R33I_PROJECTED_PAPER_PUBLISHER",
+        "source_decision_id": decision_id,
+        "decision_id": decision_id,
+        "created_ts_ns": ts_ns,
+        "ts_ns": ts_ns,
+        "ts_event_ns": ts_ns,
+        "family": family,
+        "family_id": family,
+        "strategy_family_id": family,
+        "branch_id": side,
+        "side": side,
+        "action": action,
+        "order_action": action,
+        "trade_action": action,
+        "instrument_token": token,
+        "option_token": token,
+        "option_symbol": symbol,
+        "trading_symbol": symbol,
+        "symbol": symbol,
+        "qty": "1",
+        "quantity": "1",
+        "quantity_lots": "1",
+        "lots": "1",
+        "price": price,
+        "order_type": "MARKET",
+        "entry_mode": "CONTROLLED_PAPER_PROJECTED",
+        "paper": "1",
+        "paper_only": "1",
+        "controlled_paper": "1",
+        "live_orders_allowed": "0",
+        "broker_live_order_allowed": "0",
+        "real_live_allowed": "0",
+        "real_order_sent": "0",
+        "broker_calls_executed": "0",
+        "stop_after_one": "1",
+        "max_events": "1",
+        "scope_ack": scope_ack,
+        "r33e_scoped_frame_applied": _r33i_text(fields.get("r33e_scoped_frame_applied")),
+        "r38ee_projection_projected": _r33i_text(fields.get("r38ee_projection_projected")),
+        "r38ee_projection_blocker": _r33i_text(fields.get("r38ee_projection_blocker")),
+        "reason": "R33I_PROJECTED_CONTROLLED_PAPER_ORDER_INTENT",
+    }
+
+
+def _r33i_maybe_publish_projected_paper_order(self, decision: object) -> None:
+    fields = _r33i_decision_dict(decision)
+    # R38NN_HOLD_SAFE_R33I_PROJECTION_OVERLAY:
+    # Evaluate R33I using a copied ENTER overlay while preserving the published
+    # HOLD decision already accepted by the validator.
+    if _r33i_truthy(fields.get("r38nn_projection_applied")) or _r33i_truthy(fields.get("r38nl_projection_applied")):
+        overlay_fields = dict(fields)
+        projected_action = _r33i_upper(overlay_fields.get("r38nl_projected_action") or overlay_fields.get("activation_selected_action"))
+        projected_side = _r33i_upper(overlay_fields.get("r38nl_projected_side") or overlay_fields.get("r38nl_projected_branch_id") or overlay_fields.get("activation_selected_branch_id"))
+        projected_family = _r33i_upper(overlay_fields.get("r38nl_projected_strategy_family_id") or overlay_fields.get("r38nl_projected_family_id") or overlay_fields.get("activation_selected_family_id"))
+        projected_token = _r33i_text(overlay_fields.get("r38nl_projected_instrument_token") or overlay_fields.get("r38nl_projected_option_token") or overlay_fields.get("instrument_token") or overlay_fields.get("option_token"))
+        projected_symbol = _r33i_upper(overlay_fields.get("r38nl_projected_option_symbol") or overlay_fields.get("r38nl_projected_trading_symbol") or overlay_fields.get("r38nl_projected_instrument_key") or overlay_fields.get("option_symbol") or overlay_fields.get("trading_symbol") or overlay_fields.get("instrument_key"))
+        if ":" in projected_symbol:
+            projected_symbol = projected_symbol.split(":", 1)[1]
+        overlay_fields.update(
+            {
+                "action": projected_action,
+                "side": projected_side,
+                "branch_id": projected_side,
+                "strategy_family_id": projected_family,
+                "family_id": projected_family,
+                "family": projected_family,
+                "instrument_token": projected_token,
+                "option_token": projected_token,
+                "option_symbol": projected_symbol,
+                "trading_symbol": projected_symbol,
+                "instrument_key": projected_symbol,
+                "qty": _r33i_int(overlay_fields.get("r38nl_projected_qty"), 1),
+                "quantity_lots": _r33i_int(overlay_fields.get("r38nl_projected_quantity_lots"), 1),
+                "lots": _r33i_int(overlay_fields.get("r38nl_projected_lots"), 1),
+                "price": overlay_fields.get("r38nl_projected_price") or overlay_fields.get("price"),
+                "r33e_scoped_frame_applied": 1,
+                "r38ee_projection_projected": 1,
+                "r38ee_projection_blocker": "projected",
+                "live_orders_allowed": 0,
+                "real_order_sent_shadow": 0,
+                "broker_calls_executed_shadow": 0,
+                "redis_trading_stream_write_attempted_shadow": 0,
+            }
+        )
+        fields = overlay_fields
+
+    env_ok, env_reason = _r33i_env_allows_controlled_paper()
+    if not env_ok:
+        return
+
+    decision_ok, decision_reason = _r33i_decision_allows_publish(fields)
+    if not decision_ok:
+        return
+
+    redis_client = getattr(self, "redis", None) or getattr(self, "_redis", None)
+    if redis_client is None:
+        return
+
+    if not _r33i_position_strict_flat(redis_client):
+        return
+    if not _r33i_streams_zero(redis_client):
+        return
+
+    order_intent = _r33i_build_order_intent(fields)
+    try:
+        redis_client.xadd("orders:mme:stream", order_intent, maxlen=1, approximate=False)
+        # Non-trading proof marker only. This does not delete/trim anything.
+        try:
+            redis_client.hset(
+                "state:lane_x:r33i:projected_paper_publisher",
+                mapping={
+                    "last_publish_ts_ns": order_intent.get("ts_ns", ""),
+                    "last_decision_id": order_intent.get("decision_id", ""),
+                    "last_symbol": order_intent.get("option_symbol", ""),
+                    "last_family": order_intent.get("family", ""),
+                    "last_side": order_intent.get("side", ""),
+                    "last_action": order_intent.get("action", ""),
+                    "last_reason": "R33I_PROJECTED_CONTROLLED_PAPER_ORDER_INTENT_PUBLISHED",
+                },
+            )
+        except Exception:
+            pass
+    except Exception:
+        # Fail closed: never retry here, never call broker, never mutate position.
+        return
+
+
+_R33I_ORIGINAL_PUBLISH_DECISION = StrategyService.publish_decision
+
+
+def _r33i_publish_decision_wrapper(self, decision):
+    result = _R33I_ORIGINAL_PUBLISH_DECISION(self, decision)
+    _r33i_maybe_publish_projected_paper_order(self, decision)
+    return result
+
+
+StrategyService.publish_decision = _r33i_publish_decision_wrapper
+# ===== R33I_PROJECTED_PAPER_PUBLISHER_PATCH_END =====
+
+
+# --- BEGIN R38QB_COMPACT_DECISION_STREAM_FIELDS ---
+# R38QB: compact Redis decision stream payloads only.
+# This patch does not change strategy computation. It changes only what is XADDed
+# to decisions:mme:stream by replacing oversized JSON fields with byte metadata.
+_R38QB_COMPACT_VERSION = "R38QB_COMPACT_DECISION_STREAM_FIELDS_V1"
+_R38QB_MAX_STREAM_FIELD_BYTES = 8192
+_R38QB_LARGE_DECISION_FIELDS = {
+    "payload_json",
+    "consumer_view_json",
+    "family_surfaces_json",
+    "family_features_json",
+    "family_frames_json",
+    "family_scope_candidates_json",
+    "activation_report_json",
+    "feature_payload_json",
+}
+_R38QB_IMPORTANT_DECISION_KEYS = {
+    "schema_version",
+    "decision_id",
+    "service",
+    "ts_ns",
+    "ts_event_ns",
+    "features_generated_at_ns",
+    "action",
+    "order_action",
+    "trade_action",
+    "side",
+    "branch_id",
+    "family",
+    "family_id",
+    "strategy_family_id",
+    "price",
+    "confidence",
+    "qty",
+    "quantity",
+    "lots",
+    "hold_only",
+    "reason",
+    "blocker",
+    "r38ee_projection_blocker",
+    "activation_reason",
+    "activation_mode",
+    "activation_action",
+    "activation_observed_action",
+    "activation_bridge_enabled",
+    "activation_report_only",
+    "instrument_token",
+    "option_token",
+    "option_symbol",
+    "trading_symbol",
+    "symbol",
+    "regime",
+}
+
+def _r38qb_value_bytes(value):
+    try:
+        if isinstance(value, bytes):
+            return len(value)
+        if isinstance(value, str):
+            return len(value.encode("utf-8", "replace"))
+        return len(_json_dump(value).encode("utf-8", "replace"))
+    except Exception:
+        return len(str(value).encode("utf-8", "replace"))
+
+def _r38qb_stream_value(value):
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    if isinstance(value, (dict, list, tuple)):
+        return _json_dump(value)
+    return value
+
+def _r38qb_compact_payload_object(raw):
+    compact = {}
+    omitted = {}
+    for key, value in raw.items():
+        field = str(key)
+        value_bytes = _r38qb_value_bytes(value)
+        if field in _R38QB_LARGE_DECISION_FIELDS or value_bytes > _R38QB_MAX_STREAM_FIELD_BYTES:
+            omitted[field] = value_bytes
+            continue
+        compact[field] = value
+    # Preserve critical scalars even if future logic changes the broad filter.
+    for key in _R38QB_IMPORTANT_DECISION_KEYS:
+        if key in raw and key not in compact:
+            value = raw.get(key)
+            if _r38qb_value_bytes(value) <= _R38QB_MAX_STREAM_FIELD_BYTES:
+                compact[key] = value
+    compact["r38qb_compacted"] = "1"
+    compact["r38qb_compact_version"] = _R38QB_COMPACT_VERSION
+    compact["r38qb_omitted_field_bytes"] = omitted
+    return compact
+
+def _redis_stream_fields(payload):  # type: ignore[no-redef]
+    """
+    R38QB compact Redis XADD fields for decisions:mme:stream.
+
+    Execution still receives canonical payload_json, but it is now a compact
+    execution/control payload rather than the full multi-family consumer view.
+    Large diagnostic surfaces are represented by *_r38qb_original_bytes fields.
+    """
+    raw = dict(payload or {})
+    compact_payload = _r38qb_compact_payload_object(raw)
+
+    out = {
+        "payload_json": _json_dump(compact_payload),
+        "r38qb_compacted": "1",
+        "r38qb_compact_version": _R38QB_COMPACT_VERSION,
+    }
+
+    for key, value in raw.items():
+        field = str(key)
+        if field == "payload_json":
+            out["payload_json_r38qb_original_bytes"] = str(_r38qb_value_bytes(value))
+            continue
+
+        value_bytes = _r38qb_value_bytes(value)
+        if field in _R38QB_LARGE_DECISION_FIELDS or value_bytes > _R38QB_MAX_STREAM_FIELD_BYTES:
+            out[f"{field}_r38qb_omitted"] = "1"
+            out[f"{field}_r38qb_original_bytes"] = str(value_bytes)
+            continue
+
+        out[field] = _r38qb_stream_value(value)
+
+    return out
+# --- END R38QB_COMPACT_DECISION_STREAM_FIELDS ---

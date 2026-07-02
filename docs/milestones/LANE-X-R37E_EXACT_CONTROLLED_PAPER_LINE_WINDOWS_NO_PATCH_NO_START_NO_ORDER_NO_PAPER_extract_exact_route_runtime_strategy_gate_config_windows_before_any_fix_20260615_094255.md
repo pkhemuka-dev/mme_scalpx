@@ -1,0 +1,10 @@
+# LANE-X-R37E_EXACT_CONTROLLED_PAPER_LINE_WINDOWS_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_extract_exact_route_runtime_strategy_gate_config_windows_before_any_fix_20260615_094255
+
+Classification: **REVIEW_LANE_X_R37E_EXACT_WINDOWS_CAPTURED_FAIL_CLOSED_NO_PATCH_NO_START_NO_ORDER_NO_PAPER**
+
+Exact controlled-paper line windows captured.
+
+No patch.
+No start.
+No order.
+No paper/live.

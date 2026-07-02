@@ -1,0 +1,13 @@
+# LANE-X-R34K-R2_DURABLE_IDENTITY_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_symbol_token_sources_in_friday_durable_tape_for_shadow_candidate_join_patch_validation_20260613_133436
+
+classification: REVIEW_R34K_R2_COMPILE_OR_AUDIT_FAILED_NO_PATCH_NO_REPLAY_NO_ORDER
+proof: `run/proofs/LANE-X-R34K-R2_DURABLE_IDENTITY_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_symbol_token_sources_in_friday_durable_tape_for_shadow_candidate_join_patch_validation_20260613_133436.json`
+summary: `run/audits/LANE-X-R34K-R2_DURABLE_IDENTITY_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_symbol_token_sources_in_friday_durable_tape_for_shadow_candidate_join_patch_validation_20260613_133436/r34k_r2_identity_locator_summary.json`
+report: `run/audits/LANE-X-R34K-R2_DURABLE_IDENTITY_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_symbol_token_sources_in_friday_durable_tape_for_shadow_candidate_join_patch_validation_20260613_133436/r34k_r2_identity_locator_report.md`
+
+## Safety
+pre orders/risk/execution: 0 / 0 / 0
+post orders/risk/execution: 0 / 0 / 0
+post risk/execution proc: 0 / 0
+
+## Embedded report

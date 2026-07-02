@@ -1,0 +1,16 @@
+# LANE-X-R35B0_JUNE_REPLAY_DATASET_ROOT_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_or_select_existing_june_dataset_root_for_bounded_backtest_before_running_replay_20260613_170148
+
+classification: REVIEW_R35B0_NO_DATASET_ROOT_OR_SAFETY_NOT_CLEAN_NO_PATCH_NO_REPLAY_NO_ORDER
+proof: `run/proofs/LANE-X-R35B0_JUNE_REPLAY_DATASET_ROOT_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_or_select_existing_june_dataset_root_for_bounded_backtest_before_running_replay_20260613_170148.json`
+audit: `run/audits/LANE-X-R35B0_JUNE_REPLAY_DATASET_ROOT_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_or_select_existing_june_dataset_root_for_bounded_backtest_before_running_replay_20260613_170148`
+summary: `run/audits/LANE-X-R35B0_JUNE_REPLAY_DATASET_ROOT_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_or_select_existing_june_dataset_root_for_bounded_backtest_before_running_replay_20260613_170148/june_dataset_root_locator_summary.json`
+
+## Safety
+- orders/risk/execution: 0 / 0 / 0
+- risk/execution proc: 0 / 0
+
+## Dataset root locator
+- candidate_root_count: 0
+- missing_days: UNKNOWN
+
+## Summary

@@ -1,0 +1,121 @@
+# LANE-X-R37B-R1_READONLY_LIVE_GROWTH_TRUTH_CHECK_NO_START_NO_STOP_NO_PATCH_NO_ORDER_NO_PAPER_classify_r37b_review_as_redis_feed_stale_or_recorder_durable_capture_not_growing_without_mutation_20260615_092409
+
+classification: **REVIEW**
+
+## Important verdict
+Read-only growth truth check only. No start, no stop, no patch, no order, no paper, no risk/execution/replay.
+
+## Safety
+- pstatus rc: `0`
+- paper_route_allowed_norm: `false`
+- orders/risk/execution streams: `0/0/0`
+- risk/execution/replay procs: `0/0/0`
+
+## Growth verdict
+- fut_redis_grew: ``
+- opt_redis_grew: ``
+- features_redis_grew: ``
+- decisions_redis_grew: ``
+- durable_capture_grew: ``
+
+## Stream growth comparison
+```json
+Traceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "/usr/lib/python3.10/os.py", line 680, in __getitem__
+    raise KeyError(key) from None
+KeyError: 'RAW_DIR'
+```
+
+## Project processes t1
+```text
+# project-related processes after 90s
+   1301       1 Ssl        08:49 /home/Lenovo/scalpx/projects/mme_scalpx/.venv/bin/python -m app.mme_scalpx.main
+```
+
+## Redis locks readonly
+```text
+# lock/read-only keys
+lock:execution|type=string|pttl=24130|value=execution:mme-scalpx:1301
+lock:feeds|type=string|pttl=22481|value=feeds:mme-scalpx:1301
+lock:monitor|type=string|pttl=25944|value=monitor:mme-scalpx:1301
+```
+
+## Recent capture files t1
+```text
+# latest 60 live_capture files by mtime
+1781272088.3345006110 1078 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/pseal.log
+1781272088.2854947000 2272 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/streams_summary.tsv
+1781272088.2594915630 112359 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/errors.redisraw.gz
+1781272088.1534787760 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/errors.err
+1781272080.1455128450 55237093 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/decisions.redisraw.gz
+1781272049.2917912340 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/decisions.err
+1781272042.1855204400 45532131 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/features.redisraw.gz
+1781272014.0293154450 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/features.err
+1781272014.0123135090 21 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/opt_context_dhan.redisraw.gz
+1781272014.0073129400 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/opt_context_dhan.err
+1781272013.9903110050 21 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/opt_selected_dhan.redisraw.gz
+1781272013.9843103220 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/opt_selected_dhan.err
+1781272013.9683085000 21 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/opt_selected_zerodha.redisraw.gz
+1781272013.9633079310 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/opt_selected_zerodha.err
+1781272013.9463059960 21 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/fut_dhan.redisraw.gz
+1781272013.9413054270 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/fut_dhan.err
+1781272013.9033011010 21 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/fut_zerodha.redisraw.gz
+1781272013.8973004180 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/fut_zerodha.err
+1781272013.7742864150 5 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653/pseal.pid
+1781260255.2271158570 561143 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_094023/feeds_supervisor_start.log
+1781260253.9940131280 17626800 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/feeds_supervisor_start.log
+1781260237.2956219880 30135 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/strategy_supervisor_start.log
+1781260235.1264412740 1904 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/supervisor_state.json
+1781260235.1254411910 2246904 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/supervisor_events.jsonl
+1781260234.7744119470 2058 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/features_supervisor_start.log
+1781260233.0082648100 911 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/manifest_stop.json
+1781260232.9902633100 8844196 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/errors.jsonl.gz
+1781260232.9902633100 4291216 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/provider_runtime.jsonl.gz
+1781260232.9902633100 173120238 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/health.jsonl.gz
+1781260232.9892632260 919612 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/fut_zerodha.jsonl.gz
+1781260232.9892632260 4635604 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/opt_selected_zerodha.jsonl.gz
+1781260232.9892632260 279930008 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/features.jsonl.gz
+1781260232.9892632260 1472345773 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/decisions.jsonl.gz
+1781260229.4269664530 719 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/state.json
+1781260229.4209659530 1129 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/heartbeat.json
+1781260226.1016894250 2058 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_094023/supervisor_state.json
+1781260226.1006893420 2226606 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_094023/supervisor_events.jsonl
+1781243032.2892932110 75 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/recorder_errors.log
+1781237423.5960091210 22 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_094023/supervisor.log
+1781237423.5940089540 5 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_094023/supervisor.pid
+1781237215.4716712880 1156 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/manifest_start.json
+1781237214.5395936410 4 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/recorder.pid
+1781237214.5385935580 0 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/durable_capture/recorder.log
+1781237213.9325430710 22 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/supervisor.log
+1781237213.9175418210 5 run/live_capture/B1-PROFIT-LIVE-R37C_CAPTURE_SUPERVISOR_APPLY_20260612_093653/supervisor.pid
+1781171742.1259505270 1078 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/pseal.log
+1781171742.0029427560 2256 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/streams_summary.tsv
+1781171741.9839415550 21 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/errors.redisraw.gz
+1781171741.9779411760 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/errors.err
+1781171723.6627840970 126437155 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/decisions.redisraw.gz
+1781171595.9087131020 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/decisions.err
+1781171595.8887118380 21 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/features.redisraw.gz
+1781171595.8827114590 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/features.err
+1781171595.8627101960 21 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/opt_context_dhan.redisraw.gz
+1781171595.8567098170 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/opt_context_dhan.err
+1781171595.8377086160 21 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/opt_selected_dhan.redisraw.gz
+1781171595.8307081740 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/opt_selected_dhan.err
+1781171595.8017063420 172926 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/opt_selected_zerodha.redisraw.gz
+1781171595.6846989500 0 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/opt_selected_zerodha.err
+1781171595.6636976230 21 run/live_capture/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315/fut_dhan.redisraw.gz
+```
+
+## Reasons
+no meaningful Redis fut/opt/features/decisions growth and no durable capture growth in 90s
+
+## Artifact paths
+- proof path: `run/proofs/LANE-X-R37B-R1_READONLY_LIVE_GROWTH_TRUTH_CHECK_NO_START_NO_STOP_NO_PATCH_NO_ORDER_NO_PAPER_classify_r37b_review_as_redis_feed_stale_or_recorder_durable_capture_not_growing_without_mutation_20260615_092409.json`
+- report path: `run/audits/LANE-X-R37B-R1_READONLY_LIVE_GROWTH_TRUTH_CHECK_NO_START_NO_STOP_NO_PATCH_NO_ORDER_NO_PAPER_classify_r37b_review_as_redis_feed_stale_or_recorder_durable_capture_not_growing_without_mutation_20260615_092409_report.md`
+- milestone path: `docs/milestones/LANE-X-R37B-R1_READONLY_LIVE_GROWTH_TRUTH_CHECK_NO_START_NO_STOP_NO_PATCH_NO_ORDER_NO_PAPER_classify_r37b_review_as_redis_feed_stale_or_recorder_durable_capture_not_growing_without_mutation_20260615_092409.md`
+- runbook path: `docs/runbooks/LANE-X-R37B-R1_READONLY_LIVE_GROWTH_TRUTH_CHECK_NO_START_NO_STOP_NO_PATCH_NO_ORDER_NO_PAPER_classify_r37b_review_as_redis_feed_stale_or_recorder_durable_capture_not_growing_without_mutation_20260615_092409_runbook.md`
+- handoff path: `run/handoffs/LANE-X-R37B-R1_READONLY_LIVE_GROWTH_TRUTH_CHECK_NO_START_NO_STOP_NO_PATCH_NO_ORDER_NO_PAPER_classify_r37b_review_as_redis_feed_stale_or_recorder_durable_capture_not_growing_without_mutation_20260615_092409_handoff.md`
+- raw dir: `run/audits/LANE-X-R37B-R1_READONLY_LIVE_GROWTH_TRUTH_CHECK_NO_START_NO_STOP_NO_PATCH_NO_ORDER_NO_PAPER_classify_r37b_review_as_redis_feed_stale_or_recorder_durable_capture_not_growing_without_mutation_20260615_092409_raw`
+
+## Next recommended batch
+`Resolve R37B-R1 growth blocker before R37C`

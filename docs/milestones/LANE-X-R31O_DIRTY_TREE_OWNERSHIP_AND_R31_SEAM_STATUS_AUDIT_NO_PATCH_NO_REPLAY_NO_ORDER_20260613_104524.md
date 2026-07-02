@@ -1,0 +1,4759 @@
+# LANE-X-R31O_DIRTY_TREE_OWNERSHIP_AND_R31_SEAM_STATUS_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104524
+2026-06-13T10:45:24+05:30
+
+LAW=DIRTY_TREE_OWNERSHIP_AUDIT_ONLY_NO_PATCH_NO_REPLAY_NO_START_NO_STOP_NO_ORDER_NO_REDIS_DELETE_NO_PAPER_NO_RISK_NO_EXECUTION
+
+## Prior R31N proof
+R31N=run/proofs/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312.json
+{
+  "tag": "LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312",
+  "classification": "PASS_R31N_PATCH_DRIFT_INVENTORY_READY_NO_NEW_PATCH_YET",
+  "patch_applied": false,
+  "replay_executed": false,
+  "started_runtime": false,
+  "stopped_runtime": false,
+  "broker_order": false,
+  "paper_live": false,
+  "redis_delete": false,
+  "risk_execution_start": false,
+  "compile_rc": "0",
+  "import_rc": "0",
+  "next_if_pass": "choose_patch_ownership_or_freeze_existing_patch_drift_before_any_new_patch",
+  "report": "run/audits/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312_report.md"
+}
+
+## Safety
+ACTIVE_RUNTIME_PROCESSES=NONE
+orders_stream_len=0
+risk_stream_len=0
+execution_stream_len=0
+
+## Dirty tree compact
+ M app/mme_scalpx/ops_dashboard/server.py
+ M app/mme_scalpx/replay/strategy_adapter.py
+ M app/mme_scalpx/services/feature_family/misb_surface.py
+ M app/mme_scalpx/services/features.py
+ M app/mme_scalpx/services/strategy.py
+ M bin/replay_run.py
+ M data/instruments/nfo_instruments.csv
+?? app/mme_scalpx/replay/miv_research_evaluator.py
+?? app/mme_scalpx/services/strategy_family/internal_order_intent_pipeline.py
+?? app/mme_scalpx/services/strategy_family/miv_r_contract.py
+?? bin/audit_miv_r1b_gate_surfaces_no_patch_no_replay_no_order.py
+?? bin/audit_miv_r2b_evaluator_output_shape_no_patch_no_replay_no_order.py
+?? bin/lane_x_r32i_materialize_internal_order_intent_from_replay_results_no_broker.py
+?? bin/lane_x_shadow_near_candidate_observer.py
+?? bin/proof_miv_r1a_strategy_family_dormant_contract_no_replay_no_order.py
+?? bin/proof_miv_r2_zerodha_lite_research_evaluator_no_replay_no_order.py
+?? bin/proof_miv_r2c_neutral_label_route_no_patch_no_replay_no_order.py
+?? bin/proof_r32d_internal_order_intent_pipeline_no_broker.py
+?? bin/proof_r32g_real_candidate_hold_normalizer_no_broker.py
+?? docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260604_151929.md
+?? docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260604_203023.md
+?? docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260605_152027.md
+?? docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260608_152347.md
+?? docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260609_151625.md
+?? docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315.md
+?? docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653.md
+?? docs/milestones/B4-R5P-V1_MICRO_SHELF_PATCH_VERIFY_FINALIZE_NO_START_NO_ORDER_20260603_234959.md
+?? docs/milestones/B4-R5P-V2_MICRO_SHELF_CONTRACT_PASSTHROUGH_SELFTEST_NO_START_NO_ORDER_20260603_235105.md
+?? docs/milestones/B4-R5P-V3_MISB_SHELF_CONSUMER_SELFTEST_NO_START_NO_ORDER_20260603_235205.md
+?? docs/milestones/LANE-B-R1A_RECOVER_R1_SURFACE_AUDIT_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_121122.md
+?? docs/milestones/LANE-B-R1_REPLAY_SURFACE_BASELINE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_120747.md
+?? docs/milestones/LANE-B-R2A_REPLAY_DATASET_AND_PREVIOUS_RUN_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_134930.md
+?? docs/milestones/LANE-B-R2B_REPLAY_CLI_ABI_AND_EXACT_SMOKE_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_135114.md
+?? docs/milestones/LANE-B-R2C_EXACT_A7_20260602_OFFLINE_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_135738.md
+?? docs/milestones/LANE-B-R2D_R2C_REPLAY_ARTIFACT_SHAPE_COUNT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140338.md
+?? docs/milestones/LANE-B-R2E1_FINGERPRINT_PROVENANCE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141109.md
+?? docs/milestones/LANE-B-R2E_COMPARE_R2C_VS_B3R61D_REPLAY_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140836.md
+?? docs/milestones/LANE-B-R2F-R1_INTERRUPTED_REPLAY_FREEZE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r2f_heredoc_created_no_replay_no_order_no_side_effect_20260607_141459.md
+?? docs/milestones/LANE-B-R2F2_CORRECTED_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141428.md
+?? docs/milestones/LANE-B-R2F_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r1_to_r2e1_a7_single_day_replay_reproducibility_with_fingerprint_caveat_20260607_141320.md
+?? docs/milestones/LANE-B-R3A_EXACT_RISK_EXECUTION_SHADOW_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141805.md
+?? docs/milestones/LANE-B-R3B_FILL_MODEL_ABI_AND_R4_COMMAND_CORRECTION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141930.md
+?? docs/milestones/LANE-B-R3_RISK_EXECUTION_SHADOW_PNL_READINESS_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141540.md
+?? docs/milestones/LANE-B-R4A2_CORRECTED_SHADOW_PNL_NO_TRADE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143017.md
+?? docs/milestones/LANE-B-R4A_SHADOW_PNL_NO_TRADE_ARTIFACT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_142909.md
+?? docs/milestones/LANE-B-R4_A7_20260602_RISK_EXECUTION_SHADOW_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_142249.md
+?? docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143301.md
+?? docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143419.md
+?? docs/milestones/LANE-B-R5B_BASELINE_VS_SHADOW_PATCH_IMPACT_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143653.md
+?? docs/milestones/LANE-B-R5C_BASELINE_SHADOW_DRY_RUN_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143758.md
+?? docs/milestones/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907.md
+?? docs/milestones/LANE-B-R5E_COMPARE_BASELINE_SHADOW_PATCH_IMPACT_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154016.md
+?? docs/milestones/LANE-B-R5F_FINAL_PATCH_IMPACT_AND_PNL_ROUTE_DECISION_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154208.md
+?? docs/milestones/LANE-B-R5_FIND_VALID_CANDIDATE_OR_PATCH_IMPACT_REPLAY_ROUTE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143108.md
+?? docs/milestones/LANE-B-R6A_STRATEGY_PNL_WAIT_STATE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154637.md
+?? docs/milestones/LANE-B-R6B_WAIT_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154920.md
+?? docs/milestones/LANE-B-R6_CANDIDATE_POSITIVE_DATASET_ADMISSION_GATE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154426.md
+?? docs/milestones/LANE-MIV-LIVE-R1_OBSERVE_ONLY_CAPTURE_START_REUSE_AND_MIV_PERCENT_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_market_live_start_or_reuse_observe_only_capture_for_miv_r_after_close_percent_result_20260612_093653.md
+?? docs/milestones/LANE-MIV-LIVE-R2_60SEC_DURABLE_TAPE_GROWTH_RECHECK_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_confirm_live_futures_and_selected_option_durable_capture_growth_after_r1_zero_short_window_20260612_093804.md
+?? docs/milestones/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011.md
+?? docs/milestones/LANE-MIV-LIVE-R4_READONLY_PROVIDER_FEED_LOCK_DIAG_NO_PATCH_NO_START_NO_STOP_NO_ORDER_diagnose_why_pauto_start_rc0_but_durable_fut_opt_tape_not_growing_without_start_stop_delete_20260612_094337.md
+?? docs/milestones/LANE-MIV-LIVE-R5B_CORRECTED_MIV_APPEARANCE_SALVAGE_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_remove_r5_false_positive_headers_and_fix_durable_scan_to_prove_miv_absence_or_presence_20260612_133537.md
+?? docs/milestones/LANE-MIV-LIVE-R5_INSTRUMENT_METADATA_STALE_ROUTE_LOCATOR_NO_PATCH_NO_START_NO_STOP_NO_ORDER_confirm_nfo_metadata_stale_root_cause_and_find_existing_safe_refresh_command_without_mutation_20260612_094836.md
+?? docs/milestones/LANE-MIV-LIVE-R5_READONLY_MIV_NON_APPEARANCE_AUDIT_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_explain_why_miv_like_count_zero_and_find_registry_selector_source_seam_without_runtime_interference_20260612_133037.md
+?? docs/milestones/LANE-MIV-LIVE-R6B_SEAL_COMPLETENESS_SALVAGE_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192433.md
+?? docs/milestones/LANE-MIV-LIVE-R6C_ULTRASHORT_SEAL_FREEZE_NO_PY_HEREDOC_NO_PATCH_NO_ORDER_20260612_192603.md
+?? docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192815.md
+?? docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192847.md
+?? docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192902.md
+?? docs/milestones/LANE-MIV-LIVE-R6_MARKET_CLOSE_SEAL_COMPLETENESS_FINALIZER_NO_PATCH_NO_START_NO_STOP_NO_ORDER_verify_pseal_and_durable_capture_after_market_close_with_sha256_manifest_and_safety_20260612_192035.md
+?? docs/milestones/LANE-MIV-LIVE-R7A_AFTER_CLOSE_MIV_PERCENT_MEASUREMENT_FROM_DURABLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260612_193239.md
+?? docs/milestones/LANE-MIV-LIVE-R7B_ZERO_CANDIDATE_ROOT_CAUSE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_101611.md
+?? docs/milestones/LANE-MIV-LIVE-R7C_RERUN_MIV_MEASUREMENT_WITH_REPO_PYTHONPATH_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_102742.md
+?? docs/milestones/LANE-MIV-LIVE-R7D_RANK_BUCKET_THROTTLE_REPORT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103001.md
+?? docs/milestones/LANE-MIV-LIVE-R7E_RANK_QUALITY_DECILE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103313.md
+?? docs/milestones/LANE-MIV-LIVE-R7F_CORRECTED_RANK_QUALITY_ROW_ORDER_JOIN_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103628.md
+?? docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030.md
+?? docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030_R7F_corrected_truth_freeze.md
+?? docs/milestones/LANE-MIV-LIVE-R7H_EXANTE_TIEBREAKER_DISCOVERY_REPORT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104206.md
+?? docs/milestones/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711.md
+?? docs/milestones/LANE-MIV-R1B_GATE_SURFACE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_candidate_hold_runtime_disabled_classic_runtime_disabled_risk_execution_shadow_and_order_intent_gates_before_miv_evaluator_patch_20260611_231807.md
+?? docs/milestones/LANE-MIV-R2B_EVALUATOR_OUTPUT_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_miv_r2_evaluator_outputs_with_real_timestamp_paths_neutral_label_and_blocker_cases_20260611_232406.md
+?? docs/milestones/LANE-MIV-R2C_NEUTRAL_LABEL_ROUTE_PROOF_NO_PATCH_NO_REPLAY_NO_ORDER_prove_neutral_active_label_emits_as_label_only_and_never_routes_to_risk_execution_order_intent_20260611_232522.md
+?? docs/milestones/LANE-MIV-R2_ZERODHA_LITE_RESEARCH_EVALUATOR_PATCH_NO_REPLAY_NO_ORDER_add_replay_research_only_miv_zerodha_lite_evaluator_and_artifact_writer_without_registry_or_gate_mutation_20260611_232250.md
+?? docs/milestones/LANE-MIV-R3A_RESUME_AUDIT_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_audit_current_miv_work_preserve_good_modules_then_run_miv_evaluator_on_existing_artifact_rows_only_20260611_233045.md
+?? docs/milestones/LANE-MIV-R3B-R0_INTERRUPTED_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3b_paste_did_not_run_replay_order_risk_execution_or_mutate_source_20260611_233932.md
+?? docs/milestones/LANE-MIV-R3B_CONTENT_BASED_TICK_SURFACE_LOCATOR_AND_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_locate_real_futures_selected_option_tick_or_feature_rows_by_content_then_run_miv_evaluator_without_replay_20260611_233308.md
+?? docs/milestones/LANE-MIV-R3C_DURABLE_CAPTURE_PAIR_EVAL_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_latest_durable_fut_and_selected_option_tape_to_generate_miv_candidates_for_tomorrow_measurement_path_20260611_234126.md
+?? docs/milestones/LANE-MIV-R3_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_run_miv_zerodha_lite_evaluator_on_existing_r9h_r9l_r9x_artifact_rows_only_no_full_replay_20260611_232902.md
+?? docs/milestones/LANE-MIV-R4-R0_INTERRUPTED_R3C_R4_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3c_r4_paste_created_no_replay_no_order_no_risk_execution_side_effect_20260611_234607.md
+?? docs/milestones/LANE-MIV-R4-R1_PRECISE_SIDE_EFFECT_AND_TAPE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_separate_false_positive_safety_text_from_real_process_danger_and_locate_durable_fut_opt_tapes_20260611_234725.md
+?? docs/milestones/LANE-MIV-R4-R2_COMPACT_MEASUREMENT_BUILDER_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_r4r1_located_fut_opt_tapes_build_miv_candidates_ledgers_and_shadow_percent_summary_20260611_234841.md
+?? docs/milestones/LANE-MIV-R4-R3_AFTERMARKET_PERCENT_READINESS_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r4r2_measurement_pipeline_pass_and_tomorrow_percent_result_checklist_20260611_235103.md
+?? docs/milestones/LANE-MIV-R4_AFTERMARKET_MEASUREMENT_PIPELINE_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_generate_miv_candidates_internal_ledgers_shadow_percent_readiness_for_tomorrow_observe_only_result_20260611_234406.md
+?? docs/milestones/LANE-X-CLOSE-R1_PSEAL_LOCATOR_OR_CLOSE_EVIDENCE_FALLBACK_NO_PATCH_NO_ORDER_recover_from_pseal_command_not_found_and_seal_or_bundle_close_evidence_20260608_152333.md
+?? docs/milestones/LANE-X-CLOSE-R2B_REPAIR_CLOSE_R2_REPORT_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_repair_report_handoff_bundle_after_close_r2_python_report_writer_nameerror_20260608_155959.md
+?? docs/milestones/LANE-X-CLOSE-R3_FINALIZE_20260609_PSEAL_NO_PATCH_NO_REPLAY_NO_ORDER_finalize_today_pseal_pass_and_create_handoff_bundle_20260609_152423.md
+?? docs/milestones/LANE-X-CLOSE-R3_corrected_pseal_completion_finalizer_20260604_152311.md
+?? docs/milestones/LANE-X-CLOSE-R5_verify_r4_post_r11_pseal_completion_20260604_203209.md
+?? docs/milestones/LANE-X-CLOSE-R5_verify_r4_post_r11_pseal_completion_20260604_203215.md
+?? docs/milestones/LANE-X-DASH-R1_dashboard_lane_evidence_bundle_no_patch_no_order_20260604_230829.md
+?? docs/milestones/LANE-X-DASH-R2A_SOURCE_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_audit_existing_dashboard_r3h_lite_source_lane_x_inputs_and_patch_needles_20260604_231059.md
+?? docs/milestones/LANE-X-DASH-R2B-CONFIRM_READ_ONLY_AFTER_CUT_PATCH_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_confirm_whether_cut_r2b_patch_changed_dashboard_source_or_not_20260604_231421.md
+?? docs/milestones/LANE-X-DASH-R2B-TINY-SEAL_STATIC_OBSERVE_PANEL_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_seal_existing_lx_tiny_source_markers_compile_import_ast_safety_20260604_232058.md
+?? docs/milestones/LANE-X-DASH-R2C_RUNTIME_SEAL_LX_TINY_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_lane_x_observe_page_markers_20260604_232202.md
+?? docs/milestones/LANE-X-DASH-R3A_SIMPLIFY_DYNAMIC_TRUTH_BOARD_PLAN_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_plan_replace_complex_static_lane_x_panel_with_simple_dynamic_truth_board_20260612_102214.md
+?? docs/milestones/LANE-X-DASH-R3B_DYNAMIC_SIMPLE_TRUTH_BOARD_PATCH_NO_REDIS_WRITE_NO_START_NO_ORDER_NO_PAPER_20260612_102452.md
+?? docs/milestones/LANE-X-DASH-R3C_RUNTIME_SEAL_DYNAMIC_TRUTH_BOARD_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_r3b_dynamic_truth_board_20260612_102624.md
+?? docs/milestones/LANE-X-DASH-R3D_ERROR_TRUTH_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_classify_current_review_errors_as_active_or_historical_before_dashboard_next_action_refine_20260612_103027.md
+?? docs/milestones/LANE-X-DASH-R3E_REFINE_NEXT_ACTION_FRESH_ERROR_ONLY_NO_REDIS_WRITE_NO_START_NO_ORDER_NO_PAPER_20260612_103200.md
+?? docs/milestones/LANE-X-DASH-R3F_RUNTIME_SEAL_R3E_FRESH_ERROR_NEXT_ACTION_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_verify_next_action_no_longer_overwarns_on_historical_errors_20260612_103331.md
+?? docs/milestones/LANE-X-LIVE-R1A_SALVAGE_COMPLETED_LIVE_R1_SAMPLES_NO_PATCH_NO_REPLAY_NO_ORDER_create_proof_from_completed_live_r1_samples_after_report_writer_nameerror_20260608_100135.md
+?? docs/milestones/LANE-X-LIVE-R2_30MIN_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_ORDER_watch_live_decisions_for_candidate_positive_evidence_observe_only_20260608_101421.md
+?? docs/milestones/LANE-X-LIVE-R3_RECORD_AND_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_record_live_growth_and_watch_candidate_positive_evidence_observe_only_20260609_101132.md
+?? docs/milestones/LANE-X-LIVE-R4_DETACHED_TILL_CLOSE_CAPTURE_CANDIDATE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_self_running_live_capture_growth_and_candidate_positive_watch_until_close_20260611_094905.md
+?? docs/milestones/LANE-X-PDISK-R1_safe_cleanup_inventory_no_delete_20260604_210232.md
+?? docs/milestones/LANE-X-PDISK-R2_explicit_cleanup_plan_no_delete_20260604_210418.md
+?? docs/milestones/LANE-X-R12_day4_evidence_index_no_patch_no_order_20260604_203314.md
+?? docs/milestones/LANE-X-R13B_sealed_data_integrity_finalizer_exclude_self_sha_20260604_203618.md
+?? docs/milestones/LANE-X-R13_sealed_data_integrity_audit_no_patch_no_replay_no_order_20260604_203422.md
+?? docs/milestones/LANE-X-R14_candidate_promotion_audit_no_patch_no_replay_no_order_20260604_203712.md
+?? docs/milestones/LANE-X-R15_misb_shelf_width_distribution_audit_no_patch_no_replay_no_order_20260604_203827.md
+?? docs/milestones/LANE-X-R16_mist_response_futures_impulse_audit_no_patch_no_replay_no_order_20260604_204031.md
+?? docs/milestones/LANE-X-R17B_compact_snapshot_sync_view_data_invalid_finalizer_20260604_205244.md
+?? docs/milestones/LANE-X-R17_snapshot_sync_view_data_invalid_audit_no_patch_no_replay_no_order_20260604_204256.md
+?? docs/milestones/LANE-X-R18_dhan_miso_unavailable_audit_no_patch_no_replay_no_order_20260604_205403.md
+?? docs/milestones/LANE-X-R19A_helper_source_locator_no_patch_no_order_20260604_205537.md
+?? docs/milestones/LANE-X-R19B_pcheck_disk_emoji_helper_patch_no_order_20260604_205659.md
+?? docs/milestones/LANE-X-R19C_pfeedcheck_nameerror_patch_plan_no_patch_no_order_20260604_205815.md
+?? docs/milestones/LANE-X-R19D_pfeedcheck_zerodha_growth_helper_patch_no_order_20260604_205936.md
+?? docs/milestones/LANE-X-R20_day4_consolidated_milestone_and_tomorrow_plan_no_patch_no_order_20260604_210132.md
+?? docs/milestones/LANE-X-R21_family_strategy_source_review_bundle_no_patch_no_order_20260604_211329.md
+?? docs/milestones/LANE-X-R22A_mist_micro_option_response_source_seam_audit_no_patch_no_order_20260604_211933.md
+?? docs/milestones/LANE-X-R22B-DIAG_micro_option_response_context_no_patch_no_order_20260604_224928.md
+?? docs/milestones/LANE-X-R22B-REPAIR_micro_option_response_return_path_repair_no_start_no_order_20260604_225050.md
+?? docs/milestones/LANE-X-R22B_micro_option_response_producer_patch_no_start_no_order_20260604_224759.md
+?? docs/milestones/LANE-X-R22C-R2_corrected_mist_branch_consumer_micro_response_selftest_no_start_no_order_20260604_225319.md
+?? docs/milestones/LANE-X-R22C_mist_consumer_micro_response_selftest_no_start_no_order_20260604_225141.md
+?? docs/milestones/LANE-X-R22D_micro_option_response_patch_finalizer_tomorrow_live_validation_no_start_no_order_20260604_225437.md
+?? docs/milestones/LANE-X-R23_post_r22_micro_response_evidence_bundle_no_patch_no_order_20260604_225905.md
+?? docs/milestones/LANE-X-R24A_opportunity_expansion_source_seam_audit_no_patch_no_order_20260604_230020.md
+?? docs/milestones/LANE-X-R24B_shadow_near_candidate_observer_helper_no_production_candidate_no_order_20260604_230313.md
+?? docs/milestones/LANE-X-R24C_post_r24b_shadow_near_candidate_finalizer_no_patch_no_order_20260604_230456.md
+?? docs/milestones/LANE-X-R25A_friday_premarket_r22_r24b_readiness_no_start_no_order_20260605_091006.md
+?? docs/milestones/LANE-X-R25A_friday_premarket_r22_r24b_readiness_no_start_no_order_20260605_091015.md
+?? docs/milestones/LANE-X-R25B-WAIT_post_open_health_recheck_no_start_no_stop_no_order_20260605_091425.md
+?? docs/milestones/LANE-X-R25B-WAIT_post_open_health_recheck_no_start_no_stop_no_order_20260605_091611.md
+?? docs/milestones/LANE-X-R25B_friday_observe_only_start_or_reuse_no_patch_no_order_20260605_091243.md
+?? docs/milestones/LANE-X-R25C_features_strategy_stale_log_triage_no_start_no_stop_no_patch_no_order_20260605_091725.md
+?? docs/milestones/LANE-X-R25D_r22b_wrapper_side_kwarg_hotfix_no_start_no_stop_no_order_20260605_091906.md
+?? docs/milestones/LANE-X-R25E_refresh_features_strategy_after_r25d_hotfix_no_feeds_no_order_20260605_092014.md
+?? docs/milestones/LANE-X-R25F_recover_missing_features_strategy_after_r25e_no_kill_no_feeds_no_order_20260605_092129.md
+?? docs/milestones/LANE-X-R25G_live_r22_r24_micro_response_shadow_validator_no_patch_no_order_20260605_092342.md
+?? docs/milestones/LANE-X-R25H_feature_consumer_view_provider_ready_inspector_no_patch_no_order_20260605_092458.md
+?? docs/milestones/LANE-X-R25J_rolling_r22_snapshot_tradability_sampler_no_patch_no_order_20260605_093000.md
+?? docs/milestones/LANE-X-R25K_futures_source_inventory_after_fut_missing_pcheck_no_patch_no_order_20260605_095301.md
+?? docs/milestones/LANE-X-R25L_option_side_role_consistency_sampler_no_patch_no_order_20260605_095512.md
+?? docs/milestones/LANE-X-R25M-R2_corrected_invalid_member_anomaly_sampler_no_patch_no_order_20260605_104251.md
+?? docs/milestones/LANE-X-R25M_invalid_member_anomaly_clamped_sampler_no_patch_no_order_20260605_101117.md
+?? docs/milestones/LANE-X-R25N_shadow_opportunity_snapshot_freeze_no_patch_no_order_20260605_134052.md
+?? docs/milestones/LANE-X-R25N_valid_frame_family_opportunity_sampler_no_patch_no_order_20260605_110051.md
+?? docs/milestones/LANE-X-R25O_candidate_promotion_gap_inspector_no_patch_no_order_20260605_110846.md
+?? docs/milestones/LANE-X-R25O_day5_pseal_completion_finalizer_no_patch_no_order_20260605_152150.md
+?? docs/milestones/LANE-X-R25P_day5_compact_evidence_bundle_no_patch_no_order_20260605_152449.md
+?? docs/milestones/LANE-X-R25P_mist_futures_impulse_gap_inspector_no_patch_no_order_20260605_111037.md
+?? docs/milestones/LANE-X-R25R_futures_kinetic_primitive_gap_sampler_no_patch_no_order_20260605_112133.md
+?? docs/milestones/LANE-X-R25T_readonly_hypothetical_futures_kinetics_from_raw_ticks_no_patch_no_order_20260605_113952.md
+?? docs/milestones/LANE-X-R26A_day5_bundle_root_cause_freeze_no_patch_no_order_20260607_112913.md
+?? docs/milestones/LANE-X-R26B_micro_futures_kinetics_producer_patch_no_start_no_order_20260607_113211.md
+?? docs/milestones/LANE-X-R26C_micro_futures_kinetics_mist_consumer_selftest_no_patch_no_order_20260607_113339.md
+?? docs/milestones/LANE-X-R26D-R2_corrected_redisraw_sealed_micro_futures_kinetics_validator_no_patch_no_order_20260607_113823.md
+?? docs/milestones/LANE-X-R26D-R3_preserve_blank_values_redisraw_futures_kinetics_validator_no_patch_no_order_20260607_114851.md
+?? docs/milestones/LANE-X-R26D-R4_chronological_sealed_micro_futures_kinetics_validator_no_patch_no_order_20260607_115028.md
+?? docs/milestones/LANE-X-R26D_day5_sealed_micro_futures_kinetics_validator_no_patch_no_order_20260607_113438.md
+?? docs/milestones/LANE-X-R26E_micro_futures_kinetics_patch_chain_finalizer_monday_observe_ready_no_patch_no_order_20260607_115137.md
+?? docs/milestones/LANE-X-R26F_micro_futures_kinetics_chain_evidence_bundle_no_patch_no_order_20260607_115245.md
+?? docs/milestones/LANE-X-R27A_misb_shelf_validation_root_cause_audit_no_patch_no_order_20260607_115657.md
+?? docs/milestones/LANE-X-R27B_misb_shelf_width_scale_window_audit_no_patch_no_order_20260607_115937.md
+?? docs/milestones/LANE-X-R27C_misb_shelf_threshold_scenario_quality_audit_no_patch_no_order_20260607_120106.md
+?? docs/milestones/LANE-X-R27D_misb_current_inclusive_shelf_reference_audit_no_patch_no_order_20260607_120243.md
+?? docs/milestones/LANE-X-R27E_misb_prior_shelf_breakout_ref_patch_no_start_no_order_20260607_120500.md
+?? docs/milestones/LANE-X-R27F_sealed_prior_shelf_ref_contract_passthrough_validator_no_patch_no_order_20260607_120622.md
+?? docs/milestones/LANE-X-R27G_misb_prior_shelf_ref_contract_passthrough_patch_no_start_no_order_20260607_120850.md
+?? docs/milestones/LANE-X-R27H_rerun_sealed_prior_ref_contract_passthrough_validator_no_patch_no_order_20260607_121008.md
+?? docs/milestones/LANE-X-R27I_misb_prior_shelf_ref_patch_chain_finalizer_monday_observe_ready_no_patch_no_order_20260607_121138.md
+?? docs/milestones/LANE-X-R27J_misb_prior_shelf_ref_chain_evidence_bundle_no_patch_no_order_20260607_121241.md
+?? docs/milestones/LANE-X-R28A_weekend_consolidated_finalizer_monday_observe_checklist_no_patch_no_order_20260607_121432.md
+?? docs/milestones/LANE-X-R28B_final_weekend_observe_ready_evidence_bundle_no_patch_no_order_20260607_121600.md
+?? docs/milestones/LANE-X-R29A-R4_PREMARKET_RECONNECT_MINI_AUDIT_NO_PATCH_NO_START_NO_ORDER_after_ssh_drop_verify_no_side_effect_source_safety_r28b_ready_20260607_135037.md
+?? docs/milestones/LANE-X-R29B-R1_INTERRUPTED_SUNDAY_START_ATTEMPT_SIDE_EFFECT_AUDIT_NO_PATCH_NO_START_NO_ORDER_verify_r29b_interrupted_paste_did_not_start_risk_execution_or_order_20260607_135857.md
+?? docs/milestones/LANE-X-R29B-R2_MINIMAL_MONDAY_OBSERVE_ONLY_START_REUSE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_minimal_helper_based_start_reuse_after_r29a_pass_20260607_135950.md
+?? docs/milestones/LANE-X-R30A_FAMILY_MICROSTRUCTURE_COVERAGE_AUDIT_NO_PATCH_NO_START_NO_ORDER_audit_mist_misb_misc_misr_miso_required_microstructure_surfaces_and_contract_passthrough_20260607_140857.md
+?? docs/milestones/LANE-X-R30B_DHAN_CONTEXT_ROOT_CAUSE_AUDIT_NO_PATCH_NO_START_NO_ORDER_audit_dhan_context_config_import_provider_runtime_redis_errors_without_start_or_patch_20260607_141044.md
+?? docs/milestones/LANE-X-R30D_PROVIDER_RUNTIME_KEY_CONTRACT_ALIGNMENT_AUDIT_NO_PATCH_NO_START_NO_ORDER_compare_names_provider_runtime_publishers_readers_pcheck_expected_redis_keys_20260607_141254.md
+?? docs/milestones/LANE-X-R31A-R1_INTERRUPTED_SHADOW_PNL_FEASIBILITY_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r31a_created_no_replay_no_order_no_side_effect_20260607_143923.md
+?? docs/milestones/LANE-X-R31A-R2_REPLAY_PROC_IDENTIFICATION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_identify_replay_proc_one_from_r31a_r1_before_any_next_action_20260607_144010.md
+?? docs/milestones/LANE-X-R31A-R3_WAIT_ON_ACTIVE_LANE_B_REPLAY_READONLY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_monitor_active_lane_b_r5d_replay_before_resuming_friday_shadow_pnl_feasibility_20260607_144052.md
+?? docs/milestones/LANE-X-R31A-R4_R5D_SHADOW_RESULT_ARTIFACT_SUMMARY_NO_PATCH_NO_REPLAY_NO_ORDER_read_completed_lane_b_r5d_baseline_shadow_outputs_for_shadow_pnl_availability_20260607_154229.md
+?? docs/milestones/LANE-X-R31A-R4_R5D_SHADOW_RESULT_ARTIFACT_SUMMARY_NO_PATCH_NO_REPLAY_NO_ORDER_read_completed_lane_b_r5d_baseline_shadow_outputs_for_shadow_pnl_availability_20260607_154433.md
+?? docs/milestones/LANE-X-R31A-R5_EXTRACT_R5D_SHADOW_PNL_NUMBERS_NO_PATCH_NO_REPLAY_NO_ORDER_extract_baseline_vs_shadow_trade_pnl_economics_from_completed_r5d_artifacts_20260607_154615.md
+?? docs/milestones/LANE-X-R31A-R6_ZERO_CANDIDATE_BLOCKER_DECOMPOSITION_NO_PATCH_NO_REPLAY_NO_ORDER_explain_why_r5d_baseline_and_shadow_generated_zero_candidates_zero_trades_null_pnl_20260607_155734.md
+?? docs/milestones/LANE-X-R31A-R7_FAMILY_CANDIDATE_BRIDGE_ROOT_CAUSE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_where_family_identity_r26_r27_fields_candidate_truth_are_lost_between_features_strategy_risk_20260607_175914.md
+?? docs/milestones/LANE-X-R31A-R8_REPLAY_FAMILY_BRIDGE_PATCH_SEAM_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_source_function_where_replay_bridge_skips_family_features_and_strategy_family_activation_20260607_182426.md
+?? docs/milestones/LANE-X-R31A-R9A_REPLAY_FAMILY_BRIDGE_EXACT_SOURCE_BODY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_extract_replay_run_feature_strategy_bridge_functions_before_narrow_patch_20260607_182643.md
+?? docs/milestones/LANE-X-R31A-R9B_REPLAY_FAMILY_STRATEGY_ADAPTER_BRIDGE_PATCH_NO_REPLAY_NO_ORDER_wrap_replay_strategy_decision_builder_with_existing_family_adapter_no_candidate_faking_20260607_183000.md
+?? docs/milestones/LANE-X-R31A-R9C-R1_REPLAY_FAMILY_BRIDGE_FALLBACK_KWARGS_HOTFIX_NO_REPLAY_NO_ORDER_remove_run_id_run_label_before_calling_old_fallback_then_static_smoke_20260607_183659.md
+?? docs/milestones/LANE-X-R31A-R9C_REPLAY_FAMILY_BRIDGE_STATIC_FUNCTION_SMOKE_NO_REPLAY_NO_ORDER_verify_r9b_bridge_marker_import_function_behavior_without_running_replay_20260607_183127.md
+?? docs/milestones/LANE-X-R31A-R9D_REAL_ARTIFACT_FEATURE_ROW_BRIDGE_SMOKE_NO_REPLAY_NO_ORDER_call_patched_strategy_bridge_on_existing_r5d_feature_rows_check_family_bridge_status_candidate_truth_20260607_183840.md
+?? docs/milestones/LANE-X-R31A-R9E_REPLAY_FEATURE_SURFACE_BRIDGE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_why_replay_feature_rows_have_empty_family_surfaces_despite_strategy_adapter_invocation_20260607_184155.md
+?? docs/milestones/LANE-X-R31A-R9F-R1_AST_BOUNDARY_FEATURE_ENRICHMENT_PATCH_NO_REPLAY_NO_ORDER_retry_r9f_using_ast_function_boundary_no_candidate_faking_20260607_184949.md
+?? docs/milestones/LANE-X-R31A-R9F-R2_CANDIDATE_TRUTH_GUARD_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_why_r9f_r1_static_smoke_created_candidate_true_300_before_any_replay_20260607_185047.md
+?? docs/milestones/LANE-X-R31A-R9F-R3_REPLAY_CANDIDATE_TRUTH_SANITIZER_PATCH_NO_REPLAY_NO_ORDER_separate_surface_visibility_from_candidate_truth_after_r9f_r1_enrichment_20260607_185217.md
+?? docs/milestones/LANE-X-R31A-R9F-R4_CANDIDATE_PAYLOAD_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_current_r9b_r9f_r1_payload_locations_before_candidate_truth_sanitizer_retry_20260607_185508.md
+?? docs/milestones/LANE-X-R31A-R9F-R5_RAW_DECISION_SHAPE_DUMP_NO_PATCH_NO_REPLAY_NO_ORDER_dump_exact_strategy_adapter_output_shape_after_r9b_r9f_r1_before_sanitizer_retry_20260607_185634.md
+?? docs/milestones/LANE-X-R31A-R9F-R6_TUPLE_CANDIDATE_TRUTH_SANITIZER_PATCH_NO_REPLAY_NO_ORDER_sanitize_tuple_candidates_and_candidate_json_surface_visibility_not_candidate_truth_20260607_185804.md
+?? docs/milestones/LANE-X-R31A-R9F-R7_STRATEGY_ADAPTER_CANDIDATE_PRESENT_SOURCE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_candidate_present_assignment_in_replay_strategy_adapter_before_truth_patch_20260607_190933.md
+?? docs/milestones/LANE-X-R31A-R9F-R8_STRATEGY_ADAPTER_CANDIDATE_PRESENT_TRUTH_PATCH_NO_REPLAY_NO_ORDER_patch_candidate_present_source_to_strict_eligible_truth_surface_available_separate_20260607_192409.md
+?? docs/milestones/LANE-X-R31A-R9F_REPLAY_FEATURE_FRAME_MICROSTRUCTURE_ENRICHMENT_PATCH_NO_REPLAY_NO_ORDER_add_replay_only_r26_micro_futures_r27_prior_shelf_family_surface_payload_without_candidate_faking_20260607_184547.md
+?? docs/milestones/LANE-X-R31A-R9G-R1_REPLAY_TIMEOUT_ARTIFACT_INSPECTION_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_r9g_timeout_partial_outputs_no_orphan_replay_before_next_smoke_20260607_193102.md
+?? docs/milestones/LANE-X-R31A-R9G_GUARDED_REPLAY_SMOKE_AFTER_FAMILY_BRIDGE_FIX_NO_ORDER_prove_replay_artifacts_now_have_family_surfaces_strict_candidate_truth_no_broker_side_effect_20260607_192539.md
+?? docs/milestones/LANE-X-R31A-R9H_MICRO_REPLAY_DATASET_SLICE_BUILD_NO_PATCH_NO_REPLAY_NO_ORDER_build_tiny_dataset_slice_for_fast_family_bridge_replay_smoke_without_touching_source_dataset_20260607_193229.md
+?? docs/milestones/LANE-X-R31A-R9I_MICRO_DATASET_REPLAY_SMOKE_AFTER_BRIDGE_FIX_NO_ORDER_run_fast_micro_replay_verify_family_surfaces_r26_r27_strict_candidate_truth_no_broker_side_effect_20260607_193402.md
+?? docs/milestones/LANE-X-R31A-R9J_STRICT_CANDIDATE_FLOW_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_211_strict_nested_candidates_why_not_reaching_run_summary_candidate_audit_risk_execution_shadow_20260607_193810.md
+?? docs/milestones/LANE-X-R31A-R9K-R1_REAL_ARTIFACT_TOP_LEVEL_STRICT_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_retry_top_level_candidate_propagation_using_real_r9i_feature_rows_with_known_strict_nested_candidates_20260607_194152.md
+?? docs/milestones/LANE-X-R31A-R9K-R2_PREFIX_WINDOW_TOP_LEVEL_STRICT_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_retry_top_level_candidate_propagation_smoke_with_real_r9i_prefix_window_preserving_state_20260607_194326.md
+?? docs/milestones/LANE-X-R31A-R9K-R3_FEATURE_STRATEGY_PARITY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_compare_r9i_saved_feature_rows_vs_strategy_rows_around_strict_nested_candidates_before_top_level_patch_retry_20260607_194452.md
+?? docs/milestones/LANE-X-R31A-R9K-R4_ADAPTED_ROW_TOP_LEVEL_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_promote_strict_nested_candidates_inside_already_adapted_strategy_rows_before_output_export_20260607_200438.md
+?? docs/milestones/LANE-X-R31A-R9K-R5_ADAPTED_ROW_EXPORT_RETURN_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_adapted_rows_return_or_strategy_decision_export_seam_after_r9k_r4_needle_miss_20260607_200609.md
+?? docs/milestones/LANE-X-R31A-R9K-R6_EXACT_MERGED_APPEND_TOP_LEVEL_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_patch_exact_merged_before_adapted_rows_append_using_r9k_r5_locator_20260607_201430.md
+?? docs/milestones/LANE-X-R31A-R9K_TOP_LEVEL_STRICT_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_promote_best_strict_nested_family_candidate_to_top_level_strategy_decision_without_candidate_faking_20260607_194033.md
+?? docs/milestones/LANE-X-R31A-R9L_MICRO_REPLAY_AFTER_TOP_LEVEL_PROPAGATION_PATCH_NO_ORDER_verify_strict_family_candidates_flow_to_top_level_candidate_audit_risk_execution_shadow_20260607_201648.md
+?? docs/milestones/LANE-X-R31A-R9M_COMPARE_R9I_R9L_STRICT_CANDIDATE_REGRESSION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_compare_r9i_vs_r9l_strategy_candidate_containers_after_top_level_propagation_patch_20260607_202217.md
+?? docs/milestones/LANE-X-R31A-R9N_R9I_R9L_ROW168_CANDIDATE_FIELD_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_exact_candidate_truth_field_regression_after_r9k_r6_patch_20260607_202423.md
+?? docs/milestones/LANE-X-R31A-R9O_CANDIDATE_TRUTH_INTERACTION_SOURCE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_r9f_r8_r9k_r6_candidate_truth_assignment_order_after_r9l_strict_regression_20260607_202714.md
+?? docs/milestones/LANE-X-R31A-R9P_R9I_R9L_FEATURE_SURFACE_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_compare_feature_surfaces_before_adapter_where_r9i_had_strict_misb_and_r9l_lost_it_20260607_202947.md
+?? docs/milestones/LANE-X-R31A-R9Q-R1_EXTRACT_ROW168_ONLY_NO_PATCH_NO_REPLAY_NO_ORDER_print_exact_r9i_r9l_row168_feature_strategy_candidate_truth_full_20260607_203520.md
+?? docs/milestones/LANE-X-R31A-R9Q-R2_COMPACT_ROW168_R9I_R9L_TRUTH_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_compact_compare_row168_r9i_r9l_feature_surface_candidate_truth_without_large_json_flood_20260607_204018.md
+?? docs/milestones/LANE-X-R31A-R9Q_FIRST_STRICT_MISB_ROW_EXACT_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_extract_first_actual_r9i_strict_misb_row_and_compare_r9i_r9l_feature_strategy_truth_20260607_203309.md
+?? docs/milestones/LANE-X-R31A-R9R_ROW168_ADAPTER_INPUT_OUTPUT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_call_strategy_adapter_directly_on_r9l_row168_feature_to_find_candidate_container_drop_20260607_204235.md
+?? docs/milestones/LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_205535.md
+
+## Diff stat compact
+ app/mme_scalpx/ops_dashboard/server.py             |   131 +-
+ app/mme_scalpx/replay/strategy_adapter.py          |     7 +-
+ .../services/feature_family/misb_surface.py        |    24 +
+ app/mme_scalpx/services/features.py                |   957 +
+ app/mme_scalpx/services/strategy.py                |    27 +
+ bin/replay_run.py                                  |   440 +-
+ data/instruments/nfo_instruments.csv               | 42399 ++++++++++---------
+ 7 files changed, 24753 insertions(+), 19232 deletions(-)
+
+## Dirty tracked files with hunk headers
+
+### FILE=app/mme_scalpx/ops_dashboard/server.py
+--- a/app/mme_scalpx/ops_dashboard/server.py
++++ b/app/mme_scalpx/ops_dashboard/server.py
+@@ -16,7 +16,7 @@ try:
+@@ -732,6 +732,7 @@ def build_html() -> str:
+@@ -773,7 +774,7 @@ def build_html() -> str:
+@@ -797,7 +798,7 @@ th{{color:#b7cde6;font-size:11px;text-transform:uppercase}}
+-<div><h1>MME-ScalpX OPS Dashboard R3H-LITE</h1><div class="sub">R3H-LITE read-only · HOLD reason capped · action distribution · capture progress · paper blocked · no writes · no orders</div></div>
++<div><h1>MME-ScalpX OPS Dashboard R3H-LX-R3E</h1><div class="sub">R3H-LX-R3E read-only · HOLD reason capped · action distribution · capture progress · paper blocked · no writes · no orders</div></div>
+@@ -809,6 +810,8 @@ th{{color:#b7cde6;font-size:11px;text-transform:uppercase}}
+@@ -860,6 +863,128 @@ class Handler(BaseHTTPRequestHandler):
++    orders = xlen("orders:mme:stream")
++    risk_stream = xlen("risk:mme:stream")
++    execution_stream = xlen("execution:mme:stream")
++    risk_proc = proc_count("risk")
++    execution_proc = proc_count("execution")
++    safety_clean = orders == 0 and risk_stream == 0 and execution_stream == 0 and risk_proc == 0 and execution_proc == 0
++    candidate_count = "-"
++            candidate_count = _pick_first(payload, ["candidate_count", "candidates_count"], "-")
++        files = list((project_root() / "run" / "audits").glob("*shadow_near_candidate_output.txt"))
++        "<div class='panel'><h3>1. SAFETY</h3><table><tr><td>state</td><td class='mono'>%s</td></tr><tr><td>message</td><td class='mono'>%s</td></tr><tr><td>orders/risk/execution</td><td class='mono'>%s/%s/%s</td></tr><tr><td>risk_proc/execution_proc</td><td class='mono'>%s/%s</td></tr></table></div>"
++        "<div class='panel'><h3>3. STRATEGY STATE</h3><table><tr><td>action</td><td class='mono'>%s</td></tr><tr><td>reason</td><td class='mono'>%s</td></tr><tr><td>family/side</td><td class='mono'>%s/%s</td></tr><tr><td>failed_stage</td><td class='mono'>%s</td></tr><tr><td>blocker</td><td class='mono'>%s</td></tr><tr><td>candidate_count</td><td class='mono'>%s</td></tr></table></div>"
++        "<div class='panel'><h3>4. LANE X FOCUS — MIST PUT</h3><pre class='mono'>%s</pre><p class='mono'>diagnostic only; never production candidate</p></div>"
++        esc(safety_state), esc(safety_msg), esc(orders), esc(risk_stream), esc(execution_stream), esc(risk_proc), esc(execution_proc),
++        esc(latest_action), esc(latest_reason), esc(latest_family), esc(latest_side), esc(latest_failed), esc(latest_blocker), esc(candidate_count),
+
+### FILE=app/mme_scalpx/replay/strategy_adapter.py
+--- a/app/mme_scalpx/replay/strategy_adapter.py
++++ b/app/mme_scalpx/replay/strategy_adapter.py
+@@ -142,7 +142,12 @@ def build_replay_strategy_candidates(
+-                "candidate_present": bool(surface),
++                # R31A_R9F_R8_STRICT_CANDIDATE_PRESENT_TRUTH
++                # surface_available is observability; candidate_present is strict tradable truth.
++                "candidate_present_raw": bool(surface),
++                "candidate_present": bool(eligible),
++                "candidate_truth_mode": "strict_eligible_no_blockers_positive_score",
+
+### FILE=app/mme_scalpx/services/feature_family/misb_surface.py
+--- a/app/mme_scalpx/services/feature_family/misb_surface.py
++++ b/app/mme_scalpx/services/feature_family/misb_surface.py
+@@ -526,6 +526,30 @@ def build_misb_branch_surface(
+
+### FILE=app/mme_scalpx/services/features.py
+--- a/app/mme_scalpx/services/features.py
++++ b/app/mme_scalpx/services/features.py
+@@ -1130,6 +1130,9 @@ class FeatureEngine:
+@@ -1521,6 +1524,95 @@ class FeatureEngine:
++        Additive only: this producer does not force tradability, candidates,
++        paper, execution, order routing, or MISO readiness. It supplies response
++            _pick(raw, "option_symbol", "trading_symbol", "symbol", "instrument_key", "instrument_token")
++        token = _safe_str(_pick(raw, "instrument_token", "token"))
+@@ -1592,6 +1684,30 @@ class FeatureEngine:
+@@ -1627,6 +1743,19 @@ class FeatureEngine:
+@@ -8794,3 +8923,831 @@ if not globals().get("_R38ZF_FUTURES_RECEIVE_CLOCK_PATCH_INSTALLED", False):
++# - No candidate forcing.
++# - No paper/live/risk/execution/order enablement.
++# not force candidates, thresholds, MISO readiness, paper, execution, or orders.
++            _safe_str(_pick(out_map, "option_symbol", "trading_symbol", "symbol", "instrument_key", "instrument_token")),
++            _safe_str(_pick(raw_map, "option_symbol", "trading_symbol", "symbol", "instrument_key", "instrument_token")),
++#   surface + common futures contract block.
++# - no forced candidate
++# - no paper/live/order/risk/execution enablement
++            "instrument_key",
++            "instrument_token",
++# - no forced candidate
++# - no paper/live/order/risk/execution enablement
++            "instrument_key",
++            "instrument_token",
++# It does not change thresholds, does not force candidates, and does not weaken MISO.
+
+### FILE=app/mme_scalpx/services/strategy.py
+--- a/app/mme_scalpx/services/strategy.py
++++ b/app/mme_scalpx/services/strategy.py
+@@ -94,6 +94,31 @@ except NameError:
+@@ -717,6 +742,7 @@ class StrategyFamilyConsumerBridge:
+@@ -1279,6 +1305,7 @@ def build_strategy_consumer_view(
+
+### FILE=bin/replay_run.py
+--- a/bin/replay_run.py
++++ b/bin/replay_run.py
+@@ -30,6 +30,7 @@ assert_replay_module_static_safety(__file__)
+@@ -1676,6 +1677,149 @@ def build_feature_frames_from_feed_requests(
++    # R31A_R9F_R1_AST_FEATURE_FRAME_ENRICHMENT
++    # Does not force candidates, tune thresholds, weaken MISO, or touch live/order paths.
++                "surface_kind": "replay_r26_micro_futures_kinetics",
++                "replay_surface_reconstruction": "R31A_R9F_R1",
++                "surface_kind": "replay_r27_prior_micro_shelf",
++                "replay_surface_reconstruction": "R31A_R9F_R1",
++        _mist_call.update({"surface_kind": "mist_surface", "side": "CALL", "trend_confirmed": bool(latest_fut_surface.get("trend_up")), "futures_impulse_ok": bool(latest_fut_surface.get("futures_impulse_ok")), "pullback_detected": False, "resume_confirmed": False, "micro_trap_flag": False, "replay_surface_reconstruction": "R31A_R9F_R1"})
++        _mist_put.update({"surface_kind": "mist_surface", "side": "PUT", "trend_confirmed": bool(latest_fut_surface.get("trend_down")), "futures_impulse_ok": bool(latest_fut_surface.get("futures_impulse_ok")), "pullback_detected": False, "resume_confirmed": False, "micro_trap_flag": False, "replay_surface_reconstruction": "R31A_R9F_R1"})
++        _misb_call.update({"surface_kind": "misb_surface", "side": "CALL", "replay_surface_reconstruction": "R31A_R9F_R1"})
++        _misb_put.update({"surface_kind": "misb_surface", "side": "PUT", "replay_surface_reconstruction": "R31A_R9F_R1"})
++            "MISC": {"CALL": {"surface_kind": "misc_surface", "side": "CALL", "replay_surface_reconstruction": "R31A_R9F_R1"}, "PUT": {"surface_kind": "misc_surface", "side": "PUT", "replay_surface_reconstruction": "R31A_R9F_R1"}},
++            "MISR": {"CALL": {"surface_kind": "misr_surface", "side": "CALL", "replay_surface_reconstruction": "R31A_R9F_R1"}, "PUT": {"surface_kind": "misr_surface", "side": "PUT", "replay_surface_reconstruction": "R31A_R9F_R1"}},
++            "MISO": {"CALL": {"surface_kind": "miso_surface", "side": "CALL", "provider_ready_miso": False, "replay_surface_reconstruction": "R31A_R9F_R1"}, "PUT": {"surface_kind": "miso_surface", "side": "PUT", "provider_ready_miso": False, "replay_surface_reconstruction": "R31A_R9F_R1"}},
++        _row["replay_feature_bridge_version"] = "v3_event_normalized_r31a_r9f_r1_enriched"
++            _row["metadata"]["replay_feature_bridge_version"] = "v3_event_normalized_r31a_r9f_r1_enriched"
+@@ -1730,7 +1874,7 @@ def _resolve_strategy_action(frame: Mapping[str, Any]) -> tuple[str, str]:
+@@ -1769,6 +1913,21 @@ def build_strategy_decisions_from_feature_frames(
++    candidate_visible = bool(decision.get("candidate") or decision.get("candidate_present"))
++    if action == "ENTRY" and candidate_visible:
+@@ -1791,6 +1950,285 @@ def _resolve_risk_verdict(decision: Mapping[str, Any]) -> tuple[str, bool, str]:
++    R31A_R9B_REPLAY_FAMILY_STRATEGY_ADAPTER_BRIDGE.
++    Narrow replay-only bridge repair:
++    - first attempts the existing replay strategy adapter;
++    - preserves the previous generic replay bridge as fallback;
++    - does not create candidates;
++    - does not start risk/execution/order paths;
++                    _row.setdefault("replay_family_bridge_status", "disabled_by_env")
++                    _row.setdefault("replay_family_bridge_fallback_used", True)
++                    _row.setdefault("replay_family_bridge_adapter_invoked", False)
++                _row.setdefault("replay_family_bridge_status", "no_feature_frames_argument")
++                _row.setdefault("replay_family_bridge_fallback_used", True)
++                _row.setdefault("replay_family_bridge_adapter_invoked", False)
++    run_id = kwargs.get("run_id") or kwargs.get("run_label") or "replay_family_bridge"
++        from app.mme_scalpx.replay.strategy_adapter import build_replay_strategy_decision_payload as _r31a_strategy_adapter
++                _row.setdefault("replay_family_bridge_status", "adapter_import_failed")
++                _row.setdefault("replay_family_bridge_error", type(exc).__name__)
++                _row.setdefault("replay_family_bridge_fallback_used", True)
++                _row.setdefault("replay_family_bridge_adapter_invoked", False)
++                candidate = getattr(value, attr)
++            if isinstance(candidate, Mapping):
++                return dict(candidate)
++                base.setdefault("replay_family_bridge_status", "adapter_empty_payload")
++                base.setdefault("replay_family_bridge_fallback_used", True)
++                base.setdefault("replay_family_bridge_adapter_invoked", True)
++            # Do not manufacture candidate truth. Only normalize provenance.
++            # R31A_R9K_R6_EXACT_MERGED_APPEND_TOP_LEVEL_CANDIDATE_PROPAGATION
++            # Promote only already-strict nested family candidates before adapted_rows append.
++            def _r31a_r9k_r6_candidate_list(container: Any) -> list[dict[str, Any]]:
++                candidates = container.get("candidates")
++                if isinstance(candidates, tuple):
++                    candidates = list(candidates)
++                if isinstance(candidates, list):
++                    return [c for c in candidates if isinstance(c, dict)]
++                cj = container.get("candidate_json")
++            _r31a_r9k_r6_all.extend(_r31a_r9k_r6_candidate_list(merged))
++            _r31a_r9k_r6_all.extend(_r31a_r9k_r6_candidate_list(merged.get("decision_payload")))
++                    _r31a_r9k_r6_bool(_cand.get("candidate_present"))
++            merged["nested_candidate_report_count"] = len(_r31a_r9k_r6_all)
++            merged["strict_candidate_count"] = len(_r31a_r9k_r6_strict)
++            merged["top_level_candidate_propagation_version"] = "R31A_R9K_R6"
++                merged["candidate"] = True
++                merged["candidate_present"] = True
++                merged["candidate_fallback"] = True
++                merged["candidate_score"] = _score
++                merged["reason"] = "strict_nested_family_candidate_promoted"
++                merged["candidate_source"] = "nested_family_candidate"
++                merged["candidate_truth_mode"] = "strict_nested_eligible_no_blockers_positive_score"
++                merged["selected_family_candidate_json"] = dict(_best)
++                    merged["decision_payload"]["candidate"] = True
++                    merged["decision_payload"]["candidate_present"] = True
++                    merged["decision_payload"]["candidate_fallback"] = True
++                    merged["decision_payload"]["candidate_score"] = _score
++                    merged["decision_payload"]["reason"] = "strict_nested_family_candidate_promoted"
++                    merged["decision_payload"]["candidate_source"] = "nested_family_candidate"
++                    merged["decision_payload"]["candidate_truth_mode"] = "strict_nested_eligible_no_blockers_positive_score"
++                merged.setdefault("candidate", False)
++                merged.setdefault("candidate_present", False)
++                merged.setdefault("candidate_fallback", False)
++                merged.setdefault("candidate_truth_mode", "no_strict_nested_candidate")
++                merged.setdefault("top_level_candidate_propagation_status", "no_strict_nested_candidate")
++            merged.setdefault("replay_family_bridge_status", "adapter_payload_used")
++            merged.setdefault("replay_family_bridge_fallback_used", False)
++            merged.setdefault("replay_family_bridge_adapter_invoked", True)
++            merged.setdefault("replay_family_bridge_version", "R31A_R9B")
++            base.setdefault("replay_family_bridge_status", "adapter_exception_fallback")
++            base.setdefault("replay_family_bridge_error", type(exc).__name__)
++            base.setdefault("replay_family_bridge_fallback_used", True)
++            base.setdefault("replay_family_bridge_adapter_invoked", True)
++            base.setdefault("replay_family_bridge_version", "R31A_R9B")
++                _row.setdefault("replay_family_bridge_status", "all_adapter_attempts_fell_back")
++                _row.setdefault("replay_family_bridge_fallback_used", True)
+
+### FILE=data/instruments/nfo_instruments.csv
+--- a/data/instruments/nfo_instruments.csv
++++ b/data/instruments/nfo_instruments.csv
+@@ -56,18 +56,18 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -185,9 +185,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -223,9 +223,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -244,9 +244,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -334,9 +334,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -352,9 +352,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -465,9 +465,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -522,9 +522,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -535,9 +535,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -598,9 +598,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -640,454 +640,40 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -1161,36 +747,36 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -1237,37 +823,55 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -1329,36 +933,36 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -1397,37 +1001,63 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -1536,36 +1166,36 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -1690,37 +1320,341 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -1794,36 +1728,36 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -1892,211 +1826,249 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -2105,8 +2077,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -2117,96 +2089,96 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -2237,40 +2209,40 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -2300,37 +2272,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -2387,37 +2359,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -2573,8 +2545,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -2767,37 +2739,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -2909,8 +2881,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -3055,230 +3027,262 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -3381,80 +3385,83 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -3473,37 +3480,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -3512,8 +3519,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -3543,8 +3548,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -3557,116 +3562,120 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -3693,172 +3702,180 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -3867,11 +3884,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -3883,124 +3898,54 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4025,47 +3970,43 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4079,12 +4020,12 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4099,7 +4040,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4113,33 +4053,23 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4149,145 +4079,155 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4307,8 +4247,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4324,125 +4264,114 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4465,44 +4394,60 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4520,50 +4465,48 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4580,152 +4523,161 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4734,43 +4686,57 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4788,84 +4754,114 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4892,63 +4888,59 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -4958,70 +4950,66 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5036,178 +5024,218 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5222,44 +5250,51 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5278,43 +5313,42 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5329,80 +5363,100 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5427,60 +5481,64 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5499,69 +5557,54 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5570,15 +5613,19 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5595,6 +5642,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5607,18 +5656,16 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5649,41 +5696,47 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5697,50 +5750,57 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5748,71 +5808,92 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5826,10 +5907,10 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5840,75 +5921,73 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5925,16 +6004,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -5963,39 +6032,45 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6003,57 +6078,55 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6065,16 +6138,22 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6099,126 +6178,133 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6237,8 +6323,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6270,73 +6354,69 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6351,37 +6431,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6397,8 +6477,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6427,54 +6507,54 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6487,20 +6567,31 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6533,43 +6624,47 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6581,10 +6676,10 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6598,48 +6693,50 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6655,14 +6752,21 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6685,210 +6789,246 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6923,10 +7063,14 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6947,10 +7091,16 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -6973,43 +7123,39 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7027,516 +7173,830 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7546,58 +8006,84 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7612,39 +8098,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7652,7 +8136,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7660,53 +8143,58 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7714,38 +8202,50 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7780,7 +8280,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7790,7 +8289,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7841,8 +8339,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7854,14 +8350,19 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7880,45 +8381,46 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7930,19 +8432,18 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7950,39 +8451,38 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -7990,94 +8490,131 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8085,37 +8622,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8124,26 +8630,28 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8151,46 +8659,79 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8198,119 +8739,140 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8319,86 +8881,77 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8419,53 +8972,47 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8477,76 +9024,90 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8571,41 +9132,51 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8621,20 +9192,20 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8645,36 +9216,22 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8699,14 +9256,24 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8747,8 +9314,12 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8781,100 +9352,117 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8893,61 +9481,53 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -8959,94 +9539,114 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9079,56 +9679,53 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9139,175 +9736,209 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9322,246 +9953,262 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9569,50 +10216,50 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9627,47 +10274,57 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9680,59 +10337,56 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9753,47 +10407,48 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9801,74 +10456,91 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9893,49 +10565,46 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9949,12 +10618,12 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9967,11 +10636,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -9980,52 +10647,43 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10043,18 +10701,22 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10065,16 +10727,14 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10107,37 +10767,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10157,53 +10817,66 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10211,89 +10884,90 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10305,66 +10979,79 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10383,108 +11070,135 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10503,45 +11217,49 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10555,74 +11273,88 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10651,37 +11383,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10689,15 +11421,12 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10711,76 +11440,102 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10803,164 +11558,194 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -10989,44 +11774,69 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11035,74 +11845,81 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11125,38 +11942,49 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11171,157 +11999,160 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11331,92 +12162,119 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11439,118 +12297,126 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11571,39 +12437,38 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11611,7 +12476,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11621,10 +12485,10 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11649,87 +12513,95 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11755,43 +12627,41 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11809,10 +12679,10 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11823,71 +12693,57 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11903,14 +12759,18 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11919,18 +12779,14 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -11959,37 +12815,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12000,12 +12856,9 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12013,18 +12866,18 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12033,149 +12886,157 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12183,70 +13044,74 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12271,37 +13136,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12321,16 +13186,16 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12353,37 +13218,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12392,8 +13257,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12403,30 +13266,46 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12457,53 +13336,45 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12513,14 +13384,14 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12539,100 +13410,108 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12663,202 +13542,202 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12886,22 +13765,22 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12910,7 +13789,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -12918,321 +13796,165 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13245,62 +13967,76 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13317,69 +14053,77 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13412,14 +14156,24 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13455,86 +14209,132 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13693,10 +14493,36 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13785,36 +14611,46 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13831,8 +14667,12 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13841,6 +14681,12 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13855,44 +14701,46 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13909,54 +14757,68 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -13975,59 +14837,55 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14039,12 +14897,12 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14060,14 +14918,11 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14079,43 +14934,39 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14128,17 +14979,19 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14147,8 +15000,12 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14159,118 +15016,122 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14281,76 +15142,104 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14373,61 +15262,74 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14435,240 +15337,244 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14691,70 +15597,65 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14769,70 +15670,82 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14861,45 +15774,40 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14907,7 +15815,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -14919,141 +15826,165 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15065,14 +15996,14 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15089,11 +16020,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15101,110 +16029,100 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15239,66 +16157,86 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15317,37 +16255,41 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15363,80 +16305,86 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15457,37 +16405,37 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15497,11 +16445,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15517,102 +16462,140 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15639,51 +16622,69 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15701,16 +16702,16 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15719,6 +16720,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15727,47 +16730,69 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -15779,275 +16804,513 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -16081,24 +17344,26 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -16111,44 +17376,42 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -16159,108 +17422,120 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -16270,197 +17545,237 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -16468,7 +17783,6 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -16478,57 +17792,58 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -16537,6 +17852,8 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -16544,18 +17861,30 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -16584,60 +17913,68 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+@@ -16650,141 +17987,170 @@ instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick
+
+## Ownership classifier
+{
+  "by_label": {
+    "CANDIDATE_RISK_EXECUTION": [
+      "app/mme_scalpx/ops_dashboard/server.py",
+      "app/mme_scalpx/replay/strategy_adapter.py",
+      "app/mme_scalpx/services/feature_family/misb_surface.py",
+      "app/mme_scalpx/services/features.py",
+      "app/mme_scalpx/services/strategy.py",
+      "bin/replay_run.py",
+      "app/mme_scalpx/replay/miv_research_evaluator.py",
+      "app/mme_scalpx/services/strategy_family/internal_order_intent_pipeline.py",
+      "app/mme_scalpx/services/strategy_family/miv_r_contract.py",
+      "bin/audit_miv_r1b_gate_surfaces_no_patch_no_replay_no_order.py",
+      "bin/audit_miv_r2b_evaluator_output_shape_no_patch_no_replay_no_order.py",
+      "bin/lane_x_r32i_materialize_internal_order_intent_from_replay_results_no_broker.py",
+      "bin/lane_x_shadow_near_candidate_observer.py",
+      "bin/proof_miv_r1a_strategy_family_dormant_contract_no_replay_no_order.py",
+      "bin/proof_miv_r2_zerodha_lite_research_evaluator_no_replay_no_order.py",
+      "bin/proof_miv_r2c_neutral_label_route_no_patch_no_replay_no_order.py",
+      "bin/proof_r32d_internal_order_intent_pipeline_no_broker.py",
+      "bin/proof_r32g_real_candidate_hold_normalizer_no_broker.py",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260604_151929.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260604_203023.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260605_152027.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260608_152347.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260609_151625.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653.md",
+      "docs/milestones/LANE-B-R1A_RECOVER_R1_SURFACE_AUDIT_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_121122.md",
+      "docs/milestones/LANE-B-R1_REPLAY_SURFACE_BASELINE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_120747.md",
+      "docs/milestones/LANE-B-R2A_REPLAY_DATASET_AND_PREVIOUS_RUN_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_134930.md",
+      "docs/milestones/LANE-B-R2B_REPLAY_CLI_ABI_AND_EXACT_SMOKE_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_135114.md",
+      "docs/milestones/LANE-B-R2C_EXACT_A7_20260602_OFFLINE_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_135738.md",
+      "docs/milestones/LANE-B-R2D_R2C_REPLAY_ARTIFACT_SHAPE_COUNT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140338.md",
+      "docs/milestones/LANE-B-R2E1_FINGERPRINT_PROVENANCE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141109.md",
+      "docs/milestones/LANE-B-R2E_COMPARE_R2C_VS_B3R61D_REPLAY_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140836.md",
+      "docs/milestones/LANE-B-R2F-R1_INTERRUPTED_REPLAY_FREEZE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r2f_heredoc_created_no_replay_no_order_no_side_effect_20260607_141459.md",
+      "docs/milestones/LANE-B-R2F2_CORRECTED_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141428.md",
+      "docs/milestones/LANE-B-R2F_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r1_to_r2e1_a7_single_day_replay_reproducibility_with_fingerprint_caveat_20260607_141320.md",
+      "docs/milestones/LANE-B-R3A_EXACT_RISK_EXECUTION_SHADOW_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141805.md",
+      "docs/milestones/LANE-B-R3B_FILL_MODEL_ABI_AND_R4_COMMAND_CORRECTION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141930.md",
+      "docs/milestones/LANE-B-R3_RISK_EXECUTION_SHADOW_PNL_READINESS_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141540.md",
+      "docs/milestones/LANE-B-R4A2_CORRECTED_SHADOW_PNL_NO_TRADE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143017.md",
+      "docs/milestones/LANE-B-R4A_SHADOW_PNL_NO_TRADE_ARTIFACT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_142909.md",
+      "docs/milestones/LANE-B-R4_A7_20260602_RISK_EXECUTION_SHADOW_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_142249.md",
+      "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143301.md",
+      "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143419.md",
+      "docs/milestones/LANE-B-R5B_BASELINE_VS_SHADOW_PATCH_IMPACT_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143653.md",
+      "docs/milestones/LANE-B-R5C_BASELINE_SHADOW_DRY_RUN_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143758.md",
+      "docs/milestones/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907.md",
+      "docs/milestones/LANE-B-R5E_COMPARE_BASELINE_SHADOW_PATCH_IMPACT_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154016.md",
+      "docs/milestones/LANE-B-R5F_FINAL_PATCH_IMPACT_AND_PNL_ROUTE_DECISION_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154208.md",
+      "docs/milestones/LANE-B-R5_FIND_VALID_CANDIDATE_OR_PATCH_IMPACT_REPLAY_ROUTE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143108.md",
+      "docs/milestones/LANE-B-R6A_STRATEGY_PNL_WAIT_STATE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154637.md",
+      "docs/milestones/LANE-B-R6B_WAIT_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154920.md",
+      "docs/milestones/LANE-B-R6_CANDIDATE_POSITIVE_DATASET_ADMISSION_GATE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154426.md",
+      "docs/milestones/LANE-MIV-LIVE-R1_OBSERVE_ONLY_CAPTURE_START_REUSE_AND_MIV_PERCENT_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_market_live_start_or_reuse_observe_only_capture_for_miv_r_after_close_percent_result_20260612_093653.md",
+      "docs/milestones/LANE-MIV-LIVE-R2_60SEC_DURABLE_TAPE_GROWTH_RECHECK_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_confirm_live_futures_and_selected_option_durable_capture_growth_after_r1_zero_short_window_20260612_093804.md",
+      "docs/milestones/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011.md",
+      "docs/milestones/LANE-MIV-LIVE-R4_READONLY_PROVIDER_FEED_LOCK_DIAG_NO_PATCH_NO_START_NO_STOP_NO_ORDER_diagnose_why_pauto_start_rc0_but_durable_fut_opt_tape_not_growing_without_start_stop_delete_20260612_094337.md",
+      "docs/milestones/LANE-MIV-LIVE-R5_READONLY_MIV_NON_APPEARANCE_AUDIT_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_explain_why_miv_like_count_zero_and_find_registry_selector_source_seam_without_runtime_interference_20260612_133037.md",
+      "docs/milestones/LANE-MIV-LIVE-R7B_ZERO_CANDIDATE_ROOT_CAUSE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_101611.md",
+      "docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030_R7F_corrected_truth_freeze.md",
+      "docs/milestones/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711.md",
+      "docs/milestones/LANE-MIV-R1B_GATE_SURFACE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_candidate_hold_runtime_disabled_classic_runtime_disabled_risk_execution_shadow_and_order_intent_gates_before_miv_evaluator_patch_20260611_231807.md",
+      "docs/milestones/LANE-MIV-R2B_EVALUATOR_OUTPUT_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_miv_r2_evaluator_outputs_with_real_timestamp_paths_neutral_label_and_blocker_cases_20260611_232406.md",
+      "docs/milestones/LANE-MIV-R2C_NEUTRAL_LABEL_ROUTE_PROOF_NO_PATCH_NO_REPLAY_NO_ORDER_prove_neutral_active_label_emits_as_label_only_and_never_routes_to_risk_execution_order_intent_20260611_232522.md",
+      "docs/milestones/LANE-MIV-R2_ZERODHA_LITE_RESEARCH_EVALUATOR_PATCH_NO_REPLAY_NO_ORDER_add_replay_research_only_miv_zerodha_lite_evaluator_and_artifact_writer_without_registry_or_gate_mutation_20260611_232250.md",
+      "docs/milestones/LANE-MIV-R3A_RESUME_AUDIT_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_audit_current_miv_work_preserve_good_modules_then_run_miv_evaluator_on_existing_artifact_rows_only_20260611_233045.md",
+      "docs/milestones/LANE-MIV-R3B-R0_INTERRUPTED_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3b_paste_did_not_run_replay_order_risk_execution_or_mutate_source_20260611_233932.md",
+      "docs/milestones/LANE-MIV-R3B_CONTENT_BASED_TICK_SURFACE_LOCATOR_AND_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_locate_real_futures_selected_option_tick_or_feature_rows_by_content_then_run_miv_evaluator_without_replay_20260611_233308.md",
+      "docs/milestones/LANE-MIV-R3C_DURABLE_CAPTURE_PAIR_EVAL_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_latest_durable_fut_and_selected_option_tape_to_generate_miv_candidates_for_tomorrow_measurement_path_20260611_234126.md",
+      "docs/milestones/LANE-MIV-R3_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_run_miv_zerodha_lite_evaluator_on_existing_r9h_r9l_r9x_artifact_rows_only_no_full_replay_20260611_232902.md",
+      "docs/milestones/LANE-MIV-R4-R0_INTERRUPTED_R3C_R4_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3c_r4_paste_created_no_replay_no_order_no_risk_execution_side_effect_20260611_234607.md",
+      "docs/milestones/LANE-MIV-R4-R2_COMPACT_MEASUREMENT_BUILDER_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_r4r1_located_fut_opt_tapes_build_miv_candidates_ledgers_and_shadow_percent_summary_20260611_234841.md",
+      "docs/milestones/LANE-MIV-R4-R3_AFTERMARKET_PERCENT_READINESS_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r4r2_measurement_pipeline_pass_and_tomorrow_percent_result_checklist_20260611_235103.md",
+      "docs/milestones/LANE-MIV-R4_AFTERMARKET_MEASUREMENT_PIPELINE_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_generate_miv_candidates_internal_ledgers_shadow_percent_readiness_for_tomorrow_observe_only_result_20260611_234406.md",
+      "docs/milestones/LANE-X-CLOSE-R1_PSEAL_LOCATOR_OR_CLOSE_EVIDENCE_FALLBACK_NO_PATCH_NO_ORDER_recover_from_pseal_command_not_found_and_seal_or_bundle_close_evidence_20260608_152333.md",
+      "docs/milestones/LANE-X-CLOSE-R2B_REPAIR_CLOSE_R2_REPORT_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_repair_report_handoff_bundle_after_close_r2_python_report_writer_nameerror_20260608_155959.md",
+      "docs/milestones/LANE-X-CLOSE-R3_FINALIZE_20260609_PSEAL_NO_PATCH_NO_REPLAY_NO_ORDER_finalize_today_pseal_pass_and_create_handoff_bundle_20260609_152423.md",
+      "docs/milestones/LANE-X-CLOSE-R3_corrected_pseal_completion_finalizer_20260604_152311.md",
+      "docs/milestones/LANE-X-CLOSE-R5_verify_r4_post_r11_pseal_completion_20260604_203209.md",
+      "docs/milestones/LANE-X-CLOSE-R5_verify_r4_post_r11_pseal_completion_20260604_203215.md"
+    ],
+    "DASHBOARD": [
+      "app/mme_scalpx/ops_dashboard/server.py",
+      "bin/lane_x_shadow_near_candidate_observer.py",
+      "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143301.md",
+      "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143419.md",
+      "docs/milestones/LANE-X-CLOSE-R1_PSEAL_LOCATOR_OR_CLOSE_EVIDENCE_FALLBACK_NO_PATCH_NO_ORDER_recover_from_pseal_command_not_found_and_seal_or_bundle_close_evidence_20260608_152333.md",
+      "docs/milestones/LANE-X-DASH-R1_dashboard_lane_evidence_bundle_no_patch_no_order_20260604_230829.md",
+      "docs/milestones/LANE-X-DASH-R2A_SOURCE_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_audit_existing_dashboard_r3h_lite_source_lane_x_inputs_and_patch_needles_20260604_231059.md",
+      "docs/milestones/LANE-X-DASH-R2B-CONFIRM_READ_ONLY_AFTER_CUT_PATCH_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_confirm_whether_cut_r2b_patch_changed_dashboard_source_or_not_20260604_231421.md",
+      "docs/milestones/LANE-X-DASH-R2B-TINY-SEAL_STATIC_OBSERVE_PANEL_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_seal_existing_lx_tiny_source_markers_compile_import_ast_safety_20260604_232058.md",
+      "docs/milestones/LANE-X-DASH-R2C_RUNTIME_SEAL_LX_TINY_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_lane_x_observe_page_markers_20260604_232202.md",
+      "docs/milestones/LANE-X-DASH-R3A_SIMPLIFY_DYNAMIC_TRUTH_BOARD_PLAN_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_plan_replace_complex_static_lane_x_panel_with_simple_dynamic_truth_board_20260612_102214.md",
+      "docs/milestones/LANE-X-DASH-R3C_RUNTIME_SEAL_DYNAMIC_TRUTH_BOARD_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_r3b_dynamic_truth_board_20260612_102624.md",
+      "docs/milestones/LANE-X-DASH-R3D_ERROR_TRUTH_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_classify_current_review_errors_as_active_or_historical_before_dashboard_next_action_refine_20260612_103027.md",
+      "docs/milestones/LANE-X-DASH-R3E_REFINE_NEXT_ACTION_FRESH_ERROR_ONLY_NO_REDIS_WRITE_NO_START_NO_ORDER_NO_PAPER_20260612_103200.md",
+      "docs/milestones/LANE-X-DASH-R3F_RUNTIME_SEAL_R3E_FRESH_ERROR_NEXT_ACTION_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_verify_next_action_no_longer_overwarns_on_historical_errors_20260612_103331.md",
+      "docs/milestones/LANE-X-R24B_shadow_near_candidate_observer_helper_no_production_candidate_no_order_20260604_230313.md",
+      "docs/milestones/LANE-X-R24C_post_r24b_shadow_near_candidate_finalizer_no_patch_no_order_20260604_230456.md",
+      "docs/milestones/LANE-X-R31A-R9T-R3A_ALLOWLISTED_DIRTY_TREE_MUTABLEMAPPING_IMPORT_PATCH_AND_FOCUS_SMOKE_NO_REPLAY_NO_ORDER_allow_expected_dirty_lane_files_patch_only_replay_run_mutablemapping_import_verify_bridge_focus_20260607_223735.md",
+      "docs/milestones/LANE-X-R31B_ACCEPT_LANE_B_WAIT_STATE_AND_MONDAY_CANDIDATE_POSITIVE_PLAN_NO_PATCH_NO_START_NO_ORDER_20260607_155806.md",
+      "docs/milestones/LANE-X-R31C_MONDAY_OBSERVE_ONLY_PREMARKET_SAFETY_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_20260607_175928.md",
+      "docs/milestones/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933.md",
+      "docs/milestones/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312.md",
+      "docs/runbooks/LANE-X-DASH-R2A_SOURCE_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_audit_existing_dashboard_r3h_lite_source_lane_x_inputs_and_patch_needles_20260604_231059_runbook.md",
+      "docs/runbooks/LANE-X-DASH-R2B-CONFIRM_READ_ONLY_AFTER_CUT_PATCH_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_confirm_whether_cut_r2b_patch_changed_dashboard_source_or_not_20260604_231421_runbook.md",
+      "docs/runbooks/LANE-X-DASH-R2B-TINY-SEAL_STATIC_OBSERVE_PANEL_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_seal_existing_lx_tiny_source_markers_compile_import_ast_safety_20260604_232058_runbook.md",
+      "docs/runbooks/LANE-X-DASH-R2C_RUNTIME_SEAL_LX_TINY_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_lane_x_observe_page_markers_20260604_232202_runbook.md",
+      "docs/runbooks/LANE-X-DASH-R3A_SIMPLIFY_DYNAMIC_TRUTH_BOARD_PLAN_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_plan_replace_complex_static_lane_x_panel_with_simple_dynamic_truth_board_20260612_102214_runbook.md",
+      "docs/runbooks/LANE-X-DASH-R3C_RUNTIME_SEAL_DYNAMIC_TRUTH_BOARD_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_r3b_dynamic_truth_board_20260612_102624_runbook.md",
+      "docs/runbooks/LANE-X-DASH-R3D_ERROR_TRUTH_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_classify_current_review_errors_as_active_or_historical_before_dashboard_next_action_refine_20260612_103027_runbook.md",
+      "docs/runbooks/LANE-X-DASH-R3E_REFINE_NEXT_ACTION_FRESH_ERROR_ONLY_NO_REDIS_WRITE_NO_START_NO_ORDER_NO_PAPER_20260612_103200_runbook.md",
+      "docs/runbooks/LANE-X-DASH-R3F_RUNTIME_SEAL_R3E_FRESH_ERROR_NEXT_ACTION_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_verify_next_action_no_longer_overwarns_on_historical_errors_20260612_103331_runbook.md",
+      "docs/runbooks/LANE-X-R28A_weekend_consolidated_finalizer_monday_observe_checklist_no_patch_no_order_20260607_121432_monday_observe_only_runbook.md"
+    ],
+    "EVIDENCE_DOCS": [
+      "app/mme_scalpx/ops_dashboard/server.py",
+      "bin/audit_miv_r2b_evaluator_output_shape_no_patch_no_replay_no_order.py",
+      "bin/lane_x_r32i_materialize_internal_order_intent_from_replay_results_no_broker.py",
+      "bin/proof_miv_r2_zerodha_lite_research_evaluator_no_replay_no_order.py",
+      "bin/proof_miv_r2c_neutral_label_route_no_patch_no_replay_no_order.py",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260604_151929.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260604_203023.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260605_152027.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260608_152347.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260609_151625.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315.md",
+      "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653.md",
+      "docs/milestones/B4-R5P-V1_MICRO_SHELF_PATCH_VERIFY_FINALIZE_NO_START_NO_ORDER_20260603_234959.md",
+      "docs/milestones/B4-R5P-V2_MICRO_SHELF_CONTRACT_PASSTHROUGH_SELFTEST_NO_START_NO_ORDER_20260603_235105.md",
+      "docs/milestones/B4-R5P-V3_MISB_SHELF_CONSUMER_SELFTEST_NO_START_NO_ORDER_20260603_235205.md",
+      "docs/milestones/LANE-B-R1A_RECOVER_R1_SURFACE_AUDIT_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_121122.md",
+      "docs/milestones/LANE-B-R1_REPLAY_SURFACE_BASELINE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_120747.md",
+      "docs/milestones/LANE-B-R2A_REPLAY_DATASET_AND_PREVIOUS_RUN_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_134930.md",
+      "docs/milestones/LANE-B-R2B_REPLAY_CLI_ABI_AND_EXACT_SMOKE_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_135114.md",
+      "docs/milestones/LANE-B-R2C_EXACT_A7_20260602_OFFLINE_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_135738.md",
+      "docs/milestones/LANE-B-R2D_R2C_REPLAY_ARTIFACT_SHAPE_COUNT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140338.md",
+      "docs/milestones/LANE-B-R2E1_FINGERPRINT_PROVENANCE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141109.md",
+      "docs/milestones/LANE-B-R2E_COMPARE_R2C_VS_B3R61D_REPLAY_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140836.md",
+      "docs/milestones/LANE-B-R2F-R1_INTERRUPTED_REPLAY_FREEZE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r2f_heredoc_created_no_replay_no_order_no_side_effect_20260607_141459.md",
+      "docs/milestones/LANE-B-R2F2_CORRECTED_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141428.md",
+      "docs/milestones/LANE-B-R2F_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r1_to_r2e1_a7_single_day_replay_reproducibility_with_fingerprint_caveat_20260607_141320.md",
+      "docs/milestones/LANE-B-R3A_EXACT_RISK_EXECUTION_SHADOW_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141805.md",
+      "docs/milestones/LANE-B-R3B_FILL_MODEL_ABI_AND_R4_COMMAND_CORRECTION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141930.md",
+      "docs/milestones/LANE-B-R3_RISK_EXECUTION_SHADOW_PNL_READINESS_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141540.md",
+      "docs/milestones/LANE-B-R4A2_CORRECTED_SHADOW_PNL_NO_TRADE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143017.md",
+      "docs/milestones/LANE-B-R4A_SHADOW_PNL_NO_TRADE_ARTIFACT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_142909.md",
+      "docs/milestones/LANE-B-R4_A7_20260602_RISK_EXECUTION_SHADOW_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_142249.md",
+      "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143301.md",
+      "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143419.md",
+      "docs/milestones/LANE-B-R5B_BASELINE_VS_SHADOW_PATCH_IMPACT_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143653.md",
+      "docs/milestones/LANE-B-R5C_BASELINE_SHADOW_DRY_RUN_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143758.md",
+      "docs/milestones/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907.md",
+      "docs/milestones/LANE-B-R5E_COMPARE_BASELINE_SHADOW_PATCH_IMPACT_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154016.md",
+      "docs/milestones/LANE-B-R5F_FINAL_PATCH_IMPACT_AND_PNL_ROUTE_DECISION_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154208.md",
+      "docs/milestones/LANE-B-R5_FIND_VALID_CANDIDATE_OR_PATCH_IMPACT_REPLAY_ROUTE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143108.md",
+      "docs/milestones/LANE-B-R6A_STRATEGY_PNL_WAIT_STATE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154637.md",
+      "docs/milestones/LANE-B-R6B_WAIT_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154920.md",
+      "docs/milestones/LANE-B-R6_CANDIDATE_POSITIVE_DATASET_ADMISSION_GATE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154426.md",
+      "docs/milestones/LANE-MIV-LIVE-R1_OBSERVE_ONLY_CAPTURE_START_REUSE_AND_MIV_PERCENT_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_market_live_start_or_reuse_observe_only_capture_for_miv_r_after_close_percent_result_20260612_093653.md",
+      "docs/milestones/LANE-MIV-LIVE-R2_60SEC_DURABLE_TAPE_GROWTH_RECHECK_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_confirm_live_futures_and_selected_option_durable_capture_growth_after_r1_zero_short_window_20260612_093804.md",
+      "docs/milestones/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011.md",
+      "docs/milestones/LANE-MIV-LIVE-R4_READONLY_PROVIDER_FEED_LOCK_DIAG_NO_PATCH_NO_START_NO_STOP_NO_ORDER_diagnose_why_pauto_start_rc0_but_durable_fut_opt_tape_not_growing_without_start_stop_delete_20260612_094337.md",
+      "docs/milestones/LANE-MIV-LIVE-R5B_CORRECTED_MIV_APPEARANCE_SALVAGE_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_remove_r5_false_positive_headers_and_fix_durable_scan_to_prove_miv_absence_or_presence_20260612_133537.md",
+      "docs/milestones/LANE-MIV-LIVE-R5_INSTRUMENT_METADATA_STALE_ROUTE_LOCATOR_NO_PATCH_NO_START_NO_STOP_NO_ORDER_confirm_nfo_metadata_stale_root_cause_and_find_existing_safe_refresh_command_without_mutation_20260612_094836.md",
+      "docs/milestones/LANE-MIV-LIVE-R5_READONLY_MIV_NON_APPEARANCE_AUDIT_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_explain_why_miv_like_count_zero_and_find_registry_selector_source_seam_without_runtime_interference_20260612_133037.md",
+      "docs/milestones/LANE-MIV-LIVE-R6B_SEAL_COMPLETENESS_SALVAGE_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192433.md",
+      "docs/milestones/LANE-MIV-LIVE-R6C_ULTRASHORT_SEAL_FREEZE_NO_PY_HEREDOC_NO_PATCH_NO_ORDER_20260612_192603.md",
+      "docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192815.md",
+      "docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192847.md",
+      "docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192902.md",
+      "docs/milestones/LANE-MIV-LIVE-R6_MARKET_CLOSE_SEAL_COMPLETENESS_FINALIZER_NO_PATCH_NO_START_NO_STOP_NO_ORDER_verify_pseal_and_durable_capture_after_market_close_with_sha256_manifest_and_safety_20260612_192035.md",
+      "docs/milestones/LANE-MIV-LIVE-R7A_AFTER_CLOSE_MIV_PERCENT_MEASUREMENT_FROM_DURABLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260612_193239.md",
+      "docs/milestones/LANE-MIV-LIVE-R7B_ZERO_CANDIDATE_ROOT_CAUSE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_101611.md",
+      "docs/milestones/LANE-MIV-LIVE-R7C_RERUN_MIV_MEASUREMENT_WITH_REPO_PYTHONPATH_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_102742.md",
+      "docs/milestones/LANE-MIV-LIVE-R7D_RANK_BUCKET_THROTTLE_REPORT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103001.md",
+      "docs/milestones/LANE-MIV-LIVE-R7E_RANK_QUALITY_DECILE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103313.md",
+      "docs/milestones/LANE-MIV-LIVE-R7F_CORRECTED_RANK_QUALITY_ROW_ORDER_JOIN_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103628.md",
+      "docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030.md",
+      "docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030_R7F_corrected_truth_freeze.md",
+      "docs/milestones/LANE-MIV-LIVE-R7H_EXANTE_TIEBREAKER_DISCOVERY_REPORT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104206.md",
+      "docs/milestones/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711.md",
+      "docs/milestones/LANE-MIV-R1B_GATE_SURFACE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_candidate_hold_runtime_disabled_classic_runtime_disabled_risk_execution_shadow_and_order_intent_gates_before_miv_evaluator_patch_20260611_231807.md",
+      "docs/milestones/LANE-MIV-R2B_EVALUATOR_OUTPUT_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_miv_r2_evaluator_outputs_with_real_timestamp_paths_neutral_label_and_blocker_cases_20260611_232406.md",
+      "docs/milestones/LANE-MIV-R2C_NEUTRAL_LABEL_ROUTE_PROOF_NO_PATCH_NO_REPLAY_NO_ORDER_prove_neutral_active_label_emits_as_label_only_and_never_routes_to_risk_execution_order_intent_20260611_232522.md",
+      "docs/milestones/LANE-MIV-R2_ZERODHA_LITE_RESEARCH_EVALUATOR_PATCH_NO_REPLAY_NO_ORDER_add_replay_research_only_miv_zerodha_lite_evaluator_and_artifact_writer_without_registry_or_gate_mutation_20260611_232250.md",
+      "docs/milestones/LANE-MIV-R3A_RESUME_AUDIT_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_audit_current_miv_work_preserve_good_modules_then_run_miv_evaluator_on_existing_artifact_rows_only_20260611_233045.md",
+      "docs/milestones/LANE-MIV-R3B-R0_INTERRUPTED_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3b_paste_did_not_run_replay_order_risk_execution_or_mutate_source_20260611_233932.md",
+      "docs/milestones/LANE-MIV-R3B_CONTENT_BASED_TICK_SURFACE_LOCATOR_AND_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_locate_real_futures_selected_option_tick_or_feature_rows_by_content_then_run_miv_evaluator_without_replay_20260611_233308.md",
+      "docs/milestones/LANE-MIV-R3C_DURABLE_CAPTURE_PAIR_EVAL_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_latest_durable_fut_and_selected_option_tape_to_generate_miv_candidates_for_tomorrow_measurement_path_20260611_234126.md",
+      "docs/milestones/LANE-MIV-R3_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_run_miv_zerodha_lite_evaluator_on_existing_r9h_r9l_r9x_artifact_rows_only_no_full_replay_20260611_232902.md",
+      "docs/milestones/LANE-MIV-R4-R0_INTERRUPTED_R3C_R4_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3c_r4_paste_created_no_replay_no_order_no_risk_execution_side_effect_20260611_234607.md",
+      "docs/milestones/LANE-MIV-R4-R1_PRECISE_SIDE_EFFECT_AND_TAPE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_separate_false_positive_safety_text_from_real_process_danger_and_locate_durable_fut_opt_tapes_20260611_234725.md",
+      "docs/milestones/LANE-MIV-R4-R2_COMPACT_MEASUREMENT_BUILDER_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_r4r1_located_fut_opt_tapes_build_miv_candidates_ledgers_and_shadow_percent_summary_20260611_234841.md",
+      "docs/milestones/LANE-MIV-R4-R3_AFTERMARKET_PERCENT_READINESS_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r4r2_measurement_pipeline_pass_and_tomorrow_percent_result_checklist_20260611_235103.md",
+      "docs/milestones/LANE-MIV-R4_AFTERMARKET_MEASUREMENT_PIPELINE_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_generate_miv_candidates_internal_ledgers_shadow_percent_readiness_for_tomorrow_observe_only_result_20260611_234406.md"
+    ],
+    "INSTRUMENT_METADATA": [
+      "data/instruments/nfo_instruments.csv",
+      "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143301.md",
+      "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143419.md",
+      "docs/milestones/LANE-X-R31B_ACCEPT_LANE_B_WAIT_STATE_AND_MONDAY_CANDIDATE_POSITIVE_PLAN_NO_PATCH_NO_START_NO_ORDER_20260607_155806.md",
+      "docs/milestones/LANE-X-R31C_MONDAY_OBSERVE_ONLY_PREMARKET_SAFETY_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_20260607_175928.md",
+      "docs/milestones/LANE-X-R31D5A_OFFMARKET_FEED_DEAD_FREEZE_AND_SAFE_FEEDS_STOP_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_184214.md",
+      "docs/milestones/LANE-X-R31D5R_MARKET_LIVE_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_094825.md",
+      "docs/milestones/LANE-X-R31D5_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_183935.md",
+      "docs/milestones/LANE-X-R31D_OBSERVE_ONLY_START_REUSE_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_182433.md",
+      "docs/milestones/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933.md",
+      "docs/milestones/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312.md",
+      "docs/milestones/LANE-X-R33F_CONTROLLED_NFO_METADATA_REFRESH_NO_SERVICE_START_NO_ORDER_refresh_stale_nfo_instruments_csv_data_only_with_backup_and_validation_20260612_100558.md",
+      "docs/runbooks/LANE-MIV-LIVE-R5_INSTRUMENT_METADATA_STALE_ROUTE_LOCATOR_NO_PATCH_NO_START_NO_STOP_NO_ORDER_confirm_nfo_metadata_stale_root_cause_and_find_existing_safe_refresh_command_without_mutation_20260612_094836_runbook.md",
+      "docs/runbooks/LANE-X-R33F_CONTROLLED_NFO_METADATA_REFRESH_NO_SERVICE_START_NO_ORDER_refresh_stale_nfo_instruments_csv_data_only_with_backup_and_validation_20260612_100558_runbook.md"
+    ],
+    "INTERNAL_ORDER_INTENT": [
+      "app/mme_scalpx/services/strategy_family/internal_order_intent_pipeline.py",
+      "bin/lane_x_r32i_materialize_internal_order_intent_from_replay_results_no_broker.py",
+      "bin/proof_r32d_internal_order_intent_pipeline_no_broker.py",
+      "bin/proof_r32g_real_candidate_hold_normalizer_no_broker.py",
+      "docs/milestones/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933.md",
+      "docs/milestones/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312.md",
+      "docs/milestones/LANE-X-R32C-R2_FINALIZE_SERIOUS_GATE_OPENING_PLAN_FROM_EXISTING_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_write_missing_proof_report_bundle_from_r32c_r1_plan_and_grep_20260611_224802.md",
+      "docs/milestones/LANE-X-R32D-R1_REPAIR_SMOKE_INTERNAL_ORDER_INTENT_PIPELINE_NO_NEW_PATCH_NO_REPLAY_NO_ORDER_rerun_existing_r32d_patch_smoke_with_pythonpath_and_capture_untracked_files_20260611_225709.md",
+      "docs/milestones/LANE-X-R32D_INTERNAL_ORDER_INTENT_PIPELINE_PATCH_NO_BROKER_SEND_NO_ORDER_patch_internal_candidate_risk_execution_order_intent_pipeline_with_broker_transport_hard_block_20260611_225203.md",
+      "docs/milestones/LANE-X-R32E_REAL_CANDIDATE_TO_INTERNAL_ORDER_INTENT_BRIDGE_NO_PATCH_NO_REPLAY_NO_ORDER_feed_existing_r9x_candidate_positive_rows_into_r32d_internal_order_intent_pipeline_20260611_230113.md",
+      "docs/milestones/LANE-X-R32H-R1_COMPACT_FREEZE_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_finalize_r32h_freeze_without_printing_huge_r32f_samples_20260611_231730.md",
+      "docs/milestones/LANE-X-R32H_FREEZE_INTERNAL_ORDER_INTENT_PIPELINE_CHAIN_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r32d_r32g_internal_pipeline_source_proofs_ledgers_and_next_integration_step_20260611_231344.md",
+      "docs/milestones/LANE-X-R32I_AUTO_MATERIALIZE_INTERNAL_ORDER_INTENT_FROM_REPLAY_RESULTS_NO_BROKER_NO_ORDER_add_offline_materializer_for_replay_strategy_decisions_to_r32d_r32g_internal_ledgers_20260611_231914.md",
+      "docs/milestones/LANE-X-R32K_FINAL_INTERNAL_ORDER_INTENT_CHAIN_HANDOFF_NO_PATCH_NO_REPLAY_NO_ORDER_compact_freeze_r32d_to_r32j_breakthrough_and_write_next_thread_miv_prompt_20260611_232339.md"
+    ],
+    "MIV_RESEARCH": [
+      "app/mme_scalpx/replay/miv_research_evaluator.py",
+      "app/mme_scalpx/services/strategy_family/miv_r_contract.py",
+      "bin/audit_miv_r1b_gate_surfaces_no_patch_no_replay_no_order.py",
+      "bin/audit_miv_r2b_evaluator_output_shape_no_patch_no_replay_no_order.py",
+      "bin/proof_miv_r1a_strategy_family_dormant_contract_no_replay_no_order.py",
+      "bin/proof_miv_r2_zerodha_lite_research_evaluator_no_replay_no_order.py",
+      "bin/proof_miv_r2c_neutral_label_route_no_patch_no_replay_no_order.py",
+      "docs/milestones/LANE-MIV-LIVE-R1_OBSERVE_ONLY_CAPTURE_START_REUSE_AND_MIV_PERCENT_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_market_live_start_or_reuse_observe_only_capture_for_miv_r_after_close_percent_result_20260612_093653.md",
+      "docs/milestones/LANE-MIV-LIVE-R2_60SEC_DURABLE_TAPE_GROWTH_RECHECK_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_confirm_live_futures_and_selected_option_durable_capture_growth_after_r1_zero_short_window_20260612_093804.md",
+      "docs/milestones/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011.md",
+      "docs/milestones/LANE-MIV-LIVE-R4_READONLY_PROVIDER_FEED_LOCK_DIAG_NO_PATCH_NO_START_NO_STOP_NO_ORDER_diagnose_why_pauto_start_rc0_but_durable_fut_opt_tape_not_growing_without_start_stop_delete_20260612_094337.md",
+      "docs/milestones/LANE-MIV-LIVE-R5B_CORRECTED_MIV_APPEARANCE_SALVAGE_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_remove_r5_false_positive_headers_and_fix_durable_scan_to_prove_miv_absence_or_presence_20260612_133537.md",
+      "docs/milestones/LANE-MIV-LIVE-R5_INSTRUMENT_METADATA_STALE_ROUTE_LOCATOR_NO_PATCH_NO_START_NO_STOP_NO_ORDER_confirm_nfo_metadata_stale_root_cause_and_find_existing_safe_refresh_command_without_mutation_20260612_094836.md",
+      "docs/milestones/LANE-MIV-LIVE-R5_READONLY_MIV_NON_APPEARANCE_AUDIT_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_explain_why_miv_like_count_zero_and_find_registry_selector_source_seam_without_runtime_interference_20260612_133037.md",
+      "docs/milestones/LANE-MIV-LIVE-R6B_SEAL_COMPLETENESS_SALVAGE_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192433.md",
+      "docs/milestones/LANE-MIV-LIVE-R6C_ULTRASHORT_SEAL_FREEZE_NO_PY_HEREDOC_NO_PATCH_NO_ORDER_20260612_192603.md",
+      "docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192815.md",
+      "docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192847.md",
+      "docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192902.md",
+      "docs/milestones/LANE-MIV-LIVE-R6_MARKET_CLOSE_SEAL_COMPLETENESS_FINALIZER_NO_PATCH_NO_START_NO_STOP_NO_ORDER_verify_pseal_and_durable_capture_after_market_close_with_sha256_manifest_and_safety_20260612_192035.md",
+      "docs/milestones/LANE-MIV-LIVE-R7A_AFTER_CLOSE_MIV_PERCENT_MEASUREMENT_FROM_DURABLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260612_193239.md",
+      "docs/milestones/LANE-MIV-LIVE-R7B_ZERO_CANDIDATE_ROOT_CAUSE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_101611.md",
+      "docs/milestones/LANE-MIV-LIVE-R7C_RERUN_MIV_MEASUREMENT_WITH_REPO_PYTHONPATH_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_102742.md",
+      "docs/milestones/LANE-MIV-LIVE-R7D_RANK_BUCKET_THROTTLE_REPORT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103001.md",
+      "docs/milestones/LANE-MIV-LIVE-R7E_RANK_QUALITY_DECILE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103313.md",
+      "docs/milestones/LANE-MIV-LIVE-R7F_CORRECTED_RANK_QUALITY_ROW_ORDER_JOIN_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103628.md",
+      "docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030.md",
+      "docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030_R7F_corrected_truth_freeze.md",
+      "docs/milestones/LANE-MIV-LIVE-R7H_EXANTE_TIEBREAKER_DISCOVERY_REPORT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104206.md",
+      "docs/milestones/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711.md",
+      "docs/milestones/LANE-MIV-R1B_GATE_SURFACE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_candidate_hold_runtime_disabled_classic_runtime_disabled_risk_execution_shadow_and_order_intent_gates_before_miv_evaluator_patch_20260611_231807.md",
+      "docs/milestones/LANE-MIV-R2B_EVALUATOR_OUTPUT_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_miv_r2_evaluator_outputs_with_real_timestamp_paths_neutral_label_and_blocker_cases_20260611_232406.md",
+      "docs/milestones/LANE-MIV-R2C_NEUTRAL_LABEL_ROUTE_PROOF_NO_PATCH_NO_REPLAY_NO_ORDER_prove_neutral_active_label_emits_as_label_only_and_never_routes_to_risk_execution_order_intent_20260611_232522.md",
+      "docs/milestones/LANE-MIV-R2_ZERODHA_LITE_RESEARCH_EVALUATOR_PATCH_NO_REPLAY_NO_ORDER_add_replay_research_only_miv_zerodha_lite_evaluator_and_artifact_writer_without_registry_or_gate_mutation_20260611_232250.md",
+      "docs/milestones/LANE-MIV-R3A_RESUME_AUDIT_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_audit_current_miv_work_preserve_good_modules_then_run_miv_evaluator_on_existing_artifact_rows_only_20260611_233045.md",
+      "docs/milestones/LANE-MIV-R3B-R0_INTERRUPTED_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3b_paste_did_not_run_replay_order_risk_execution_or_mutate_source_20260611_233932.md",
+      "docs/milestones/LANE-MIV-R3B_CONTENT_BASED_TICK_SURFACE_LOCATOR_AND_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_locate_real_futures_selected_option_tick_or_feature_rows_by_content_then_run_miv_evaluator_without_replay_20260611_233308.md",
+      "docs/milestones/LANE-MIV-R3C_DURABLE_CAPTURE_PAIR_EVAL_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_latest_durable_fut_and_selected_option_tape_to_generate_miv_candidates_for_tomorrow_measurement_path_20260611_234126.md",
+      "docs/milestones/LANE-MIV-R3_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_run_miv_zerodha_lite_evaluator_on_existing_r9h_r9l_r9x_artifact_rows_only_no_full_replay_20260611_232902.md",
+      "docs/milestones/LANE-MIV-R4-R0_INTERRUPTED_R3C_R4_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3c_r4_paste_created_no_replay_no_order_no_risk_execution_side_effect_20260611_234607.md",
+      "docs/milestones/LANE-MIV-R4-R1_PRECISE_SIDE_EFFECT_AND_TAPE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_separate_false_positive_safety_text_from_real_process_danger_and_locate_durable_fut_opt_tapes_20260611_234725.md",
+      "docs/milestones/LANE-MIV-R4-R2_COMPACT_MEASUREMENT_BUILDER_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_r4r1_located_fut_opt_tapes_build_miv_candidates_ledgers_and_shadow_percent_summary_20260611_234841.md",
+      "docs/milestones/LANE-MIV-R4-R3_AFTERMARKET_PERCENT_READINESS_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r4r2_measurement_pipeline_pass_and_tomorrow_percent_result_checklist_20260611_235103.md",
+      "docs/milestones/LANE-MIV-R4_AFTERMARKET_MEASUREMENT_PIPELINE_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_generate_miv_candidates_internal_ledgers_shadow_percent_readiness_for_tomorrow_observe_only_result_20260611_234406.md",
+      "docs/milestones/LANE-X-CLOSE-R2B_REPAIR_CLOSE_R2_REPORT_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_repair_report_handoff_bundle_after_close_r2_python_report_writer_nameerror_20260608_155959.md",
+      "docs/milestones/LANE-X-CLOSE-R3_FINALIZE_20260609_PSEAL_NO_PATCH_NO_REPLAY_NO_ORDER_finalize_today_pseal_pass_and_create_handoff_bundle_20260609_152423.md",
+      "docs/milestones/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933.md",
+      "docs/milestones/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312.md",
+      "docs/milestones/LANE-X-R32K_FINAL_INTERNAL_ORDER_INTENT_CHAIN_HANDOFF_NO_PATCH_NO_REPLAY_NO_ORDER_compact_freeze_r32d_to_r32j_breakthrough_and_write_next_thread_miv_prompt_20260611_232339.md",
+      "docs/milestones/LANE-X-R33A-R1_SHELL_ONLY_THREE_DAY_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_rescue_after_heredoc_and_rank_three_day_blockers_with_grep_counts_20260611_234448.md",
+      "docs/milestones/LANE-X-R33A-R2_NARROW_THREE_DAY_CAPTURE_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_narrow_to_real_capture_pseal_replay_artifacts_avoid_43994_file_noise_20260611_234810.md",
+      "docs/milestones/LANE-X-R33A-R3B_SALVAGE_BLOCKER_RANK_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_finish_blocker_keyword_counts_from_latest_r33a_file_index_after_interrupted_r3_20260611_235359.md",
+      "docs/milestones/LANE-X-R33A-R3_FAST_THREE_DAY_BLOCKER_RANK_NO_PATCH_NO_REPLAY_NO_ORDER_fast_rank_blockers_from_narrow_708_file_index_without_full_scan_20260611_235139.md",
+      "docs/milestones/LANE-X-R33A-R4_TIMEOUT_BOUNDED_THREE_DAY_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_finish_blocker_rank_with_timeout_grep_no_hang_20260611_235518.md",
+      "docs/milestones/LANE-X-R33D-R0_STAGE_FLAGS_CONTRACT_PATCH_SEAM_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_feature_stage_flags_producer_missing_tradability_snapshot_sync_classic_degraded_keys_before_tiny_patch_20260612_094942.md",
+      "docs/milestones/LANE-X-R33D-R1_TINY_STAGE_FLAGS_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_add_missing_stage_flags_keys_conservative_false_defaults_after_r33d_r0_20260612_095351.md",
+      "docs/milestones/LANE-X-R33D-R2_STRATEGY_STAGE_FLAGS_NORMALIZER_PATCH_NO_REPLAY_NO_ORDER_add_conservative_missing_stage_flags_defaults_before_strategy_contract_validation_20260612_095655.md",
+      "docs/milestones/LANE-X-R33D-R3_REPAIR_STRATEGY_STAGE_FLAGS_PATCH_SYNTAX_NO_REPLAY_NO_ORDER_restore_r33d_r2_before_file_and_apply_clean_normalizer_patch_20260612_095845.md",
+      "docs/milestones/LANE-X-R33E_NFO_METADATA_REFRESH_ROUTE_CONFIRM_NO_PATCH_NO_START_NO_ORDER_extract_existing_safe_nfo_refresh_route_after_r33d_r3_before_tape_growth_repair_20260612_100218.md",
+      "docs/milestones/LANE-X-R33G_REUSE_ONLY_60SEC_TAPE_GROWTH_PROOF_NO_START_NO_STOP_NO_ORDER_prove_fut_opt_provider_runtime_growth_after_nfo_metadata_refresh_without_restart_20260612_100953.md",
+      "docs/milestones/LANE-X-R33J-R1_FAST_WEEKEND_EVIDENCE_FINALIZER_NO_REPARSE_NO_ORDER_finalize_friday_weekend_replay_handoff_from_r33i_summary_and_r33j_manifest_without_heavy_parse_20260612_112813.md",
+      "docs/milestones/LANE-X-R34A_WEEKEND_OFFLINE_CANDIDATE_TRUE_AND_MIV_ROOT_CAUSE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_enter_actions_without_candidate_true_and_miv_not_emitted_from_sealed_friday_durable_tape_20260613_101627.md",
+      "docs/milestones/LANE-X-R34C_EXACT_FULL_TOKEN_AUDIT_ENTER_CANDIDATE_MIV_NO_PATCH_NO_REPLAY_NO_ORDER_prove_whether_enter_call_put_candidate_true_or_miv_tokens_exist_anywhere_in_sealed_friday_durable_and_pseal_20260613_103045.md",
+      "docs/research_gate/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711_contract_amendment.md",
+      "docs/runbooks/LANE-MIV-LIVE-R1_OBSERVE_ONLY_CAPTURE_START_REUSE_AND_MIV_PERCENT_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_market_live_start_or_reuse_observe_only_capture_for_miv_r_after_close_percent_result_20260612_093653_runbook.md",
+      "docs/runbooks/LANE-MIV-LIVE-R2_60SEC_DURABLE_TAPE_GROWTH_RECHECK_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_confirm_live_futures_and_selected_option_durable_capture_growth_after_r1_zero_short_window_20260612_093804_runbook.md",
+      "docs/runbooks/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011_runbook.md",
+      "docs/runbooks/LANE-MIV-LIVE-R4_READONLY_PROVIDER_FEED_LOCK_DIAG_NO_PATCH_NO_START_NO_STOP_NO_ORDER_diagnose_why_pauto_start_rc0_but_durable_fut_opt_tape_not_growing_without_start_stop_delete_20260612_094337_runbook.md",
+      "docs/runbooks/LANE-MIV-LIVE-R5_INSTRUMENT_METADATA_STALE_ROUTE_LOCATOR_NO_PATCH_NO_START_NO_STOP_NO_ORDER_confirm_nfo_metadata_stale_root_cause_and_find_existing_safe_refresh_command_without_mutation_20260612_094836_runbook.md",
+      "docs/runbooks/LANE-MIV-LIVE-R5_READONLY_MIV_NON_APPEARANCE_AUDIT_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_explain_why_miv_like_count_zero_and_find_registry_selector_source_seam_without_runtime_interference_20260612_133037_runbook.md",
+      "docs/runbooks/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711_runbook.md",
+      "docs/runbooks/LANE-MIV-R1B_GATE_SURFACE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_candidate_hold_runtime_disabled_classic_runtime_disabled_risk_execution_shadow_and_order_intent_gates_before_miv_evaluator_patch_20260611_231807_runbook.md",
+      "docs/runbooks/LANE-MIV-R2B_EVALUATOR_OUTPUT_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_miv_r2_evaluator_outputs_with_real_timestamp_paths_neutral_label_and_blocker_cases_20260611_232406_runbook.md",
+      "docs/runbooks/LANE-MIV-R2C_NEUTRAL_LABEL_ROUTE_PROOF_NO_PATCH_NO_REPLAY_NO_ORDER_prove_neutral_active_label_emits_as_label_only_and_never_routes_to_risk_execution_order_intent_20260611_232522_runbook.md",
+      "docs/runbooks/LANE-MIV-R2_ZERODHA_LITE_RESEARCH_EVALUATOR_PATCH_NO_REPLAY_NO_ORDER_add_replay_research_only_miv_zerodha_lite_evaluator_and_artifact_writer_without_registry_or_gate_mutation_20260611_232250_runbook.md",
+      "docs/runbooks/LANE-MIV-R3A_RESUME_AUDIT_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_audit_current_miv_work_preserve_good_modules_then_run_miv_evaluator_on_existing_artifact_rows_only_20260611_233045_runbook.md",
+      "docs/runbooks/LANE-MIV-R3B_CONTENT_BASED_TICK_SURFACE_LOCATOR_AND_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_locate_real_futures_selected_option_tick_or_feature_rows_by_content_then_run_miv_evaluator_without_replay_20260611_233308_runbook.md",
+      "docs/runbooks/LANE-MIV-R3C_DURABLE_CAPTURE_PAIR_EVAL_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_latest_durable_fut_and_selected_option_tape_to_generate_miv_candidates_for_tomorrow_measurement_path_20260611_234126_runbook.md",
+      "docs/runbooks/LANE-MIV-R3_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_run_miv_zerodha_lite_evaluator_on_existing_r9h_r9l_r9x_artifact_rows_only_no_full_replay_20260611_232902_runbook.md",
+      "docs/runbooks/LANE-MIV-R4-R2_COMPACT_MEASUREMENT_BUILDER_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_r4r1_located_fut_opt_tapes_build_miv_candidates_ledgers_and_shadow_percent_summary_20260611_234841_runbook.md"
+    ],
+    "R31_COMMON_KEYS_SEAM": [
+      "app/mme_scalpx/ops_dashboard/server.py",
+      "app/mme_scalpx/services/features.py",
+      "app/mme_scalpx/services/strategy.py",
+      "bin/audit_miv_r1b_gate_surfaces_no_patch_no_replay_no_order.py",
+      "docs/milestones/LANE-X-CLOSE-R1_PSEAL_LOCATOR_OR_CLOSE_EVIDENCE_FALLBACK_NO_PATCH_NO_ORDER_recover_from_pseal_command_not_found_and_seal_or_bundle_close_evidence_20260608_152333.md",
+      "docs/milestones/LANE-X-LIVE-R1A_SALVAGE_COMPLETED_LIVE_R1_SAMPLES_NO_PATCH_NO_REPLAY_NO_ORDER_create_proof_from_completed_live_r1_samples_after_report_writer_nameerror_20260608_100135.md",
+      "docs/milestones/LANE-X-LIVE-R2_30MIN_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_ORDER_watch_live_decisions_for_candidate_positive_evidence_observe_only_20260608_101421.md",
+      "docs/milestones/LANE-X-LIVE-R3_RECORD_AND_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_record_live_growth_and_watch_candidate_positive_evidence_observe_only_20260609_101132.md",
+      "docs/milestones/LANE-X-LIVE-R4_DETACHED_TILL_CLOSE_CAPTURE_CANDIDATE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_self_running_live_capture_growth_and_candidate_positive_watch_until_close_20260611_094905.md",
+      "docs/milestones/LANE-X-R31C_MONDAY_OBSERVE_ONLY_PREMARKET_SAFETY_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_20260607_175928.md",
+      "docs/milestones/LANE-X-R31D5R_MARKET_LIVE_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_094825.md",
+      "docs/milestones/LANE-X-R31D5S_EXISTING_GENERIC_MAIN_OBSERVE_ONLY_RUNTIME_SAFETY_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260608_095109.md",
+      "docs/milestones/LANE-X-R31D5_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_183935.md",
+      "docs/milestones/LANE-X-R31D_OBSERVE_ONLY_START_REUSE_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_182433.md",
+      "docs/milestones/LANE-X-R31E_10MIN_CANDIDATE_WATCH_WINDOW_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_095409.md",
+      "docs/milestones/LANE-X-R31F_30MIN_DEEP_CANDIDATE_BLOCKER_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_100811.md",
+      "docs/milestones/LANE-X-R31G_STRATEGY_BRIDGE_AND_CONTRACT_ERROR_SEAM_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260608_104135.md",
+      "docs/milestones/LANE-X-R31H_FEATURE_FAMILY_COMMON_KEYS_CONTRACT_SEAM_LOCATOR_NO_PATCH_NO_START_NO_ORDER_20260608_110710.md",
+      "docs/milestones/LANE-X-R31J_LIVE_SESSION_ONLY_COMPACT_CONTINUITY_CHECK_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_112631.md",
+      "docs/milestones/LANE-X-R31K_LIVE_SESSION_COMPACT_CANDIDATE_SAFETY_MONITOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_112952.md",
+      "docs/milestones/LANE-X-R31L_LIVE_SESSION_COMPACT_VALIDITY_PROVIDER_READY_MONITOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_114324.md",
+      "docs/milestones/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933.md",
+      "docs/milestones/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312.md",
+      "docs/milestones/LANE-X-R32C-R2_FINALIZE_SERIOUS_GATE_OPENING_PLAN_FROM_EXISTING_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_write_missing_proof_report_bundle_from_r32c_r1_plan_and_grep_20260611_224802.md",
+      "docs/runbooks/LANE-X-R31H_FEATURE_FAMILY_COMMON_KEYS_CONTRACT_SEAM_LOCATOR_NO_PATCH_NO_START_NO_ORDER_20260608_110710_runbook.md",
+      "docs/runbooks/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933_runbook.md"
+    ],
+    "REPLAY_BRIDGE": [
+      "app/mme_scalpx/replay/strategy_adapter.py",
+      "app/mme_scalpx/services/strategy.py",
+      "bin/replay_run.py",
+      "app/mme_scalpx/replay/miv_research_evaluator.py",
+      "app/mme_scalpx/services/strategy_family/miv_r_contract.py",
+      "bin/audit_miv_r1b_gate_surfaces_no_patch_no_replay_no_order.py",
+      "bin/audit_miv_r2b_evaluator_output_shape_no_patch_no_replay_no_order.py",
+      "bin/lane_x_r32i_materialize_internal_order_intent_from_replay_results_no_broker.py",
+      "bin/proof_miv_r1a_strategy_family_dormant_contract_no_replay_no_order.py",
+      "bin/proof_miv_r2_zerodha_lite_research_evaluator_no_replay_no_order.py",
+      "bin/proof_miv_r2c_neutral_label_route_no_patch_no_replay_no_order.py",
+      "bin/proof_r32d_internal_order_intent_pipeline_no_broker.py",
+      "bin/proof_r32g_real_candidate_hold_normalizer_no_broker.py",
+      "docs/milestones/LANE-B-R1A_RECOVER_R1_SURFACE_AUDIT_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_121122.md",
+      "docs/milestones/LANE-B-R1_REPLAY_SURFACE_BASELINE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_120747.md",
+      "docs/milestones/LANE-B-R2A_REPLAY_DATASET_AND_PREVIOUS_RUN_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_134930.md",
+      "docs/milestones/LANE-B-R2B_REPLAY_CLI_ABI_AND_EXACT_SMOKE_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_135114.md",
+      "docs/milestones/LANE-B-R2C_EXACT_A7_20260602_OFFLINE_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_135738.md",
+      "docs/milestones/LANE-B-R2D_R2C_REPLAY_ARTIFACT_SHAPE_COUNT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140338.md",
+      "docs/milestones/LANE-B-R2E1_FINGERPRINT_PROVENANCE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141109.md",
+      "docs/milestones/LANE-B-R2E_COMPARE_R2C_VS_B3R61D_REPLAY_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140836.md",
+      "docs/milestones/LANE-B-R2F-R1_INTERRUPTED_REPLAY_FREEZE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r2f_heredoc_created_no_replay_no_order_no_side_effect_20260607_141459.md",
+      "docs/milestones/LANE-B-R2F2_CORRECTED_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141428.md",
+      "docs/milestones/LANE-B-R2F_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r1_to_r2e1_a7_single_day_replay_reproducibility_with_fingerprint_caveat_20260607_141320.md",
+      "docs/milestones/LANE-B-R3A_EXACT_RISK_EXECUTION_SHADOW_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141805.md",
+      "docs/milestones/LANE-B-R3B_FILL_MODEL_ABI_AND_R4_COMMAND_CORRECTION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141930.md",
+      "docs/milestones/LANE-B-R3_RISK_EXECUTION_SHADOW_PNL_READINESS_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141540.md",
+      "docs/milestones/LANE-B-R4A2_CORRECTED_SHADOW_PNL_NO_TRADE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143017.md",
+      "docs/milestones/LANE-B-R4A_SHADOW_PNL_NO_TRADE_ARTIFACT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_142909.md",
+      "docs/milestones/LANE-B-R4_A7_20260602_RISK_EXECUTION_SHADOW_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_142249.md",
+      "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143301.md",
+      "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143419.md",
+      "docs/milestones/LANE-B-R5B_BASELINE_VS_SHADOW_PATCH_IMPACT_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143653.md",
+      "docs/milestones/LANE-B-R5C_BASELINE_SHADOW_DRY_RUN_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143758.md",
+      "docs/milestones/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907.md",
+      "docs/milestones/LANE-B-R5E_COMPARE_BASELINE_SHADOW_PATCH_IMPACT_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154016.md",
+      "docs/milestones/LANE-B-R5F_FINAL_PATCH_IMPACT_AND_PNL_ROUTE_DECISION_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154208.md",
+      "docs/milestones/LANE-B-R5_FIND_VALID_CANDIDATE_OR_PATCH_IMPACT_REPLAY_ROUTE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143108.md",
+      "docs/milestones/LANE-B-R6A_STRATEGY_PNL_WAIT_STATE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154637.md",
+      "docs/milestones/LANE-B-R6B_WAIT_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154920.md",
+      "docs/milestones/LANE-B-R6_CANDIDATE_POSITIVE_DATASET_ADMISSION_GATE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154426.md",
+      "docs/milestones/LANE-MIV-LIVE-R1_OBSERVE_ONLY_CAPTURE_START_REUSE_AND_MIV_PERCENT_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_market_live_start_or_reuse_observe_only_capture_for_miv_r_after_close_percent_result_20260612_093653.md",
+      "docs/milestones/LANE-MIV-LIVE-R2_60SEC_DURABLE_TAPE_GROWTH_RECHECK_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_confirm_live_futures_and_selected_option_durable_capture_growth_after_r1_zero_short_window_20260612_093804.md",
+      "docs/milestones/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011.md",
+      "docs/milestones/LANE-MIV-LIVE-R4_READONLY_PROVIDER_FEED_LOCK_DIAG_NO_PATCH_NO_START_NO_STOP_NO_ORDER_diagnose_why_pauto_start_rc0_but_durable_fut_opt_tape_not_growing_without_start_stop_delete_20260612_094337.md",
+      "docs/milestones/LANE-MIV-LIVE-R5B_CORRECTED_MIV_APPEARANCE_SALVAGE_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_remove_r5_false_positive_headers_and_fix_durable_scan_to_prove_miv_absence_or_presence_20260612_133537.md",
+      "docs/milestones/LANE-MIV-LIVE-R5_READONLY_MIV_NON_APPEARANCE_AUDIT_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_explain_why_miv_like_count_zero_and_find_registry_selector_source_seam_without_runtime_interference_20260612_133037.md",
+      "docs/milestones/LANE-MIV-LIVE-R7A_AFTER_CLOSE_MIV_PERCENT_MEASUREMENT_FROM_DURABLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260612_193239.md",
+      "docs/milestones/LANE-MIV-LIVE-R7B_ZERO_CANDIDATE_ROOT_CAUSE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_101611.md",
+      "docs/milestones/LANE-MIV-LIVE-R7C_RERUN_MIV_MEASUREMENT_WITH_REPO_PYTHONPATH_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_102742.md",
+      "docs/milestones/LANE-MIV-LIVE-R7D_RANK_BUCKET_THROTTLE_REPORT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103001.md",
+      "docs/milestones/LANE-MIV-LIVE-R7E_RANK_QUALITY_DECILE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103313.md",
+      "docs/milestones/LANE-MIV-LIVE-R7F_CORRECTED_RANK_QUALITY_ROW_ORDER_JOIN_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103628.md",
+      "docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030.md",
+      "docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030_R7F_corrected_truth_freeze.md",
+      "docs/milestones/LANE-MIV-LIVE-R7H_EXANTE_TIEBREAKER_DISCOVERY_REPORT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104206.md",
+      "docs/milestones/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711.md",
+      "docs/milestones/LANE-MIV-R1B_GATE_SURFACE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_candidate_hold_runtime_disabled_classic_runtime_disabled_risk_execution_shadow_and_order_intent_gates_before_miv_evaluator_patch_20260611_231807.md",
+      "docs/milestones/LANE-MIV-R2B_EVALUATOR_OUTPUT_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_miv_r2_evaluator_outputs_with_real_timestamp_paths_neutral_label_and_blocker_cases_20260611_232406.md",
+      "docs/milestones/LANE-MIV-R2C_NEUTRAL_LABEL_ROUTE_PROOF_NO_PATCH_NO_REPLAY_NO_ORDER_prove_neutral_active_label_emits_as_label_only_and_never_routes_to_risk_execution_order_intent_20260611_232522.md",
+      "docs/milestones/LANE-MIV-R2_ZERODHA_LITE_RESEARCH_EVALUATOR_PATCH_NO_REPLAY_NO_ORDER_add_replay_research_only_miv_zerodha_lite_evaluator_and_artifact_writer_without_registry_or_gate_mutation_20260611_232250.md",
+      "docs/milestones/LANE-MIV-R3A_RESUME_AUDIT_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_audit_current_miv_work_preserve_good_modules_then_run_miv_evaluator_on_existing_artifact_rows_only_20260611_233045.md",
+      "docs/milestones/LANE-MIV-R3B-R0_INTERRUPTED_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3b_paste_did_not_run_replay_order_risk_execution_or_mutate_source_20260611_233932.md",
+      "docs/milestones/LANE-MIV-R3B_CONTENT_BASED_TICK_SURFACE_LOCATOR_AND_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_locate_real_futures_selected_option_tick_or_feature_rows_by_content_then_run_miv_evaluator_without_replay_20260611_233308.md",
+      "docs/milestones/LANE-MIV-R3C_DURABLE_CAPTURE_PAIR_EVAL_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_latest_durable_fut_and_selected_option_tape_to_generate_miv_candidates_for_tomorrow_measurement_path_20260611_234126.md",
+      "docs/milestones/LANE-MIV-R3_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_run_miv_zerodha_lite_evaluator_on_existing_r9h_r9l_r9x_artifact_rows_only_no_full_replay_20260611_232902.md",
+      "docs/milestones/LANE-MIV-R4-R0_INTERRUPTED_R3C_R4_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3c_r4_paste_created_no_replay_no_order_no_risk_execution_side_effect_20260611_234607.md",
+      "docs/milestones/LANE-MIV-R4-R1_PRECISE_SIDE_EFFECT_AND_TAPE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_separate_false_positive_safety_text_from_real_process_danger_and_locate_durable_fut_opt_tapes_20260611_234725.md",
+      "docs/milestones/LANE-MIV-R4-R2_COMPACT_MEASUREMENT_BUILDER_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_r4r1_located_fut_opt_tapes_build_miv_candidates_ledgers_and_shadow_percent_summary_20260611_234841.md",
+      "docs/milestones/LANE-MIV-R4-R3_AFTERMARKET_PERCENT_READINESS_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r4r2_measurement_pipeline_pass_and_tomorrow_percent_result_checklist_20260611_235103.md",
+      "docs/milestones/LANE-MIV-R4_AFTERMARKET_MEASUREMENT_PIPELINE_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_generate_miv_candidates_internal_ledgers_shadow_percent_readiness_for_tomorrow_observe_only_result_20260611_234406.md",
+      "docs/milestones/LANE-X-CLOSE-R1_PSEAL_LOCATOR_OR_CLOSE_EVIDENCE_FALLBACK_NO_PATCH_NO_ORDER_recover_from_pseal_command_not_found_and_seal_or_bundle_close_evidence_20260608_152333.md",
+      "docs/milestones/LANE-X-CLOSE-R2B_REPAIR_CLOSE_R2_REPORT_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_repair_report_handoff_bundle_after_close_r2_python_report_writer_nameerror_20260608_155959.md",
+      "docs/milestones/LANE-X-CLOSE-R3_FINALIZE_20260609_PSEAL_NO_PATCH_NO_REPLAY_NO_ORDER_finalize_today_pseal_pass_and_create_handoff_bundle_20260609_152423.md",
+      "docs/milestones/LANE-X-DASH-R1_dashboard_lane_evidence_bundle_no_patch_no_order_20260604_230829.md",
+      "docs/milestones/LANE-X-LIVE-R1A_SALVAGE_COMPLETED_LIVE_R1_SAMPLES_NO_PATCH_NO_REPLAY_NO_ORDER_create_proof_from_completed_live_r1_samples_after_report_writer_nameerror_20260608_100135.md",
+      "docs/milestones/LANE-X-LIVE-R2_30MIN_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_ORDER_watch_live_decisions_for_candidate_positive_evidence_observe_only_20260608_101421.md",
+      "docs/milestones/LANE-X-LIVE-R3_RECORD_AND_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_record_live_growth_and_watch_candidate_positive_evidence_observe_only_20260609_101132.md",
+      "docs/milestones/LANE-X-LIVE-R4_DETACHED_TILL_CLOSE_CAPTURE_CANDIDATE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_self_running_live_capture_growth_and_candidate_positive_watch_until_close_20260611_094905.md",
+      "docs/milestones/LANE-X-PDISK-R1_safe_cleanup_inventory_no_delete_20260604_210232.md"
+    ]
+  },
+  "items": [
+    {
+      "labels": [
+        "DASHBOARD",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "numstat": "128\t3\tapp/mme_scalpx/ops_dashboard/server.py",
+      "path": "app/mme_scalpx/ops_dashboard/server.py",
+      "status": "tracked_modified"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "numstat": "6\t1\tapp/mme_scalpx/replay/strategy_adapter.py",
+      "path": "app/mme_scalpx/replay/strategy_adapter.py",
+      "status": "tracked_modified"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "numstat": "24\t0\tapp/mme_scalpx/services/feature_family/misb_surface.py",
+      "path": "app/mme_scalpx/services/feature_family/misb_surface.py",
+      "status": "tracked_modified"
+    },
+    {
+      "labels": [
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "numstat": "957\t0\tapp/mme_scalpx/services/features.py",
+      "path": "app/mme_scalpx/services/features.py",
+      "status": "tracked_modified"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "numstat": "27\t0\tapp/mme_scalpx/services/strategy.py",
+      "path": "app/mme_scalpx/services/strategy.py",
+      "status": "tracked_modified"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "numstat": "439\t1\tbin/replay_run.py",
+      "path": "bin/replay_run.py",
+      "status": "tracked_modified"
+    },
+    {
+      "labels": [
+        "INSTRUMENT_METADATA"
+      ],
+      "numstat": "23172\t19227\tdata/instruments/nfo_instruments.csv",
+      "path": "data/instruments/nfo_instruments.csv",
+      "status": "tracked_modified"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "path": "app/mme_scalpx/replay/miv_research_evaluator.py",
+      "size": 22333,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "path": "app/mme_scalpx/services/strategy_family/internal_order_intent_pipeline.py",
+      "size": 12426,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "path": "app/mme_scalpx/services/strategy_family/miv_r_contract.py",
+      "size": 7638,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "path": "bin/audit_miv_r1b_gate_surfaces_no_patch_no_replay_no_order.py",
+      "size": 8090,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "bin/audit_miv_r2b_evaluator_output_shape_no_patch_no_replay_no_order.py",
+      "size": 10424,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "bin/lane_x_r32i_materialize_internal_order_intent_from_replay_results_no_broker.py",
+      "size": 11385,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "path": "bin/lane_x_shadow_near_candidate_observer.py",
+      "size": 7527,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "path": "bin/proof_miv_r1a_strategy_family_dormant_contract_no_replay_no_order.py",
+      "size": 5907,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "bin/proof_miv_r2_zerodha_lite_research_evaluator_no_replay_no_order.py",
+      "size": 6859,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "bin/proof_miv_r2c_neutral_label_route_no_patch_no_replay_no_order.py",
+      "size": 5996,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "path": "bin/proof_r32d_internal_order_intent_pipeline_no_broker.py",
+      "size": 5478,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION"
+      ],
+      "path": "bin/proof_r32g_real_candidate_hold_normalizer_no_broker.py",
+      "size": 5663,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260604_151929.md",
+      "size": 813,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260604_203023.md",
+      "size": 813,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260605_152027.md",
+      "size": 813,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260608_152347.md",
+      "size": 813,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260609_151625.md",
+      "size": 813,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315.md",
+      "size": 813,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653.md",
+      "size": 813,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/B4-R5P-V1_MICRO_SHELF_PATCH_VERIFY_FINALIZE_NO_START_NO_ORDER_20260603_234959.md",
+      "size": 210,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/B4-R5P-V2_MICRO_SHELF_CONTRACT_PASSTHROUGH_SELFTEST_NO_START_NO_ORDER_20260603_235105.md",
+      "size": 257,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/B4-R5P-V3_MISB_SHELF_CONSUMER_SELFTEST_NO_START_NO_ORDER_20260603_235205.md",
+      "size": 217,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R1A_RECOVER_R1_SURFACE_AUDIT_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_121122.md",
+      "size": 10715,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R1_REPLAY_SURFACE_BASELINE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_120747.md",
+      "size": 40583,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R2A_REPLAY_DATASET_AND_PREVIOUS_RUN_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_134930.md",
+      "size": 131480,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R2B_REPLAY_CLI_ABI_AND_EXACT_SMOKE_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_135114.md",
+      "size": 21256,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R2C_EXACT_A7_20260602_OFFLINE_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_135738.md",
+      "size": 7192,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R2D_R2C_REPLAY_ARTIFACT_SHAPE_COUNT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140338.md",
+      "size": 10201,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R2E1_FINGERPRINT_PROVENANCE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141109.md",
+      "size": 6942,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R2E_COMPARE_R2C_VS_B3R61D_REPLAY_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140836.md",
+      "size": 6730,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R2F-R1_INTERRUPTED_REPLAY_FREEZE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r2f_heredoc_created_no_replay_no_order_no_side_effect_20260607_141459.md",
+      "size": 990,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R2F2_CORRECTED_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141428.md",
+      "size": 4821,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R2F_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r1_to_r2e1_a7_single_day_replay_reproducibility_with_fingerprint_caveat_20260607_141320.md",
+      "size": 7044,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R3A_EXACT_RISK_EXECUTION_SHADOW_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141805.md",
+      "size": 35201,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R3B_FILL_MODEL_ABI_AND_R4_COMMAND_CORRECTION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141930.md",
+      "size": 12933,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R3_RISK_EXECUTION_SHADOW_PNL_READINESS_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141540.md",
+      "size": 156800,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R4A2_CORRECTED_SHADOW_PNL_NO_TRADE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143017.md",
+      "size": 1973,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R4A_SHADOW_PNL_NO_TRADE_ARTIFACT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_142909.md",
+      "size": 2059,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R4_A7_20260602_RISK_EXECUTION_SHADOW_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_142249.md",
+      "size": 10991,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "REPLAY_BRIDGE",
+        "INSTRUMENT_METADATA",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143301.md",
+      "size": 103624,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "REPLAY_BRIDGE",
+        "INSTRUMENT_METADATA",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143419.md",
+      "size": 91475,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R5B_BASELINE_VS_SHADOW_PATCH_IMPACT_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143653.md",
+      "size": 12319,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R5C_BASELINE_SHADOW_DRY_RUN_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143758.md",
+      "size": 5987,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907.md",
+      "size": 3981,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R5E_COMPARE_BASELINE_SHADOW_PATCH_IMPACT_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154016.md",
+      "size": 6774,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R5F_FINAL_PATCH_IMPACT_AND_PNL_ROUTE_DECISION_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154208.md",
+      "size": 6099,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R5_FIND_VALID_CANDIDATE_OR_PATCH_IMPACT_REPLAY_ROUTE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143108.md",
+      "size": 101938,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R6A_STRATEGY_PNL_WAIT_STATE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154637.md",
+      "size": 4627,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R6B_WAIT_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154920.md",
+      "size": 2604,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-B-R6_CANDIDATE_POSITIVE_DATASET_ADMISSION_GATE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154426.md",
+      "size": 57320,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R1_OBSERVE_ONLY_CAPTURE_START_REUSE_AND_MIV_PERCENT_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_market_live_start_or_reuse_observe_only_capture_for_miv_r_after_close_percent_result_20260612_093653.md",
+      "size": 1120,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R2_60SEC_DURABLE_TAPE_GROWTH_RECHECK_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_confirm_live_futures_and_selected_option_durable_capture_growth_after_r1_zero_short_window_20260612_093804.md",
+      "size": 972,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011.md",
+      "size": 900,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R4_READONLY_PROVIDER_FEED_LOCK_DIAG_NO_PATCH_NO_START_NO_STOP_NO_ORDER_diagnose_why_pauto_start_rc0_but_durable_fut_opt_tape_not_growing_without_start_stop_delete_20260612_094337.md",
+      "size": 839,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R5B_CORRECTED_MIV_APPEARANCE_SALVAGE_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_remove_r5_false_positive_headers_and_fix_durable_scan_to_prove_miv_absence_or_presence_20260612_133537.md",
+      "size": 712,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R5_INSTRUMENT_METADATA_STALE_ROUTE_LOCATOR_NO_PATCH_NO_START_NO_STOP_NO_ORDER_confirm_nfo_metadata_stale_root_cause_and_find_existing_safe_refresh_command_without_mutation_20260612_094836.md",
+      "size": 853,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R5_READONLY_MIV_NON_APPEARANCE_AUDIT_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_explain_why_miv_like_count_zero_and_find_registry_selector_source_seam_without_runtime_interference_20260612_133037.md",
+      "size": 882,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R6B_SEAL_COMPLETENESS_SALVAGE_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192433.md",
+      "size": 522,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R6C_ULTRASHORT_SEAL_FREEZE_NO_PY_HEREDOC_NO_PATCH_NO_ORDER_20260612_192603.md",
+      "size": 497,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192815.md",
+      "size": 244,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192847.md",
+      "size": 244,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R6D_FINAL_SEAL_VERIFY_ONLY_NO_PATCH_NO_START_NO_STOP_NO_ORDER_20260612_192902.md",
+      "size": 244,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R6_MARKET_CLOSE_SEAL_COMPLETENESS_FINALIZER_NO_PATCH_NO_START_NO_STOP_NO_ORDER_verify_pseal_and_durable_capture_after_market_close_with_sha256_manifest_and_safety_20260612_192035.md",
+      "size": 1025,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R7A_AFTER_CLOSE_MIV_PERCENT_MEASUREMENT_FROM_DURABLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260612_193239.md",
+      "size": 617,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R7B_ZERO_CANDIDATE_ROOT_CAUSE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_101611.md",
+      "size": 256,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R7C_RERUN_MIV_MEASUREMENT_WITH_REPO_PYTHONPATH_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_102742.md",
+      "size": 283,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R7D_RANK_BUCKET_THROTTLE_REPORT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103001.md",
+      "size": 248,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R7E_RANK_QUALITY_DECILE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103313.md",
+      "size": 242,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R7F_CORRECTED_RANK_QUALITY_ROW_ORDER_JOIN_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103628.md",
+      "size": 288,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030.md",
+      "size": 622,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030_R7F_corrected_truth_freeze.md",
+      "size": 698,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-LIVE-R7H_EXANTE_TIEBREAKER_DISCOVERY_REPORT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104206.md",
+      "size": 603,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711.md",
+      "size": 667,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R1B_GATE_SURFACE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_candidate_hold_runtime_disabled_classic_runtime_disabled_risk_execution_shadow_and_order_intent_gates_before_miv_evaluator_patch_20260611_231807.md",
+      "size": 773,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R2B_EVALUATOR_OUTPUT_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_miv_r2_evaluator_outputs_with_real_timestamp_paths_neutral_label_and_blocker_cases_20260611_232406.md",
+      "size": 717,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R2C_NEUTRAL_LABEL_ROUTE_PROOF_NO_PATCH_NO_REPLAY_NO_ORDER_prove_neutral_active_label_emits_as_label_only_and_never_routes_to_risk_execution_order_intent_20260611_232522.md",
+      "size": 757,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R2_ZERODHA_LITE_RESEARCH_EVALUATOR_PATCH_NO_REPLAY_NO_ORDER_add_replay_research_only_miv_zerodha_lite_evaluator_and_artifact_writer_without_registry_or_gate_mutation_20260611_232250.md",
+      "size": 827,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R3A_RESUME_AUDIT_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_audit_current_miv_work_preserve_good_modules_then_run_miv_evaluator_on_existing_artifact_rows_only_20260611_233045.md",
+      "size": 986,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R3B-R0_INTERRUPTED_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3b_paste_did_not_run_replay_order_risk_execution_or_mutate_source_20260611_233932.md",
+      "size": 746,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R3B_CONTENT_BASED_TICK_SURFACE_LOCATOR_AND_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_locate_real_futures_selected_option_tick_or_feature_rows_by_content_then_run_miv_evaluator_without_replay_20260611_233308.md",
+      "size": 970,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R3C_DURABLE_CAPTURE_PAIR_EVAL_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_latest_durable_fut_and_selected_option_tape_to_generate_miv_candidates_for_tomorrow_measurement_path_20260611_234126.md",
+      "size": 819,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R3_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_run_miv_zerodha_lite_evaluator_on_existing_r9h_r9l_r9x_artifact_rows_only_no_full_replay_20260611_232902.md",
+      "size": 885,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R4-R0_INTERRUPTED_R3C_R4_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3c_r4_paste_created_no_replay_no_order_no_risk_execution_side_effect_20260611_234607.md",
+      "size": 752,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R4-R1_PRECISE_SIDE_EFFECT_AND_TAPE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_separate_false_positive_safety_text_from_real_process_danger_and_locate_durable_fut_opt_tapes_20260611_234725.md",
+      "size": 840,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R4-R2_COMPACT_MEASUREMENT_BUILDER_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_r4r1_located_fut_opt_tapes_build_miv_candidates_ledgers_and_shadow_percent_summary_20260611_234841.md",
+      "size": 1941,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R4-R3_AFTERMARKET_PERCENT_READINESS_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r4r2_measurement_pipeline_pass_and_tomorrow_percent_result_checklist_20260611_235103.md",
+      "size": 1052,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-MIV-R4_AFTERMARKET_MEASUREMENT_PIPELINE_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_generate_miv_candidates_internal_ledgers_shadow_percent_readiness_for_tomorrow_observe_only_result_20260611_234406.md",
+      "size": 2440,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "REPLAY_BRIDGE",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-CLOSE-R1_PSEAL_LOCATOR_OR_CLOSE_EVIDENCE_FALLBACK_NO_PATCH_NO_ORDER_recover_from_pseal_command_not_found_and_seal_or_bundle_close_evidence_20260608_152333.md",
+      "size": 51645,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-CLOSE-R2B_REPAIR_CLOSE_R2_REPORT_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_repair_report_handoff_bundle_after_close_r2_python_report_writer_nameerror_20260608_155959.md",
+      "size": 2536,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-CLOSE-R3_FINALIZE_20260609_PSEAL_NO_PATCH_NO_REPLAY_NO_ORDER_finalize_today_pseal_pass_and_create_handoff_bundle_20260609_152423.md",
+      "size": 1620,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-CLOSE-R3_corrected_pseal_completion_finalizer_20260604_152311.md",
+      "size": 1037,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-CLOSE-R5_verify_r4_post_r11_pseal_completion_20260604_203209.md",
+      "size": 808,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-CLOSE-R5_verify_r4_post_r11_pseal_completion_20260604_203215.md",
+      "size": 808,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R1_dashboard_lane_evidence_bundle_no_patch_no_order_20260604_230829.md",
+      "size": 833,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R2A_SOURCE_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_audit_existing_dashboard_r3h_lite_source_lane_x_inputs_and_patch_needles_20260604_231059.md",
+      "size": 1921,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R2B-CONFIRM_READ_ONLY_AFTER_CUT_PATCH_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_confirm_whether_cut_r2b_patch_changed_dashboard_source_or_not_20260604_231421.md",
+      "size": 932,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R2B-TINY-SEAL_STATIC_OBSERVE_PANEL_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_seal_existing_lx_tiny_source_markers_compile_import_ast_safety_20260604_232058.md",
+      "size": 926,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R2C_RUNTIME_SEAL_LX_TINY_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_lane_x_observe_page_markers_20260604_232202.md",
+      "size": 1298,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R3A_SIMPLIFY_DYNAMIC_TRUTH_BOARD_PLAN_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_plan_replace_complex_static_lane_x_panel_with_simple_dynamic_truth_board_20260612_102214.md",
+      "size": 1277,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R3B_DYNAMIC_SIMPLE_TRUTH_BOARD_PATCH_NO_REDIS_WRITE_NO_START_NO_ORDER_NO_PAPER_20260612_102452.md",
+      "size": 592,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R3C_RUNTIME_SEAL_DYNAMIC_TRUTH_BOARD_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_r3b_dynamic_truth_board_20260612_102624.md",
+      "size": 1323,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R3D_ERROR_TRUTH_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_classify_current_review_errors_as_active_or_historical_before_dashboard_next_action_refine_20260612_103027.md",
+      "size": 930,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R3E_REFINE_NEXT_ACTION_FRESH_ERROR_ONLY_NO_REDIS_WRITE_NO_START_NO_ORDER_NO_PAPER_20260612_103200.md",
+      "size": 660,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-DASH-R3F_RUNTIME_SEAL_R3E_FRESH_ERROR_NEXT_ACTION_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_verify_next_action_no_longer_overwarns_on_historical_errors_20260612_103331.md",
+      "size": 1518,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-LIVE-R1A_SALVAGE_COMPLETED_LIVE_R1_SAMPLES_NO_PATCH_NO_REPLAY_NO_ORDER_create_proof_from_completed_live_r1_samples_after_report_writer_nameerror_20260608_100135.md",
+      "size": 2504,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-LIVE-R2_30MIN_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_ORDER_watch_live_decisions_for_candidate_positive_evidence_observe_only_20260608_101421.md",
+      "size": 1350,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-LIVE-R3_RECORD_AND_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_record_live_growth_and_watch_candidate_positive_evidence_observe_only_20260609_101132.md",
+      "size": 1552,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-LIVE-R4_DETACHED_TILL_CLOSE_CAPTURE_CANDIDATE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_self_running_live_capture_growth_and_candidate_positive_watch_until_close_20260611_094905.md",
+      "size": 1471,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-PDISK-R1_safe_cleanup_inventory_no_delete_20260604_210232.md",
+      "size": 585,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-PDISK-R2_explicit_cleanup_plan_no_delete_20260604_210418.md",
+      "size": 5115,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R12_day4_evidence_index_no_patch_no_order_20260604_203314.md",
+      "size": 2130,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R13B_sealed_data_integrity_finalizer_exclude_self_sha_20260604_203618.md",
+      "size": 890,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R13_sealed_data_integrity_audit_no_patch_no_replay_no_order_20260604_203422.md",
+      "size": 668,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R14_candidate_promotion_audit_no_patch_no_replay_no_order_20260604_203712.md",
+      "size": 383,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R15_misb_shelf_width_distribution_audit_no_patch_no_replay_no_order_20260604_203827.md",
+      "size": 448,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R16_mist_response_futures_impulse_audit_no_patch_no_replay_no_order_20260604_204031.md",
+      "size": 461,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R17B_compact_snapshot_sync_view_data_invalid_finalizer_20260604_205244.md",
+      "size": 434,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R17_snapshot_sync_view_data_invalid_audit_no_patch_no_replay_no_order_20260604_204256.md",
+      "size": 469,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R18_dhan_miso_unavailable_audit_no_patch_no_replay_no_order_20260604_205403.md",
+      "size": 433,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R19A_helper_source_locator_no_patch_no_order_20260604_205537.md",
+      "size": 461,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R19B_pcheck_disk_emoji_helper_patch_no_order_20260604_205659.md",
+      "size": 466,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R19C_pfeedcheck_nameerror_patch_plan_no_patch_no_order_20260604_205815.md",
+      "size": 505,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R19D_pfeedcheck_zerodha_growth_helper_patch_no_order_20260604_205936.md",
+      "size": 619,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R20_day4_consolidated_milestone_and_tomorrow_plan_no_patch_no_order_20260604_210132.md",
+      "size": 8802,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R21_family_strategy_source_review_bundle_no_patch_no_order_20260604_211329.md",
+      "size": 826,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R22A_mist_micro_option_response_source_seam_audit_no_patch_no_order_20260604_211933.md",
+      "size": 1559,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R22B-DIAG_micro_option_response_context_no_patch_no_order_20260604_224928.md",
+      "size": 11288,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R22B-REPAIR_micro_option_response_return_path_repair_no_start_no_order_20260604_225050.md",
+      "size": 654,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R22B_micro_option_response_producer_patch_no_start_no_order_20260604_224759.md",
+      "size": 717,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R22C-R2_corrected_mist_branch_consumer_micro_response_selftest_no_start_no_order_20260604_225319.md",
+      "size": 528,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R22C_mist_consumer_micro_response_selftest_no_start_no_order_20260604_225141.md",
+      "size": 375,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R22D_micro_option_response_patch_finalizer_tomorrow_live_validation_no_start_no_order_20260604_225437.md",
+      "size": 2967,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R23_post_r22_micro_response_evidence_bundle_no_patch_no_order_20260604_225905.md",
+      "size": 938,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R24A_opportunity_expansion_source_seam_audit_no_patch_no_order_20260604_230020.md",
+      "size": 1912,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R24B_shadow_near_candidate_observer_helper_no_production_candidate_no_order_20260604_230313.md",
+      "size": 641,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R24C_post_r24b_shadow_near_candidate_finalizer_no_patch_no_order_20260604_230456.md",
+      "size": 2023,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25A_friday_premarket_r22_r24b_readiness_no_start_no_order_20260605_091006.md",
+      "size": 479,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25A_friday_premarket_r22_r24b_readiness_no_start_no_order_20260605_091015.md",
+      "size": 479,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25B-WAIT_post_open_health_recheck_no_start_no_stop_no_order_20260605_091425.md",
+      "size": 483,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25B-WAIT_post_open_health_recheck_no_start_no_stop_no_order_20260605_091611.md",
+      "size": 483,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25B_friday_observe_only_start_or_reuse_no_patch_no_order_20260605_091243.md",
+      "size": 381,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25C_features_strategy_stale_log_triage_no_start_no_stop_no_patch_no_order_20260605_091725.md",
+      "size": 545,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25D_r22b_wrapper_side_kwarg_hotfix_no_start_no_stop_no_order_20260605_091906.md",
+      "size": 465,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25E_refresh_features_strategy_after_r25d_hotfix_no_feeds_no_order_20260605_092014.md",
+      "size": 697,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25F_recover_missing_features_strategy_after_r25e_no_kill_no_feeds_no_order_20260605_092129.md",
+      "size": 698,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25G_live_r22_r24_micro_response_shadow_validator_no_patch_no_order_20260605_092342.md",
+      "size": 800,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25H_feature_consumer_view_provider_ready_inspector_no_patch_no_order_20260605_092458.md",
+      "size": 677,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25J_rolling_r22_snapshot_tradability_sampler_no_patch_no_order_20260605_093000.md",
+      "size": 657,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25K_futures_source_inventory_after_fut_missing_pcheck_no_patch_no_order_20260605_095301.md",
+      "size": 507,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25L_option_side_role_consistency_sampler_no_patch_no_order_20260605_095512.md",
+      "size": 645,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25M-R2_corrected_invalid_member_anomaly_sampler_no_patch_no_order_20260605_104251.md",
+      "size": 658,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25M_invalid_member_anomaly_clamped_sampler_no_patch_no_order_20260605_101117.md",
+      "size": 651,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25N_shadow_opportunity_snapshot_freeze_no_patch_no_order_20260605_134052.md",
+      "size": 11150,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25N_valid_frame_family_opportunity_sampler_no_patch_no_order_20260605_110051.md",
+      "size": 651,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25O_candidate_promotion_gap_inspector_no_patch_no_order_20260605_110846.md",
+      "size": 638,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25O_day5_pseal_completion_finalizer_no_patch_no_order_20260605_152150.md",
+      "size": 773,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25P_day5_compact_evidence_bundle_no_patch_no_order_20260605_152449.md",
+      "size": 824,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25P_mist_futures_impulse_gap_inspector_no_patch_no_order_20260605_111037.md",
+      "size": 641,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25R_futures_kinetic_primitive_gap_sampler_no_patch_no_order_20260605_112133.md",
+      "size": 648,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R25T_readonly_hypothetical_futures_kinetics_from_raw_ticks_no_patch_no_order_20260605_113952.md",
+      "size": 3631,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R26A_day5_bundle_root_cause_freeze_no_patch_no_order_20260607_112913.md",
+      "size": 2071,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R26B_micro_futures_kinetics_producer_patch_no_start_no_order_20260607_113211.md",
+      "size": 590,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R26C_micro_futures_kinetics_mist_consumer_selftest_no_patch_no_order_20260607_113339.md",
+      "size": 1458,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R26D-R2_corrected_redisraw_sealed_micro_futures_kinetics_validator_no_patch_no_order_20260607_113823.md",
+      "size": 2202,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R26D-R3_preserve_blank_values_redisraw_futures_kinetics_validator_no_patch_no_order_20260607_114851.md",
+      "size": 5053,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R26D-R4_chronological_sealed_micro_futures_kinetics_validator_no_patch_no_order_20260607_115028.md",
+      "size": 4877,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R26D_day5_sealed_micro_futures_kinetics_validator_no_patch_no_order_20260607_113438.md",
+      "size": 651,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R26E_micro_futures_kinetics_patch_chain_finalizer_monday_observe_ready_no_patch_no_order_20260607_115137.md",
+      "size": 2031,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R26F_micro_futures_kinetics_chain_evidence_bundle_no_patch_no_order_20260607_115245.md",
+      "size": 952,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R27A_misb_shelf_validation_root_cause_audit_no_patch_no_order_20260607_115657.md",
+      "size": 15478,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R27B_misb_shelf_width_scale_window_audit_no_patch_no_order_20260607_115937.md",
+      "size": 5528,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R27C_misb_shelf_threshold_scenario_quality_audit_no_patch_no_order_20260607_120106.md",
+      "size": 8847,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R27D_misb_current_inclusive_shelf_reference_audit_no_patch_no_order_20260607_120243.md",
+      "size": 9679,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R27E_misb_prior_shelf_breakout_ref_patch_no_start_no_order_20260607_120500.md",
+      "size": 936,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R27F_sealed_prior_shelf_ref_contract_passthrough_validator_no_patch_no_order_20260607_120622.md",
+      "size": 7715,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R27G_misb_prior_shelf_ref_contract_passthrough_patch_no_start_no_order_20260607_120850.md",
+      "size": 592,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R27H_rerun_sealed_prior_ref_contract_passthrough_validator_no_patch_no_order_20260607_121008.md",
+      "size": 8415,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R27I_misb_prior_shelf_ref_patch_chain_finalizer_monday_observe_ready_no_patch_no_order_20260607_121138.md",
+      "size": 2142,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R27J_misb_prior_shelf_ref_chain_evidence_bundle_no_patch_no_order_20260607_121241.md",
+      "size": 1166,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R28A_weekend_consolidated_finalizer_monday_observe_checklist_no_patch_no_order_20260607_121432.md",
+      "size": 2828,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R28B_final_weekend_observe_ready_evidence_bundle_no_patch_no_order_20260607_121600.md",
+      "size": 850,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R29A-R4_PREMARKET_RECONNECT_MINI_AUDIT_NO_PATCH_NO_START_NO_ORDER_after_ssh_drop_verify_no_side_effect_source_safety_r28b_ready_20260607_135037.md",
+      "size": 760,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R29B-R1_INTERRUPTED_SUNDAY_START_ATTEMPT_SIDE_EFFECT_AUDIT_NO_PATCH_NO_START_NO_ORDER_verify_r29b_interrupted_paste_did_not_start_risk_execution_or_order_20260607_135857.md",
+      "size": 939,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R29B-R2_MINIMAL_MONDAY_OBSERVE_ONLY_START_REUSE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_minimal_helper_based_start_reuse_after_r29a_pass_20260607_135950.md",
+      "size": 1039,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R30A_FAMILY_MICROSTRUCTURE_COVERAGE_AUDIT_NO_PATCH_NO_START_NO_ORDER_audit_mist_misb_misc_misr_miso_required_microstructure_surfaces_and_contract_passthrough_20260607_140857.md",
+      "size": 3289,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R30B_DHAN_CONTEXT_ROOT_CAUSE_AUDIT_NO_PATCH_NO_START_NO_ORDER_audit_dhan_context_config_import_provider_runtime_redis_errors_without_start_or_patch_20260607_141044.md",
+      "size": 1953,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R30D_PROVIDER_RUNTIME_KEY_CONTRACT_ALIGNMENT_AUDIT_NO_PATCH_NO_START_NO_ORDER_compare_names_provider_runtime_publishers_readers_pcheck_expected_redis_keys_20260607_141254.md",
+      "size": 1698,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R1_INTERRUPTED_SHADOW_PNL_FEASIBILITY_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r31a_created_no_replay_no_order_no_side_effect_20260607_143923.md",
+      "size": 1025,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R2_REPLAY_PROC_IDENTIFICATION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_identify_replay_proc_one_from_r31a_r1_before_any_next_action_20260607_144010.md",
+      "size": 1858,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R3_WAIT_ON_ACTIVE_LANE_B_REPLAY_READONLY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_monitor_active_lane_b_r5d_replay_before_resuming_friday_shadow_pnl_feasibility_20260607_144052.md",
+      "size": 1445,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R4_R5D_SHADOW_RESULT_ARTIFACT_SUMMARY_NO_PATCH_NO_REPLAY_NO_ORDER_read_completed_lane_b_r5d_baseline_shadow_outputs_for_shadow_pnl_availability_20260607_154229.md",
+      "size": 1492,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R4_R5D_SHADOW_RESULT_ARTIFACT_SUMMARY_NO_PATCH_NO_REPLAY_NO_ORDER_read_completed_lane_b_r5d_baseline_shadow_outputs_for_shadow_pnl_availability_20260607_154433.md",
+      "size": 1492,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R5_EXTRACT_R5D_SHADOW_PNL_NUMBERS_NO_PATCH_NO_REPLAY_NO_ORDER_extract_baseline_vs_shadow_trade_pnl_economics_from_completed_r5d_artifacts_20260607_154615.md",
+      "size": 885,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R6_ZERO_CANDIDATE_BLOCKER_DECOMPOSITION_NO_PATCH_NO_REPLAY_NO_ORDER_explain_why_r5d_baseline_and_shadow_generated_zero_candidates_zero_trades_null_pnl_20260607_155734.md",
+      "size": 950,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R7_FAMILY_CANDIDATE_BRIDGE_ROOT_CAUSE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_where_family_identity_r26_r27_fields_candidate_truth_are_lost_between_features_strategy_risk_20260607_175914.md",
+      "size": 1224,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R8_REPLAY_FAMILY_BRIDGE_PATCH_SEAM_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_source_function_where_replay_bridge_skips_family_features_and_strategy_family_activation_20260607_182426.md",
+      "size": 1088,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9A_REPLAY_FAMILY_BRIDGE_EXACT_SOURCE_BODY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_extract_replay_run_feature_strategy_bridge_functions_before_narrow_patch_20260607_182643.md",
+      "size": 1002,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9B_REPLAY_FAMILY_STRATEGY_ADAPTER_BRIDGE_PATCH_NO_REPLAY_NO_ORDER_wrap_replay_strategy_decision_builder_with_existing_family_adapter_no_candidate_faking_20260607_183000.md",
+      "size": 1564,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9C-R1_REPLAY_FAMILY_BRIDGE_FALLBACK_KWARGS_HOTFIX_NO_REPLAY_NO_ORDER_remove_run_id_run_label_before_calling_old_fallback_then_static_smoke_20260607_183659.md",
+      "size": 1209,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9C_REPLAY_FAMILY_BRIDGE_STATIC_FUNCTION_SMOKE_NO_REPLAY_NO_ORDER_verify_r9b_bridge_marker_import_function_behavior_without_running_replay_20260607_183127.md",
+      "size": 976,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9D_REAL_ARTIFACT_FEATURE_ROW_BRIDGE_SMOKE_NO_REPLAY_NO_ORDER_call_patched_strategy_bridge_on_existing_r5d_feature_rows_check_family_bridge_status_candidate_truth_20260607_183840.md",
+      "size": 1359,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9E_REPLAY_FEATURE_SURFACE_BRIDGE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_why_replay_feature_rows_have_empty_family_surfaces_despite_strategy_adapter_invocation_20260607_184155.md",
+      "size": 994,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9F-R1_AST_BOUNDARY_FEATURE_ENRICHMENT_PATCH_NO_REPLAY_NO_ORDER_retry_r9f_using_ast_function_boundary_no_candidate_faking_20260607_184949.md",
+      "size": 1157,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9F-R2_CANDIDATE_TRUTH_GUARD_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_why_r9f_r1_static_smoke_created_candidate_true_300_before_any_replay_20260607_185047.md",
+      "size": 1053,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9F-R3_REPLAY_CANDIDATE_TRUTH_SANITIZER_PATCH_NO_REPLAY_NO_ORDER_separate_surface_visibility_from_candidate_truth_after_r9f_r1_enrichment_20260607_185217.md",
+      "size": 1336,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9F-R4_CANDIDATE_PAYLOAD_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_current_r9b_r9f_r1_payload_locations_before_candidate_truth_sanitizer_retry_20260607_185508.md",
+      "size": 1122,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9F-R5_RAW_DECISION_SHAPE_DUMP_NO_PATCH_NO_REPLAY_NO_ORDER_dump_exact_strategy_adapter_output_shape_after_r9b_r9f_r1_before_sanitizer_retry_20260607_185634.md",
+      "size": 1183,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9F-R6_TUPLE_CANDIDATE_TRUTH_SANITIZER_PATCH_NO_REPLAY_NO_ORDER_sanitize_tuple_candidates_and_candidate_json_surface_visibility_not_candidate_truth_20260607_185804.md",
+      "size": 1353,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9F-R7_STRATEGY_ADAPTER_CANDIDATE_PRESENT_SOURCE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_candidate_present_assignment_in_replay_strategy_adapter_before_truth_patch_20260607_190933.md",
+      "size": 1030,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9F-R8_STRATEGY_ADAPTER_CANDIDATE_PRESENT_TRUTH_PATCH_NO_REPLAY_NO_ORDER_patch_candidate_present_source_to_strict_eligible_truth_surface_available_separate_20260607_192409.md",
+      "size": 1425,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9F_REPLAY_FEATURE_FRAME_MICROSTRUCTURE_ENRICHMENT_PATCH_NO_REPLAY_NO_ORDER_add_replay_only_r26_micro_futures_r27_prior_shelf_family_surface_payload_without_candidate_faking_20260607_184547.md",
+      "size": 1612,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9G-R1_REPLAY_TIMEOUT_ARTIFACT_INSPECTION_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_r9g_timeout_partial_outputs_no_orphan_replay_before_next_smoke_20260607_193102.md",
+      "size": 1620,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9G_GUARDED_REPLAY_SMOKE_AFTER_FAMILY_BRIDGE_FIX_NO_ORDER_prove_replay_artifacts_now_have_family_surfaces_strict_candidate_truth_no_broker_side_effect_20260607_192539.md",
+      "size": 2626,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9H_MICRO_REPLAY_DATASET_SLICE_BUILD_NO_PATCH_NO_REPLAY_NO_ORDER_build_tiny_dataset_slice_for_fast_family_bridge_replay_smoke_without_touching_source_dataset_20260607_193229.md",
+      "size": 1427,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9I_MICRO_DATASET_REPLAY_SMOKE_AFTER_BRIDGE_FIX_NO_ORDER_run_fast_micro_replay_verify_family_surfaces_r26_r27_strict_candidate_truth_no_broker_side_effect_20260607_193402.md",
+      "size": 2681,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9J_STRICT_CANDIDATE_FLOW_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_211_strict_nested_candidates_why_not_reaching_run_summary_candidate_audit_risk_execution_shadow_20260607_193810.md",
+      "size": 1428,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9K-R1_REAL_ARTIFACT_TOP_LEVEL_STRICT_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_retry_top_level_candidate_propagation_using_real_r9i_feature_rows_with_known_strict_nested_candidates_20260607_194152.md",
+      "size": 1486,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9K-R2_PREFIX_WINDOW_TOP_LEVEL_STRICT_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_retry_top_level_candidate_propagation_smoke_with_real_r9i_prefix_window_preserving_state_20260607_194326.md",
+      "size": 1417,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9K-R3_FEATURE_STRATEGY_PARITY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_compare_r9i_saved_feature_rows_vs_strategy_rows_around_strict_nested_candidates_before_top_level_patch_retry_20260607_194452.md",
+      "size": 1358,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9K-R4_ADAPTED_ROW_TOP_LEVEL_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_promote_strict_nested_candidates_inside_already_adapted_strategy_rows_before_output_export_20260607_200438.md",
+      "size": 1357,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9K-R5_ADAPTED_ROW_EXPORT_RETURN_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_adapted_rows_return_or_strategy_decision_export_seam_after_r9k_r4_needle_miss_20260607_200609.md",
+      "size": 891,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9K-R6_EXACT_MERGED_APPEND_TOP_LEVEL_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_patch_exact_merged_before_adapted_rows_append_using_r9k_r5_locator_20260607_201430.md",
+      "size": 1305,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9K_TOP_LEVEL_STRICT_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_promote_best_strict_nested_family_candidate_to_top_level_strategy_decision_without_candidate_faking_20260607_194033.md",
+      "size": 1404,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9L_MICRO_REPLAY_AFTER_TOP_LEVEL_PROPAGATION_PATCH_NO_ORDER_verify_strict_family_candidates_flow_to_top_level_candidate_audit_risk_execution_shadow_20260607_201648.md",
+      "size": 2652,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9M_COMPARE_R9I_R9L_STRICT_CANDIDATE_REGRESSION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_compare_r9i_vs_r9l_strategy_candidate_containers_after_top_level_propagation_patch_20260607_202217.md",
+      "size": 1298,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9N_R9I_R9L_ROW168_CANDIDATE_FIELD_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_exact_candidate_truth_field_regression_after_r9k_r6_patch_20260607_202423.md",
+      "size": 1140,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9O_CANDIDATE_TRUTH_INTERACTION_SOURCE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_r9f_r8_r9k_r6_candidate_truth_assignment_order_after_r9l_strict_regression_20260607_202714.md",
+      "size": 1080,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9P_R9I_R9L_FEATURE_SURFACE_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_compare_feature_surfaces_before_adapter_where_r9i_had_strict_misb_and_r9l_lost_it_20260607_202947.md",
+      "size": 1173,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9Q-R1_EXTRACT_ROW168_ONLY_NO_PATCH_NO_REPLAY_NO_ORDER_print_exact_r9i_r9l_row168_feature_strategy_candidate_truth_full_20260607_203520.md",
+      "size": 1315,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9Q-R2_COMPACT_ROW168_R9I_R9L_TRUTH_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_compact_compare_row168_r9i_r9l_feature_surface_candidate_truth_without_large_json_flood_20260607_204018.md",
+      "size": 1322,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9Q_FIRST_STRICT_MISB_ROW_EXACT_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_extract_first_actual_r9i_strict_misb_row_and_compare_r9i_r9l_feature_strategy_truth_20260607_203309.md",
+      "size": 1308,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9R_ROW168_ADAPTER_INPUT_OUTPUT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_call_strategy_adapter_directly_on_r9l_row168_feature_to_find_candidate_container_drop_20260607_204235.md",
+      "size": 1231,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_205535.md",
+      "size": 2236,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_212516.md",
+      "size": 2236,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9T-R0_PASTE_CONTAMINATION_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_accidental_output_paste_did_not_start_replay_order_risk_execution_or_modify_files_20260607_220949.md",
+      "size": 1286,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9T-R1_MISB_CANDIDATE_BLOCKER_TRUTH_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_misb_candidate_blockers_score_eligible_after_r9t_smoke_showed_candidate_containers_but_zero_strict_20260607_221135.md",
+      "size": 1380,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9T-R2_REPLAY_BRIDGE_VS_DIRECT_ADAPTER_CANDIDATE_FIELD_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_compare_direct_adapter_strict_candidates_against_replay_run_bridge_rows_same_feature_indexes_20260607_221520.md",
+      "size": 1334,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9T-R3A_ALLOWLISTED_DIRTY_TREE_MUTABLEMAPPING_IMPORT_PATCH_AND_FOCUS_SMOKE_NO_REPLAY_NO_ORDER_allow_expected_dirty_lane_files_patch_only_replay_run_mutablemapping_import_verify_bridge_focus_20260607_223735.md",
+      "size": 3213,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9T-R3B_SEAL_MUTABLEMAPPING_PATCH_SHORTPATH_VERIFY_NO_PATCH_NO_REPLAY_NO_ORDER_verify_compile_import_bridge_focus_after_r3a_20260607_223909.md",
+      "size": 1461,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9T_ADAPTER_RESULT_DATACLASS_NORMALIZATION_PATCH_NO_REPLAY_NO_ORDER_normalize_ReplayStrategyAdapterResult_to_dict_before_bridge_merge_preserve_candidates_20260607_220544.md",
+      "size": 1365,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9U_MICRO_REPLAY_AFTER_BRIDGE_PATCH_INSPECT_CANDIDATE_AUDIT_RISK_EXECUTION_SHADOW_NO_ORDER_micro_replay_inspect_20260607_224505.md",
+      "size": 2475,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9V_AUDIT_RISK_EXECUTION_SHADOW_ACTION_MAPPING_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_why_candidate_positive_rows_do_not_create_risk_or_execution_shadow_actions_20260607_225047.md",
+      "size": 1480,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9W_PATCH_RISK_SHADOW_ENTRY_ACTION_NORMALIZATION_AND_SMOKE_NO_REPLAY_NO_ORDER_normalize_replay_promoted_entry_side_to_enter_call_put_for_risk_shadow_20260607_225359.md",
+      "size": 1948,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A-R9X_MICRO_REPLAY_AFTER_RISK_ACTION_PATCH_INSPECT_EXECUTION_SHADOW_FILL_PNL_NO_ORDER_micro_replay_verify_candidate_to_risk_execution_shadow_fill_and_pnl_surfaces_20260607_225533.md",
+      "size": 2461,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A_FRIDAY_SHADOW_PNL_FEASIBILITY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_friday_capture_fut_opt_feature_decision_timing_for_shadow_pnl_reconstruction_20260607_142215.md",
+      "size": 1560,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31A_R9T_R1_TO_NEXT_THREAD_CANDIDATE_POSITIVE_BRIDGE_EVIDENCE_bundle_latest_r9t_r1_candidate_positive_adapter_truth_and_bridge_context_for_new_thread_20260607_221723.md",
+      "size": 1519,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "REPLAY_BRIDGE",
+        "INSTRUMENT_METADATA",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31B_ACCEPT_LANE_B_WAIT_STATE_AND_MONDAY_CANDIDATE_POSITIVE_PLAN_NO_PATCH_NO_START_NO_ORDER_20260607_155806.md",
+      "size": 16654,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "REPLAY_BRIDGE",
+        "INSTRUMENT_METADATA",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31C_MONDAY_OBSERVE_ONLY_PREMARKET_SAFETY_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_20260607_175928.md",
+      "size": 36551,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D1_ZERODHA_AUTH_BOOTSTRAP_CONFIG_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260607_182750.md",
+      "size": 26925,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D2_ZERODHA_AUTH_REPAIR_ROUTE_PLAN_NO_PATCH_NO_START_NO_ORDER_20260607_183018.md",
+      "size": 11486,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D3R_CORRECTED_INTERACTIVE_ZERODHA_TOKEN_REFRESH_NO_PATCH_NO_START_NO_ORDER_20260607_183232.md",
+      "size": 2984,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D3_APPROVED_ZERODHA_TOKEN_REFRESH_NO_PATCH_NO_START_NO_ORDER_20260607_183118.md",
+      "size": 3436,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D4R_CORRECTED_ZERODHA_AUTH_VALIDATION_NO_PATCH_NO_START_NO_ORDER_20260607_183846.md",
+      "size": 1634,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D4_ZERODHA_AUTH_VALIDATION_NO_PATCH_NO_START_NO_ORDER_20260607_183718.md",
+      "size": 2554,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INSTRUMENT_METADATA",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D5A_OFFMARKET_FEED_DEAD_FREEZE_AND_SAFE_FEEDS_STOP_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_184214.md",
+      "size": 5159,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INSTRUMENT_METADATA",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D5R_MARKET_LIVE_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_094825.md",
+      "size": 38363,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D5S_EXISTING_GENERIC_MAIN_OBSERVE_ONLY_RUNTIME_SAFETY_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260608_095109.md",
+      "size": 18873,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INSTRUMENT_METADATA",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D5_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_183935.md",
+      "size": 27679,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "INSTRUMENT_METADATA",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31D_OBSERVE_ONLY_START_REUSE_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_182433.md",
+      "size": 29184,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31E_10MIN_CANDIDATE_WATCH_WINDOW_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_095409.md",
+      "size": 24064,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31F_30MIN_DEEP_CANDIDATE_BLOCKER_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_100811.md",
+      "size": 29782,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31G_STRATEGY_BRIDGE_AND_CONTRACT_ERROR_SEAM_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260608_104135.md",
+      "size": 36144,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31H_FEATURE_FAMILY_COMMON_KEYS_CONTRACT_SEAM_LOCATOR_NO_PATCH_NO_START_NO_ORDER_20260608_110710.md",
+      "size": 91993,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31I_LIVE_SESSION_CONTINUITY_CANDIDATE_SAFETY_CHECK_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_111226.md",
+      "size": 2850690,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31J_LIVE_SESSION_ONLY_COMPACT_CONTINUITY_CHECK_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_112631.md",
+      "size": 1894109,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31K_LIVE_SESSION_COMPACT_CANDIDATE_SAFETY_MONITOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_112952.md",
+      "size": 2378,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31L_LIVE_SESSION_COMPACT_VALIDITY_PROVIDER_READY_MONITOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_114324.md",
+      "size": 16562,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "INTERNAL_ORDER_INTENT",
+        "INSTRUMENT_METADATA",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933.md",
+      "size": 36277,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "DASHBOARD",
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "INTERNAL_ORDER_INTENT",
+        "INSTRUMENT_METADATA",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312.md",
+      "size": 149949,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INTERNAL_ORDER_INTENT",
+        "R31_COMMON_KEYS_SEAM",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32C-R2_FINALIZE_SERIOUS_GATE_OPENING_PLAN_FROM_EXISTING_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_write_missing_proof_report_bundle_from_r32c_r1_plan_and_grep_20260611_224802.md",
+      "size": 4758,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32D-R1_REPAIR_SMOKE_INTERNAL_ORDER_INTENT_PIPELINE_NO_NEW_PATCH_NO_REPLAY_NO_ORDER_rerun_existing_r32d_patch_smoke_with_pythonpath_and_capture_untracked_files_20260611_225709.md",
+      "size": 2045,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32D_INTERNAL_ORDER_INTENT_PIPELINE_PATCH_NO_BROKER_SEND_NO_ORDER_patch_internal_candidate_risk_execution_order_intent_pipeline_with_broker_transport_hard_block_20260611_225203.md",
+      "size": 1278,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32E_REAL_CANDIDATE_TO_INTERNAL_ORDER_INTENT_BRIDGE_NO_PATCH_NO_REPLAY_NO_ORDER_feed_existing_r9x_candidate_positive_rows_into_r32d_internal_order_intent_pipeline_20260611_230113.md",
+      "size": 1708,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32F-R1_COMPACT_AUDIT_R32E_RISK_REJECTIONS_NO_PATCH_NO_REPLAY_NO_ORDER_compact_inspect_r32e_internal_ledgers_rejection_reasons_20260611_230525.md",
+      "size": 863,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32G_PATCH_REAL_CANDIDATE_HOLD_TO_INTERNAL_ENTRY_NORMALIZER_NO_REPLAY_NO_ORDER_normalize_real_r9x_candidate_present_hold_rows_to_internal_entry_for_r32d_shadow_pipeline_20260611_231133.md",
+      "size": 1651,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32H-R1_COMPACT_FREEZE_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_finalize_r32h_freeze_without_printing_huge_r32f_samples_20260611_231730.md",
+      "size": 1439,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32H_FREEZE_INTERNAL_ORDER_INTENT_PIPELINE_CHAIN_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r32d_r32g_internal_pipeline_source_proofs_ledgers_and_next_integration_step_20260611_231344.md",
+      "size": 1130,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32I_AUTO_MATERIALIZE_INTERNAL_ORDER_INTENT_FROM_REPLAY_RESULTS_NO_BROKER_NO_ORDER_add_offline_materializer_for_replay_strategy_decisions_to_r32d_r32g_internal_ledgers_20260611_231914.md",
+      "size": 1785,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32J_FULL_LIMIT_MATERIALIZER_LEDGER_SUMMARY_NO_PATCH_NO_REPLAY_NO_ORDER_run_existing_r32i_materializer_full_limit_and_compare_to_r9x_candidate_count_20260611_232148.md",
+      "size": 1581,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "INTERNAL_ORDER_INTENT",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R32K_FINAL_INTERNAL_ORDER_INTENT_CHAIN_HANDOFF_NO_PATCH_NO_REPLAY_NO_ORDER_compact_freeze_r32d_to_r32j_breakthrough_and_write_next_thread_miv_prompt_20260611_232339.md",
+      "size": 1385,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33A-R1_SHELL_ONLY_THREE_DAY_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_rescue_after_heredoc_and_rank_three_day_blockers_with_grep_counts_20260611_234448.md",
+      "size": 1002,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33A-R2_NARROW_THREE_DAY_CAPTURE_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_narrow_to_real_capture_pseal_replay_artifacts_avoid_43994_file_noise_20260611_234810.md",
+      "size": 1027,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33A-R3B_SALVAGE_BLOCKER_RANK_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_finish_blocker_keyword_counts_from_latest_r33a_file_index_after_interrupted_r3_20260611_235359.md",
+      "size": 861,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33A-R3_FAST_THREE_DAY_BLOCKER_RANK_NO_PATCH_NO_REPLAY_NO_ORDER_fast_rank_blockers_from_narrow_708_file_index_without_full_scan_20260611_235139.md",
+      "size": 818,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33A-R4_TIMEOUT_BOUNDED_THREE_DAY_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_finish_blocker_rank_with_timeout_grep_no_hang_20260611_235518.md",
+      "size": 1542,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33B_PROVIDER_CONTEXT_READINESS_CONTRACT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_locate_option_context_provider_ready_selected_option_tradability_publish_read_contracts_20260611_235732.md",
+      "size": 2201,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33D-R0_STAGE_FLAGS_CONTRACT_PATCH_SEAM_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_feature_stage_flags_producer_missing_tradability_snapshot_sync_classic_degraded_keys_before_tiny_patch_20260612_094942.md",
+      "size": 912,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33D-R1_TINY_STAGE_FLAGS_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_add_missing_stage_flags_keys_conservative_false_defaults_after_r33d_r0_20260612_095351.md",
+      "size": 1417,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33D-R2_STRATEGY_STAGE_FLAGS_NORMALIZER_PATCH_NO_REPLAY_NO_ORDER_add_conservative_missing_stage_flags_defaults_before_strategy_contract_validation_20260612_095655.md",
+      "size": 863,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33D-R3_REPAIR_STRATEGY_STAGE_FLAGS_PATCH_SYNTAX_NO_REPLAY_NO_ORDER_restore_r33d_r2_before_file_and_apply_clean_normalizer_patch_20260612_095845.md",
+      "size": 951,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "MIV_RESEARCH",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33E_NFO_METADATA_REFRESH_ROUTE_CONFIRM_NO_PATCH_NO_START_NO_ORDER_extract_existing_safe_nfo_refresh_route_after_r33d_r3_before_tape_growth_repair_20260612_100218.md",
+      "size": 1426,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33F-R1_CONTROLLED_NFO_METADATA_REFRESH_MODULE_INVOKE_NO_SERVICE_START_NO_ORDER_rerun_r33f_with_pythonpath_module_invocation_after_modulenotfounderror_20260612_100726.md",
+      "size": 885,
+      "status": "untracked"
+    },
+    {
+      "labels": [
+        "REPLAY_BRIDGE",
+        "INSTRUMENT_METADATA",
+        "CANDIDATE_RISK_EXECUTION",
+        "EVIDENCE_DOCS"
+      ],
+      "path": "docs/milestones/LANE-X-R33F_CONTROLLED_NFO_METADATA_REFRESH_NO_SERVICE_START_NO_ORDER_refresh_stale_nfo_instruments_csv_data_only_with_backup_and_validation_20260612_100558.md",
+      "size": 737,
+      "status": "untracked"
+    }
+  ],
+  "potentially_order_sensitive_files": [
+    "app/mme_scalpx/ops_dashboard/server.py",
+    "app/mme_scalpx/replay/miv_research_evaluator.py",
+    "app/mme_scalpx/replay/strategy_adapter.py",
+    "app/mme_scalpx/services/feature_family/misb_surface.py",
+    "app/mme_scalpx/services/features.py",
+    "app/mme_scalpx/services/strategy.py",
+    "app/mme_scalpx/services/strategy_family/internal_order_intent_pipeline.py",
+    "app/mme_scalpx/services/strategy_family/miv_r_contract.py",
+    "bin/audit_miv_r1b_gate_surfaces_no_patch_no_replay_no_order.py",
+    "bin/audit_miv_r2b_evaluator_output_shape_no_patch_no_replay_no_order.py",
+    "bin/lane_x_r32i_materialize_internal_order_intent_from_replay_results_no_broker.py",
+    "bin/lane_x_shadow_near_candidate_observer.py",
+    "bin/proof_miv_r1a_strategy_family_dormant_contract_no_replay_no_order.py",
+    "bin/proof_miv_r2_zerodha_lite_research_evaluator_no_replay_no_order.py",
+    "bin/proof_miv_r2c_neutral_label_route_no_patch_no_replay_no_order.py",
+    "bin/proof_r32d_internal_order_intent_pipeline_no_broker.py",
+    "bin/proof_r32g_real_candidate_hold_normalizer_no_broker.py",
+    "bin/replay_run.py",
+    "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260604_151929.md",
+    "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260604_203023.md",
+    "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260605_152027.md",
+    "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260608_152347.md",
+    "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260609_151625.md",
+    "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260611_152315.md",
+    "docs/milestones/B1-PROFIT-LIVE-R37F_DETACHED_PSEAL_FUNCTION_REPAIR_NO_ORDER_detached_market_close_seal_export_no_order_20260612_191653.md",
+    "docs/milestones/LANE-B-R1A_RECOVER_R1_SURFACE_AUDIT_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_121122.md",
+    "docs/milestones/LANE-B-R1_REPLAY_SURFACE_BASELINE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_120747.md",
+    "docs/milestones/LANE-B-R2A_REPLAY_DATASET_AND_PREVIOUS_RUN_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_134930.md",
+    "docs/milestones/LANE-B-R2B_REPLAY_CLI_ABI_AND_EXACT_SMOKE_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_135114.md",
+    "docs/milestones/LANE-B-R2C_EXACT_A7_20260602_OFFLINE_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_135738.md",
+    "docs/milestones/LANE-B-R2D_R2C_REPLAY_ARTIFACT_SHAPE_COUNT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140338.md",
+    "docs/milestones/LANE-B-R2E1_FINGERPRINT_PROVENANCE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141109.md",
+    "docs/milestones/LANE-B-R2E_COMPARE_R2C_VS_B3R61D_REPLAY_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_140836.md",
+    "docs/milestones/LANE-B-R2F-R1_INTERRUPTED_REPLAY_FREEZE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r2f_heredoc_created_no_replay_no_order_no_side_effect_20260607_141459.md",
+    "docs/milestones/LANE-B-R2F2_CORRECTED_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141428.md",
+    "docs/milestones/LANE-B-R2F_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r1_to_r2e1_a7_single_day_replay_reproducibility_with_fingerprint_caveat_20260607_141320.md",
+    "docs/milestones/LANE-B-R3A_EXACT_RISK_EXECUTION_SHADOW_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141805.md",
+    "docs/milestones/LANE-B-R3B_FILL_MODEL_ABI_AND_R4_COMMAND_CORRECTION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141930.md",
+    "docs/milestones/LANE-B-R3_RISK_EXECUTION_SHADOW_PNL_READINESS_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141540.md",
+    "docs/milestones/LANE-B-R4A2_CORRECTED_SHADOW_PNL_NO_TRADE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143017.md",
+    "docs/milestones/LANE-B-R4A_SHADOW_PNL_NO_TRADE_ARTIFACT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_142909.md",
+    "docs/milestones/LANE-B-R4_A7_20260602_RISK_EXECUTION_SHADOW_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_142249.md",
+    "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143301.md",
+    "docs/milestones/LANE-B-R5A_PATCH_IMPACT_REPLAY_ROUTE_PREFLIGHT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143419.md",
+    "docs/milestones/LANE-B-R5B_BASELINE_VS_SHADOW_PATCH_IMPACT_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143653.md",
+    "docs/milestones/LANE-B-R5C_BASELINE_SHADOW_DRY_RUN_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143758.md",
+    "docs/milestones/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907.md",
+    "docs/milestones/LANE-B-R5E_COMPARE_BASELINE_SHADOW_PATCH_IMPACT_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154016.md",
+    "docs/milestones/LANE-B-R5F_FINAL_PATCH_IMPACT_AND_PNL_ROUTE_DECISION_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154208.md",
+    "docs/milestones/LANE-B-R5_FIND_VALID_CANDIDATE_OR_PATCH_IMPACT_REPLAY_ROUTE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143108.md",
+    "docs/milestones/LANE-B-R6A_STRATEGY_PNL_WAIT_STATE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154637.md",
+    "docs/milestones/LANE-B-R6B_WAIT_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154920.md",
+    "docs/milestones/LANE-B-R6_CANDIDATE_POSITIVE_DATASET_ADMISSION_GATE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154426.md",
+    "docs/milestones/LANE-MIV-LIVE-R1_OBSERVE_ONLY_CAPTURE_START_REUSE_AND_MIV_PERCENT_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_market_live_start_or_reuse_observe_only_capture_for_miv_r_after_close_percent_result_20260612_093653.md",
+    "docs/milestones/LANE-MIV-LIVE-R2_60SEC_DURABLE_TAPE_GROWTH_RECHECK_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_confirm_live_futures_and_selected_option_durable_capture_growth_after_r1_zero_short_window_20260612_093804.md",
+    "docs/milestones/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011.md",
+    "docs/milestones/LANE-MIV-LIVE-R4_READONLY_PROVIDER_FEED_LOCK_DIAG_NO_PATCH_NO_START_NO_STOP_NO_ORDER_diagnose_why_pauto_start_rc0_but_durable_fut_opt_tape_not_growing_without_start_stop_delete_20260612_094337.md",
+    "docs/milestones/LANE-MIV-LIVE-R5_READONLY_MIV_NON_APPEARANCE_AUDIT_NO_PATCH_NO_START_NO_STOP_NO_REPLAY_NO_ORDER_explain_why_miv_like_count_zero_and_find_registry_selector_source_seam_without_runtime_interference_20260612_133037.md",
+    "docs/milestones/LANE-MIV-LIVE-R7B_ZERO_CANDIDATE_ROOT_CAUSE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_101611.md",
+    "docs/milestones/LANE-MIV-LIVE-R7G_TOP40_ROBUSTNESS_AND_PNL_TIEBREAKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104030_R7F_corrected_truth_freeze.md",
+    "docs/milestones/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711.md",
+    "docs/milestones/LANE-MIV-R1B_GATE_SURFACE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_candidate_hold_runtime_disabled_classic_runtime_disabled_risk_execution_shadow_and_order_intent_gates_before_miv_evaluator_patch_20260611_231807.md",
+    "docs/milestones/LANE-MIV-R2B_EVALUATOR_OUTPUT_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_miv_r2_evaluator_outputs_with_real_timestamp_paths_neutral_label_and_blocker_cases_20260611_232406.md",
+    "docs/milestones/LANE-MIV-R2C_NEUTRAL_LABEL_ROUTE_PROOF_NO_PATCH_NO_REPLAY_NO_ORDER_prove_neutral_active_label_emits_as_label_only_and_never_routes_to_risk_execution_order_intent_20260611_232522.md",
+    "docs/milestones/LANE-MIV-R2_ZERODHA_LITE_RESEARCH_EVALUATOR_PATCH_NO_REPLAY_NO_ORDER_add_replay_research_only_miv_zerodha_lite_evaluator_and_artifact_writer_without_registry_or_gate_mutation_20260611_232250.md",
+    "docs/milestones/LANE-MIV-R3A_RESUME_AUDIT_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_audit_current_miv_work_preserve_good_modules_then_run_miv_evaluator_on_existing_artifact_rows_only_20260611_233045.md",
+    "docs/milestones/LANE-MIV-R3B-R0_INTERRUPTED_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3b_paste_did_not_run_replay_order_risk_execution_or_mutate_source_20260611_233932.md",
+    "docs/milestones/LANE-MIV-R3B_CONTENT_BASED_TICK_SURFACE_LOCATOR_AND_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_locate_real_futures_selected_option_tick_or_feature_rows_by_content_then_run_miv_evaluator_without_replay_20260611_233308.md",
+    "docs/milestones/LANE-MIV-R3C_DURABLE_CAPTURE_PAIR_EVAL_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_latest_durable_fut_and_selected_option_tape_to_generate_miv_candidates_for_tomorrow_measurement_path_20260611_234126.md",
+    "docs/milestones/LANE-MIV-R3_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_run_miv_zerodha_lite_evaluator_on_existing_r9h_r9l_r9x_artifact_rows_only_no_full_replay_20260611_232902.md",
+    "docs/milestones/LANE-MIV-R4-R0_INTERRUPTED_R3C_R4_PASTE_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r3c_r4_paste_created_no_replay_no_order_no_risk_execution_side_effect_20260611_234607.md",
+    "docs/milestones/LANE-MIV-R4-R2_COMPACT_MEASUREMENT_BUILDER_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_r4r1_located_fut_opt_tapes_build_miv_candidates_ledgers_and_shadow_percent_summary_20260611_234841.md",
+    "docs/milestones/LANE-MIV-R4-R3_AFTERMARKET_PERCENT_READINESS_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r4r2_measurement_pipeline_pass_and_tomorrow_percent_result_checklist_20260611_235103.md",
+    "docs/milestones/LANE-MIV-R4_AFTERMARKET_MEASUREMENT_PIPELINE_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_generate_miv_candidates_internal_ledgers_shadow_percent_readiness_for_tomorrow_observe_only_result_20260611_234406.md",
+    "docs/milestones/LANE-X-CLOSE-R1_PSEAL_LOCATOR_OR_CLOSE_EVIDENCE_FALLBACK_NO_PATCH_NO_ORDER_recover_from_pseal_command_not_found_and_seal_or_bundle_close_evidence_20260608_152333.md",
+    "docs/milestones/LANE-X-CLOSE-R2B_REPAIR_CLOSE_R2_REPORT_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_repair_report_handoff_bundle_after_close_r2_python_report_writer_nameerror_20260608_155959.md",
+    "docs/milestones/LANE-X-CLOSE-R3_FINALIZE_20260609_PSEAL_NO_PATCH_NO_REPLAY_NO_ORDER_finalize_today_pseal_pass_and_create_handoff_bundle_20260609_152423.md",
+    "docs/milestones/LANE-X-CLOSE-R3_corrected_pseal_completion_finalizer_20260604_152311.md",
+    "docs/milestones/LANE-X-CLOSE-R5_verify_r4_post_r11_pseal_completion_20260604_203209.md",
+    "docs/milestones/LANE-X-CLOSE-R5_verify_r4_post_r11_pseal_completion_20260604_203215.md",
+    "docs/milestones/LANE-X-DASH-R1_dashboard_lane_evidence_bundle_no_patch_no_order_20260604_230829.md",
+    "docs/milestones/LANE-X-DASH-R2A_SOURCE_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_audit_existing_dashboard_r3h_lite_source_lane_x_inputs_and_patch_needles_20260604_231059.md",
+    "docs/milestones/LANE-X-DASH-R2B-CONFIRM_READ_ONLY_AFTER_CUT_PATCH_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_confirm_whether_cut_r2b_patch_changed_dashboard_source_or_not_20260604_231421.md",
+    "docs/milestones/LANE-X-DASH-R2B-TINY-SEAL_STATIC_OBSERVE_PANEL_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_seal_existing_lx_tiny_source_markers_compile_import_ast_safety_20260604_232058.md",
+    "docs/milestones/LANE-X-DASH-R2C_RUNTIME_SEAL_LX_TINY_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_lane_x_observe_page_markers_20260604_232202.md",
+    "docs/milestones/LANE-X-DASH-R3A_SIMPLIFY_DYNAMIC_TRUTH_BOARD_PLAN_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_plan_replace_complex_static_lane_x_panel_with_simple_dynamic_truth_board_20260612_102214.md",
+    "docs/milestones/LANE-X-DASH-R3B_DYNAMIC_SIMPLE_TRUTH_BOARD_PATCH_NO_REDIS_WRITE_NO_START_NO_ORDER_NO_PAPER_20260612_102452.md",
+    "docs/milestones/LANE-X-DASH-R3C_RUNTIME_SEAL_DYNAMIC_TRUTH_BOARD_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_r3b_dynamic_truth_board_20260612_102624.md",
+    "docs/milestones/LANE-X-DASH-R3D_ERROR_TRUTH_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_classify_current_review_errors_as_active_or_historical_before_dashboard_next_action_refine_20260612_103027.md",
+    "docs/milestones/LANE-X-DASH-R3E_REFINE_NEXT_ACTION_FRESH_ERROR_ONLY_NO_REDIS_WRITE_NO_START_NO_ORDER_NO_PAPER_20260612_103200.md",
+    "docs/milestones/LANE-X-DASH-R3F_RUNTIME_SEAL_R3E_FRESH_ERROR_NEXT_ACTION_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_verify_next_action_no_longer_overwarns_on_historical_errors_20260612_103331.md",
+    "docs/milestones/LANE-X-LIVE-R1A_SALVAGE_COMPLETED_LIVE_R1_SAMPLES_NO_PATCH_NO_REPLAY_NO_ORDER_create_proof_from_completed_live_r1_samples_after_report_writer_nameerror_20260608_100135.md",
+    "docs/milestones/LANE-X-LIVE-R2_30MIN_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_ORDER_watch_live_decisions_for_candidate_positive_evidence_observe_only_20260608_101421.md",
+    "docs/milestones/LANE-X-LIVE-R3_RECORD_AND_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_record_live_growth_and_watch_candidate_positive_evidence_observe_only_20260609_101132.md",
+    "docs/milestones/LANE-X-LIVE-R4_DETACHED_TILL_CLOSE_CAPTURE_CANDIDATE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_self_running_live_capture_growth_and_candidate_positive_watch_until_close_20260611_094905.md",
+    "docs/milestones/LANE-X-PDISK-R1_safe_cleanup_inventory_no_delete_20260604_210232.md",
+    "docs/milestones/LANE-X-PDISK-R2_explicit_cleanup_plan_no_delete_20260604_210418.md",
+    "docs/milestones/LANE-X-R12_day4_evidence_index_no_patch_no_order_20260604_203314.md",
+    "docs/milestones/LANE-X-R13_sealed_data_integrity_audit_no_patch_no_replay_no_order_20260604_203422.md",
+    "docs/milestones/LANE-X-R14_candidate_promotion_audit_no_patch_no_replay_no_order_20260604_203712.md",
+    "docs/milestones/LANE-X-R19B_pcheck_disk_emoji_helper_patch_no_order_20260604_205659.md",
+    "docs/milestones/LANE-X-R19C_pfeedcheck_nameerror_patch_plan_no_patch_no_order_20260604_205815.md",
+    "docs/milestones/LANE-X-R19D_pfeedcheck_zerodha_growth_helper_patch_no_order_20260604_205936.md",
+    "docs/milestones/LANE-X-R20_day4_consolidated_milestone_and_tomorrow_plan_no_patch_no_order_20260604_210132.md",
+    "docs/milestones/LANE-X-R21_family_strategy_source_review_bundle_no_patch_no_order_20260604_211329.md",
+    "docs/milestones/LANE-X-R22A_mist_micro_option_response_source_seam_audit_no_patch_no_order_20260604_211933.md",
+    "docs/milestones/LANE-X-R22B-DIAG_micro_option_response_context_no_patch_no_order_20260604_224928.md",
+    "docs/milestones/LANE-X-R22B-REPAIR_micro_option_response_return_path_repair_no_start_no_order_20260604_225050.md",
+    "docs/milestones/LANE-X-R22B_micro_option_response_producer_patch_no_start_no_order_20260604_224759.md",
+    "docs/milestones/LANE-X-R22C-R2_corrected_mist_branch_consumer_micro_response_selftest_no_start_no_order_20260604_225319.md",
+    "docs/milestones/LANE-X-R22C_mist_consumer_micro_response_selftest_no_start_no_order_20260604_225141.md",
+    "docs/milestones/LANE-X-R22D_micro_option_response_patch_finalizer_tomorrow_live_validation_no_start_no_order_20260604_225437.md",
+    "docs/milestones/LANE-X-R23_post_r22_micro_response_evidence_bundle_no_patch_no_order_20260604_225905.md",
+    "docs/milestones/LANE-X-R24A_opportunity_expansion_source_seam_audit_no_patch_no_order_20260604_230020.md",
+    "docs/milestones/LANE-X-R24B_shadow_near_candidate_observer_helper_no_production_candidate_no_order_20260604_230313.md",
+    "docs/milestones/LANE-X-R24C_post_r24b_shadow_near_candidate_finalizer_no_patch_no_order_20260604_230456.md",
+    "docs/milestones/LANE-X-R25A_friday_premarket_r22_r24b_readiness_no_start_no_order_20260605_091006.md",
+    "docs/milestones/LANE-X-R25A_friday_premarket_r22_r24b_readiness_no_start_no_order_20260605_091015.md",
+    "docs/milestones/LANE-X-R25B-WAIT_post_open_health_recheck_no_start_no_stop_no_order_20260605_091425.md",
+    "docs/milestones/LANE-X-R25B-WAIT_post_open_health_recheck_no_start_no_stop_no_order_20260605_091611.md",
+    "docs/milestones/LANE-X-R25B_friday_observe_only_start_or_reuse_no_patch_no_order_20260605_091243.md",
+    "docs/milestones/LANE-X-R25C_features_strategy_stale_log_triage_no_start_no_stop_no_patch_no_order_20260605_091725.md",
+    "docs/milestones/LANE-X-R25D_r22b_wrapper_side_kwarg_hotfix_no_start_no_stop_no_order_20260605_091906.md",
+    "docs/milestones/LANE-X-R25E_refresh_features_strategy_after_r25d_hotfix_no_feeds_no_order_20260605_092014.md",
+    "docs/milestones/LANE-X-R25F_recover_missing_features_strategy_after_r25e_no_kill_no_feeds_no_order_20260605_092129.md",
+    "docs/milestones/LANE-X-R25G_live_r22_r24_micro_response_shadow_validator_no_patch_no_order_20260605_092342.md",
+    "docs/milestones/LANE-X-R25H_feature_consumer_view_provider_ready_inspector_no_patch_no_order_20260605_092458.md",
+    "docs/milestones/LANE-X-R25J_rolling_r22_snapshot_tradability_sampler_no_patch_no_order_20260605_093000.md",
+    "docs/milestones/LANE-X-R25K_futures_source_inventory_after_fut_missing_pcheck_no_patch_no_order_20260605_095301.md",
+    "docs/milestones/LANE-X-R25L_option_side_role_consistency_sampler_no_patch_no_order_20260605_095512.md",
+    "docs/milestones/LANE-X-R25M-R2_corrected_invalid_member_anomaly_sampler_no_patch_no_order_20260605_104251.md",
+    "docs/milestones/LANE-X-R25M_invalid_member_anomaly_clamped_sampler_no_patch_no_order_20260605_101117.md",
+    "docs/milestones/LANE-X-R25N_shadow_opportunity_snapshot_freeze_no_patch_no_order_20260605_134052.md",
+    "docs/milestones/LANE-X-R25N_valid_frame_family_opportunity_sampler_no_patch_no_order_20260605_110051.md",
+    "docs/milestones/LANE-X-R25O_candidate_promotion_gap_inspector_no_patch_no_order_20260605_110846.md",
+    "docs/milestones/LANE-X-R25O_day5_pseal_completion_finalizer_no_patch_no_order_20260605_152150.md",
+    "docs/milestones/LANE-X-R25P_day5_compact_evidence_bundle_no_patch_no_order_20260605_152449.md",
+    "docs/milestones/LANE-X-R25P_mist_futures_impulse_gap_inspector_no_patch_no_order_20260605_111037.md",
+    "docs/milestones/LANE-X-R25R_futures_kinetic_primitive_gap_sampler_no_patch_no_order_20260605_112133.md",
+    "docs/milestones/LANE-X-R26A_day5_bundle_root_cause_freeze_no_patch_no_order_20260607_112913.md",
+    "docs/milestones/LANE-X-R26B_micro_futures_kinetics_producer_patch_no_start_no_order_20260607_113211.md",
+    "docs/milestones/LANE-X-R26C_micro_futures_kinetics_mist_consumer_selftest_no_patch_no_order_20260607_113339.md",
+    "docs/milestones/LANE-X-R26D-R2_corrected_redisraw_sealed_micro_futures_kinetics_validator_no_patch_no_order_20260607_113823.md",
+    "docs/milestones/LANE-X-R26D-R3_preserve_blank_values_redisraw_futures_kinetics_validator_no_patch_no_order_20260607_114851.md",
+    "docs/milestones/LANE-X-R26D-R4_chronological_sealed_micro_futures_kinetics_validator_no_patch_no_order_20260607_115028.md",
+    "docs/milestones/LANE-X-R26D_day5_sealed_micro_futures_kinetics_validator_no_patch_no_order_20260607_113438.md",
+    "docs/milestones/LANE-X-R26E_micro_futures_kinetics_patch_chain_finalizer_monday_observe_ready_no_patch_no_order_20260607_115137.md",
+    "docs/milestones/LANE-X-R26F_micro_futures_kinetics_chain_evidence_bundle_no_patch_no_order_20260607_115245.md",
+    "docs/milestones/LANE-X-R27A_misb_shelf_validation_root_cause_audit_no_patch_no_order_20260607_115657.md",
+    "docs/milestones/LANE-X-R27C_misb_shelf_threshold_scenario_quality_audit_no_patch_no_order_20260607_120106.md",
+    "docs/milestones/LANE-X-R27D_misb_current_inclusive_shelf_reference_audit_no_patch_no_order_20260607_120243.md",
+    "docs/milestones/LANE-X-R27E_misb_prior_shelf_breakout_ref_patch_no_start_no_order_20260607_120500.md",
+    "docs/milestones/LANE-X-R27G_misb_prior_shelf_ref_contract_passthrough_patch_no_start_no_order_20260607_120850.md",
+    "docs/milestones/LANE-X-R27I_misb_prior_shelf_ref_patch_chain_finalizer_monday_observe_ready_no_patch_no_order_20260607_121138.md",
+    "docs/milestones/LANE-X-R27J_misb_prior_shelf_ref_chain_evidence_bundle_no_patch_no_order_20260607_121241.md",
+    "docs/milestones/LANE-X-R28A_weekend_consolidated_finalizer_monday_observe_checklist_no_patch_no_order_20260607_121432.md",
+    "docs/milestones/LANE-X-R28B_final_weekend_observe_ready_evidence_bundle_no_patch_no_order_20260607_121600.md",
+    "docs/milestones/LANE-X-R29A-R4_PREMARKET_RECONNECT_MINI_AUDIT_NO_PATCH_NO_START_NO_ORDER_after_ssh_drop_verify_no_side_effect_source_safety_r28b_ready_20260607_135037.md",
+    "docs/milestones/LANE-X-R29B-R1_INTERRUPTED_SUNDAY_START_ATTEMPT_SIDE_EFFECT_AUDIT_NO_PATCH_NO_START_NO_ORDER_verify_r29b_interrupted_paste_did_not_start_risk_execution_or_order_20260607_135857.md",
+    "docs/milestones/LANE-X-R29B-R2_MINIMAL_MONDAY_OBSERVE_ONLY_START_REUSE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_minimal_helper_based_start_reuse_after_r29a_pass_20260607_135950.md",
+    "docs/milestones/LANE-X-R30A_FAMILY_MICROSTRUCTURE_COVERAGE_AUDIT_NO_PATCH_NO_START_NO_ORDER_audit_mist_misb_misc_misr_miso_required_microstructure_surfaces_and_contract_passthrough_20260607_140857.md",
+    "docs/milestones/LANE-X-R30B_DHAN_CONTEXT_ROOT_CAUSE_AUDIT_NO_PATCH_NO_START_NO_ORDER_audit_dhan_context_config_import_provider_runtime_redis_errors_without_start_or_patch_20260607_141044.md",
+    "docs/milestones/LANE-X-R30D_PROVIDER_RUNTIME_KEY_CONTRACT_ALIGNMENT_AUDIT_NO_PATCH_NO_START_NO_ORDER_compare_names_provider_runtime_publishers_readers_pcheck_expected_redis_keys_20260607_141254.md",
+    "docs/milestones/LANE-X-R31A-R1_INTERRUPTED_SHADOW_PNL_FEASIBILITY_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_interrupted_r31a_created_no_replay_no_order_no_side_effect_20260607_143923.md",
+    "docs/milestones/LANE-X-R31A-R2_REPLAY_PROC_IDENTIFICATION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_identify_replay_proc_one_from_r31a_r1_before_any_next_action_20260607_144010.md",
+    "docs/milestones/LANE-X-R31A-R3_WAIT_ON_ACTIVE_LANE_B_REPLAY_READONLY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_monitor_active_lane_b_r5d_replay_before_resuming_friday_shadow_pnl_feasibility_20260607_144052.md",
+    "docs/milestones/LANE-X-R31A-R4_R5D_SHADOW_RESULT_ARTIFACT_SUMMARY_NO_PATCH_NO_REPLAY_NO_ORDER_read_completed_lane_b_r5d_baseline_shadow_outputs_for_shadow_pnl_availability_20260607_154229.md",
+    "docs/milestones/LANE-X-R31A-R4_R5D_SHADOW_RESULT_ARTIFACT_SUMMARY_NO_PATCH_NO_REPLAY_NO_ORDER_read_completed_lane_b_r5d_baseline_shadow_outputs_for_shadow_pnl_availability_20260607_154433.md",
+    "docs/milestones/LANE-X-R31A-R5_EXTRACT_R5D_SHADOW_PNL_NUMBERS_NO_PATCH_NO_REPLAY_NO_ORDER_extract_baseline_vs_shadow_trade_pnl_economics_from_completed_r5d_artifacts_20260607_154615.md",
+    "docs/milestones/LANE-X-R31A-R6_ZERO_CANDIDATE_BLOCKER_DECOMPOSITION_NO_PATCH_NO_REPLAY_NO_ORDER_explain_why_r5d_baseline_and_shadow_generated_zero_candidates_zero_trades_null_pnl_20260607_155734.md",
+    "docs/milestones/LANE-X-R31A-R7_FAMILY_CANDIDATE_BRIDGE_ROOT_CAUSE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_where_family_identity_r26_r27_fields_candidate_truth_are_lost_between_features_strategy_risk_20260607_175914.md",
+    "docs/milestones/LANE-X-R31A-R8_REPLAY_FAMILY_BRIDGE_PATCH_SEAM_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_source_function_where_replay_bridge_skips_family_features_and_strategy_family_activation_20260607_182426.md",
+    "docs/milestones/LANE-X-R31A-R9A_REPLAY_FAMILY_BRIDGE_EXACT_SOURCE_BODY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_extract_replay_run_feature_strategy_bridge_functions_before_narrow_patch_20260607_182643.md",
+    "docs/milestones/LANE-X-R31A-R9B_REPLAY_FAMILY_STRATEGY_ADAPTER_BRIDGE_PATCH_NO_REPLAY_NO_ORDER_wrap_replay_strategy_decision_builder_with_existing_family_adapter_no_candidate_faking_20260607_183000.md",
+    "docs/milestones/LANE-X-R31A-R9C-R1_REPLAY_FAMILY_BRIDGE_FALLBACK_KWARGS_HOTFIX_NO_REPLAY_NO_ORDER_remove_run_id_run_label_before_calling_old_fallback_then_static_smoke_20260607_183659.md",
+    "docs/milestones/LANE-X-R31A-R9C_REPLAY_FAMILY_BRIDGE_STATIC_FUNCTION_SMOKE_NO_REPLAY_NO_ORDER_verify_r9b_bridge_marker_import_function_behavior_without_running_replay_20260607_183127.md",
+    "docs/milestones/LANE-X-R31A-R9D_REAL_ARTIFACT_FEATURE_ROW_BRIDGE_SMOKE_NO_REPLAY_NO_ORDER_call_patched_strategy_bridge_on_existing_r5d_feature_rows_check_family_bridge_status_candidate_truth_20260607_183840.md",
+    "docs/milestones/LANE-X-R31A-R9E_REPLAY_FEATURE_SURFACE_BRIDGE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_why_replay_feature_rows_have_empty_family_surfaces_despite_strategy_adapter_invocation_20260607_184155.md",
+    "docs/milestones/LANE-X-R31A-R9F-R1_AST_BOUNDARY_FEATURE_ENRICHMENT_PATCH_NO_REPLAY_NO_ORDER_retry_r9f_using_ast_function_boundary_no_candidate_faking_20260607_184949.md",
+    "docs/milestones/LANE-X-R31A-R9F-R2_CANDIDATE_TRUTH_GUARD_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_why_r9f_r1_static_smoke_created_candidate_true_300_before_any_replay_20260607_185047.md",
+    "docs/milestones/LANE-X-R31A-R9F-R3_REPLAY_CANDIDATE_TRUTH_SANITIZER_PATCH_NO_REPLAY_NO_ORDER_separate_surface_visibility_from_candidate_truth_after_r9f_r1_enrichment_20260607_185217.md",
+    "docs/milestones/LANE-X-R31A-R9F-R4_CANDIDATE_PAYLOAD_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_current_r9b_r9f_r1_payload_locations_before_candidate_truth_sanitizer_retry_20260607_185508.md",
+    "docs/milestones/LANE-X-R31A-R9F-R5_RAW_DECISION_SHAPE_DUMP_NO_PATCH_NO_REPLAY_NO_ORDER_dump_exact_strategy_adapter_output_shape_after_r9b_r9f_r1_before_sanitizer_retry_20260607_185634.md",
+    "docs/milestones/LANE-X-R31A-R9F-R6_TUPLE_CANDIDATE_TRUTH_SANITIZER_PATCH_NO_REPLAY_NO_ORDER_sanitize_tuple_candidates_and_candidate_json_surface_visibility_not_candidate_truth_20260607_185804.md",
+    "docs/milestones/LANE-X-R31A-R9F-R7_STRATEGY_ADAPTER_CANDIDATE_PRESENT_SOURCE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_candidate_present_assignment_in_replay_strategy_adapter_before_truth_patch_20260607_190933.md",
+    "docs/milestones/LANE-X-R31A-R9F-R8_STRATEGY_ADAPTER_CANDIDATE_PRESENT_TRUTH_PATCH_NO_REPLAY_NO_ORDER_patch_candidate_present_source_to_strict_eligible_truth_surface_available_separate_20260607_192409.md",
+    "docs/milestones/LANE-X-R31A-R9F_REPLAY_FEATURE_FRAME_MICROSTRUCTURE_ENRICHMENT_PATCH_NO_REPLAY_NO_ORDER_add_replay_only_r26_micro_futures_r27_prior_shelf_family_surface_payload_without_candidate_faking_20260607_184547.md",
+    "docs/milestones/LANE-X-R31A-R9G-R1_REPLAY_TIMEOUT_ARTIFACT_INSPECTION_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_r9g_timeout_partial_outputs_no_orphan_replay_before_next_smoke_20260607_193102.md",
+    "docs/milestones/LANE-X-R31A-R9G_GUARDED_REPLAY_SMOKE_AFTER_FAMILY_BRIDGE_FIX_NO_ORDER_prove_replay_artifacts_now_have_family_surfaces_strict_candidate_truth_no_broker_side_effect_20260607_192539.md",
+    "docs/milestones/LANE-X-R31A-R9H_MICRO_REPLAY_DATASET_SLICE_BUILD_NO_PATCH_NO_REPLAY_NO_ORDER_build_tiny_dataset_slice_for_fast_family_bridge_replay_smoke_without_touching_source_dataset_20260607_193229.md",
+    "docs/milestones/LANE-X-R31A-R9I_MICRO_DATASET_REPLAY_SMOKE_AFTER_BRIDGE_FIX_NO_ORDER_run_fast_micro_replay_verify_family_surfaces_r26_r27_strict_candidate_truth_no_broker_side_effect_20260607_193402.md",
+    "docs/milestones/LANE-X-R31A-R9J_STRICT_CANDIDATE_FLOW_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_211_strict_nested_candidates_why_not_reaching_run_summary_candidate_audit_risk_execution_shadow_20260607_193810.md",
+    "docs/milestones/LANE-X-R31A-R9K-R1_REAL_ARTIFACT_TOP_LEVEL_STRICT_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_retry_top_level_candidate_propagation_using_real_r9i_feature_rows_with_known_strict_nested_candidates_20260607_194152.md",
+    "docs/milestones/LANE-X-R31A-R9K-R2_PREFIX_WINDOW_TOP_LEVEL_STRICT_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_retry_top_level_candidate_propagation_smoke_with_real_r9i_prefix_window_preserving_state_20260607_194326.md",
+    "docs/milestones/LANE-X-R31A-R9K-R3_FEATURE_STRATEGY_PARITY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_compare_r9i_saved_feature_rows_vs_strategy_rows_around_strict_nested_candidates_before_top_level_patch_retry_20260607_194452.md",
+    "docs/milestones/LANE-X-R31A-R9K-R4_ADAPTED_ROW_TOP_LEVEL_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_promote_strict_nested_candidates_inside_already_adapted_strategy_rows_before_output_export_20260607_200438.md",
+    "docs/milestones/LANE-X-R31A-R9K-R5_ADAPTED_ROW_EXPORT_RETURN_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_adapted_rows_return_or_strategy_decision_export_seam_after_r9k_r4_needle_miss_20260607_200609.md",
+    "docs/milestones/LANE-X-R31A-R9K-R6_EXACT_MERGED_APPEND_TOP_LEVEL_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_patch_exact_merged_before_adapted_rows_append_using_r9k_r5_locator_20260607_201430.md",
+    "docs/milestones/LANE-X-R31A-R9K_TOP_LEVEL_STRICT_CANDIDATE_PROPAGATION_PATCH_NO_REPLAY_NO_ORDER_promote_best_strict_nested_family_candidate_to_top_level_strategy_decision_without_candidate_faking_20260607_194033.md",
+    "docs/milestones/LANE-X-R31A-R9L_MICRO_REPLAY_AFTER_TOP_LEVEL_PROPAGATION_PATCH_NO_ORDER_verify_strict_family_candidates_flow_to_top_level_candidate_audit_risk_execution_shadow_20260607_201648.md",
+    "docs/milestones/LANE-X-R31A-R9M_COMPARE_R9I_R9L_STRICT_CANDIDATE_REGRESSION_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_compare_r9i_vs_r9l_strategy_candidate_containers_after_top_level_propagation_patch_20260607_202217.md",
+    "docs/milestones/LANE-X-R31A-R9N_R9I_R9L_ROW168_CANDIDATE_FIELD_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_exact_candidate_truth_field_regression_after_r9k_r6_patch_20260607_202423.md",
+    "docs/milestones/LANE-X-R31A-R9O_CANDIDATE_TRUTH_INTERACTION_SOURCE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_r9f_r8_r9k_r6_candidate_truth_assignment_order_after_r9l_strict_regression_20260607_202714.md",
+    "docs/milestones/LANE-X-R31A-R9P_R9I_R9L_FEATURE_SURFACE_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_compare_feature_surfaces_before_adapter_where_r9i_had_strict_misb_and_r9l_lost_it_20260607_202947.md",
+    "docs/milestones/LANE-X-R31A-R9Q-R1_EXTRACT_ROW168_ONLY_NO_PATCH_NO_REPLAY_NO_ORDER_print_exact_r9i_r9l_row168_feature_strategy_candidate_truth_full_20260607_203520.md",
+    "docs/milestones/LANE-X-R31A-R9Q-R2_COMPACT_ROW168_R9I_R9L_TRUTH_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_compact_compare_row168_r9i_r9l_feature_surface_candidate_truth_without_large_json_flood_20260607_204018.md",
+    "docs/milestones/LANE-X-R31A-R9Q_FIRST_STRICT_MISB_ROW_EXACT_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_extract_first_actual_r9i_strict_misb_row_and_compare_r9i_r9l_feature_strategy_truth_20260607_203309.md",
+    "docs/milestones/LANE-X-R31A-R9R_ROW168_ADAPTER_INPUT_OUTPUT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_call_strategy_adapter_directly_on_r9l_row168_feature_to_find_candidate_container_drop_20260607_204235.md",
+    "docs/milestones/LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_205535.md",
+    "docs/milestones/LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_212516.md",
+    "docs/milestones/LANE-X-R31A-R9T-R0_PASTE_CONTAMINATION_SIDE_EFFECT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_verify_accidental_output_paste_did_not_start_replay_order_risk_execution_or_modify_files_20260607_220949.md",
+    "docs/milestones/LANE-X-R31A-R9T-R1_MISB_CANDIDATE_BLOCKER_TRUTH_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_misb_candidate_blockers_score_eligible_after_r9t_smoke_showed_candidate_containers_but_zero_strict_20260607_221135.md",
+    "docs/milestones/LANE-X-R31A-R9T-R2_REPLAY_BRIDGE_VS_DIRECT_ADAPTER_CANDIDATE_FIELD_DIFF_NO_PATCH_NO_REPLAY_NO_ORDER_compare_direct_adapter_strict_candidates_against_replay_run_bridge_rows_same_feature_indexes_20260607_221520.md",
+    "docs/milestones/LANE-X-R31A-R9T-R3A_ALLOWLISTED_DIRTY_TREE_MUTABLEMAPPING_IMPORT_PATCH_AND_FOCUS_SMOKE_NO_REPLAY_NO_ORDER_allow_expected_dirty_lane_files_patch_only_replay_run_mutablemapping_import_verify_bridge_focus_20260607_223735.md",
+    "docs/milestones/LANE-X-R31A-R9T-R3B_SEAL_MUTABLEMAPPING_PATCH_SHORTPATH_VERIFY_NO_PATCH_NO_REPLAY_NO_ORDER_verify_compile_import_bridge_focus_after_r3a_20260607_223909.md",
+    "docs/milestones/LANE-X-R31A-R9T_ADAPTER_RESULT_DATACLASS_NORMALIZATION_PATCH_NO_REPLAY_NO_ORDER_normalize_ReplayStrategyAdapterResult_to_dict_before_bridge_merge_preserve_candidates_20260607_220544.md",
+    "docs/milestones/LANE-X-R31A-R9U_MICRO_REPLAY_AFTER_BRIDGE_PATCH_INSPECT_CANDIDATE_AUDIT_RISK_EXECUTION_SHADOW_NO_ORDER_micro_replay_inspect_20260607_224505.md",
+    "docs/milestones/LANE-X-R31A-R9V_AUDIT_RISK_EXECUTION_SHADOW_ACTION_MAPPING_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_why_candidate_positive_rows_do_not_create_risk_or_execution_shadow_actions_20260607_225047.md",
+    "docs/milestones/LANE-X-R31A-R9W_PATCH_RISK_SHADOW_ENTRY_ACTION_NORMALIZATION_AND_SMOKE_NO_REPLAY_NO_ORDER_normalize_replay_promoted_entry_side_to_enter_call_put_for_risk_shadow_20260607_225359.md",
+    "docs/milestones/LANE-X-R31A-R9X_MICRO_REPLAY_AFTER_RISK_ACTION_PATCH_INSPECT_EXECUTION_SHADOW_FILL_PNL_NO_ORDER_micro_replay_verify_candidate_to_risk_execution_shadow_fill_and_pnl_surfaces_20260607_225533.md",
+    "docs/milestones/LANE-X-R31A_FRIDAY_SHADOW_PNL_FEASIBILITY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_friday_capture_fut_opt_feature_decision_timing_for_shadow_pnl_reconstruction_20260607_142215.md",
+    "docs/milestones/LANE-X-R31A_R9T_R1_TO_NEXT_THREAD_CANDIDATE_POSITIVE_BRIDGE_EVIDENCE_bundle_latest_r9t_r1_candidate_positive_adapter_truth_and_bridge_context_for_new_thread_20260607_221723.md",
+    "docs/milestones/LANE-X-R31B_ACCEPT_LANE_B_WAIT_STATE_AND_MONDAY_CANDIDATE_POSITIVE_PLAN_NO_PATCH_NO_START_NO_ORDER_20260607_155806.md",
+    "docs/milestones/LANE-X-R31C_MONDAY_OBSERVE_ONLY_PREMARKET_SAFETY_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_20260607_175928.md",
+    "docs/milestones/LANE-X-R31D1_ZERODHA_AUTH_BOOTSTRAP_CONFIG_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260607_182750.md",
+    "docs/milestones/LANE-X-R31D2_ZERODHA_AUTH_REPAIR_ROUTE_PLAN_NO_PATCH_NO_START_NO_ORDER_20260607_183018.md",
+    "docs/milestones/LANE-X-R31D3R_CORRECTED_INTERACTIVE_ZERODHA_TOKEN_REFRESH_NO_PATCH_NO_START_NO_ORDER_20260607_183232.md",
+    "docs/milestones/LANE-X-R31D3_APPROVED_ZERODHA_TOKEN_REFRESH_NO_PATCH_NO_START_NO_ORDER_20260607_183118.md",
+    "docs/milestones/LANE-X-R31D4R_CORRECTED_ZERODHA_AUTH_VALIDATION_NO_PATCH_NO_START_NO_ORDER_20260607_183846.md",
+    "docs/milestones/LANE-X-R31D4_ZERODHA_AUTH_VALIDATION_NO_PATCH_NO_START_NO_ORDER_20260607_183718.md",
+    "docs/milestones/LANE-X-R31D5A_OFFMARKET_FEED_DEAD_FREEZE_AND_SAFE_FEEDS_STOP_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_184214.md",
+    "docs/milestones/LANE-X-R31D5R_MARKET_LIVE_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_094825.md",
+    "docs/milestones/LANE-X-R31D5S_EXISTING_GENERIC_MAIN_OBSERVE_ONLY_RUNTIME_SAFETY_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260608_095109.md",
+    "docs/milestones/LANE-X-R31D5_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_183935.md",
+    "docs/milestones/LANE-X-R31D_OBSERVE_ONLY_START_REUSE_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_182433.md",
+    "docs/milestones/LANE-X-R31E_10MIN_CANDIDATE_WATCH_WINDOW_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_095409.md",
+    "docs/milestones/LANE-X-R31F_30MIN_DEEP_CANDIDATE_BLOCKER_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_100811.md",
+    "docs/milestones/LANE-X-R31G_STRATEGY_BRIDGE_AND_CONTRACT_ERROR_SEAM_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260608_104135.md",
+    "docs/milestones/LANE-X-R31H_FEATURE_FAMILY_COMMON_KEYS_CONTRACT_SEAM_LOCATOR_NO_PATCH_NO_START_NO_ORDER_20260608_110710.md",
+    "docs/milestones/LANE-X-R31I_LIVE_SESSION_CONTINUITY_CANDIDATE_SAFETY_CHECK_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_111226.md",
+    "docs/milestones/LANE-X-R31J_LIVE_SESSION_ONLY_COMPACT_CONTINUITY_CHECK_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_112631.md",
+    "docs/milestones/LANE-X-R31K_LIVE_SESSION_COMPACT_CANDIDATE_SAFETY_MONITOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_112952.md",
+    "docs/milestones/LANE-X-R31L_LIVE_SESSION_COMPACT_VALIDITY_PROVIDER_READY_MONITOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_114324.md",
+    "docs/milestones/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933.md",
+    "docs/milestones/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312.md",
+    "docs/milestones/LANE-X-R32C-R2_FINALIZE_SERIOUS_GATE_OPENING_PLAN_FROM_EXISTING_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_write_missing_proof_report_bundle_from_r32c_r1_plan_and_grep_20260611_224802.md",
+    "docs/milestones/LANE-X-R32D-R1_REPAIR_SMOKE_INTERNAL_ORDER_INTENT_PIPELINE_NO_NEW_PATCH_NO_REPLAY_NO_ORDER_rerun_existing_r32d_patch_smoke_with_pythonpath_and_capture_untracked_files_20260611_225709.md",
+    "docs/milestones/LANE-X-R32D_INTERNAL_ORDER_INTENT_PIPELINE_PATCH_NO_BROKER_SEND_NO_ORDER_patch_internal_candidate_risk_execution_order_intent_pipeline_with_broker_transport_hard_block_20260611_225203.md",
+    "docs/milestones/LANE-X-R32E_REAL_CANDIDATE_TO_INTERNAL_ORDER_INTENT_BRIDGE_NO_PATCH_NO_REPLAY_NO_ORDER_feed_existing_r9x_candidate_positive_rows_into_r32d_internal_order_intent_pipeline_20260611_230113.md",
+    "docs/milestones/LANE-X-R32F-R1_COMPACT_AUDIT_R32E_RISK_REJECTIONS_NO_PATCH_NO_REPLAY_NO_ORDER_compact_inspect_r32e_internal_ledgers_rejection_reasons_20260611_230525.md",
+    "docs/milestones/LANE-X-R32G_PATCH_REAL_CANDIDATE_HOLD_TO_INTERNAL_ENTRY_NORMALIZER_NO_REPLAY_NO_ORDER_normalize_real_r9x_candidate_present_hold_rows_to_internal_entry_for_r32d_shadow_pipeline_20260611_231133.md",
+    "docs/milestones/LANE-X-R32H-R1_COMPACT_FREEZE_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_finalize_r32h_freeze_without_printing_huge_r32f_samples_20260611_231730.md",
+    "docs/milestones/LANE-X-R32H_FREEZE_INTERNAL_ORDER_INTENT_PIPELINE_CHAIN_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r32d_r32g_internal_pipeline_source_proofs_ledgers_and_next_integration_step_20260611_231344.md",
+    "docs/milestones/LANE-X-R32I_AUTO_MATERIALIZE_INTERNAL_ORDER_INTENT_FROM_REPLAY_RESULTS_NO_BROKER_NO_ORDER_add_offline_materializer_for_replay_strategy_decisions_to_r32d_r32g_internal_ledgers_20260611_231914.md",
+    "docs/milestones/LANE-X-R32J_FULL_LIMIT_MATERIALIZER_LEDGER_SUMMARY_NO_PATCH_NO_REPLAY_NO_ORDER_run_existing_r32i_materializer_full_limit_and_compare_to_r9x_candidate_count_20260611_232148.md",
+    "docs/milestones/LANE-X-R32K_FINAL_INTERNAL_ORDER_INTENT_CHAIN_HANDOFF_NO_PATCH_NO_REPLAY_NO_ORDER_compact_freeze_r32d_to_r32j_breakthrough_and_write_next_thread_miv_prompt_20260611_232339.md",
+    "docs/milestones/LANE-X-R33A-R1_SHELL_ONLY_THREE_DAY_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_rescue_after_heredoc_and_rank_three_day_blockers_with_grep_counts_20260611_234448.md",
+    "docs/milestones/LANE-X-R33A-R2_NARROW_THREE_DAY_CAPTURE_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_narrow_to_real_capture_pseal_replay_artifacts_avoid_43994_file_noise_20260611_234810.md",
+    "docs/milestones/LANE-X-R33A-R3B_SALVAGE_BLOCKER_RANK_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_finish_blocker_keyword_counts_from_latest_r33a_file_index_after_interrupted_r3_20260611_235359.md",
+    "docs/milestones/LANE-X-R33A-R3_FAST_THREE_DAY_BLOCKER_RANK_NO_PATCH_NO_REPLAY_NO_ORDER_fast_rank_blockers_from_narrow_708_file_index_without_full_scan_20260611_235139.md",
+    "docs/milestones/LANE-X-R33A-R4_TIMEOUT_BOUNDED_THREE_DAY_BLOCKER_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_finish_blocker_rank_with_timeout_grep_no_hang_20260611_235518.md",
+    "docs/milestones/LANE-X-R33B_PROVIDER_CONTEXT_READINESS_CONTRACT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_locate_option_context_provider_ready_selected_option_tradability_publish_read_contracts_20260611_235732.md",
+    "docs/milestones/LANE-X-R33D-R1_TINY_STAGE_FLAGS_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_add_missing_stage_flags_keys_conservative_false_defaults_after_r33d_r0_20260612_095351.md",
+    "docs/milestones/LANE-X-R33D-R2_STRATEGY_STAGE_FLAGS_NORMALIZER_PATCH_NO_REPLAY_NO_ORDER_add_conservative_missing_stage_flags_defaults_before_strategy_contract_validation_20260612_095655.md",
+    "docs/milestones/LANE-X-R33D-R3_REPAIR_STRATEGY_STAGE_FLAGS_PATCH_SYNTAX_NO_REPLAY_NO_ORDER_restore_r33d_r2_before_file_and_apply_clean_normalizer_patch_20260612_095845.md",
+    "docs/milestones/LANE-X-R33E_NFO_METADATA_REFRESH_ROUTE_CONFIRM_NO_PATCH_NO_START_NO_ORDER_extract_existing_safe_nfo_refresh_route_after_r33d_r3_before_tape_growth_repair_20260612_100218.md",
+    "docs/milestones/LANE-X-R33F-R1_CONTROLLED_NFO_METADATA_REFRESH_MODULE_INVOKE_NO_SERVICE_START_NO_ORDER_rerun_r33f_with_pythonpath_module_invocation_after_modulenotfounderror_20260612_100726.md",
+    "docs/milestones/LANE-X-R33F_CONTROLLED_NFO_METADATA_REFRESH_NO_SERVICE_START_NO_ORDER_refresh_stale_nfo_instruments_csv_data_only_with_backup_and_validation_20260612_100558.md",
+    "docs/milestones/LANE-X-R33G_REUSE_ONLY_60SEC_TAPE_GROWTH_PROOF_NO_START_NO_STOP_NO_ORDER_prove_fut_opt_provider_runtime_growth_after_nfo_metadata_refresh_without_restart_20260612_100953.md",
+    "docs/milestones/LANE-X-R33H-R1_RECOVER_5MIN_TAPE_PROOF_AFTER_SSH_DROP_NO_START_NO_STOP_NO_ORDER_recover_r33h_counts_inspect_new_errors_and_find_actual_durable_capture_path_20260612_102128.md",
+    "docs/milestones/LANE-X-R33J-R1_FAST_WEEKEND_EVIDENCE_FINALIZER_NO_REPARSE_NO_ORDER_finalize_friday_weekend_replay_handoff_from_r33i_summary_and_r33j_manifest_without_heavy_parse_20260612_112813.md",
+    "docs/milestones/LANE-X-R33K_FRIDAY_MARKET_CLOSE_PSEAL_NO_PATCH_NO_START_NO_STOP_NO_ORDER_seal_friday_live_capture_after_market_close_for_weekend_replay_20260612_191653.md",
+    "docs/milestones/LANE-X-R34A_WEEKEND_OFFLINE_CANDIDATE_TRUE_AND_MIV_ROOT_CAUSE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_enter_actions_without_candidate_true_and_miv_not_emitted_from_sealed_friday_durable_tape_20260613_101627.md",
+    "docs/milestones/LANE-X-R34B_TARGETED_ENTER_ACTION_STRUCTURE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_resolve_r33i_enter_counts_vs_r34a_no_enter_by_sampling_redisraw_and_durable_json_structure_20260613_102733.md",
+    "docs/milestones/LANE-X-R34C-R1_FAST_ENTER_TOKEN_PATH_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_exact_json_paths_where_enter_call_put_appear_in_sealed_durable_decisions_20260613_104348.md",
+    "docs/milestones/LANE-X-R34C_EXACT_FULL_TOKEN_AUDIT_ENTER_CANDIDATE_MIV_NO_PATCH_NO_REPLAY_NO_ORDER_prove_whether_enter_call_put_candidate_true_or_miv_tokens_exist_anywhere_in_sealed_friday_durable_and_pseal_20260613_103045.md",
+    "docs/research_gate/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711_contract_amendment.md",
+    "docs/runbooks/LANE-B-R2B_REPLAY_CLI_ABI_AND_EXACT_SMOKE_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_135114_runbook.md",
+    "docs/runbooks/LANE-B-R2F2_CORRECTED_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141428_runbook.md",
+    "docs/runbooks/LANE-B-R2F_REPLAY_WORKSTATION_SMOKE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r1_to_r2e1_a7_single_day_replay_reproducibility_with_fingerprint_caveat_20260607_141320_runbook.md",
+    "docs/runbooks/LANE-B-R3A_EXACT_RISK_EXECUTION_SHADOW_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141805_runbook.md",
+    "docs/runbooks/LANE-B-R3_RISK_EXECUTION_SHADOW_PNL_READINESS_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_141540_runbook.md",
+    "docs/runbooks/LANE-B-R4A2_CORRECTED_SHADOW_PNL_NO_TRADE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143017_runbook.md",
+    "docs/runbooks/LANE-B-R4A_SHADOW_PNL_NO_TRADE_ARTIFACT_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_142909_runbook.md",
+    "docs/runbooks/LANE-B-R4_A7_20260602_RISK_EXECUTION_SHADOW_REPLAY_SMOKE_NO_PATCH_NO_ORDER_20260607_142249_runbook.md",
+    "docs/runbooks/LANE-B-R5B_BASELINE_VS_SHADOW_PATCH_IMPACT_REPLAY_PLAN_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143653_runbook.md",
+    "docs/runbooks/LANE-B-R5C_BASELINE_SHADOW_DRY_RUN_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143758_runbook.md",
+    "docs/runbooks/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907_runbook.md",
+    "docs/runbooks/LANE-B-R5E_COMPARE_BASELINE_SHADOW_PATCH_IMPACT_OUTPUTS_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154016_runbook.md",
+    "docs/runbooks/LANE-B-R5F_FINAL_PATCH_IMPACT_AND_PNL_ROUTE_DECISION_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154208_runbook.md",
+    "docs/runbooks/LANE-B-R5_FIND_VALID_CANDIDATE_OR_PATCH_IMPACT_REPLAY_ROUTE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143108_runbook.md",
+    "docs/runbooks/LANE-B-R6A_STRATEGY_PNL_WAIT_STATE_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154637_runbook.md",
+    "docs/runbooks/LANE-B-R6B_WAIT_STATE_HANDOFF_BUNDLE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154920_runbook.md",
+    "docs/runbooks/LANE-B-R6_CANDIDATE_POSITIVE_DATASET_ADMISSION_GATE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_154426_runbook.md",
+    "docs/runbooks/LANE-MIV-LIVE-R1_OBSERVE_ONLY_CAPTURE_START_REUSE_AND_MIV_PERCENT_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_market_live_start_or_reuse_observe_only_capture_for_miv_r_after_close_percent_result_20260612_093653_runbook.md",
+    "docs/runbooks/LANE-MIV-LIVE-R2_60SEC_DURABLE_TAPE_GROWTH_RECHECK_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_confirm_live_futures_and_selected_option_durable_capture_growth_after_r1_zero_short_window_20260612_093804_runbook.md",
+    "docs/runbooks/LANE-MIV-LIVE-R3_OBSERVE_ONLY_CAPTURE_RESTART_REUSE_AFTER_STALE_TAPE_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_restart_or_reuse_observe_only_capture_after_r2_found_durable_tape_present_but_not_growing_20260612_094011_runbook.md",
+    "docs/runbooks/LANE-MIV-LIVE-R5_INSTRUMENT_METADATA_STALE_ROUTE_LOCATOR_NO_PATCH_NO_START_NO_STOP_NO_ORDER_confirm_nfo_metadata_stale_root_cause_and_find_existing_safe_refresh_command_without_mutation_20260612_094836_runbook.md",
+    "docs/runbooks/LANE-MIV-R1A_STRATEGY_FAMILY_DORMANT_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_place_miv_r_contract_inside_strategy_family_as_dormant_research_only_family_without_registry_activation_20260611_231711_runbook.md",
+    "docs/runbooks/LANE-MIV-R1B_GATE_SURFACE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_candidate_hold_runtime_disabled_classic_runtime_disabled_risk_execution_shadow_and_order_intent_gates_before_miv_evaluator_patch_20260611_231807_runbook.md",
+    "docs/runbooks/LANE-MIV-R2B_EVALUATOR_OUTPUT_SHAPE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_miv_r2_evaluator_outputs_with_real_timestamp_paths_neutral_label_and_blocker_cases_20260611_232406_runbook.md",
+    "docs/runbooks/LANE-MIV-R2C_NEUTRAL_LABEL_ROUTE_PROOF_NO_PATCH_NO_REPLAY_NO_ORDER_prove_neutral_active_label_emits_as_label_only_and_never_routes_to_risk_execution_order_intent_20260611_232522_runbook.md",
+    "docs/runbooks/LANE-MIV-R3A_RESUME_AUDIT_EXISTING_ARTIFACT_EVALUATOR_RUN_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_audit_current_miv_work_preserve_good_modules_then_run_miv_evaluator_on_existing_artifact_rows_only_20260611_233045_runbook.md",
+    "docs/runbooks/LANE-MIV-R3C_DURABLE_CAPTURE_PAIR_EVAL_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_latest_durable_fut_and_selected_option_tape_to_generate_miv_candidates_for_tomorrow_measurement_path_20260611_234126_runbook.md",
+    "docs/runbooks/LANE-MIV-R4-R2_COMPACT_MEASUREMENT_BUILDER_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_use_r4r1_located_fut_opt_tapes_build_miv_candidates_ledgers_and_shadow_percent_summary_20260611_234841_runbook.md",
+    "docs/runbooks/LANE-MIV-R4-R3_AFTERMARKET_PERCENT_READINESS_FINALIZER_NO_PATCH_NO_REPLAY_NO_ORDER_freeze_r4r2_measurement_pipeline_pass_and_tomorrow_percent_result_checklist_20260611_235103_runbook.md",
+    "docs/runbooks/LANE-MIV-R4_AFTERMARKET_MEASUREMENT_PIPELINE_NO_SOURCE_PATCH_NO_REPLAY_NO_ORDER_generate_miv_candidates_internal_ledgers_shadow_percent_readiness_for_tomorrow_observe_only_result_20260611_234406_runbook.md",
+    "docs/runbooks/LANE-X-DASH-R2A_SOURCE_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_audit_existing_dashboard_r3h_lite_source_lane_x_inputs_and_patch_needles_20260604_231059_runbook.md",
+    "docs/runbooks/LANE-X-DASH-R2B-CONFIRM_READ_ONLY_AFTER_CUT_PATCH_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_confirm_whether_cut_r2b_patch_changed_dashboard_source_or_not_20260604_231421_runbook.md",
+    "docs/runbooks/LANE-X-DASH-R2B-TINY-SEAL_STATIC_OBSERVE_PANEL_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_seal_existing_lx_tiny_source_markers_compile_import_ast_safety_20260604_232058_runbook.md",
+    "docs/runbooks/LANE-X-DASH-R2C_RUNTIME_SEAL_LX_TINY_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_lane_x_observe_page_markers_20260604_232202_runbook.md",
+    "docs/runbooks/LANE-X-DASH-R3A_SIMPLIFY_DYNAMIC_TRUTH_BOARD_PLAN_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_plan_replace_complex_static_lane_x_panel_with_simple_dynamic_truth_board_20260612_102214_runbook.md",
+    "docs/runbooks/LANE-X-DASH-R3B_DYNAMIC_SIMPLE_TRUTH_BOARD_PATCH_NO_REDIS_WRITE_NO_START_NO_ORDER_NO_PAPER_20260612_102452_runbook.md",
+    "docs/runbooks/LANE-X-DASH-R3C_RUNTIME_SEAL_DYNAMIC_TRUTH_BOARD_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_seal_running_r3b_dynamic_truth_board_20260612_102624_runbook.md",
+    "docs/runbooks/LANE-X-DASH-R3D_ERROR_TRUTH_AUDIT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_classify_current_review_errors_as_active_or_historical_before_dashboard_next_action_refine_20260612_103027_runbook.md",
+    "docs/runbooks/LANE-X-DASH-R3E_REFINE_NEXT_ACTION_FRESH_ERROR_ONLY_NO_REDIS_WRITE_NO_START_NO_ORDER_NO_PAPER_20260612_103200_runbook.md",
+    "docs/runbooks/LANE-X-DASH-R3F_RUNTIME_SEAL_R3E_FRESH_ERROR_NEXT_ACTION_DASHBOARD_ONLY_NO_START_NO_ORDER_NO_PAPER_restart_dashboard_only_and_verify_next_action_no_longer_overwarns_on_historical_errors_20260612_103331_runbook.md",
+    "docs/runbooks/LANE-X-R28A_weekend_consolidated_finalizer_monday_observe_checklist_no_patch_no_order_20260607_121432_monday_observe_only_runbook.md",
+    "docs/runbooks/LANE-X-R29A-R4_PREMARKET_RECONNECT_MINI_AUDIT_NO_PATCH_NO_START_NO_ORDER_after_ssh_drop_verify_no_side_effect_source_safety_r28b_ready_20260607_135037_runbook.md",
+    "docs/runbooks/LANE-X-R30A_FAMILY_MICROSTRUCTURE_COVERAGE_AUDIT_NO_PATCH_NO_START_NO_ORDER_audit_mist_misb_misc_misr_miso_required_microstructure_surfaces_and_contract_passthrough_20260607_140857_runbook.md",
+    "docs/runbooks/LANE-X-R30B_DHAN_CONTEXT_ROOT_CAUSE_AUDIT_NO_PATCH_NO_START_NO_ORDER_audit_dhan_context_config_import_provider_runtime_redis_errors_without_start_or_patch_20260607_141044_runbook.md",
+    "docs/runbooks/LANE-X-R30D_PROVIDER_RUNTIME_KEY_CONTRACT_ALIGNMENT_AUDIT_NO_PATCH_NO_START_NO_ORDER_compare_names_provider_runtime_publishers_readers_pcheck_expected_redis_keys_20260607_141254_runbook.md",
+    "docs/runbooks/LANE-X-R31A_FRIDAY_SHADOW_PNL_FEASIBILITY_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_friday_capture_fut_opt_feature_decision_timing_for_shadow_pnl_reconstruction_20260607_142215_runbook.md",
+    "docs/runbooks/LANE-X-R31B_ACCEPT_LANE_B_WAIT_STATE_AND_MONDAY_CANDIDATE_POSITIVE_PLAN_NO_PATCH_NO_START_NO_ORDER_20260607_155806_runbook.md",
+    "docs/runbooks/LANE-X-R31C_MONDAY_OBSERVE_ONLY_PREMARKET_SAFETY_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_20260607_175928_runbook.md",
+    "docs/runbooks/LANE-X-R31D1_ZERODHA_AUTH_BOOTSTRAP_CONFIG_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260607_182750_runbook.md",
+    "docs/runbooks/LANE-X-R31D4R_CORRECTED_ZERODHA_AUTH_VALIDATION_NO_PATCH_NO_START_NO_ORDER_20260607_183846_runbook.md",
+    "docs/runbooks/LANE-X-R31D4_ZERODHA_AUTH_VALIDATION_NO_PATCH_NO_START_NO_ORDER_20260607_183718_runbook.md",
+    "docs/runbooks/LANE-X-R31D5A_OFFMARKET_FEED_DEAD_FREEZE_AND_SAFE_FEEDS_STOP_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_184214_runbook.md",
+    "docs/runbooks/LANE-X-R31D5R_MARKET_LIVE_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_094825_runbook.md",
+    "docs/runbooks/LANE-X-R31D5S_EXISTING_GENERIC_MAIN_OBSERVE_ONLY_RUNTIME_SAFETY_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260608_095109_runbook.md",
+    "docs/runbooks/LANE-X-R31D5_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_183935_runbook.md",
+    "docs/runbooks/LANE-X-R31D_OBSERVE_ONLY_START_REUSE_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_182433_runbook.md",
+    "docs/runbooks/LANE-X-R31E_10MIN_CANDIDATE_WATCH_WINDOW_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_095409_runbook.md",
+    "docs/runbooks/LANE-X-R31F_30MIN_DEEP_CANDIDATE_BLOCKER_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_100811_runbook.md",
+    "docs/runbooks/LANE-X-R31G_STRATEGY_BRIDGE_AND_CONTRACT_ERROR_SEAM_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260608_104135_runbook.md",
+    "docs/runbooks/LANE-X-R31H_FEATURE_FAMILY_COMMON_KEYS_CONTRACT_SEAM_LOCATOR_NO_PATCH_NO_START_NO_ORDER_20260608_110710_runbook.md",
+    "docs/runbooks/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933_runbook.md",
+    "docs/runbooks/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312_runbook.md",
+    "docs/runbooks/LANE-X-R33D-R0_STAGE_FLAGS_CONTRACT_PATCH_SEAM_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_locate_exact_feature_stage_flags_producer_missing_tradability_snapshot_sync_classic_degraded_keys_before_tiny_patch_20260612_094942_runbook.md",
+    "docs/runbooks/LANE-X-R33D-R1_TINY_STAGE_FLAGS_CONTRACT_PATCH_NO_REPLAY_NO_ORDER_add_missing_stage_flags_keys_conservative_false_defaults_after_r33d_r0_20260612_095351_runbook.md",
+    "docs/runbooks/LANE-X-R33D-R2_STRATEGY_STAGE_FLAGS_NORMALIZER_PATCH_NO_REPLAY_NO_ORDER_add_conservative_missing_stage_flags_defaults_before_strategy_contract_validation_20260612_095655_runbook.md",
+    "docs/runbooks/LANE-X-R33D-R3_REPAIR_STRATEGY_STAGE_FLAGS_PATCH_SYNTAX_NO_REPLAY_NO_ORDER_restore_r33d_r2_before_file_and_apply_clean_normalizer_patch_20260612_095845_runbook.md",
+    "docs/runbooks/LANE-X-R33E_NFO_METADATA_REFRESH_ROUTE_CONFIRM_NO_PATCH_NO_START_NO_ORDER_extract_existing_safe_nfo_refresh_route_after_r33d_r3_before_tape_growth_repair_20260612_100218_runbook.md",
+    "docs/runbooks/LANE-X-R33F-R1_CONTROLLED_NFO_METADATA_REFRESH_MODULE_INVOKE_NO_SERVICE_START_NO_ORDER_rerun_r33f_with_pythonpath_module_invocation_after_modulenotfounderror_20260612_100726_runbook.md",
+    "docs/runbooks/LANE-X-R33F_CONTROLLED_NFO_METADATA_REFRESH_NO_SERVICE_START_NO_ORDER_refresh_stale_nfo_instruments_csv_data_only_with_backup_and_validation_20260612_100558_runbook.md",
+    "docs/runbooks/LANE-X-R33G_REUSE_ONLY_60SEC_TAPE_GROWTH_PROOF_NO_START_NO_STOP_NO_ORDER_prove_fut_opt_provider_runtime_growth_after_nfo_metadata_refresh_without_restart_20260612_100953_runbook.md",
+    "docs/runbooks/LANE-X-R33H-R1_RECOVER_5MIN_TAPE_PROOF_AFTER_SSH_DROP_NO_START_NO_STOP_NO_ORDER_recover_r33h_counts_inspect_new_errors_and_find_actual_durable_capture_path_20260612_102128_runbook.md",
+    "docs/runbooks/LANE-X-R33J-R1_FAST_WEEKEND_EVIDENCE_FINALIZER_NO_REPARSE_NO_ORDER_finalize_friday_weekend_replay_handoff_from_r33i_summary_and_r33j_manifest_without_heavy_parse_20260612_112813_runbook.md",
+    "docs/runbooks/LANE-X-R33K_FRIDAY_MARKET_CLOSE_PSEAL_NO_PATCH_NO_START_NO_STOP_NO_ORDER_seal_friday_live_capture_after_market_close_for_weekend_replay_20260612_191653_runbook.md",
+    "docs/runbooks/LANE-X-R34A_WEEKEND_OFFLINE_CANDIDATE_TRUE_AND_MIV_ROOT_CAUSE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_audit_enter_actions_without_candidate_true_and_miv_not_emitted_from_sealed_friday_durable_tape_20260613_101627_runbook.md",
+    "docs/runbooks/LANE-X-R34B_TARGETED_ENTER_ACTION_STRUCTURE_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_resolve_r33i_enter_counts_vs_r34a_no_enter_by_sampling_redisraw_and_durable_json_structure_20260613_102733_runbook.md",
+    "docs/runbooks/LANE-X-R34C-R1_FAST_ENTER_TOKEN_PATH_AUDIT_NO_PATCH_NO_REPLAY_NO_ORDER_inspect_exact_json_paths_where_enter_call_put_appear_in_sealed_durable_decisions_20260613_104348_runbook.md",
+    "docs/runbooks/LANE-X-R34C_EXACT_FULL_TOKEN_AUDIT_ENTER_CANDIDATE_MIV_NO_PATCH_NO_REPLAY_NO_ORDER_prove_whether_enter_call_put_candidate_true_or_miv_tokens_exist_anywhere_in_sealed_friday_durable_and_pseal_20260613_103045_runbook.md"
+  ],
+  "r31_common_keys_dirty_files": [
+    "app/mme_scalpx/ops_dashboard/server.py",
+    "app/mme_scalpx/services/features.py",
+    "app/mme_scalpx/services/strategy.py",
+    "bin/audit_miv_r1b_gate_surfaces_no_patch_no_replay_no_order.py",
+    "docs/milestones/LANE-X-CLOSE-R1_PSEAL_LOCATOR_OR_CLOSE_EVIDENCE_FALLBACK_NO_PATCH_NO_ORDER_recover_from_pseal_command_not_found_and_seal_or_bundle_close_evidence_20260608_152333.md",
+    "docs/milestones/LANE-X-LIVE-R1A_SALVAGE_COMPLETED_LIVE_R1_SAMPLES_NO_PATCH_NO_REPLAY_NO_ORDER_create_proof_from_completed_live_r1_samples_after_report_writer_nameerror_20260608_100135.md",
+    "docs/milestones/LANE-X-LIVE-R2_30MIN_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_ORDER_watch_live_decisions_for_candidate_positive_evidence_observe_only_20260608_101421.md",
+    "docs/milestones/LANE-X-LIVE-R3_RECORD_AND_CANDIDATE_POSITIVE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_record_live_growth_and_watch_candidate_positive_evidence_observe_only_20260609_101132.md",
+    "docs/milestones/LANE-X-LIVE-R4_DETACHED_TILL_CLOSE_CAPTURE_CANDIDATE_WATCH_NO_PATCH_NO_REPLAY_NO_ORDER_self_running_live_capture_growth_and_candidate_positive_watch_until_close_20260611_094905.md",
+    "docs/milestones/LANE-X-R31C_MONDAY_OBSERVE_ONLY_PREMARKET_SAFETY_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_20260607_175928.md",
+    "docs/milestones/LANE-X-R31D5R_MARKET_LIVE_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_094825.md",
+    "docs/milestones/LANE-X-R31D5S_EXISTING_GENERIC_MAIN_OBSERVE_ONLY_RUNTIME_SAFETY_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260608_095109.md",
+    "docs/milestones/LANE-X-R31D5_RETRY_OBSERVE_ONLY_START_AFTER_AUTH_REFRESH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_183935.md",
+    "docs/milestones/LANE-X-R31D_OBSERVE_ONLY_START_REUSE_AND_CANDIDATE_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260607_182433.md",
+    "docs/milestones/LANE-X-R31E_10MIN_CANDIDATE_WATCH_WINDOW_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_095409.md",
+    "docs/milestones/LANE-X-R31F_30MIN_DEEP_CANDIDATE_BLOCKER_WATCH_NO_PATCH_NO_ORDER_NO_RISK_NO_EXECUTION_20260608_100811.md",
+    "docs/milestones/LANE-X-R31G_STRATEGY_BRIDGE_AND_CONTRACT_ERROR_SEAM_AUDIT_NO_PATCH_NO_START_NO_ORDER_20260608_104135.md",
+    "docs/milestones/LANE-X-R31H_FEATURE_FAMILY_COMMON_KEYS_CONTRACT_SEAM_LOCATOR_NO_PATCH_NO_START_NO_ORDER_20260608_110710.md",
+    "docs/milestones/LANE-X-R31J_LIVE_SESSION_ONLY_COMPACT_CONTINUITY_CHECK_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_112631.md",
+    "docs/milestones/LANE-X-R31K_LIVE_SESSION_COMPACT_CANDIDATE_SAFETY_MONITOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_112952.md",
+    "docs/milestones/LANE-X-R31L_LIVE_SESSION_COMPACT_VALIDITY_PROVIDER_READY_MONITOR_NO_PATCH_NO_REPLAY_NO_ORDER_20260608_114324.md",
+    "docs/milestones/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933.md",
+    "docs/milestones/LANE-X-R31N_PATCH_DRIFT_INVENTORY_AND_OWNERSHIP_FREEZE_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_104312.md",
+    "docs/milestones/LANE-X-R32C-R2_FINALIZE_SERIOUS_GATE_OPENING_PLAN_FROM_EXISTING_ARTIFACTS_NO_PATCH_NO_REPLAY_NO_ORDER_write_missing_proof_report_bundle_from_r32c_r1_plan_and_grep_20260611_224802.md",
+    "docs/runbooks/LANE-X-R31H_FEATURE_FAMILY_COMMON_KEYS_CONTRACT_SEAM_LOCATOR_NO_PATCH_NO_START_NO_ORDER_20260608_110710_runbook.md",
+    "docs/runbooks/LANE-X-R31M_AFTER_MARKET_PATCH_PRECHECK_COMMON_KEYS_CONTRACT_NO_PATCH_NO_REPLAY_NO_ORDER_20260613_103933_runbook.md"
+  ],
+  "tracked_modified_count": 7,
+  "untracked_count": 395
+}
+AUDIT_RC=0
+
+## R31 common-key seam current source status
+app/mme_scalpx/services/feature_family/contracts.py:50:class FeatureFamilyContractError(ValueError):
+app/mme_scalpx/services/feature_family/contracts.py:187:    "active_futures_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:188:    "active_selected_option_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:189:    "active_option_context_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:221:COMMON_KEYS: Final[tuple[str, ...]] = (
+app/mme_scalpx/services/feature_family/contracts.py:599:        "active_futures_provider_id": "futures_marketdata_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:600:        "active_selected_option_provider_id": "selected_option_marketdata_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:601:        "active_option_context_provider_id": "option_context_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:604:        "provider_runtime_mode": "family_runtime_mode",
+app/mme_scalpx/services/feature_family/contracts.py:618:            pr.get("family_runtime_mode")
+app/mme_scalpx/services/feature_family/contracts.py:639:            and pr.get("active_futures_provider_id")
+app/mme_scalpx/services/feature_family/contracts.py:640:            and pr.get("active_selected_option_provider_id")
+app/mme_scalpx/services/feature_family/contracts.py:647:            and pr.get("active_option_context_provider_id")
+app/mme_scalpx/services/feature_family/contracts.py:651:        "active_futures_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:652:        "active_selected_option_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:653:        "active_option_context_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:678:        raise FeatureFamilyContractError(message)
+app/mme_scalpx/services/feature_family/contracts.py:683:        raise FeatureFamilyContractError(f"{field_name} must be bool")
+app/mme_scalpx/services/feature_family/contracts.py:689:        raise FeatureFamilyContractError(f"{field_name} must be str")
+app/mme_scalpx/services/feature_family/contracts.py:692:        raise FeatureFamilyContractError(f"{field_name} must be non-empty str")
+app/mme_scalpx/services/feature_family/contracts.py:698:        raise FeatureFamilyContractError(f"{field_name} must be int")
+app/mme_scalpx/services/feature_family/contracts.py:700:        raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:708:        raise FeatureFamilyContractError(f"{field_name} must be a mapping")
+app/mme_scalpx/services/feature_family/contracts.py:722:        raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:736:        raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:757:        raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:821:        "family_runtime_mode": N.FAMILY_RUNTIME_MODE_OBSERVE_ONLY,
+app/mme_scalpx/services/feature_family/contracts.py:830:        "active_futures_provider_id": None,
+app/mme_scalpx/services/feature_family/contracts.py:831:        "active_selected_option_provider_id": None,
+app/mme_scalpx/services/feature_family/contracts.py:832:        "active_option_context_provider_id": None,
+app/mme_scalpx/services/feature_family/contracts.py:1193:        "active_futures_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:1194:        "active_selected_option_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:1195:        "active_option_context_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:1218:            "active_futures_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:1219:            "active_selected_option_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:1255:            provider_runtime["family_runtime_mode"],
+app/mme_scalpx/services/feature_family/contracts.py:1256:            field_name="provider_runtime.family_runtime_mode",
+app/mme_scalpx/services/feature_family/contracts.py:1261:            provider_runtime["family_runtime_mode"],
+app/mme_scalpx/services/feature_family/contracts.py:1262:            field_name="provider_runtime.family_runtime_mode",
+app/mme_scalpx/services/feature_family/contracts.py:1302:        ("futures_marketdata_provider_id", "active_futures_provider_id"),
+app/mme_scalpx/services/feature_family/contracts.py:1303:        ("selected_option_marketdata_provider_id", "active_selected_option_provider_id"),
+app/mme_scalpx/services/feature_family/contracts.py:1304:        ("option_context_provider_id", "active_option_context_provider_id"),
+app/mme_scalpx/services/feature_family/contracts.py:1335:    _require_exact_keys(common, required_keys=COMMON_KEYS, field_name="common")
+app/mme_scalpx/services/feature_family/contracts.py:1801:            raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:1827:        raise FeatureFamilyContractError("CANONICAL_FAMILY_SUPPORT_KEYS family coverage drift")
+app/mme_scalpx/services/feature_family/contracts.py:1837:        raise FeatureFamilyContractError("CANONICAL_FIELD_COMPATIBILITY_ALIASES drift")
+app/mme_scalpx/services/feature_family/contracts.py:1850:    "FeatureFamilyContractError",
+app/mme_scalpx/services/feature_family/contracts.py:1889:    "COMMON_KEYS",
+app/mme_scalpx/services/feature_family/contracts.py:1982:    "futures_marketdata_provider_id": "active_futures_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:1983:    "selected_option_marketdata_provider_id": "active_selected_option_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:1984:    "option_context_provider_id": "active_option_context_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:2001:    if key == "family_runtime_mode":
+app/mme_scalpx/services/feature_family/contracts.py:2029:        raise FeatureFamilyContractError(f"{field_name} must be a mapping")
+app/mme_scalpx/services/feature_family/contracts.py:2044:        raise FeatureFamilyContractError(f"{field_name} missing provider-runtime keys: {missing!r}")
+app/mme_scalpx/services/feature_family/contracts.py:2050:                raise FeatureFamilyContractError(f"{field_name}.{key} must be bool")
+app/mme_scalpx/services/feature_family/contracts.py:2054:                raise FeatureFamilyContractError(f"{field_name}.{key} must be int")
+app/mme_scalpx/services/feature_family/contracts.py:2057:            raise FeatureFamilyContractError(f"{field_name}.{key} must be str or None")
+app/mme_scalpx/services/feature_family/contracts.py:2063:            raise FeatureFamilyContractError(f"{field_name}.{compat} must be str or None")
+app/mme_scalpx/services/feature_family/contracts.py:2065:            raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:2070:        raise FeatureFamilyContractError(f"{field_name}.provider_runtime_blocked must be bool")
+app/mme_scalpx/services/feature_family/contracts.py:2073:        raise FeatureFamilyContractError(f"{field_name}.provider_runtime_block_reason must be str")
+app/mme_scalpx/services/feature_family/contracts.py:2077:        raise FeatureFamilyContractError(f"{field_name}.provider_runtime_missing_keys must be tuple/list")
+app/mme_scalpx/services/feature_family/contracts.py:2110:    "active_futures_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:2111:    "active_selected_option_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:2112:    "active_option_context_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:2142:    "futures_marketdata_provider_id": "active_futures_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:2143:    "selected_option_marketdata_provider_id": "active_selected_option_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:2144:    "option_context_provider_id": "active_option_context_provider_id",
+app/mme_scalpx/services/feature_family/contracts.py:2166:    if key == "family_runtime_mode":
+app/mme_scalpx/services/feature_family/contracts.py:2200:        raise FeatureFamilyContractError("provider_runtime must be a mapping")
+app/mme_scalpx/services/feature_family/contracts.py:2206:        raise FeatureFamilyContractError(f"provider_runtime missing keys: {missing!r}")
+app/mme_scalpx/services/feature_family/contracts.py:2213:                raise FeatureFamilyContractError(f"provider_runtime.{key} must be bool")
+app/mme_scalpx/services/feature_family/contracts.py:2218:                raise FeatureFamilyContractError(f"provider_runtime.{key} must be int")
+app/mme_scalpx/services/feature_family/contracts.py:2221:        if key == "family_runtime_mode":
+app/mme_scalpx/services/feature_family/contracts.py:2223:                raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:2230:                raise FeatureFamilyContractError(f"provider_runtime.{key} must be str or None")
+app/mme_scalpx/services/feature_family/contracts.py:2234:            raise FeatureFamilyContractError(f"provider_runtime.{key} must be str or None")
+app/mme_scalpx/services/feature_family/contracts.py:2241:            raise FeatureFamilyContractError(f"provider_runtime.{compat} must be str or None")
+app/mme_scalpx/services/feature_family/contracts.py:2244:            raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:2249:        raise FeatureFamilyContractError("provider_runtime.provider_ready_classic must be bool")
+app/mme_scalpx/services/feature_family/contracts.py:2252:        raise FeatureFamilyContractError("provider_runtime.provider_ready_miso must be bool")
+app/mme_scalpx/services/feature_family/contracts.py:2255:        raise FeatureFamilyContractError("provider_runtime.provider_runtime_blocked must be bool")
+app/mme_scalpx/services/feature_family/contracts.py:2258:        raise FeatureFamilyContractError("provider_runtime.provider_runtime_block_reason must be str")
+app/mme_scalpx/services/feature_family/contracts.py:2261:        raise FeatureFamilyContractError("provider_runtime.provider_runtime_missing_keys must be tuple/list")
+app/mme_scalpx/services/feature_family/contracts.py:2273:                raise FeatureFamilyContractError(f"publishable provider_runtime.{key} is required")
+app/mme_scalpx/services/feature_family/contracts.py:2278:        raise FeatureFamilyContractError("family_features payload must be a mapping")
+app/mme_scalpx/services/feature_family/contracts.py:2283:        raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:2368:        raise FeatureFamilyContractError("Batch26H family_surfaces.families must be a mapping")
+app/mme_scalpx/services/feature_family/contracts.py:2372:        raise FeatureFamilyContractError("Batch26H family_surfaces.surfaces_by_branch must be a mapping")
+app/mme_scalpx/services/feature_family/contracts.py:2377:            raise FeatureFamilyContractError(f"Batch26H missing family surface: {family_id}")
+app/mme_scalpx/services/feature_family/contracts.py:2382:            raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:2389:            raise FeatureFamilyContractError(f"Batch26H {family_id}.branches must be a mapping")
+app/mme_scalpx/services/feature_family/contracts.py:2395:                raise FeatureFamilyContractError(f"Batch26H missing branch surface: {family_id}.{branch_id}")
+app/mme_scalpx/services/feature_family/contracts.py:2399:                raise FeatureFamilyContractError(
+app/mme_scalpx/services/feature_family/contracts.py:2407:                raise FeatureFamilyContractError(f"Batch26H missing surfaces_by_branch key: {branch_key}")
+app/mme_scalpx/services/feature_family/contracts.py:2411:                raise FeatureFamilyContractError(
+app/mme_scalpx/services/strategy.py:229:        "family_runtime_mode": src.get("family_runtime_mode", "OBSERVE_ONLY"),
+app/mme_scalpx/services/strategy.py:269:    common.setdefault("family_runtime_mode", runtime.get("family_runtime_mode", "OBSERVE_ONLY"))
+app/mme_scalpx/services/strategy.py:270:    common.setdefault("active_futures_provider_id", runtime.get("futures_marketdata_provider_id"))
+app/mme_scalpx/services/strategy.py:271:    common.setdefault("active_selected_option_provider_id", runtime.get("selected_option_marketdata_provider_id"))
+app/mme_scalpx/services/strategy.py:272:    common.setdefault("active_option_context_provider_id", runtime.get("option_context_provider_id"))
+app/mme_scalpx/services/strategy.py:850:            reason="hold_only_family_features_consumer_bridge",
+app/mme_scalpx/services/strategy.py:1652:    - only activates on the existing hold_only_family_features_consumer_bridge path;
+app/mme_scalpx/services/strategy.py:1668:    if _r4r20m_reason == "hold_only_family_features_consumer_bridge":
+app/mme_scalpx/services/strategy.py:1671:            "family_runtime_gate_reason": "global_gate_hold_only_family_features_consumer_bridge",
+app/mme_scalpx/services/strategy.py:1685:                _r4r20m_meta.setdefault("family_runtime_gate_reason", "global_gate_hold_only_family_features_consumer_bridge")
+app/mme_scalpx/services/strategy.py:1691:        if "hold_only_family_features_consumer_bridge" not in reason:
+app/mme_scalpx/services/features.py:573:def _family_runtime_mode(value: Any) -> str:
+app/mme_scalpx/services/features.py:1213:                "active_futures_provider_id",
+app/mme_scalpx/services/features.py:1222:                "active_selected_option_provider_id",
+app/mme_scalpx/services/features.py:1231:                "active_option_context_provider_id",
+app/mme_scalpx/services/features.py:1299:        family_runtime_mode = _family_runtime_mode(raw_map.get("family_runtime_mode"))
+app/mme_scalpx/services/features.py:1313:            "family_runtime_mode": family_runtime_mode,
+app/mme_scalpx/services/features.py:1322:            "active_futures_provider_id": futures_provider,
+app/mme_scalpx/services/features.py:1323:            "active_selected_option_provider_id": selected_option_provider,
+app/mme_scalpx/services/features.py:1324:            "active_option_context_provider_id": option_context_provider,
+app/mme_scalpx/services/features.py:1357:            provider_id=_safe_str(provider_runtime["active_futures_provider_id"]),
+app/mme_scalpx/services/features.py:1367:            provider_id=_safe_str(provider_runtime["active_selected_option_provider_id"]),
+app/mme_scalpx/services/features.py:3084:                "active_futures_provider_id",
+app/mme_scalpx/services/features.py:3093:                "active_selected_option_provider_id",
+app/mme_scalpx/services/features.py:3102:                "active_option_context_provider_id",
+app/mme_scalpx/services/features.py:3154:            "family_runtime_mode": _family_runtime_mode(
+app/mme_scalpx/services/features.py:3155:                provider_runtime.get("family_runtime_mode")
+app/mme_scalpx/services/features.py:3170:            "active_futures_provider_id": futures_provider,
+app/mme_scalpx/services/features.py:3171:            "active_selected_option_provider_id": selected_option_provider,
+app/mme_scalpx/services/features.py:3172:            "active_option_context_provider_id": option_context_provider,
+app/mme_scalpx/services/features.py:3299:                "family_runtime_mode": provider.get("family_runtime_mode"),
+app/mme_scalpx/services/features.py:3834:                    "family_runtime_mode": provider_runtime.get("family_runtime_mode"),
+app/mme_scalpx/services/features.py:3835:                    "active_futures_provider_id": provider_runtime.get("active_futures_provider_id"),
+app/mme_scalpx/services/features.py:3836:                    "active_selected_option_provider_id": provider_runtime.get(
+app/mme_scalpx/services/features.py:3837:                        "active_selected_option_provider_id"
+app/mme_scalpx/services/features.py:3839:                    "active_option_context_provider_id": provider_runtime.get(
+app/mme_scalpx/services/features.py:3840:                        "active_option_context_provider_id"
+app/mme_scalpx/services/features.py:4132:            frame.setdefault("family_runtime_mode", provider_runtime.get("family_runtime_mode"))
+app/mme_scalpx/services/features.py:4133:            frame.setdefault("active_futures_provider_id", provider_runtime.get("active_futures_provider_id"))
+app/mme_scalpx/services/features.py:4135:                "active_selected_option_provider_id",
+app/mme_scalpx/services/features.py:4136:                provider_runtime.get("active_selected_option_provider_id"),
+app/mme_scalpx/services/features.py:4139:                "active_option_context_provider_id",
+app/mme_scalpx/services/features.py:4140:                provider_runtime.get("active_option_context_provider_id"),
+app/mme_scalpx/services/features.py:4853:        provider_runtime.get("active_futures_provider_id")
+app/mme_scalpx/services/features.py:4858:        provider_runtime.get("active_selected_option_provider_id")
+app/mme_scalpx/services/features.py:4863:        provider_runtime.get("active_option_context_provider_id")
+app/mme_scalpx/services/features.py:5261:    "futures_marketdata_provider_id": "active_futures_provider_id",
+app/mme_scalpx/services/features.py:5262:    "selected_option_marketdata_provider_id": "active_selected_option_provider_id",
+app/mme_scalpx/services/features.py:5263:    "option_context_provider_id": "active_option_context_provider_id",
+app/mme_scalpx/services/features.py:5274:        "active_futures_provider_id",
+app/mme_scalpx/services/features.py:5279:        "active_selected_option_provider_id",
+app/mme_scalpx/services/features.py:5284:        "active_option_context_provider_id",
+app/mme_scalpx/services/features.py:5405:    family_runtime_mode = _batch25h_str_or_none(
+app/mme_scalpx/services/features.py:5408:            "family_runtime_mode",
+app/mme_scalpx/services/features.py:5424:        "family_runtime_mode": family_runtime_mode,
+app/mme_scalpx/services/features.py:5519:    "futures_marketdata_provider_id": "active_futures_provider_id",
+app/mme_scalpx/services/features.py:5520:    "selected_option_marketdata_provider_id": "active_selected_option_provider_id",
+app/mme_scalpx/services/features.py:5521:    "option_context_provider_id": "active_option_context_provider_id",
+app/mme_scalpx/services/features.py:5533:        "active_futures_provider_id",
+app/mme_scalpx/services/features.py:5538:        "active_selected_option_provider_id",
+app/mme_scalpx/services/features.py:5543:        "active_option_context_provider_id",
+app/mme_scalpx/services/features.py:5666:        "family_runtime_mode": (
+app/mme_scalpx/services/features.py:5667:            _batch25hc_text_or_none(source.get("family_runtime_mode"))
+app/mme_scalpx/services/features.py:7181:        _mapping(family_features.get("provider_runtime", {})).get("active_selected_option_provider_id"),
+app/mme_scalpx/services/features.py:7182:        _mapping(family_features.get("provider_runtime", {})).get("active_futures_provider_id"),
+app/mme_scalpx/services/features.py:7188:            raw.get("active_selected_option_provider_id"),
+app/mme_scalpx/services/features.py:7189:            raw.get("active_futures_provider_id"),
+app/mme_scalpx/services/features.py:7196:                parsed.get("active_selected_option_provider_id"),
+app/mme_scalpx/services/features.py:7197:                parsed.get("active_futures_provider_id"),
+app/mme_scalpx/services/features.py:7778:_BATCH26O20R3A_COMMON_KEYS = (
+app/mme_scalpx/services/features.py:7912:                            "common_keys": list(_BATCH26O20R3A_COMMON_KEYS),
+app/mme_scalpx/services/features.py:8575:        provider.get("active_selected_option_provider_id")
+app/mme_scalpx/services/features.py:8664:        provider["family_runtime_mode"] = provider.get("family_runtime_mode") or "OBSERVE_ONLY"
+app/mme_scalpx/services/strategy_family/arbitration.py:85:                "family_runtime_mode": self.candidate.family_runtime_mode,
+app/mme_scalpx/services/strategy_family/arbitration.py:137:                    "family_runtime_mode": self.selected.family_runtime_mode,
+app/mme_scalpx/services/strategy_family/common.py:670:            provider_runtime.get("active_selected_option_provider_id"),
+app/mme_scalpx/services/strategy_family/decisions.py:415:        _clean_optional_str(metadata.get("active_futures_provider_id")),
+app/mme_scalpx/services/strategy_family/decisions.py:416:        _clean_optional_str(metadata.get("active_selected_option_provider_id")),
+app/mme_scalpx/services/strategy_family/decisions.py:417:        _clean_optional_str(metadata.get("active_option_context_provider_id")),
+app/mme_scalpx/services/strategy_family/decisions.py:434:    active_futures_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:435:    active_selected_option_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:436:    active_option_context_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:479:        family_runtime_mode=_clean_optional_str(candidate.family_runtime_mode),
+app/mme_scalpx/services/strategy_family/decisions.py:484:        active_futures_provider_id=(
+app/mme_scalpx/services/strategy_family/decisions.py:485:            _clean_optional_str(active_futures_provider_id) or cand_fut_pid
+app/mme_scalpx/services/strategy_family/decisions.py:487:        active_selected_option_provider_id=(
+app/mme_scalpx/services/strategy_family/decisions.py:488:            _clean_optional_str(active_selected_option_provider_id) or cand_opt_pid
+app/mme_scalpx/services/strategy_family/decisions.py:490:        active_option_context_provider_id=(
+app/mme_scalpx/services/strategy_family/decisions.py:491:            _clean_optional_str(active_option_context_provider_id) or cand_ctx_pid
+app/mme_scalpx/services/strategy_family/decisions.py:515:    family_runtime_mode: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:524:    active_futures_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:525:    active_selected_option_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:526:    active_option_context_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:567:        family_runtime_mode=_clean_optional_str(family_runtime_mode),
+app/mme_scalpx/services/strategy_family/decisions.py:572:        active_futures_provider_id=_clean_optional_str(active_futures_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:573:        active_selected_option_provider_id=_clean_optional_str(active_selected_option_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:574:        active_option_context_provider_id=_clean_optional_str(active_option_context_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:594:    family_runtime_mode: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:599:    active_futures_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:600:    active_selected_option_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:601:    active_option_context_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:632:        family_runtime_mode=_clean_optional_str(family_runtime_mode),
+app/mme_scalpx/services/strategy_family/decisions.py:637:        active_futures_provider_id=_clean_optional_str(active_futures_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:638:        active_selected_option_provider_id=_clean_optional_str(active_selected_option_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:639:        active_option_context_provider_id=_clean_optional_str(active_option_context_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:667:    family_runtime_mode: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:672:    active_futures_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:673:    active_selected_option_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:674:    active_option_context_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:710:        family_runtime_mode=_clean_optional_str(family_runtime_mode),
+app/mme_scalpx/services/strategy_family/decisions.py:715:        active_futures_provider_id=_clean_optional_str(active_futures_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:716:        active_selected_option_provider_id=_clean_optional_str(active_selected_option_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:717:        active_option_context_provider_id=_clean_optional_str(active_option_context_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:744:    family_runtime_mode: str | None,
+app/mme_scalpx/services/strategy_family/decisions.py:747:    active_futures_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:748:    active_selected_option_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:749:    active_option_context_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:768:        family_runtime_mode=family_runtime_mode,
+app/mme_scalpx/services/strategy_family/decisions.py:773:        active_futures_provider_id=active_futures_provider_id,
+app/mme_scalpx/services/strategy_family/decisions.py:774:        active_selected_option_provider_id=active_selected_option_provider_id,
+app/mme_scalpx/services/strategy_family/decisions.py:775:        active_option_context_provider_id=active_option_context_provider_id,
+app/mme_scalpx/services/strategy_family/decisions.py:788:    family_runtime_mode: str | None,
+app/mme_scalpx/services/strategy_family/decisions.py:796:    active_futures_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:797:    active_selected_option_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:798:    active_option_context_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:878:        family_runtime_mode=_clean_optional_str(family_runtime_mode),
+app/mme_scalpx/services/strategy_family/decisions.py:883:        active_futures_provider_id=_clean_optional_str(active_futures_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:884:        active_selected_option_provider_id=_clean_optional_str(active_selected_option_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:885:        active_option_context_provider_id=_clean_optional_str(active_option_context_provider_id),
+app/mme_scalpx/services/strategy_family/decisions.py:918:    "active_futures_provider_id",
+app/mme_scalpx/services/strategy_family/decisions.py:919:    "active_selected_option_provider_id",
+app/mme_scalpx/services/strategy_family/decisions.py:920:    "active_option_context_provider_id",
+app/mme_scalpx/services/strategy_family/decisions.py:955:    active_futures_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:956:    active_selected_option_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:957:    active_option_context_provider_id: str | None = None,
+app/mme_scalpx/services/strategy_family/decisions.py:970:        active_futures_provider_id=active_futures_provider_id or metadata.get("active_futures_provider_id"),
+app/mme_scalpx/services/strategy_family/decisions.py:971:        active_selected_option_provider_id=(
+app/mme_scalpx/services/strategy_family/decisions.py:972:            active_selected_option_provider_id or metadata.get("active_selected_option_provider_id")
+app/mme_scalpx/services/strategy_family/decisions.py:974:        active_option_context_provider_id=(
+app/mme_scalpx/services/strategy_family/decisions.py:975:            active_option_context_provider_id or metadata.get("active_option_context_provider_id")
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:149:    active_futures_provider_id: str | None = None
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:150:    active_selected_option_provider_id: str | None = None
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:151:    active_option_context_provider_id: str | None = None
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:165:            "active_futures_provider_id",
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:166:            "active_selected_option_provider_id",
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:167:            "active_option_context_provider_id",
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:198:            active_futures_provider_id=_normalize_optional_str(
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:199:                _pick(data, "active_futures_provider_id", "futures_provider_id")
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:201:            active_selected_option_provider_id=_normalize_optional_str(
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:204:                    "active_selected_option_provider_id",
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:209:            active_option_context_provider_id=_normalize_optional_str(
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:212:                    "active_option_context_provider_id",
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:387:    family_runtime_mode: str | None = None
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:413:        if self.family_runtime_mode is not None:
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:415:                self.family_runtime_mode in N.ALLOWED_FAMILY_RUNTIME_MODES,
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:416:                f"unsupported family_runtime_mode: {self.family_runtime_mode!r}",
+app/mme_scalpx/services/strategy_family/doctrine_runtime.py:453:    family_runtime_mode: str | None
+app/mme_scalpx/services/strategy_family/eligibility.py:172:    family_runtime_mode: str | None
+app/mme_scalpx/services/strategy_family/eligibility.py:181:            "family_runtime_mode": self.family_runtime_mode,
+app/mme_scalpx/services/strategy_family/eligibility.py:202:    family_runtime_mode: str | None
+app/mme_scalpx/services/strategy_family/eligibility.py:218:            "family_runtime_mode": self.family_runtime_mode,
+app/mme_scalpx/services/strategy_family/eligibility.py:342:    family_runtime_mode = _optional_literal(
+app/mme_scalpx/services/strategy_family/eligibility.py:343:        provider_runtime.get("family_runtime_mode"),
+app/mme_scalpx/services/strategy_family/eligibility.py:344:        field_name="provider_runtime.family_runtime_mode",
+
+## Compile/import smoke
+COMPILE_RC=0
+{
+  "app.mme_scalpx.replay.miv_research_evaluator": "OK",
+  "app.mme_scalpx.replay.strategy_adapter": "OK",
+  "app.mme_scalpx.services.feature_family.contracts": "OK",
+  "app.mme_scalpx.services.features": "OK",
+  "app.mme_scalpx.services.strategy": "OK",
+  "app.mme_scalpx.services.strategy_family.decisions": "OK",
+  "app.mme_scalpx.services.strategy_family.internal_order_intent_pipeline": "OK",
+  "app.mme_scalpx.services.strategy_family.miv_r_contract": "OK"
+}
+IMPORT_RC=0
+
+orders_stream_len_after=0
+risk_stream_len_after=0
+execution_stream_len_after=0
+CLASSIFICATION=PASS_R31O_DIRTY_TREE_OWNERSHIP_MAP_READY_DECIDE_FREEZE_OR_TARGETED_TEST

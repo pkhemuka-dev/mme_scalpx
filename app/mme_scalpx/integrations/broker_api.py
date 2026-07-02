@@ -1084,7 +1084,22 @@ class BaseBrokerAdapter:
         if tag is not None:
             payload["tag"] = _require_non_empty(tag, field_name="tag")
         if extra_params is not None:
-            payload.update({str(k): v for k, v in extra_params.items()})
+            # R38KN_KITE_EXTRA_PARAMS_FILTER
+            # Keep broker metadata out of the KiteConnect.place_order kwargs.
+            # Kite supports only these optional order kwargs beyond the canonical
+            # payload fields already assembled above.
+            kite_supported_extra_keys = {
+                "validity_ttl",
+                "disclosed_quantity",
+                "iceberg_legs",
+                "iceberg_quantity",
+                "auction_number",
+                "market_protection",
+            }
+            for raw_key, raw_value in extra_params.items():
+                key = str(raw_key)
+                if key in kite_supported_extra_keys and raw_value is not None:
+                    payload[key] = raw_value
         return payload
 
     def _augment_response(

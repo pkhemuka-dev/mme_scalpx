@@ -1,0 +1,74 @@
+# LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907
+2026-06-07T14:39:07+05:30
+
+LAW=EXECUTE_OFFLINE_PATCH_IMPACT_REPLAY_ONLY_TEMP_SOURCE_SWAP_FINAL_RESTORE_NO_REDIS_DELETE_NO_LIVE_NO_PAPER_NO_BROKER_ORDER_NO_RISK_EXECUTION_START
+
+DRY_PLAN=run/patches/LANE-B-R5C_BASELINE_SHADOW_DRY_RUN_PACKAGE_NO_PATCH_NO_REPLAY_NO_ORDER_20260607_143758_r5d_reversible_baseline_shadow_plan.sh
+PRE_FEATURES_SHA=8426ef33c527c3c5c4c66fe1f21a6e4bb08f77a9929d8ef7252aa2fc405cf5c5
+PRE_MISB_SHA=2e8b399696080359148a3d1ed35538f5963c993f03dc7349d193919488da169a
+PRE_STRATEGY_SHA=2b3d3ff7c2870f249d2ff3b9dec5600fb1af0f607fda3c3486de6a58970e7ebc
+
+## Runtime process safety preflight
+NO_ACTIVE_RUNTIME_FOUND
+
+## Executing reviewed R5C dry plan
+EXEC_RC=0
+
+## R5D execution log tail
+## Baseline replay: restore pre-R27E/R27G backup pair temporarily
+## Shadow replay: restore current source and run current
+R5D_RUN_ROOT=run/replay/lane_b_r5d/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907
+R5D_LOG_ROOT=run/logs/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907
+RESTORE_DIR=run/_code_backups/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907_restore_current_sources
+
+POST_FEATURES_SHA=8426ef33c527c3c5c4c66fe1f21a6e4bb08f77a9929d8ef7252aa2fc405cf5c5
+POST_MISB_SHA=2e8b399696080359148a3d1ed35538f5963c993f03dc7349d193919488da169a
+POST_STRATEGY_SHA=2b3d3ff7c2870f249d2ff3b9dec5600fb1af0f607fda3c3486de6a58970e7ebc
+RESTORE_FEATURES_OK=true
+RESTORE_MISB_OK=true
+RESTORE_STRATEGY_OK=true
+
+## Compile after restore
+COMPILE_RC=0
+
+## Locate baseline/shadow run dirs
+R5D_RUN_ROOT=run/replay/lane_b_r5d/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907
+R5D_LOG_ROOT=run/logs/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907
+RESTORE_DIR=run/_code_backups/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907_restore_current_sources
+BASE_RUN_DIR=run/replay/lane_b_r5d/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907/baseline_pre_r27e_r27g/replay_locked_single_day_lane-b-r5d_execute_baseline_shadow_patch_impact_replay_no_patch_final_restore_no_order_20260607_143907_baseline_pre_r27e_r27g_20260607_090922_285d6f57
+SHADOW_RUN_DIR=run/replay/lane_b_r5d/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907/shadow_current/replay_locked_single_day_lane-b-r5d_execute_baseline_shadow_patch_impact_replay_no_patch_final_restore_no_order_20260607_143907_shadow_current_20260607_091411_07aa6771
+
+## Baseline/shadow quick summaries
+--- baseline
+replay_scope=feeds_features_strategy_risk_execution_shadow
+integrity_verdict=pass
+feature_row_count=134035
+strategy_row_count=134035
+candidate_count=0
+trade_count=0
+pnl_total=None
+risk_row_count=134035
+risk_action_breakdown={'HOLD': 134035}
+execution_shadow_row_count=134035
+execution_shadow_filled_count=0
+strategy_action_breakdown={'HOLD': 134035}
+feature_side_breakdown={'CALL': 56400, 'CONTEXT': 21808, 'PUT': 55827}
+feature_leg_breakdown={'CALL_ATM': 56400, 'FUTURES': 21808, 'PUT_ATM': 55827}
+--- shadow
+replay_scope=feeds_features_strategy_risk_execution_shadow
+integrity_verdict=pass
+feature_row_count=134035
+strategy_row_count=134035
+candidate_count=0
+trade_count=0
+pnl_total=None
+risk_row_count=134035
+risk_action_breakdown={'HOLD': 134035}
+execution_shadow_row_count=134035
+execution_shadow_filled_count=0
+strategy_action_breakdown={'HOLD': 134035}
+feature_side_breakdown={'CALL': 56400, 'CONTEXT': 21808, 'PUT': 55827}
+feature_leg_breakdown={'CALL_ATM': 56400, 'FUTURES': 21808, 'PUT_ATM': 55827}
+SUMMARY_RC=0
+
+CLASSIFICATION=PASS_R5D_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_EXECUTED_AND_SOURCE_RESTORED

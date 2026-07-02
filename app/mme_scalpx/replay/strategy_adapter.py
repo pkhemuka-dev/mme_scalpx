@@ -70,7 +70,43 @@ class ReplayStrategyAdapterResult:
 
 
 def _canonical_json(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+    """R35C/R4E compact canonical JSON for replay debug payloads.
+
+    This is artifact/debug-payload slimming only. It must not change strategy
+    candidate selection, risk decisions, execution shadow, broker state, or
+    Redis streams.
+    """
+    def slim(obj: Any, depth: int = 0) -> Any:
+        if depth > 5:
+            return "<omitted_by_R35C_R4E:max_depth>"
+        if isinstance(obj, list):
+            original_len = len(obj)
+            selected = obj[:3]
+            out = [slim(x, depth + 1) for x in selected]
+            if original_len > len(selected):
+                out.append({
+                    "_r35c_r4e_truncated": True,
+                    "original_len": original_len,
+                    "persisted_len": len(selected),
+                    "reason": "compact_candidate_json_for_replay_speed",
+                })
+            return out
+        if isinstance(obj, dict):
+            heavy_keys = {
+                "feature", "features", "feature_payload", "feature_json",
+                "raw", "raw_payload", "raw_frame", "snapshot", "context",
+                "debug", "debug_payload", "candidates", "all_candidates",
+            }
+            out = {}
+            for k, v in obj.items():
+                if k in heavy_keys:
+                    out[k] = f"<omitted_by_R35C_R4E:{k}>"
+                else:
+                    out[k] = slim(v, depth + 1)
+            return out
+        return obj
+
+    return json.dumps(slim(value), sort_keys=True, separators=(",", ":"), default=str)
 
 
 def _truthy(value: Any) -> bool:
@@ -142,7 +178,12 @@ def build_replay_strategy_candidates(
                 "family": family,
                 "side": side,
                 "candidate_id": candidate_id,
-                "candidate_present": bool(surface),
+                # R31A_R9F_R8_STRICT_CANDIDATE_PRESENT_TRUTH
+                # surface_available is observability; candidate_present is strict tradable truth.
+                "surface_available": bool(surface),
+                "candidate_present_raw": bool(surface),
+                "candidate_present": bool(eligible),
+                "candidate_truth_mode": "strict_eligible_no_blockers_positive_score",
                 "eligible": eligible,
                 "score": score,
                 "blockers": blockers,

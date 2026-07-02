@@ -1,0 +1,13 @@
+# LANE-MIV-R4-R1_PRECISE_SIDE_EFFECT_AND_TAPE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_separate_false_positive_safety_text_from_real_process_danger_and_locate_durable_fut_opt_tapes_20260611_234725
+
+Result: precise MIV R4 side-effect and durable tape locator completed.
+
+Proof:
+- run/proofs/LANE-MIV-R4-R1_PRECISE_SIDE_EFFECT_AND_TAPE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_separate_false_positive_safety_text_from_real_process_danger_and_locate_durable_fut_opt_tapes_20260611_234725.json
+
+Report:
+- run/audits/LANE-MIV-R4-R1_PRECISE_SIDE_EFFECT_AND_TAPE_LOCATOR_NO_PATCH_NO_REPLAY_NO_ORDER_separate_false_positive_safety_text_from_real_process_danger_and_locate_durable_fut_opt_tapes_20260611_234725_report.md
+
+Next:
+- If PASS: use exact FUT/OPT paths from report for compact after-market measurement runner.
+- Do not reuse partial R3C/R4 runners.

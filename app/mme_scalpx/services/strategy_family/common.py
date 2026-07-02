@@ -748,6 +748,24 @@ def standardize_candidate_metadata(
         "candidate_metadata_contract_version": "25P.1",
     }
 
+    # LANE_X_R38CW_METADATA_PRE_STATUS_COMPLETION_BEGIN
+    # Shared candidate metadata contract completion only.
+    # This does not arm paper, start risk/execution, relax thresholds, or place orders.
+    if metadata.get("quantity_lots_hint") in (None, ""):
+        metadata["quantity_lots_hint"] = 1
+
+    _entry_mode_value = (
+        metadata.get("entry_mode")
+        or metadata.get("entry_mode_hint")
+        or candidate_data.get("entry_mode")
+        or candidate_data.get("entry_mode_hint")
+        or existing.get("entry_mode")
+        or existing.get("entry_mode_hint")
+        or "DIRECT"
+    )
+    metadata["entry_mode"] = str(_entry_mode_value).strip() or "DIRECT"
+    # LANE_X_R38CW_METADATA_PRE_STATUS_COMPLETION_END
+
     complete, missing = candidate_metadata_contract_status(metadata)
     metadata["candidate_metadata_contract_complete"] = complete
     metadata["candidate_metadata_missing"] = missing

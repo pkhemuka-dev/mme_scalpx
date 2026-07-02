@@ -1,0 +1,87 @@
+# R35C_R4A_RECOVERY_INSPECT_MISSING_SUMMARY_NO_REPLAY_NO_ORDER_20260613_220734
+
+classification: REVIEW_R35C_R4A_RECOVERY_SUMMARY_STILL_MISSING_NO_REPLAY_NO_ORDER
+proof: `run/proofs/R35C_R4A_RECOVERY_INSPECT_MISSING_SUMMARY_NO_REPLAY_NO_ORDER_20260613_220734.json`
+
+summary_count=0
+safety pre=0/0/0 post=0/0/0 proc=0/0 replay_proc=0
+
+## Pointers
+R4A_ROOT=run/replay/r35c_r4a/20260613_220130
+R4A_REPORT=run/audits/R35C_R4A_ONE_DAY_CAPPED_REPLAY_SMOKE_20260601_NO_ORDER_20260613_220130_report.md
+R4A_AUDIT_DIR=run/audits/R35C_R4A_ONE_DAY_CAPPED_REPLAY_SMOKE_20260601_NO_ORDER_20260613_220130
+
+## Safety
+orders=0 risk=0 execution=0
+
+## Processes
+
+## R4A run tree files
+12627 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/02_scope_profile.json
+10361 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/economics_summary.json
+7642 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/01_dataset_summary.json
+5043 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/engine_result.json
+3884 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/00_manifest.json
+2336 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/17_effective_inputs.json
+769 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/b3_r32_analysis_exports_status.json
+278 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/18_effective_overrides_flat.json
+202 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/06_candidate_audit.csv
+113 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/blocker_distribution.csv
+81 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/family_side_summary.csv
+59 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/04_metrics_summary.json
+55 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/03_integrity_report.json
+
+## Any summary files
+10361 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/economics_summary.json
+7642 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/01_dataset_summary.json
+5043 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/engine_result.json
+81 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/family_side_summary.csv
+59 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/04_metrics_summary.json
+55 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/03_integrity_report.json
+
+## Audit dir files
+total 8.0K
+-rw-rw-r-- 1 Lenovo Lenovo    0 Jun 13 22:01 compile.log
+-rw-rw-r-- 1 Lenovo Lenovo    1 Jun 13 22:05 replay.log
+-rw-rw-r-- 1 Lenovo Lenovo 1.8K Jun 13 22:05 sizes.txt
+-rw-rw-r-- 1 Lenovo Lenovo    0 Jun 13 22:01 run/audits/R35C_R4A_ONE_DAY_CAPPED_REPLAY_SMOKE_20260601_NO_ORDER_20260613_220130/compile.log
+-rw-rw-r-- 1 Lenovo Lenovo    1 Jun 13 22:05 run/audits/R35C_R4A_ONE_DAY_CAPPED_REPLAY_SMOKE_20260601_NO_ORDER_20260613_220130/replay.log
+-rw-rw-r-- 1 Lenovo Lenovo 1.8K Jun 13 22:05 run/audits/R35C_R4A_ONE_DAY_CAPPED_REPLAY_SMOKE_20260601_NO_ORDER_20260613_220130/sizes.txt
+
+## Existing R4A report
+# R35C_R4A_ONE_DAY_CAPPED_REPLAY_SMOKE_20260601_NO_ORDER_20260613_220130
+
+classification: REVIEW_R35C_R4A_ONE_DAY_REPLAY_SMOKE_NEEDS_INSPECTION_NO_ORDER
+proof: `run/proofs/R35C_R4A_ONE_DAY_CAPPED_REPLAY_SMOKE_20260601_NO_ORDER_20260613_220130.json`
+run_root: `run/replay/r35c_r4a/20260613_220130`
+summary: ``
+
+compile_rc=0 replay_rc= big_files_over_50mb=0
+safety pre=0/0/0 post=0/0/0 proc=0/0 replay_proc=0
+
+## Largest files
+12627 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/02_scope_profile.json
+10361 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/economics_summary.json
+7642 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/01_dataset_summary.json
+5043 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/engine_result.json
+3884 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/00_manifest.json
+2336 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/17_effective_inputs.json
+769 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/b3_r32_analysis_exports_status.json
+278 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/18_effective_overrides_flat.json
+202 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/06_candidate_audit.csv
+113 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/blocker_distribution.csv
+81 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/artifacts/family_side_summary.csv
+59 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/04_metrics_summary.json
+55 run/replay/r35c_r4a/20260613_220130/replay_locked_single_day_r35c_r4a_20260601_20260613_163139_aa8042f8/03_integrity_report.json
+
+## Run summary
+
+## Replay log tail
+
+
+## Compile log
+
+## Replay log tail if present
+
+
+## Compile log if present

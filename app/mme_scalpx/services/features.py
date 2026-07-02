@@ -1130,6 +1130,9 @@ class FeatureEngine:
         self.family_modules = {
             name: _load_module(path, self.log) for name, path in FAMILY_MODULES.items()
         }
+        # LANE_X_R22B_MICRO_OPTION_RESPONSE_PRODUCER_BEGIN
+        self._lane_x_r22b_option_history: dict[str, list[tuple[int, float]]] = {}
+        # LANE_X_R22B_MICRO_OPTION_RESPONSE_PRODUCER_END
 
     def build_payload(self, *, now_ns: int | None = None) -> dict[str, Any]:
         generated_at_ns = int(now_ns or time.time_ns())
@@ -1521,6 +1524,95 @@ class FeatureEngine:
             "age_ms": _safe_int(_pick(surface_raw, "age_ms"), 0) or None,
         }
 
+    # LANE_X_R22B_MICRO_OPTION_RESPONSE_PRODUCER_BEGIN
+    def _lane_x_r22b_micro_option_response(
+        self,
+        surface_raw: Mapping[str, Any],
+        *,
+        role: str,
+        provider_id: str,
+        side: str,
+    ) -> dict[str, Any]:
+        """Derived live option-response evidence from selected-option price history.
+
+        Additive only: this producer does not force tradability, candidates,
+        paper, execution, order routing, or MISO readiness. It supplies response
+        evidence when upstream option snapshots do not carry delta_3 or
+        response_efficiency.
+        """
+        raw = dict(surface_raw or {})
+        ltp = _safe_float(_pick(raw, "ltp", "last_price", "price"), 0.0)
+        if ltp <= 0.0:
+            return {}
+
+        symbol = _safe_str(
+            _pick(raw, "option_symbol", "trading_symbol", "symbol", "instrument_key", "instrument_token")
+        )
+        token = _safe_str(_pick(raw, "instrument_token", "token"))
+        key = "|".join([_safe_str(provider_id), _safe_str(role), _safe_str(side), symbol or token])
+        if not key.strip("|"):
+            return {}
+
+        ts_ns = _safe_int(_pick(raw, "ts_event_ns", "event_ts_ns", "ltt_ns", "last_trade_time_ns"), 0)
+        if ts_ns <= 0:
+            ts_ns = int(time.time_ns())
+
+        state = self._lane_x_r22b_option_history
+        hist = list(state.get(key, []))
+        if not hist or hist[-1][0] != ts_ns or abs(hist[-1][1] - ltp) > 1e-12:
+            hist.append((ts_ns, ltp))
+        hist = hist[-8:]
+        state[key] = hist
+
+        if len(state) > 128:
+            for old_key in list(state.keys())[:64]:
+                if old_key != key:
+                    state.pop(old_key, None)
+
+        sample_count = len(hist)
+        if sample_count < 2:
+            return {
+                "option_response_sample_count": sample_count,
+                "option_response_source": "micro_option_response",
+                "option_response_ready": False,
+            }
+
+        ref_index = -4 if sample_count >= 4 else 0
+        ref_ts, ref_ltp = hist[ref_index]
+        delta = ltp - ref_ltp
+        age_ns = max(0, ts_ns - ref_ts)
+
+        tick = _safe_float(_pick(raw, "tick_size"), 0.05)
+        if tick <= 0.0:
+            tick = 0.05
+
+        bid = _safe_float(_pick(raw, "bid", "best_bid"), 0.0)
+        ask = _safe_float(_pick(raw, "ask", "best_ask"), 0.0)
+        spread = max(0.0, ask - bid) if bid > 0.0 and ask > 0.0 else 0.0
+        denominator = spread if spread > 0.0 else tick
+
+        response_eff = abs(delta) / max(denominator, tick, 1e-9)
+        velocity_ratio = abs(delta) / max(tick, 1e-9)
+
+        return {
+            "delta_3": delta,
+            "ltp_delta_3": delta,
+            "option_response_delta": delta,
+            "option_response_abs_delta": abs(delta),
+            "option_response_ref_ltp": ref_ltp,
+            "option_response_ref_ts_ns": ref_ts,
+            "option_response_age_ns": age_ns,
+            "option_response_sample_count": sample_count,
+            "option_response_source": "micro_option_response",
+            "option_response_ready": True,
+            "option_response_velocity_ratio": velocity_ratio,
+            "velocity_ratio": velocity_ratio,
+            "vel_ratio": velocity_ratio,
+            "response_efficiency": response_eff,
+            "option_response_efficiency": response_eff,
+        }
+    # LANE_X_R22B_MICRO_OPTION_RESPONSE_PRODUCER_END
+
     def _option_surface(
         self,
         raw: Mapping[str, Any],
@@ -1592,6 +1684,30 @@ class FeatureEngine:
         elif side_text in {side_put_text, "PUT", "PE", "P"}:
             builder_side = SIDE_PUT
 
+        micro_response = self._lane_x_r22b_micro_option_response(
+            surface_raw,
+            role=role,
+            provider_id=provider_id,
+            side=builder_side or side,
+        )
+        if micro_response:
+            surface_raw = dict(surface_raw)
+            for _mx_key, _mx_value in micro_response.items():
+                if _mx_key in {"delta_3", "ltp_delta_3"}:
+                    if abs(_safe_float(_pick(surface_raw, "delta_3", "ltp_delta_3"), 0.0)) <= 1e-12:
+                        surface_raw[_mx_key] = _mx_value
+                elif _mx_key in {"response_efficiency", "option_response_efficiency"}:
+                    if _safe_float(
+                        _pick(surface_raw, "response_efficiency", "response_eff", "option_response_efficiency"),
+                        0.0,
+                    ) <= 0.0:
+                        surface_raw[_mx_key] = _mx_value
+                elif _mx_key in {"velocity_ratio", "vel_ratio"}:
+                    if _safe_float(_pick(surface_raw, "velocity_ratio", "vel_ratio"), 0.0) <= 1.0:
+                        surface_raw[_mx_key] = _mx_value
+                else:
+                    surface_raw.setdefault(_mx_key, _mx_value)
+
         built = None
 
         if builder_side in (SIDE_CALL, SIDE_PUT):
@@ -1627,6 +1743,19 @@ class FeatureEngine:
             out.setdefault("instrument_token", _safe_str(_pick(surface_raw, "instrument_token", "token")))
             out.setdefault("option_symbol", _safe_str(_pick(surface_raw, "option_symbol", "trading_symbol", "symbol")))
             out.setdefault("strike", _safe_float(_pick(surface_raw, "strike", "strike_price"), 0.0))
+            if micro_response:
+                for _mx_key, _mx_value in micro_response.items():
+                    if _mx_key in {"delta_3", "ltp_delta_3"}:
+                        if abs(_safe_float(out.get("delta_3"), 0.0)) <= 1e-12:
+                            out[_mx_key] = _mx_value
+                    elif _mx_key in {"response_efficiency", "option_response_efficiency"}:
+                        if _safe_float(out.get("response_efficiency"), 0.0) <= 0.0:
+                            out[_mx_key] = _mx_value
+                    elif _mx_key in {"velocity_ratio", "vel_ratio"}:
+                        if _safe_float(out.get("velocity_ratio"), 0.0) <= 1.0:
+                            out[_mx_key] = _mx_value
+                    else:
+                        out.setdefault(_mx_key, _mx_value)
             return out
 
         bid = _safe_float(_pick(surface_raw, "bid", "best_bid"), 0.0)
@@ -4120,6 +4249,154 @@ def _batch26o16_build_consumer_view(
     }
 
 
+
+
+# LANE-X-R20 minimal bridge gate mapping repair.
+# Safety contract:
+# - Feature/consumer-view mapping only.
+# - No strategy threshold relaxation.
+# - No fake candidate.
+# - No risk/execution/order/broker path.
+# - No paper/live enablement.
+# - MISO remains stricter when Dhan context is unavailable.
+def _lane_x_r20_bridge_gate_mapping_repair(*, family_features, consumer_view):
+    ff = dict(family_features or {})
+    cv = dict(consumer_view or {})
+
+    provider = dict(ff.get("provider_runtime") or {})
+    stage = dict(ff.get("stage_flags") or {})
+    snapshot = dict(ff.get("snapshot") or {})
+    common = dict(ff.get("common") or {})
+    selected = dict(common.get("selected_option") or {})
+
+    def _r20_bool(v):
+        if isinstance(v, bool):
+            return v
+        if v is None:
+            return False
+        return str(v).strip().lower() in {"1", "true", "yes", "y", "ok", "pass", "passed", "healthy"}
+
+    def _r20_status(v):
+        return str(v or "").strip().upper()
+
+    snapshot_ok = bool(
+        _r20_bool(snapshot.get("valid"))
+        and _r20_bool(snapshot.get("sync_ok"))
+        and _r20_status(snapshot.get("validity")) in {"OK", "VALID", "TRUE", "1"}
+    )
+
+    selected_present = bool(
+        _r20_bool(selected.get("selected_option_present"))
+        or selected.get("ltp") not in (None, "", 0, 0.0)
+        or selected.get("instrument_key")
+        or selected.get("trading_symbol")
+    )
+
+    selected_tradable = bool(
+        _r20_bool(selected.get("tradability_ok"))
+        or _r20_bool(selected.get("selected_option_tradability_ok"))
+        or _r20_bool(selected.get("entry_pass"))
+    )
+
+    futures_status = _r20_status(
+        provider.get("futures_provider_status")
+        or provider.get("futures_marketdata_status")
+    )
+    selected_status = _r20_status(
+        provider.get("selected_option_provider_status")
+        or provider.get("selected_option_marketdata_status")
+    )
+
+    futures_ok = futures_status in {"HEALTHY", "OK", "READY", "ACTIVE"}
+    selected_ok = selected_status in {"HEALTHY", "OK", "READY", "ACTIVE", "FAILOVER_ACTIVE"}
+
+    classic_mode = (
+        provider.get("classic_runtime_mode")
+        or provider.get("provider_runtime_mode")
+        or "NORMAL"
+    )
+    classic_disabled = str(classic_mode or "").strip().upper() in {"DISABLED", "OFF", "NONE", "FALSE", "0"}
+
+    classic_ready = bool(
+        snapshot_ok
+        and futures_ok
+        and selected_ok
+        and selected_present
+        and selected_tradable
+        and not classic_disabled
+    )
+
+    # Preserve MISO strictness: do not mark it ready if Dhan option context is unavailable.
+    option_context_status = _r20_status(
+        provider.get("option_context_provider_status")
+        or provider.get("option_context_status")
+    )
+    existing_miso_ready = _r20_bool(provider.get("provider_ready_miso")) or _r20_bool(stage.get("provider_ready_miso"))
+    miso_ready = bool(existing_miso_ready and option_context_status not in {"", "UNAVAILABLE", "DISABLED", "MISSING"})
+
+    provider["classic_runtime_mode"] = "NORMAL" if not classic_disabled else "DISABLED"
+    provider["provider_ready_classic"] = classic_ready
+    provider["provider_ready_miso"] = miso_ready
+
+    stage["provider_ready_classic"] = classic_ready
+    stage["provider_ready_miso"] = miso_ready
+    stage["tradability_ok"] = selected_tradable
+    stage["selected_option_present"] = selected_present
+    stage["data_valid"] = bool(stage.get("data_valid") or snapshot_ok)
+    stage["data_quality_ok"] = bool(stage.get("data_quality_ok") or snapshot_ok)
+    stage["r20_bridge_gate_mapping_repair"] = "applied"
+
+    selected["selected_option_present"] = selected_present
+    selected["selected_option_tradability_ok"] = selected_tradable
+    selected["tradability_ok"] = selected_tradable
+    common["selected_option"] = selected
+
+    ff["provider_runtime"] = provider
+    ff["stage_flags"] = stage
+    ff["common"] = common
+    ff["r20_bridge_gate_mapping_repair"] = {
+        "applied": True,
+        "snapshot_ok": snapshot_ok,
+        "futures_ok": futures_ok,
+        "selected_ok": selected_ok,
+        "selected_present": selected_present,
+        "selected_tradable": selected_tradable,
+        "classic_ready": classic_ready,
+        "miso_ready_preserved_strict": miso_ready,
+        "candidate_forced": False,
+        "thresholds_changed": False,
+        "order_side_effect": False,
+    }
+
+    cv_stage = dict(cv.get("stage_flags") or {})
+    cv_stage.update(stage)
+    cv["stage_flags"] = cv_stage
+    cv["provider_runtime"] = dict(provider)
+    cv["common"] = dict(common)
+    cv["provider_ready_classic"] = classic_ready
+    cv["provider_ready_miso"] = miso_ready
+    cv["data_valid"] = bool(cv.get("data_valid") or snapshot_ok)
+    cv["tradability_ok"] = selected_tradable
+
+    # Consumer bridge was hard-coded hold_only=True. This does not create a candidate;
+    # it only stops the bridge from suppressing already-observed natural dry-run candidates
+    # when all data/provider/tradability gates are satisfied.
+    safe_to_consume = _r20_bool(cv.get("safe_to_consume"))
+    cv["hold_only"] = not bool(safe_to_consume and classic_ready and selected_tradable)
+    cv["r20_bridge_gate_mapping_repair"] = {
+        "applied": True,
+        "hold_only_after_repair": cv["hold_only"],
+        "classic_ready": classic_ready,
+        "selected_tradable": selected_tradable,
+        "safe_to_consume": safe_to_consume,
+        "candidate_forced": False,
+        "thresholds_changed": False,
+        "order_side_effect": False,
+    }
+
+    return ff, cv
+
+
 # =============================================================================
 # Service
 # =============================================================================
@@ -4189,6 +4466,24 @@ class FeaturesService:
         }
 
         family_frames = _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames)
+        try:
+            family_features, consumer_view = _lane_x_r20_bridge_gate_mapping_repair(
+                family_features=family_features,
+                consumer_view=consumer_view,
+            )
+        except Exception as exc:
+            self.log.warning("lane_x_r20_bridge_gate_mapping_repair_failed error=%r", exc)
+        # LANE-X-R29B remove top-level r20_bridge_gate_mapping_repair before family_features_json serialization.
+        # Strategy contract rejects this as an extra family_features top-level key.
+        # Nested markers in stage_flags/consumer_view remain; no thresholds/candidates/orders changed.
+        # LANE-X-R31 remove top-level r20_bridge_gate_mapping_repair from family_features before serialization.
+        # R30 proved payload.pop alone is insufficient because family_features_json is built from family_features.
+        if isinstance(family_features, dict):
+            family_features.pop("r20_bridge_gate_mapping_repair", None)
+
+        if isinstance(payload, dict):
+            payload.pop("r20_bridge_gate_mapping_repair", None)
+
         hash_payload = {
             "frame_id": _safe_str(payload.get("frame_id")),
             "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
@@ -4218,6 +4513,10 @@ class FeaturesService:
             "family_features_version": hash_payload["family_features_version"],
             "family_features_json": hash_payload["family_features_json"],
             "family_surfaces_json": hash_payload["family_surfaces_json"],
+            # LANE-X-R24 stream family_frames_json serialization patch.
+            # R23 proved the feature hash has 10 branch frames but the stream omitted them.
+            # Serialization only: no candidate forcing, no threshold change, no paper/live/order path.
+            "family_frames_json": hash_payload["family_frames_json"],
             "consumer_view_json": hash_payload["consumer_view_json"],
         }
 
@@ -6956,6 +7255,17 @@ if "_BATCH26O16G_R2_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "Feat
             }
 
             family_frames = _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames)
+            # LANE-X-R29B remove top-level r20_bridge_gate_mapping_repair before family_features_json serialization.
+            # Strategy contract rejects this as an extra family_features top-level key.
+            # Nested markers in stage_flags/consumer_view remain; no thresholds/candidates/orders changed.
+            # LANE-X-R31 remove top-level r20_bridge_gate_mapping_repair from family_features before serialization.
+            # R30 proved payload.pop alone is insufficient because family_features_json is built from family_features.
+            if isinstance(family_features, dict):
+                family_features.pop("r20_bridge_gate_mapping_repair", None)
+
+            if isinstance(payload, dict):
+                payload.pop("r20_bridge_gate_mapping_repair", None)
+
             hash_payload = {
                 "frame_id": _safe_str(payload.get("frame_id")),
                 "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
@@ -7238,6 +7548,17 @@ if "_BATCH26O16H_R2_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "Feat
             }
 
             family_frames = _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames)
+            # LANE-X-R29B remove top-level r20_bridge_gate_mapping_repair before family_features_json serialization.
+            # Strategy contract rejects this as an extra family_features top-level key.
+            # Nested markers in stage_flags/consumer_view remain; no thresholds/candidates/orders changed.
+            # LANE-X-R31 remove top-level r20_bridge_gate_mapping_repair from family_features before serialization.
+            # R30 proved payload.pop alone is insufficient because family_features_json is built from family_features.
+            if isinstance(family_features, dict):
+                family_features.pop("r20_bridge_gate_mapping_repair", None)
+
+            if isinstance(payload, dict):
+                payload.pop("r20_bridge_gate_mapping_repair", None)
+
             hash_payload = {
                 "frame_id": _safe_str(payload.get("frame_id")),
                 "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
@@ -7400,6 +7721,17 @@ if "_BATCH26O17A_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "Feature
         }
 
         family_frames = _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames)
+        # LANE-X-R29B remove top-level r20_bridge_gate_mapping_repair before family_features_json serialization.
+        # Strategy contract rejects this as an extra family_features top-level key.
+        # Nested markers in stage_flags/consumer_view remain; no thresholds/candidates/orders changed.
+        # LANE-X-R31 remove top-level r20_bridge_gate_mapping_repair from family_features before serialization.
+        # R30 proved payload.pop alone is insufficient because family_features_json is built from family_features.
+        if isinstance(family_features, dict):
+            family_features.pop("r20_bridge_gate_mapping_repair", None)
+
+        if isinstance(payload, dict):
+            payload.pop("r20_bridge_gate_mapping_repair", None)
+
         hash_payload = {
             "frame_id": _safe_str(payload.get("frame_id")),
             "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
@@ -7590,6 +7922,17 @@ if "_BATCH26O17B_ORIGINAL_FEATURESERVICE_RUN_ONCE" not in globals() and "Feature
         }
 
         family_frames = _b1_profit_live_r39we_apply_dynamic_score_aliases(family_frames)
+        # LANE-X-R29B remove top-level r20_bridge_gate_mapping_repair before family_features_json serialization.
+        # Strategy contract rejects this as an extra family_features top-level key.
+        # Nested markers in stage_flags/consumer_view remain; no thresholds/candidates/orders changed.
+        # LANE-X-R31 remove top-level r20_bridge_gate_mapping_repair from family_features before serialization.
+        # R30 proved payload.pop alone is insufficient because family_features_json is built from family_features.
+        if isinstance(family_features, dict):
+            family_features.pop("r20_bridge_gate_mapping_repair", None)
+
+        if isinstance(payload, dict):
+            payload.pop("r20_bridge_gate_mapping_repair", None)
+
         hash_payload = {
             "frame_id": _safe_str(payload.get("frame_id")),
             "frame_ts_ns": _safe_str(payload.get("frame_ts_ns")),
@@ -8794,3 +9137,952 @@ if not globals().get("_R38ZF_FUTURES_RECEIVE_CLOCK_PATCH_INSTALLED", False):
     _R38ZF_FUTURES_RECEIVE_CLOCK_PATCH_INSTALLED = True
 # END R38ZF_FUTURES_RECEIVE_CLOCK_SNAPSHOT_SYNC
 
+
+# B4_R5P_MICRO_SHELF_PRODUCER_PATCH_BEGIN
+# Purpose:
+# - Add explicit micro-shelf fields for MISB/MISB-like breakout consumers.
+# - R5K/R5M4 proved MISB had provider_ready=true but failed shelf_validation
+#   because breakout_shelf_high/low/count were missing.
+#
+# Safety:
+# - No threshold changes.
+# - No candidate forcing.
+# - No shelf_valid/breakout_trigger/breakout_accepted forcing.
+# - No paper/live/risk/execution/order enablement.
+# - Existing explicit shelf fields remain authoritative via setdefault.
+
+_B4_R5P_PREV_FUTURES_SURFACE = FeatureEngine._futures_surface
+_B4_R5P_PREV_CONTRACT_FUTURES_BLOCK = FeatureEngine._contract_futures_block
+
+_B4_R5P_MICRO_SHELF_WINDOW_NS = 45_000_000_000
+_B4_R5P_MICRO_SHELF_MAX_SAMPLES = 96
+_B4_R5P_MICRO_SHELF_MIN_SNAPSHOTS = 3
+
+
+def _b4_r5p_micro_float(value, default=0.0):
+    try:
+        if value is None or value == "":
+            return float(default)
+        if isinstance(value, bool):
+            return float(default)
+        return float(value)
+    except Exception:
+        return float(default)
+
+
+def _b4_r5p_micro_int(value, default=0):
+    try:
+        if value is None or value == "":
+            return int(default)
+        if isinstance(value, bool):
+            return int(default)
+        return int(float(value))
+    except Exception:
+        return int(default)
+
+
+def _b4_r5p_micro_pick(mapping, *keys, default=None):
+    if not isinstance(mapping, Mapping):
+        return default
+    for key in keys:
+        if key in mapping and mapping.get(key) not in (None, ""):
+            return mapping.get(key)
+    return default
+
+
+def _b4_r5p_micro_existing_shelf(surface):
+    return (
+        _b4_r5p_micro_pick(surface, "breakout_shelf_high", "shelf_high", "rolling_high", "lookback_high", "range_high") is not None
+        and _b4_r5p_micro_pick(surface, "breakout_shelf_low", "shelf_low", "rolling_low", "lookback_low", "range_low") is not None
+    )
+
+
+def _b4_r5p_micro_sample_price(surface):
+    ltp = _b4_r5p_micro_float(_b4_r5p_micro_pick(surface, "ltp", "last_price", "price"), 0.0)
+    bid = _b4_r5p_micro_float(_b4_r5p_micro_pick(surface, "bid", "best_bid"), 0.0)
+    ask = _b4_r5p_micro_float(_b4_r5p_micro_pick(surface, "ask", "best_ask"), 0.0)
+
+    if ltp > 0.0:
+        return ltp
+    if bid > 0.0 and ask > 0.0:
+        return (bid + ask) / 2.0
+    return 0.0
+
+
+def _b4_r5p_micro_event_ns(surface):
+    ns = _b4_r5p_micro_int(
+        _b4_r5p_micro_pick(surface, "ts_event_ns", "ts_provider_ns", "ts_recv_ns", "last_update_ns", "frame_ts_ns"),
+        0,
+    )
+    if ns > 0:
+        return ns
+    try:
+        return int(time.time_ns())
+    except Exception:
+        return 0
+
+
+def _b4_r5p_apply_micro_shelf(self, surface):
+    out = dict(surface) if isinstance(surface, Mapping) else {}
+
+    # Do not override a real explicit shelf if one is already supplied upstream.
+    if _b4_r5p_micro_existing_shelf(out):
+        out.setdefault("breakout_shelf_source", "upstream_explicit_shelf")
+        return out
+
+    price = _b4_r5p_micro_sample_price(out)
+    if price <= 0.0:
+        out.setdefault("breakout_shelf_source", "micro_shelf_no_valid_price")
+        return out
+
+    event_ns = _b4_r5p_micro_event_ns(out)
+    role = str(out.get("role") or out.get("source_label") or "active")
+    provider = str(out.get("provider_id") or "")
+    hist_key = f"{role}|{provider}"
+
+    history = getattr(self, "_b4_r5p_micro_shelf_history", None)
+    if not isinstance(history, dict):
+        history = {}
+        setattr(self, "_b4_r5p_micro_shelf_history", history)
+
+    samples = list(history.get(hist_key, []))
+    samples.append((event_ns, float(price)))
+
+    cutoff = event_ns - _B4_R5P_MICRO_SHELF_WINDOW_NS if event_ns > 0 else 0
+    if cutoff > 0:
+        samples = [(ts, px) for ts, px in samples if ts >= cutoff and px > 0.0]
+    else:
+        samples = [(ts, px) for ts, px in samples if px > 0.0]
+
+    samples = samples[-_B4_R5P_MICRO_SHELF_MAX_SAMPLES:]
+    history[hist_key] = samples
+
+    count = len(samples)
+    out.setdefault("breakout_shelf_source", "micro_shelf")
+    out.setdefault("breakout_shelf_window_seconds", int(_B4_R5P_MICRO_SHELF_WINDOW_NS / 1_000_000_000))
+    out.setdefault("breakout_shelf_snapshot_count", count)
+    out.setdefault("valid_snapshot_count", count)
+    out.setdefault("lookback_snapshot_count", count)
+    out.setdefault("shelf_snapshot_count", count)
+
+    if count < _B4_R5P_MICRO_SHELF_MIN_SNAPSHOTS:
+        out.setdefault("breakout_shelf_missing_reason_hint", "micro_shelf_warming")
+        return out
+
+    prices = [px for _, px in samples]
+    high = max(prices)
+    low = min(prices)
+    mid = (high + low) / 2.0
+    width = max(high - low, 0.0)
+    width_pct = 0.0 if abs(mid) <= 1e-9 else (width / abs(mid)) * 100.0
+
+    # Explicit MISB shelf fields.
+    out.setdefault("breakout_shelf_high", high)
+    out.setdefault("breakout_shelf_low", low)
+    out.setdefault("breakout_shelf_mid", mid)
+    out.setdefault("breakout_shelf_width", width)
+    out.setdefault("breakout_shelf_width_pct", width_pct)
+
+    # Compatibility aliases accepted by misb_surface._batch26e_breakout_shelf().
+    out.setdefault("shelf_high", high)
+    out.setdefault("shelf_low", low)
+    out.setdefault("shelf_mid", mid)
+    out.setdefault("shelf_width_pct", width_pct)
+    out.setdefault("rolling_high", high)
+    out.setdefault("rolling_low", low)
+    out.setdefault("rolling_mid", mid)
+    out.setdefault("rolling_width_pct", width_pct)
+    out.setdefault("lookback_high", high)
+    out.setdefault("lookback_low", low)
+    out.setdefault("lookback_mid", mid)
+    out.setdefault("lookback_width_pct", width_pct)
+    out.setdefault("range_high", high)
+    out.setdefault("range_low", low)
+    out.setdefault("range_mid", mid)
+    out.setdefault("range_width_pct", width_pct)
+
+    return out
+
+
+def _b4_r5p_futures_surface_with_micro_shelf(
+    self,
+    raw,
+    *,
+    role,
+    provider_id,
+):
+    surface = _B4_R5P_PREV_FUTURES_SURFACE(
+        self,
+        raw,
+        role=role,
+        provider_id=provider_id,
+    )
+    return _b4_r5p_apply_micro_shelf(self, surface)
+
+
+def _b4_r5p_contract_futures_block_with_shelf_passthrough(self, surface):
+    block = _B4_R5P_PREV_CONTRACT_FUTURES_BLOCK(self, surface)
+
+    if not isinstance(block, dict):
+        block = dict(block) if isinstance(block, Mapping) else {}
+    if not isinstance(surface, Mapping):
+        return block
+
+    for key in (
+        "breakout_shelf_high",
+        "breakout_shelf_low",
+        "breakout_shelf_mid",
+        "breakout_shelf_width",
+        "breakout_shelf_width_pct",
+        "breakout_shelf_snapshot_count",
+        "breakout_shelf_source",
+        "breakout_shelf_window_seconds",
+        "shelf_high",
+        "shelf_low",
+        "shelf_mid",
+        "shelf_width_pct",
+        "shelf_snapshot_count",
+        "rolling_high",
+        "rolling_low",
+        "rolling_mid",
+        "rolling_width_pct",
+        "lookback_high",
+        "lookback_low",
+        "lookback_mid",
+        "lookback_width_pct",
+        "lookback_snapshot_count",
+        "range_high",
+        "range_low",
+        "range_mid",
+        "range_width_pct",
+        "valid_snapshot_count",
+    ):
+        value = surface.get(key)
+        if value not in (None, ""):
+            block[key] = value
+
+    return block
+
+
+FeatureEngine._futures_surface = _b4_r5p_futures_surface_with_micro_shelf
+FeatureEngine._contract_futures_block = _b4_r5p_contract_futures_block_with_shelf_passthrough
+# B4_R5P_MICRO_SHELF_PRODUCER_PATCH_END
+
+
+# LANE_X_R22B_RETURN_PATH_REPAIR_BEGIN
+# Additive repair wrapper: preserve the original _option_surface implementation,
+# then merge already-derived micro-option-response evidence into the returned
+# surface when upstream response/delta/velocity are missing or zero. This does
+# not force candidates, thresholds, MISO readiness, paper, execution, or orders.
+_LANE_X_R22B_ORIGINAL_OPTION_SURFACE = FeatureEngine._option_surface
+
+# LANE_X_R25D_R22B_WRAPPER_SIDE_KWARG_HOTFIX_BEGIN
+def _lane_x_r22b_option_surface_repaired(self, raw, *, role, provider_id, side=None, **kwargs):
+    # LANE_X_R25D_R22B_WRAPPER_SIDE_KWARG_HOTFIX_END
+    try:
+        out = _LANE_X_R22B_ORIGINAL_OPTION_SURFACE(
+            self,
+            raw,
+            role=role,
+            provider_id=provider_id,
+            side=side,
+            **kwargs,
+        )
+    except TypeError:
+        out = _LANE_X_R22B_ORIGINAL_OPTION_SURFACE(self, raw, role=role, provider_id=provider_id)
+    if not isinstance(out, dict):
+        return out
+
+    if not hasattr(self, "_lane_x_r22b_micro_option_response"):
+        return out
+
+    raw_map = dict(raw or {})
+    out_map = dict(out or {})
+
+    side = _normalize_side(_pick(out_map, "side", "option_side", "right", "branch_id"))
+    if side not in (SIDE_CALL, SIDE_PUT):
+        side = _normalize_side(_pick(raw_map, "side", "option_side", "right", "branch_id"))
+
+    if side not in (SIDE_CALL, SIDE_PUT):
+        probe = " ".join([
+            _safe_str(role),
+            _safe_str(_pick(out_map, "option_symbol", "trading_symbol", "symbol", "instrument_key", "instrument_token")),
+            _safe_str(_pick(raw_map, "option_symbol", "trading_symbol", "symbol", "instrument_key", "instrument_token")),
+        ]).upper()
+        if "PUT" in probe or " PE" in f" {probe} " or probe.endswith("PE") or "_PE" in probe or "-PE" in probe:
+            side = SIDE_PUT
+        elif "CALL" in probe or " CE" in f" {probe} " or probe.endswith("CE") or "_CE" in probe or "-CE" in probe:
+            side = SIDE_CALL
+
+    merged_source = dict(raw_map)
+    for key, value in out_map.items():
+        if key not in merged_source or merged_source.get(key) in (None, "", 0, 0.0):
+            merged_source[key] = value
+
+    micro_response = self._lane_x_r22b_micro_option_response(
+        merged_source,
+        role=role,
+        provider_id=provider_id,
+        side=side,
+    )
+
+    if not micro_response:
+        return out_map
+
+    for key, value in micro_response.items():
+        if key in {"delta_3", "ltp_delta_3"}:
+            if abs(_safe_float(_pick(out_map, "delta_3", "ltp_delta_3"), 0.0)) <= 1e-12:
+                out_map[key] = value
+        elif key in {"response_efficiency", "option_response_efficiency"}:
+            if _safe_float(_pick(out_map, "response_efficiency", "response_eff", "option_response_efficiency"), 0.0) <= 0.0:
+                out_map[key] = value
+        elif key in {"velocity_ratio", "vel_ratio"}:
+            if _safe_float(_pick(out_map, "velocity_ratio", "vel_ratio"), 0.0) <= 1.0:
+                out_map[key] = value
+        else:
+            out_map.setdefault(key, value)
+
+    return out_map
+
+FeatureEngine._option_surface = _lane_x_r22b_option_surface_repaired
+# LANE_X_R22B_RETURN_PATH_REPAIR_END
+
+# LANE_X_R26B_MICRO_FUTURES_KINETICS_BEGIN
+# Additive micro futures kinetics producer.
+#
+# Purpose:
+# - Day-5 R25 evidence proved raw futures ticks had real movement while
+#   production consumer surfaces still carried fut_delta=0, velocity_ratio=0,
+#   and fut_volume_norm=0 into MIST futures_impulse.
+# - This wrapper derives futures delta/velocity/event-rate evidence from
+#   recent futures LTP history and passes it through the existing futures
+#   surface + common futures contract block.
+#
+# Safety:
+# - no threshold change
+# - no forced candidate
+# - no MISO weakening
+# - no paper/live/order/risk/execution enablement
+_LANE_X_R26B_PREV_FUTURES_SURFACE = FeatureEngine._futures_surface
+_LANE_X_R26B_PREV_CONTRACT_FUTURES_BLOCK = FeatureEngine._contract_futures_block
+
+_LANE_X_R26B_MAX_SAMPLES = 12
+_LANE_X_R26B_EVENT_RATE_BASELINE_PER_SEC = 0.20
+
+
+def _lane_x_r26b_float(value, default=0.0):
+    try:
+        if value is None or value == "":
+            return float(default)
+        if isinstance(value, bool):
+            return float(default)
+        return float(value)
+    except Exception:
+        return float(default)
+
+
+def _lane_x_r26b_int(value, default=0):
+    try:
+        if value is None or value == "":
+            return int(default)
+        if isinstance(value, bool):
+            return int(default)
+        return int(float(value))
+    except Exception:
+        return int(default)
+
+
+def _lane_x_r26b_pick(mapping, *keys, default=None):
+    if not isinstance(mapping, Mapping):
+        return default
+    for key in keys:
+        if key in mapping and mapping.get(key) not in (None, ""):
+            return mapping.get(key)
+    return default
+
+
+def _lane_x_r26b_price(surface):
+    ltp = _lane_x_r26b_float(_lane_x_r26b_pick(surface, "ltp", "last_price", "price"), 0.0)
+    if ltp > 0.0:
+        return ltp
+    bid = _lane_x_r26b_float(_lane_x_r26b_pick(surface, "bid", "best_bid"), 0.0)
+    ask = _lane_x_r26b_float(_lane_x_r26b_pick(surface, "ask", "best_ask"), 0.0)
+    if bid > 0.0 and ask > 0.0:
+        return (bid + ask) / 2.0
+    return 0.0
+
+
+def _lane_x_r26b_event_ns(surface):
+    ns = _lane_x_r26b_int(
+        _lane_x_r26b_pick(
+            surface,
+            "ts_event_ns",
+            "event_ts_ns",
+            "ts_provider_ns",
+            "ts_recv_ns",
+            "last_update_ns",
+            "last_trade_time_ns",
+            "frame_ts_ns",
+        ),
+        0,
+    )
+    if ns > 0:
+        return ns
+    try:
+        return int(time.time_ns())
+    except Exception:
+        return 0
+
+
+def _lane_x_r26b_key(surface, *, role, provider_id):
+    symbol = str(
+        _lane_x_r26b_pick(
+            surface,
+            "trading_symbol",
+            "symbol",
+            "instrument_key",
+            "instrument_token",
+            default="",
+        )
+        or ""
+    )
+    return "|".join([str(provider_id or ""), str(role or ""), symbol])
+
+
+def _lane_x_r26b_micro_futures_kinetics(self, surface, *, role, provider_id):
+    out = dict(surface) if isinstance(surface, Mapping) else {}
+    price = _lane_x_r26b_price(out)
+    if price <= 0.0:
+        out.setdefault("micro_futures_kinetics_source", "micro_futures_no_valid_price")
+        out.setdefault("micro_futures_kinetics_ready", False)
+        return out
+
+    event_ns = _lane_x_r26b_event_ns(out)
+    key = _lane_x_r26b_key(out, role=role, provider_id=provider_id)
+
+    history = getattr(self, "_lane_x_r26b_futures_history", None)
+    if not isinstance(history, dict):
+        history = {}
+        setattr(self, "_lane_x_r26b_futures_history", history)
+
+    samples = list(history.get(key, []))
+    if not samples or samples[-1][0] != event_ns or abs(samples[-1][1] - price) > 1e-12:
+        samples.append((event_ns, float(price)))
+
+    samples = [(ts, px) for ts, px in samples if ts and px > 0.0]
+    samples = samples[-_LANE_X_R26B_MAX_SAMPLES:]
+    history[key] = samples
+
+    if len(history) > 64:
+        for old_key in list(history.keys())[:32]:
+            if old_key != key:
+                history.pop(old_key, None)
+
+    sample_count = len(samples)
+    out["micro_futures_kinetics_source"] = "micro_futures_kinetics"
+    out["micro_futures_kinetics_sample_count"] = sample_count
+
+    if sample_count < 2:
+        out["micro_futures_kinetics_ready"] = False
+        return out
+
+    ref_index = -4 if sample_count >= 4 else 0
+    ref_ts, ref_price = samples[ref_index]
+    delta = float(price) - float(ref_price)
+
+    first_ts, first_price = samples[0]
+    elapsed_sec = max(0.0, (event_ns - first_ts) / 1_000_000_000.0)
+    event_rate = 0.0
+    if elapsed_sec > 0.0:
+        event_rate = max(0.0, (sample_count - 1) / elapsed_sec)
+
+    tick = _lane_x_r26b_float(_lane_x_r26b_pick(out, "tick_size"), 0.05)
+    if tick <= 0.0:
+        tick = 0.05
+
+    velocity_ratio = abs(delta) / max(tick, 1e-9)
+
+    # This is not threshold tuning. It is a live event-rate proxy for missing
+    # upstream futures volume_norm, marked explicitly so later audits can
+    # distinguish it from true exchange volume normalization.
+    event_rate_norm = event_rate / max(_LANE_X_R26B_EVENT_RATE_BASELINE_PER_SEC, 1e-9)
+    event_rate_norm = max(0.0, min(event_rate_norm, 5.0))
+
+    existing_vol_norm = _lane_x_r26b_float(
+        _lane_x_r26b_pick(out, "volume_norm", "vol_norm"),
+        0.0,
+    )
+    derived_vol_norm = existing_vol_norm if existing_vol_norm > 0.0 else event_rate_norm
+
+    # Fill only missing/zero kinetics. Preserve real upstream values if present.
+    if abs(_lane_x_r26b_float(_lane_x_r26b_pick(out, "delta_3", "ltp_delta_3"), 0.0)) <= 1e-12:
+        out["delta_3"] = delta
+        out["ltp_delta_3"] = delta
+
+    if _lane_x_r26b_float(_lane_x_r26b_pick(out, "velocity_ratio", "vel_ratio"), 0.0) <= 1.0:
+        out["velocity_ratio"] = velocity_ratio
+        out["vel_ratio"] = velocity_ratio
+
+    if _lane_x_r26b_float(_lane_x_r26b_pick(out, "volume_norm", "vol_norm"), 0.0) <= 0.0:
+        out["volume_norm"] = derived_vol_norm
+        out["vol_norm"] = derived_vol_norm
+        out["micro_futures_volume_norm_source"] = "micro_event_rate_proxy"
+
+    out["micro_futures_kinetics_ready"] = True
+    out["micro_futures_ref_ltp"] = ref_price
+    out["micro_futures_ref_ts_ns"] = ref_ts
+    out["micro_futures_delta_3"] = delta
+    out["micro_futures_velocity_ratio"] = velocity_ratio
+    out["micro_futures_event_rate_per_sec"] = event_rate
+    out["micro_futures_event_rate_norm"] = event_rate_norm
+    out["micro_futures_latest_ltp"] = price
+
+    return out
+
+
+def _lane_x_r26b_futures_surface_with_micro_kinetics(
+    self,
+    raw,
+    *args,
+    role=None,
+    provider_id=None,
+    **kwargs,
+):
+    try:
+        surface = _LANE_X_R26B_PREV_FUTURES_SURFACE(
+            self,
+            raw,
+            *args,
+            role=role,
+            provider_id=provider_id,
+            **kwargs,
+        )
+    except TypeError:
+        surface = _LANE_X_R26B_PREV_FUTURES_SURFACE(
+            self,
+            raw,
+            role=role,
+            provider_id=provider_id,
+        )
+
+    if not isinstance(surface, Mapping):
+        return surface
+
+    return _lane_x_r26b_micro_futures_kinetics(
+        self,
+        surface,
+        role=role,
+        provider_id=provider_id,
+    )
+
+
+def _lane_x_r26b_contract_futures_block_with_micro_kinetics(self, surface):
+    block = _LANE_X_R26B_PREV_CONTRACT_FUTURES_BLOCK(self, surface)
+
+    if not isinstance(block, dict):
+        block = dict(block) if isinstance(block, Mapping) else {}
+    if not isinstance(surface, Mapping):
+        return block
+
+    for key in (
+        "delta_3",
+        "ltp_delta_3",
+        "velocity_ratio",
+        "vel_ratio",
+        "volume_norm",
+        "vol_norm",
+        "micro_futures_kinetics_source",
+        "micro_futures_kinetics_ready",
+        "micro_futures_kinetics_sample_count",
+        "micro_futures_delta_3",
+        "micro_futures_velocity_ratio",
+        "micro_futures_event_rate_per_sec",
+        "micro_futures_event_rate_norm",
+        "micro_futures_volume_norm_source",
+    ):
+        value = surface.get(key)
+        if value not in (None, ""):
+            block[key] = value
+
+    # Compatibility alias: MIST reads volume_norm explicitly.
+    if "volume_norm" not in block and surface.get("vol_norm") not in (None, ""):
+        block["volume_norm"] = surface.get("vol_norm")
+    if "vol_norm" not in block and surface.get("volume_norm") not in (None, ""):
+        block["vol_norm"] = surface.get("volume_norm")
+
+    return block
+
+
+FeatureEngine._futures_surface = _lane_x_r26b_futures_surface_with_micro_kinetics
+FeatureEngine._contract_futures_block = _lane_x_r26b_contract_futures_block_with_micro_kinetics
+# LANE_X_R26B_MICRO_FUTURES_KINETICS_END
+
+# LANE_X_R27E_MISB_PRIOR_SHELF_REF_BEGIN
+# Additive MISB prior-shelf breakout reference producer.
+#
+# R27D proved the existing micro_shelf range is current-inclusive:
+# current LTP is appended before breakout_shelf_high/low are calculated.
+# That is correct for measuring a range width, but it erases breakout
+# extension when MISB compares current LTP against that same high/low.
+#
+# This wrapper publishes prior-only breakout reference keys computed before
+# the current tick is appended:
+# - breakout_ref_high / breakout_ref_low
+# - prior_shelf_high / prior_shelf_low
+# - breakout_shelf_prior_high / breakout_shelf_prior_low
+#
+# Safety:
+# - no threshold change
+# - no forced candidate
+# - no MISO weakening
+# - no paper/live/order/risk/execution enablement
+_LANE_X_R27E_PREV_FUTURES_SURFACE = FeatureEngine._futures_surface
+
+_LANE_X_R27E_WINDOW_NS = 45_000_000_000
+_LANE_X_R27E_MAX_SAMPLES = 96
+
+
+def _lane_x_r27e_float(value, default=0.0):
+    try:
+        if value is None or value == "":
+            return float(default)
+        if isinstance(value, bool):
+            return float(default)
+        return float(value)
+    except Exception:
+        return float(default)
+
+
+def _lane_x_r27e_int(value, default=0):
+    try:
+        if value is None or value == "":
+            return int(default)
+        if isinstance(value, bool):
+            return int(default)
+        return int(float(value))
+    except Exception:
+        return int(default)
+
+
+def _lane_x_r27e_pick(mapping, *keys, default=None):
+    if not isinstance(mapping, Mapping):
+        return default
+    for key in keys:
+        value = mapping.get(key)
+        if value not in (None, ""):
+            return value
+    return default
+
+
+def _lane_x_r27e_price(raw):
+    price = _lane_x_r27e_float(_lane_x_r27e_pick(raw, "ltp", "last_price", "price"), 0.0)
+    if price > 0.0:
+        return price
+    bid = _lane_x_r27e_float(_lane_x_r27e_pick(raw, "bid", "best_bid"), 0.0)
+    ask = _lane_x_r27e_float(_lane_x_r27e_pick(raw, "ask", "best_ask"), 0.0)
+    if bid > 0.0 and ask > 0.0:
+        return (bid + ask) / 2.0
+    return 0.0
+
+
+def _lane_x_r27e_event_ns(raw):
+    ns = _lane_x_r27e_int(
+        _lane_x_r27e_pick(
+            raw,
+            "ts_event_ns",
+            "event_ts_ns",
+            "ts_provider_ns",
+            "ts_recv_ns",
+            "last_update_ns",
+            "ts_frame_ns",
+        ),
+        0,
+    )
+    if ns > 0:
+        return ns
+    try:
+        return int(time.time_ns())
+    except Exception:
+        return 0
+
+
+def _lane_x_r27e_key(raw, *, role, provider_id):
+    symbol = str(
+        _lane_x_r27e_pick(
+            raw,
+            "trading_symbol",
+            "symbol",
+            "instrument_key",
+            "instrument_token",
+            default="",
+        )
+        or ""
+    )
+    return "|".join([str(provider_id or ""), str(role or ""), symbol])
+
+
+def _lane_x_r27e_futures_surface_with_prior_shelf_ref(
+    self,
+    raw,
+    *args,
+    role=None,
+    provider_id=None,
+    **kwargs,
+):
+    raw_map = raw if isinstance(raw, Mapping) else {}
+    price = _lane_x_r27e_price(raw_map)
+    event_ns = _lane_x_r27e_event_ns(raw_map)
+    key = _lane_x_r27e_key(raw_map, role=role, provider_id=provider_id)
+
+    prior_ready = False
+    prior = {}
+
+    hist = getattr(self, "_lane_x_r27e_prior_shelf_history", None)
+    if not isinstance(hist, dict):
+        hist = {}
+        setattr(self, "_lane_x_r27e_prior_shelf_history", hist)
+
+    samples = list(hist.get(key, []))
+    cutoff = event_ns - _LANE_X_R27E_WINDOW_NS if event_ns else 0
+    if cutoff:
+        samples = [(ts, px) for ts, px in samples if ts >= cutoff]
+    samples = samples[-_LANE_X_R27E_MAX_SAMPLES:]
+
+    if price > 0.0 and event_ns > 0 and len(samples) >= 3:
+        prices = [px for _, px in samples if px > 0.0]
+        if len(prices) >= 3:
+            high = max(prices)
+            low = min(prices)
+            mid = (high + low) / 2.0
+            width = max(high - low, 0.0)
+            width_pct = 0.0 if abs(mid) <= 1e-9 else (width / abs(mid)) * 100.0
+
+            prior_ready = True
+            prior = {
+                "breakout_ref_high": high,
+                "breakout_ref_low": low,
+                "prior_shelf_high": high,
+                "prior_shelf_low": low,
+                "breakout_shelf_prior_high": high,
+                "breakout_shelf_prior_low": low,
+                "breakout_shelf_prior_width": width,
+                "breakout_shelf_prior_width_pct": width_pct,
+                "breakout_shelf_prior_count": len(prices),
+                "breakout_shelf_ref_source": "prior_micro_shelf",
+                "breakout_ref_ready": True,
+            }
+
+    try:
+        out = _LANE_X_R27E_PREV_FUTURES_SURFACE(
+            self,
+            raw,
+            *args,
+            role=role,
+            provider_id=provider_id,
+            **kwargs,
+        )
+    except TypeError:
+        out = _LANE_X_R27E_PREV_FUTURES_SURFACE(
+            self,
+            raw,
+            role=role,
+            provider_id=provider_id,
+        )
+
+    if not isinstance(out, Mapping):
+        return out
+
+    out = dict(out)
+
+    if prior_ready:
+        # Do not overwrite the current-inclusive shelf measurement. Publish
+        # separate prior-only reference keys for MISB breakout-extension logic.
+        for k, v in prior.items():
+            out.setdefault(k, v)
+
+    if price > 0.0 and event_ns > 0:
+        if not samples or samples[-1][0] != event_ns or abs(samples[-1][1] - price) > 1e-12:
+            samples.append((event_ns, float(price)))
+        hist[key] = samples[-_LANE_X_R27E_MAX_SAMPLES:]
+
+    if len(hist) > 64:
+        for old_key in list(hist.keys())[:32]:
+            if old_key != key:
+                hist.pop(old_key, None)
+
+    return out
+
+
+FeatureEngine._futures_surface = _lane_x_r27e_futures_surface_with_prior_shelf_ref
+# LANE_X_R27E_MISB_PRIOR_SHELF_REF_END
+
+# LANE_X_R27G_MISB_PRIOR_REF_CONTRACT_PASSTHROUGH_BEGIN
+# Additive contract-block passthrough for R27E MISB prior shelf refs.
+#
+# R27F proved:
+# - surface prior refs are present
+# - contract futures block drops them
+#
+# This wrapper only passes those already-produced keys into the contract block.
+# It does not change thresholds, does not force candidates, and does not weaken MISO.
+_LANE_X_R27G_PREV_CONTRACT_FUTURES_BLOCK = FeatureEngine._contract_futures_block
+
+_LANE_X_R27G_PRIOR_REF_KEYS = (
+    "breakout_ref_high",
+    "breakout_ref_low",
+    "prior_shelf_high",
+    "prior_shelf_low",
+    "breakout_shelf_prior_high",
+    "breakout_shelf_prior_low",
+    "breakout_shelf_prior_width",
+    "breakout_shelf_prior_width_pct",
+    "breakout_shelf_prior_count",
+    "breakout_shelf_ref_source",
+    "breakout_ref_ready",
+)
+
+
+def _lane_x_r27g_contract_futures_block_with_prior_ref_passthrough(self, surface):
+    block = _LANE_X_R27G_PREV_CONTRACT_FUTURES_BLOCK(self, surface)
+
+    if not isinstance(block, dict):
+        block = dict(block) if isinstance(block, Mapping) else {}
+
+    if not isinstance(surface, Mapping):
+        return block
+
+    for key in _LANE_X_R27G_PRIOR_REF_KEYS:
+        value = surface.get(key)
+        if value not in (None, ""):
+            block[key] = value
+
+    return block
+
+
+FeatureEngine._contract_futures_block = _lane_x_r27g_contract_futures_block_with_prior_ref_passthrough
+# LANE_X_R27G_MISB_PRIOR_REF_CONTRACT_PASSTHROUGH_END
+
+
+
+
+
+
+# --- BEGIN R38QB_COMPACT_FEATURE_STREAM_PUBLISH_PATCH ---
+# R38QB: compact only Redis stream publication for features:mme:stream.
+# The original payload object is still passed to the original publisher so hash
+# state and internal feature computation are not intentionally altered. The patch
+# temporarily wraps Redis XADD calls during publish_payload and compacts only the
+# stream fields where stream name resolves to features:mme:stream.
+_R38QB_FEATURE_COMPACT_VERSION = "R38QB_COMPACT_FEATURE_STREAM_FIELDS_V1"
+_R38QB_FEATURE_MAX_STREAM_FIELD_BYTES = 8192
+_R38QB_LARGE_FEATURE_FIELDS = {
+    "consumer_view_json",
+    "family_surfaces_json",
+    "family_frames_json",
+    "family_features_json",
+    "payload_json",
+}
+_R38QB_FEATURE_KEEP_FIELDS = {
+    "schema_version",
+    "frame_id",
+    "frame_ts_ns",
+    "service",
+    "family_features_version",
+    "o23p_r6b_r3_family_payload_publish_patch",
+    "valid",
+    "validity",
+    "validity_reason",
+    "system_state",
+    "hold_only",
+    "safe_to_consume",
+}
+
+def _r38qb_feature_value_bytes(value):
+    try:
+        import json as _r38qb_json
+        if isinstance(value, bytes):
+            return len(value)
+        if isinstance(value, str):
+            return len(value.encode("utf-8", "replace"))
+        return len(_r38qb_json.dumps(value, default=str, ensure_ascii=False, separators=(",", ":")).encode("utf-8", "replace"))
+    except Exception:
+        return len(str(value).encode("utf-8", "replace"))
+
+def _r38qb_feature_stream_value(value):
+    try:
+        import json as _r38qb_json
+        if value is None:
+            return ""
+        if isinstance(value, bool):
+            return "1" if value else "0"
+        if isinstance(value, (dict, list, tuple)):
+            return _r38qb_json.dumps(value, default=str, ensure_ascii=False, separators=(",", ":"))
+        return value
+    except Exception:
+        return str(value)
+
+def _r38qb_compact_feature_stream_fields(fields):
+    if not isinstance(fields, dict):
+        return fields
+    out = {
+        "r38qb_compacted": "1",
+        "r38qb_compact_version": _R38QB_FEATURE_COMPACT_VERSION,
+    }
+    for key, value in dict(fields).items():
+        field = str(key)
+        value_bytes = _r38qb_feature_value_bytes(value)
+        if field in _R38QB_LARGE_FEATURE_FIELDS or value_bytes > _R38QB_FEATURE_MAX_STREAM_FIELD_BYTES:
+            out[f"{field}_r38qb_omitted"] = "1"
+            out[f"{field}_r38qb_original_bytes"] = str(value_bytes)
+            continue
+        if field in _R38QB_FEATURE_KEEP_FIELDS or value_bytes <= _R38QB_FEATURE_MAX_STREAM_FIELD_BYTES:
+            out[field] = _r38qb_feature_stream_value(value)
+    return out
+
+def _r38qb_is_features_stream_name(name):
+    try:
+        if isinstance(name, bytes):
+            name = name.decode("utf-8", "replace")
+        name = str(name)
+    except Exception:
+        name = ""
+    return name == "features:mme:stream" or name.endswith(":features:mme:stream")
+
+try:
+    _R38QB_ORIGINAL_FEATURE_PUBLISH_PAYLOAD = FeatureService.publish_payload  # type: ignore[name-defined]
+except Exception:
+    _R38QB_ORIGINAL_FEATURE_PUBLISH_PAYLOAD = None
+
+def _r38qb_publish_payload_wrapper(self, payload, *args, **kwargs):
+    original = _R38QB_ORIGINAL_FEATURE_PUBLISH_PAYLOAD
+    if original is None:
+        raise RuntimeError("R38QB original FeatureService.publish_payload unavailable")
+
+    redis_client = getattr(self, "redis", None)
+    original_xadd = getattr(redis_client, "xadd", None) if redis_client is not None else None
+
+    patched_xadd = False
+
+    if callable(original_xadd):
+        def _r38qb_xadd(name, fields, *xa, **xkw):
+            if _r38qb_is_features_stream_name(name) and isinstance(fields, dict):
+                fields = _r38qb_compact_feature_stream_fields(fields)
+            return original_xadd(name, fields, *xa, **xkw)
+        try:
+            setattr(redis_client, "xadd", _r38qb_xadd)
+            patched_xadd = True
+        except Exception:
+            patched_xadd = False
+
+    try:
+        return original(self, payload, *args, **kwargs)
+    finally:
+        if patched_xadd:
+            try:
+                setattr(redis_client, "xadd", original_xadd)
+            except Exception:
+                pass
+
+if _R38QB_ORIGINAL_FEATURE_PUBLISH_PAYLOAD is not None:
+    FeatureService.publish_payload = _r38qb_publish_payload_wrapper  # type: ignore[name-defined]
+# --- END R38QB_COMPACT_FEATURE_STREAM_PUBLISH_PATCH ---

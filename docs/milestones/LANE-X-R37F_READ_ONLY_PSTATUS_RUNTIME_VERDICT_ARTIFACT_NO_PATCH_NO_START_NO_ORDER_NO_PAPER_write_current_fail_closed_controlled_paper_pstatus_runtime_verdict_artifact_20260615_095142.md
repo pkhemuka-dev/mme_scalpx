@@ -1,0 +1,10 @@
+# LANE-X-R37F_READ_ONLY_PSTATUS_RUNTIME_VERDICT_ARTIFACT_NO_PATCH_NO_START_NO_ORDER_NO_PAPER_write_current_fail_closed_controlled_paper_pstatus_runtime_verdict_artifact_20260615_095142
+
+Classification: **PASS_LANE_X_R37F_PSTATUS_RUNTIME_VERDICT_WRITTEN_FAIL_CLOSED_NO_PATCH_NO_START_NO_ORDER_NO_PAPER**
+
+Read-only controlled-paper pstatus/runtime verdict artifact written.
+
+No patch.
+No start.
+No order.
+No paper/live.

@@ -1,0 +1,30 @@
+# LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_205535
+
+classification: PASS_LANE_X_R31A_R9S_ADAPTER_TRACE_AND_BLOCKER_LEDGER_COMPLETED_NO_PATCH_NO_REPLAY_NO_ORDER
+
+- pre_safe: 1
+- trace_rc: 0
+- ledger_rc: 0
+- orders: 0
+- risk_stream: 0
+- execution_stream: 0
+- exec_stream: 0
+- replay_proc: 0
+- risk_proc: 0
+- execution_proc: 0
+- adapter_exception_count: 4
+- fallback_rows: 211
+- misb_breakout_rows: 212
+- strict_candidate_total: 0
+- trace_json: `run/audits/LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_205535_adapter_trace.json`
+- trace_txt: `run/audits/LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_205535_adapter_trace.txt`
+- ledger_json: `run/audits/LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_205535_blocker_ledger.json`
+- ledger_txt: `run/audits/LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_205535_blocker_ledger.txt`
+- source_audit: `run/audits/LANE-X-R31A-R9S_ADAPTER_EXCEPTION_TRACE_AND_BLOCKER_LEDGER_NO_PATCH_NO_REPLAY_NO_ORDER_capture_exact_strategy_adapter_exception_path_and_candidate_positive_blockers_before_next_live_session_20260607_205535_source_audit.txt`
+
+Decision:
+- If adapter exception traceback is present, patch that exact exception only.
+- If no exception is caught but adapter returns empty payload, patch strategy_adapter candidate extraction for R9F-R1 family_features shape.
+- Do not run live paper until candidate-positive observe-only evidence exists.
+
+Boundary: no patch, no replay, no order, no paper/live, no risk/execution start.

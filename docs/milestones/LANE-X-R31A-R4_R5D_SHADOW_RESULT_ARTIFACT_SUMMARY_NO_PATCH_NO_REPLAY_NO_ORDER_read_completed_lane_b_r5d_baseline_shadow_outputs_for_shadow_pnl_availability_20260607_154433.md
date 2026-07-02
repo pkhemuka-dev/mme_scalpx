@@ -1,0 +1,18 @@
+# LANE-X-R31A-R4_R5D_SHADOW_RESULT_ARTIFACT_SUMMARY_NO_PATCH_NO_REPLAY_NO_ORDER_read_completed_lane_b_r5d_baseline_shadow_outputs_for_shadow_pnl_availability_20260607_154433
+
+classification: PASS_LANE_X_R31A_R4_R5D_SHADOW_RESULT_ARTIFACTS_AVAILABLE_NO_PATCH_NO_REPLAY_NO_ORDER
+
+- base_exists: 1
+- shadow_exists: 1
+- orders: 0
+- risk_stream: 0
+- execution_stream: 0
+- base_dir: `run/replay/lane_b_r5d/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907/baseline_pre_r27e_r27g/replay_locked_single_day_lane-b-r5d_execute_baseline_shadow_patch_impact_replay_no_patch_final_restore_no_order_20260607_143907_baseline_pre_r27e_r27g_20260607_090922_285d6f57`
+- shadow_dir: `run/replay/lane_b_r5d/LANE-B-R5D_EXECUTE_BASELINE_SHADOW_PATCH_IMPACT_REPLAY_NO_PATCH_FINAL_RESTORE_NO_ORDER_20260607_143907/shadow_current/replay_locked_single_day_lane-b-r5d_execute_baseline_shadow_patch_impact_replay_no_patch_final_restore_no_order_20260607_143907_shadow_current_20260607_091411_07aa6771`
+- summary: `run/audits/LANE-X-R31A-R4_R5D_SHADOW_RESULT_ARTIFACT_SUMMARY_NO_PATCH_NO_REPLAY_NO_ORDER_read_completed_lane_b_r5d_baseline_shadow_outputs_for_shadow_pnl_availability_20260607_154433_summary.txt`
+
+Interpretation:
+- If PASS, we can extract shadow PnL / economics from completed R5D artifacts.
+- This is offline replay/shadow output, not broker PnL, not paper PnL, not live PnL.
+
+Boundary: no patch, no replay, no order, no paper/live, no risk/execution.

@@ -1,0 +1,13 @@
+# LANE-X-R34H-R2_SHORT_BLOCKER_AUDIT_FROM_R34G_SHADOW_NO_PATCH_NO_REPLAY_NO_ORDER_use_latest_r34g_shadow_and_friday_durable_to_audit_identity_miv_future_leak_and_all5_scope_20260613_131817
+
+classification: REVIEW_R34H_R2_COMPILE_OR_AUDITOR_FAILED_NO_PATCH_NO_REPLAY_NO_ORDER
+proof: `run/proofs/LANE-X-R34H-R2_SHORT_BLOCKER_AUDIT_FROM_R34G_SHADOW_NO_PATCH_NO_REPLAY_NO_ORDER_use_latest_r34g_shadow_and_friday_durable_to_audit_identity_miv_future_leak_and_all5_scope_20260613_131817.json`
+summary: `run/audits/LANE-X-R34H-R2_SHORT_BLOCKER_AUDIT_FROM_R34G_SHADOW_NO_PATCH_NO_REPLAY_NO_ORDER_use_latest_r34g_shadow_and_friday_durable_to_audit_identity_miv_future_leak_and_all5_scope_20260613_131817/r34h_r2_summary.json`
+report: `run/audits/LANE-X-R34H-R2_SHORT_BLOCKER_AUDIT_FROM_R34G_SHADOW_NO_PATCH_NO_REPLAY_NO_ORDER_use_latest_r34g_shadow_and_friday_durable_to_audit_identity_miv_future_leak_and_all5_scope_20260613_131817/r34h_r2_report.md`
+
+## Safety
+pre orders/risk/execution: 0 / 0 / 0
+post orders/risk/execution: 0 / 0 / 0
+post risk/execution proc: 0 / 0
+
+## Embedded report

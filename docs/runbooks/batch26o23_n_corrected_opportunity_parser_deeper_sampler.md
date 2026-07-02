@@ -1,11 +1,11 @@
 # 26-O23-N — corrected opportunity parser / deeper read-only sampler
 
-- generated_at_utc: 2026-05-07T09:27:43.058747+00:00
+- generated_at_utc: 2026-06-29T03:57:01.337895+00:00
 - proof: `run/proofs/proof_batch26o23_n_corrected_opportunity_parser_deeper_sampler.json`
-- corrected_ranking: `run/live_capture/batch26o23_n_corrected_opportunity_parser_deeper_sampler_20260507_145733/controlled_paper_o23n_corrected_opportunity_ranking.json`
-- deep_surface: `run/live_capture/batch26o23_n_corrected_opportunity_parser_deeper_sampler_20260507_145733/controlled_paper_o23n_deep_surface_sampler.json`
-- o23l_bug_audit: `run/live_capture/batch26o23_n_corrected_opportunity_parser_deeper_sampler_20260507_145733/controlled_paper_o23n_o23l_ranking_bug_audit.json`
-- next_decision: `run/live_capture/batch26o23_n_corrected_opportunity_parser_deeper_sampler_20260507_145733/controlled_paper_o23n_next_decision.json`
+- corrected_ranking: `run/live_capture/batch26o23_n_corrected_opportunity_parser_deeper_sampler_20260629_092651/controlled_paper_o23n_corrected_opportunity_ranking.json`
+- deep_surface: `run/live_capture/batch26o23_n_corrected_opportunity_parser_deeper_sampler_20260629_092651/controlled_paper_o23n_deep_surface_sampler.json`
+- o23l_bug_audit: `run/live_capture/batch26o23_n_corrected_opportunity_parser_deeper_sampler_20260629_092651/controlled_paper_o23n_o23l_ranking_bug_audit.json`
+- next_decision: `run/live_capture/batch26o23_n_corrected_opportunity_parser_deeper_sampler_20260629_092651/controlled_paper_o23n_next_decision.json`
 
 ## Scope
 - Correct parser/ranking law only.

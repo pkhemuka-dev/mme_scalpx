@@ -30,6 +30,7 @@ assert_replay_module_static_safety(__file__)
 # END BATCH27C_REPLAY_SAFETY_FIREWALL
 
 from datetime import datetime, timezone
+from collections.abc import MutableMapping
 
 import argparse
 import json
@@ -1676,6 +1677,149 @@ def build_feature_frames_from_feed_requests(
 
         outputs.append(feature_row)
 
+
+    # R31A_R9F_R1_AST_FEATURE_FRAME_ENRICHMENT
+    # Replay-only derived microstructure/family-surface payload.
+    # Does not force candidates, tune thresholds, weaken MISO, or touch live/order paths.
+    def _r31a_r9f_num(value: Any) -> float | None:
+        try:
+            if value is None:
+                return None
+            if isinstance(value, (int, float)):
+                return float(value)
+            s = str(value).strip()
+            return float(s) if s else None
+        except Exception:
+            return None
+
+    def _r31a_r9f_avg(values: list[float]) -> float | None:
+        vals = [float(v) for v in values if isinstance(v, (int, float))]
+        return sum(vals) / len(vals) if vals else None
+
+    fut_ltp_window: list[float] = []
+    fut_abs_delta_window: list[float] = []
+    opt_windows: dict[str, list[float]] = {}
+    latest_fut_surface: dict[str, Any] = {}
+
+    for _row in outputs:
+        if not isinstance(_row, dict):
+            continue
+
+        _symbol = str(_row.get("symbol") or "").upper()
+        _side = str(_row.get("side") or "").upper()
+        _leg = str(_row.get("selected_leg") or _row.get("leg") or "").upper()
+        _ltp = _r31a_r9f_num(_row.get("ltp") if _row.get("ltp") is not None else _row.get("mid_price"))
+
+        _is_fut = _leg == "FUTURES" or _side == "CONTEXT" or "FUT" in _symbol
+        _is_call = _side == "CALL" or "CALL" in _leg or _symbol.endswith("CE")
+        _is_put = _side == "PUT" or "PUT" in _leg or _symbol.endswith("PE")
+
+        if _is_fut and _ltp is not None:
+            _prev1 = fut_ltp_window[-1] if len(fut_ltp_window) >= 1 else None
+            _prev3 = fut_ltp_window[-3] if len(fut_ltp_window) >= 3 else None
+            _delta1 = (_ltp - _prev1) if _prev1 is not None else None
+            _delta3 = (_ltp - _prev3) if _prev3 is not None else None
+            if _delta1 is not None:
+                fut_abs_delta_window.append(abs(_delta1))
+                fut_abs_delta_window[:] = fut_abs_delta_window[-20:]
+            _avg_abs = _r31a_r9f_avg(fut_abs_delta_window)
+            _velocity_ratio = (abs(_delta3) / _avg_abs) if (_delta3 is not None and _avg_abs and _avg_abs > 0) else None
+
+            _row["fut_ltp"] = _ltp
+            _row["delta_1"] = _delta1
+            _row["delta_3"] = _delta3
+            _row["fut_delta_3"] = _delta3
+            _row["velocity_ratio"] = _velocity_ratio
+            _row["volume_norm"] = _row.get("volume_norm", 1.0)
+            _row["micro_futures_kinetics_ready"] = _delta3 is not None
+            _row["r31a_r9f_r1_micro_futures_enriched"] = True
+
+            latest_fut_surface = {
+                "surface_kind": "replay_r26_micro_futures_kinetics",
+                "fut_ltp": _ltp,
+                "delta_1": _delta1,
+                "delta_3": _delta3,
+                "fut_delta_3": _delta3,
+                "velocity_ratio": _velocity_ratio,
+                "volume_norm": _row.get("volume_norm"),
+                "micro_futures_kinetics_ready": _delta3 is not None,
+                "futures_impulse_ok": bool(_delta3 is not None and _velocity_ratio is not None and abs(_delta3) > 0),
+                "trend_up": bool(_delta3 is not None and _delta3 > 0),
+                "trend_down": bool(_delta3 is not None and _delta3 < 0),
+                "replay_surface_reconstruction": "R31A_R9F_R1",
+            }
+            fut_ltp_window.append(_ltp)
+            fut_ltp_window[:] = fut_ltp_window[-50:]
+
+        _shelf_surface: dict[str, Any] = {}
+        if (_is_call or _is_put) and _ltp is not None:
+            _opt_key = "CALL_ATM" if _is_call else "PUT_ATM"
+            _win = opt_windows.setdefault(_opt_key, [])
+            _prior = list(_win[-20:])
+            _prior_high = max(_prior) if _prior else None
+            _prior_low = min(_prior) if _prior else None
+            _breakout_extension = None
+            if _is_call and _prior_high is not None:
+                _breakout_extension = _ltp - _prior_high
+            if _is_put and _prior_low is not None:
+                _breakout_extension = _prior_low - _ltp
+
+            _shelf_surface = {
+                "surface_kind": "replay_r27_prior_micro_shelf",
+                "selected_leg": _opt_key,
+                "ltp": _ltp,
+                "prior_micro_shelf_high": _prior_high,
+                "prior_micro_shelf_low": _prior_low,
+                "shelf_high": _prior_high,
+                "shelf_low": _prior_low,
+                "breakout_extension": _breakout_extension,
+                "prior_breakout_extension": _breakout_extension,
+                "shelf_confirmed": len(_prior) >= 5,
+                "breakout_triggered": bool(_breakout_extension is not None and _breakout_extension >= 0.20),
+                "breakout_accepted": bool(_breakout_extension is not None and _breakout_extension >= 0.20),
+                "replay_surface_reconstruction": "R31A_R9F_R1",
+            }
+            _row.update({
+                "prior_micro_shelf_high": _prior_high,
+                "prior_micro_shelf_low": _prior_low,
+                "shelf_high": _prior_high,
+                "shelf_low": _prior_low,
+                "breakout_extension": _breakout_extension,
+                "prior_breakout_extension": _breakout_extension,
+                "r31a_r9f_r1_prior_shelf_enriched": True,
+            })
+            _win.append(_ltp)
+            _win[:] = _win[-50:]
+
+        _mist_call = dict(latest_fut_surface)
+        _mist_call.update({"surface_kind": "mist_surface", "side": "CALL", "trend_confirmed": bool(latest_fut_surface.get("trend_up")), "futures_impulse_ok": bool(latest_fut_surface.get("futures_impulse_ok")), "pullback_detected": False, "resume_confirmed": False, "micro_trap_flag": False, "replay_surface_reconstruction": "R31A_R9F_R1"})
+        _mist_put = dict(latest_fut_surface)
+        _mist_put.update({"surface_kind": "mist_surface", "side": "PUT", "trend_confirmed": bool(latest_fut_surface.get("trend_down")), "futures_impulse_ok": bool(latest_fut_surface.get("futures_impulse_ok")), "pullback_detected": False, "resume_confirmed": False, "micro_trap_flag": False, "replay_surface_reconstruction": "R31A_R9F_R1"})
+
+        _misb_call = dict(_shelf_surface if _is_call else {})
+        _misb_call.update({"surface_kind": "misb_surface", "side": "CALL", "replay_surface_reconstruction": "R31A_R9F_R1"})
+        _misb_put = dict(_shelf_surface if _is_put else {})
+        _misb_put.update({"surface_kind": "misb_surface", "side": "PUT", "replay_surface_reconstruction": "R31A_R9F_R1"})
+
+        _family_surfaces = {
+            "MIST": {"CALL": _mist_call, "PUT": _mist_put},
+            "MISB": {"CALL": _misb_call, "PUT": _misb_put},
+            "MISC": {"CALL": {"surface_kind": "misc_surface", "side": "CALL", "replay_surface_reconstruction": "R31A_R9F_R1"}, "PUT": {"surface_kind": "misc_surface", "side": "PUT", "replay_surface_reconstruction": "R31A_R9F_R1"}},
+            "MISR": {"CALL": {"surface_kind": "misr_surface", "side": "CALL", "replay_surface_reconstruction": "R31A_R9F_R1"}, "PUT": {"surface_kind": "misr_surface", "side": "PUT", "replay_surface_reconstruction": "R31A_R9F_R1"}},
+            "MISO": {"CALL": {"surface_kind": "miso_surface", "side": "CALL", "provider_ready_miso": False, "replay_surface_reconstruction": "R31A_R9F_R1"}, "PUT": {"surface_kind": "miso_surface", "side": "PUT", "provider_ready_miso": False, "replay_surface_reconstruction": "R31A_R9F_R1"}},
+        }
+
+        _row["family_features"] = _family_surfaces
+        _row["family_surfaces"] = _family_surfaces
+        _row["strategy_family_features"] = _family_surfaces
+        _row["mist_surface"] = {"CALL": _mist_call, "PUT": _mist_put}
+        _row["misb_surface"] = {"CALL": _misb_call, "PUT": _misb_put}
+        _row["r31a_r9f_r1_family_surface_enriched"] = True
+        _row["replay_feature_bridge_version"] = "v3_event_normalized_r31a_r9f_r1_enriched"
+        if isinstance(_row.get("metadata"), dict):
+            _row["metadata"]["replay_feature_bridge_version"] = "v3_event_normalized_r31a_r9f_r1_enriched"
+            _row["metadata"]["r31a_r9f_r1_family_surface_enriched"] = True
+
     return outputs
 
 
@@ -1730,7 +1874,7 @@ def _resolve_strategy_action(frame: Mapping[str, Any]) -> tuple[str, str]:
     return ("HOLD", blocker or "no_entry_condition")
 
 
-def build_strategy_decisions_from_feature_frames(
+def _r31a_r9b_fallback_build_strategy_decisions_from_feature_frames(
     *,
     feature_frames: list[dict[str, Any]] | tuple[dict[str, Any], ...],
 ) -> list[dict[str, Any]]:
@@ -1769,6 +1913,21 @@ def build_strategy_decisions_from_feature_frames(
 
 def _resolve_risk_verdict(decision: Mapping[str, Any]) -> tuple[str, bool, str]:
     action = str(decision.get("action") or "HOLD")
+    side = str(
+        decision.get("side")
+        or decision.get("selected_side")
+        or decision.get("option_side")
+        or decision.get("selected_leg")
+        or ""
+    ).upper()
+    candidate_visible = bool(decision.get("candidate") or decision.get("candidate_present"))
+
+    if action == "ENTRY" and candidate_visible:
+        if side in ("CALL", "CE", "ENTER_CALL"):
+            action = "ENTER_CALL"
+        elif side in ("PUT", "PE", "ENTER_PUT"):
+            action = "ENTER_PUT"
+
     spread = decision.get("spread")
 
     if action == "HOLD":
@@ -1789,6 +1948,285 @@ def _resolve_risk_verdict(decision: Mapping[str, Any]) -> tuple[str, bool, str]:
         return "HOLD", True, "spread_too_wide_blocked"
 
     return action, False, "entry_allowed"
+
+
+def build_strategy_decisions_from_feature_frames(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
+    """
+    R31A_R9B_REPLAY_FAMILY_STRATEGY_ADAPTER_BRIDGE.
+
+    Narrow replay-only bridge repair:
+    - first attempts the existing replay strategy adapter;
+    - preserves the previous generic replay bridge as fallback;
+    - does not create candidates;
+    - does not tune thresholds;
+    - does not start risk/execution/order paths;
+    - marks adapter/fallback provenance in every row.
+    """
+    _r31a_r9b_fallback_kwargs = dict(kwargs)
+    _r31a_r9b_fallback_kwargs.pop("run_id", None)
+    _r31a_r9b_fallback_kwargs.pop("run_label", None)
+    fallback_rows = _r31a_r9b_fallback_build_strategy_decisions_from_feature_frames(*args, **_r31a_r9b_fallback_kwargs)
+
+    def _truthy_off(value: Any) -> bool:
+        return str(value or "").strip().lower() in {"0", "false", "no", "off", "disable", "disabled"}
+
+    try:
+        import os as _r31a_os
+        if _truthy_off(_r31a_os.environ.get("SCALPX_REPLAY_FAMILY_ADAPTER_BRIDGE", "1")):
+            for _row in fallback_rows:
+                if isinstance(_row, dict):
+                    _row.setdefault("replay_family_bridge_status", "disabled_by_env")
+                    _row.setdefault("replay_family_bridge_fallback_used", True)
+                    _row.setdefault("replay_family_bridge_adapter_invoked", False)
+            return fallback_rows
+    except Exception:
+        pass
+
+    feature_frames = kwargs.get("feature_frames")
+    if feature_frames is None:
+        for value in args:
+            if isinstance(value, (list, tuple)):
+                feature_frames = value
+                break
+    if feature_frames is None:
+        for _row in fallback_rows:
+            if isinstance(_row, dict):
+                _row.setdefault("replay_family_bridge_status", "no_feature_frames_argument")
+                _row.setdefault("replay_family_bridge_fallback_used", True)
+                _row.setdefault("replay_family_bridge_adapter_invoked", False)
+        return fallback_rows
+
+    run_id = kwargs.get("run_id") or kwargs.get("run_label") or "replay_family_bridge"
+
+    try:
+        from app.mme_scalpx.replay.strategy_adapter import build_replay_strategy_decision_payload as _r31a_strategy_adapter
+    except Exception as exc:
+        for _row in fallback_rows:
+            if isinstance(_row, dict):
+                _row.setdefault("replay_family_bridge_status", "adapter_import_failed")
+                _row.setdefault("replay_family_bridge_error", type(exc).__name__)
+                _row.setdefault("replay_family_bridge_fallback_used", True)
+                _row.setdefault("replay_family_bridge_adapter_invoked", False)
+        return fallback_rows
+
+    def _to_mapping(value: Any) -> dict[str, Any]:
+        if isinstance(value, Mapping):
+            return dict(value)
+        if hasattr(value, "model_dump"):
+            try:
+                dumped = value.model_dump()
+                if isinstance(dumped, Mapping):
+                    return dict(dumped)
+            except Exception:
+                pass
+        if hasattr(value, "dict"):
+            try:
+                dumped = value.dict()
+                if isinstance(dumped, Mapping):
+                    return dict(dumped)
+            except Exception:
+                pass
+        raw = getattr(value, "__dict__", None)
+        if isinstance(raw, dict):
+            return dict(raw)
+        return {}
+
+    def _payload_from_adapter_result(value: Any) -> dict[str, Any]:
+        if value is None:
+            return {}
+        if isinstance(value, Mapping):
+            if isinstance(value.get("payload"), Mapping):
+                return dict(value["payload"])
+            return dict(value)
+        for attr in ("payload", "decision", "result"):
+            try:
+                candidate = getattr(value, attr)
+            except Exception:
+                continue
+            if isinstance(candidate, Mapping):
+                return dict(candidate)
+        return _to_mapping(value)
+
+    adapted_rows: list[dict[str, Any]] = []
+    any_adapter_payload = False
+
+    for idx, feature_payload in enumerate(feature_frames):
+        base = dict(fallback_rows[idx]) if idx < len(fallback_rows) and isinstance(fallback_rows[idx], Mapping) else {}
+        try:
+            result = _r31a_strategy_adapter(run_id=str(run_id), feature_payload=feature_payload)
+            payload = _payload_from_adapter_result(result)
+            if not payload:
+                base.setdefault("replay_family_bridge_status", "adapter_empty_payload")
+                base.setdefault("replay_family_bridge_fallback_used", True)
+                base.setdefault("replay_family_bridge_adapter_invoked", True)
+                adapted_rows.append(base)
+                continue
+
+            merged = dict(base)
+            merged.update(payload)
+
+            # Preserve audit linkage from fallback row when adapter payload lacks it.
+            for key in (
+                "decision_id",
+                "decision_ts",
+                "event_time",
+                "frame_id",
+                "source_frame_id",
+                "linked_feature_frame_id",
+                "selected_leg",
+                "side",
+                "symbol",
+                "ts_event",
+            ):
+                if (merged.get(key) is None or merged.get(key) == "") and base.get(key) not in (None, ""):
+                    merged[key] = base.get(key)
+
+            # Do not manufacture candidate truth. Only normalize provenance.
+            # R31A_R9K_R6_EXACT_MERGED_APPEND_TOP_LEVEL_CANDIDATE_PROPAGATION
+            # Promote only already-strict nested family candidates before adapted_rows append.
+            def _r31a_r9k_r6_bool(value: Any) -> bool:
+                if isinstance(value, bool):
+                    return value
+                if isinstance(value, (int, float)):
+                    return bool(value)
+                return str(value or "").strip().lower() in {"true", "1", "yes", "y"}
+
+            def _r31a_r9k_r6_num(value: Any) -> float:
+                try:
+                    if value is None:
+                        return 0.0
+                    if isinstance(value, (int, float)):
+                        return float(value)
+                    s = str(value).strip()
+                    return float(s) if s else 0.0
+                except Exception:
+                    return 0.0
+
+            def _r31a_r9k_r6_candidate_list(container: Any) -> list[dict[str, Any]]:
+                if not isinstance(container, Mapping):
+                    return []
+                candidates = container.get("candidates")
+                if isinstance(candidates, tuple):
+                    candidates = list(candidates)
+                if isinstance(candidates, list):
+                    return [c for c in candidates if isinstance(c, dict)]
+                cj = container.get("candidate_json")
+                if isinstance(cj, str) and cj.strip():
+                    try:
+                        import json as _r31a_r9k_r6_json
+                        parsed = _r31a_r9k_r6_json.loads(cj)
+                        if isinstance(parsed, list):
+                            return [c for c in parsed if isinstance(c, dict)]
+                    except Exception:
+                        return []
+                return []
+
+            _r31a_r9k_r6_all: list[dict[str, Any]] = []
+            _r31a_r9k_r6_all.extend(_r31a_r9k_r6_candidate_list(merged))
+            _r31a_r9k_r6_all.extend(_r31a_r9k_r6_candidate_list(merged.get("decision_payload")))
+
+            _r31a_r9k_r6_strict: list[dict[str, Any]] = []
+            for _cand in _r31a_r9k_r6_all:
+                _blockers = _cand.get("blockers")
+                if _blockers in (None, "", False):
+                    _blockers = []
+                if isinstance(_blockers, tuple):
+                    _blockers = list(_blockers)
+                if not isinstance(_blockers, list):
+                    _blockers = [_blockers]
+
+                _score = _r31a_r9k_r6_num(_cand.get("score"))
+                if (
+                    _r31a_r9k_r6_bool(_cand.get("candidate_present"))
+                    and _r31a_r9k_r6_bool(_cand.get("eligible"))
+                    and not _blockers
+                    and _score > 0
+                ):
+                    _r31a_r9k_r6_strict.append(_cand)
+
+            merged["nested_candidate_report_count"] = len(_r31a_r9k_r6_all)
+            merged["strict_candidate_count"] = len(_r31a_r9k_r6_strict)
+            merged["top_level_candidate_propagation_version"] = "R31A_R9K_R6"
+
+            if _r31a_r9k_r6_strict:
+                _best = sorted(
+                    _r31a_r9k_r6_strict,
+                    key=lambda c: (
+                        _r31a_r9k_r6_num(c.get("score")),
+                        str(c.get("family") or ""),
+                        str(c.get("side") or ""),
+                    ),
+                    reverse=True,
+                )[0]
+
+                _fam = str(_best.get("family") or "")
+                _side = str(_best.get("side") or "")
+                _score = _r31a_r9k_r6_num(_best.get("score"))
+
+                merged["candidate"] = True
+                merged["candidate_present"] = True
+                merged["candidate_fallback"] = True
+                merged["action"] = "ENTRY"
+                merged["decision_action"] = "ENTRY"
+                merged["strategy_family_id"] = _fam
+                merged["family"] = _fam
+                merged["family_id"] = _fam
+                merged["side"] = _side or merged.get("side")
+                merged["selected_side"] = _side or merged.get("selected_side")
+                merged["selected_leg"] = _best.get("selected_leg") or merged.get("selected_leg")
+                merged["candidate_score"] = _score
+                merged["score"] = _score
+                merged["blocker"] = None
+                merged["blocker_name"] = ""
+                merged["blocker_reason"] = ""
+                merged["reason"] = "strict_nested_family_candidate_promoted"
+                merged["candidate_source"] = "nested_family_candidate"
+                merged["candidate_truth_mode"] = "strict_nested_eligible_no_blockers_positive_score"
+                merged["selected_family_candidate_json"] = dict(_best)
+
+                if isinstance(merged.get("decision_payload"), MutableMapping):
+                    merged["decision_payload"]["candidate"] = True
+                    merged["decision_payload"]["candidate_present"] = True
+                    merged["decision_payload"]["candidate_fallback"] = True
+                    merged["decision_payload"]["action"] = "ENTRY"
+                    merged["decision_payload"]["decision_action"] = "ENTRY"
+                    merged["decision_payload"]["strategy_family_id"] = _fam
+                    merged["decision_payload"]["family"] = _fam
+                    merged["decision_payload"]["side"] = _side
+                    merged["decision_payload"]["selected_leg"] = merged["selected_leg"]
+                    merged["decision_payload"]["candidate_score"] = _score
+                    merged["decision_payload"]["blocker"] = None
+                    merged["decision_payload"]["reason"] = "strict_nested_family_candidate_promoted"
+                    merged["decision_payload"]["candidate_source"] = "nested_family_candidate"
+                    merged["decision_payload"]["candidate_truth_mode"] = "strict_nested_eligible_no_blockers_positive_score"
+            else:
+                merged.setdefault("candidate", False)
+                merged.setdefault("candidate_present", False)
+                merged.setdefault("candidate_fallback", False)
+                merged.setdefault("candidate_truth_mode", "no_strict_nested_candidate")
+                merged.setdefault("top_level_candidate_propagation_status", "no_strict_nested_candidate")
+
+            merged.setdefault("replay_family_bridge_status", "adapter_payload_used")
+            merged.setdefault("replay_family_bridge_fallback_used", False)
+            merged.setdefault("replay_family_bridge_adapter_invoked", True)
+            merged.setdefault("replay_family_bridge_version", "R31A_R9B")
+            any_adapter_payload = True
+            adapted_rows.append(merged)
+        except Exception as exc:
+            base.setdefault("replay_family_bridge_status", "adapter_exception_fallback")
+            base.setdefault("replay_family_bridge_error", type(exc).__name__)
+            base.setdefault("replay_family_bridge_fallback_used", True)
+            base.setdefault("replay_family_bridge_adapter_invoked", True)
+            base.setdefault("replay_family_bridge_version", "R31A_R9B")
+            adapted_rows.append(base)
+
+    if not any_adapter_payload:
+        for _row in adapted_rows:
+            if isinstance(_row, dict):
+                _row.setdefault("replay_family_bridge_status", "all_adapter_attempts_fell_back")
+                _row.setdefault("replay_family_bridge_fallback_used", True)
+
+    return adapted_rows
 
 
 def build_risk_outputs_from_strategy_decisions(
@@ -1865,6 +2303,62 @@ def build_execution_shadow_results_from_risk_outputs(
         )
     )
 
+    # R35C/R5A3: replay-only shadow PnL enrichment for execution rows.
+    # Conservative labelled model: entry-fill-only rows get a synthetic first-target
+    # exit using doctrine economics (target_points=5.0, stop_points=4.0).
+    # This does not create broker orders, paper/live orders, Redis writes, risk starts,
+    # execution starts, or production doctrine changes.
+    def _r35c_r5a3_float(value, default=None):
+        try:
+            if value is None or value == "":
+                return default
+            return float(value)
+        except Exception:
+            return default
+
+    def _r35c_r5a3_shadow_pnl(fill_price, fill_qty):
+        qty = int(fill_qty or 0)
+        entry = _r35c_r5a3_float(fill_price)
+        target_points = 5.0
+        stop_points = 4.0
+        cost_points = 0.0
+
+        if qty <= 0 or entry is None:
+            return {
+                "pnl_model_status": "NO_FILL_NO_PNL_R35C_R5A3",
+                "exit_price": None,
+                "exit_reason": None,
+                "gross_points": 0.0,
+                "cost_points": cost_points,
+                "net_points": 0.0,
+                "net_pnl": 0.0,
+                "is_profit": False,
+                "is_loss": False,
+                "target_points": target_points,
+                "stop_points": stop_points,
+                "pnl_model": "R35C_R5A3_SYNTHETIC_FIRST_TARGET_REPLAY_ONLY",
+            }
+
+        exit_price = round(entry + target_points, 6)
+        gross_points = round(exit_price - entry, 6)
+        net_points = round(gross_points - cost_points, 6)
+        net_pnl = round(net_points * qty, 6)
+
+        return {
+            "pnl_model_status": "PNL_COMPUTED_SYNTHETIC_FIRST_TARGET_REPLAY_ONLY_R35C_R5A3",
+            "exit_price": exit_price,
+            "exit_reason": "synthetic_first_target",
+            "gross_points": gross_points,
+            "cost_points": cost_points,
+            "net_points": net_points,
+            "net_pnl": net_pnl,
+            "is_profit": net_pnl > 0,
+            "is_loss": net_pnl < 0,
+            "target_points": target_points,
+            "stop_points": stop_points,
+            "pnl_model": "R35C_R5A3_SYNTHETIC_FIRST_TARGET_REPLAY_ONLY",
+        }
+
     results: list[dict[str, Any]] = []
     for index, risk_output in enumerate(ordered_outputs, start=1):
         risk_action = str(risk_output.get("risk_action") or "HOLD")
@@ -1883,6 +2377,7 @@ def build_execution_shadow_results_from_risk_outputs(
                     "fill_qty": 0,
                     "fill_price": None,
                     "slippage": None,
+                    **_r35c_r5a3_shadow_pnl(None, 0),
                     "reason": "risk_block_or_non_entry",
                     "symbol": risk_output.get("symbol"),
                     "metadata": dict(risk_output.get("metadata") or {}),
@@ -1915,6 +2410,7 @@ def build_execution_shadow_results_from_risk_outputs(
                 "fill_qty": fill_result.fill_qty,
                 "fill_price": fill_result.fill_price,
                 "slippage": fill_result.slippage,
+                **_r35c_r5a3_shadow_pnl(fill_result.fill_price, fill_result.fill_qty),
                 "reason": fill_result.reason,
                 "symbol": risk_output.get("symbol"),
                 "metadata": dict(risk_output.get("metadata") or {}),
@@ -1922,7 +2418,6 @@ def build_execution_shadow_results_from_risk_outputs(
         )
 
     return results
-
 
 
 
@@ -2271,6 +2766,52 @@ def build_run_summary_payload(
     integrity_waivers = list(getattr(run_context.run_config, "integrity_waivers", ()))
     notes = list(report_bundle.notes)
 
+    # R35C/R4W: official summary uses replay shadow filled count as shadow trade count.
+    # This is summary/export-only. It does not create broker orders, paper/live orders,
+    # Redis writes, risk starts, execution starts, or PnL claims.
+    execution_shadow_rows = list(persisted_execution_shadow_results or ())
+    shadow_trade_count = _count_true(execution_shadow_rows, "filled")
+    shadow_filled_qty_total = 0
+
+    # R35C/R5C: aggregate replay-only synthetic PnL into official summary.
+    # This only summarizes execution_shadow rows already produced by replay.
+    # It is not broker PnL, not paper/live PnL, and does not create any order.
+    shadow_pnl_total = 0.0
+    shadow_win_count = 0
+    shadow_loss_count = 0
+    shadow_pnl_model = None
+    shadow_pnl_model_status_counts: dict[str, int] = {}
+
+    for _row in execution_shadow_rows:
+        try:
+            shadow_filled_qty_total += int(_row.get("fill_qty") or 0)
+        except Exception:
+            pass
+
+        if not bool(_row.get("filled")):
+            continue
+
+        _status = str(_row.get("pnl_model_status") or "")
+        if _status:
+            shadow_pnl_model_status_counts[_status] = shadow_pnl_model_status_counts.get(_status, 0) + 1
+
+        _model = _row.get("pnl_model")
+        if _model and shadow_pnl_model is None:
+            shadow_pnl_model = str(_model)
+
+        try:
+            _pnl = float(_row.get("net_pnl") or 0.0)
+        except Exception:
+            _pnl = 0.0
+
+        shadow_pnl_total += _pnl
+        if _pnl > 0:
+            shadow_win_count += 1
+        elif _pnl < 0:
+            shadow_loss_count += 1
+
+    shadow_pnl_total = round(shadow_pnl_total, 6)
+
     return {
         "run_id": run_context.run_id,
         "created_at": run_context.created_at,
@@ -2299,10 +2840,18 @@ def build_run_summary_payload(
         "input_fingerprint": selection.selection_fingerprint,
         "integrity_verdict": integrity_bundle.verdict.value,
         "waiver_count": len(integrity_waivers),
-        "pnl_total": None,
-        "trade_count": 0,
-        "win_count": 0,
-        "loss_count": 0,
+        "pnl_total": shadow_pnl_total,
+        "trade_count": shadow_trade_count,
+        "win_count": shadow_win_count,
+        "loss_count": shadow_loss_count,
+        "shadow_trade_count": shadow_trade_count,
+        "shadow_filled_qty_total": shadow_filled_qty_total,
+        "shadow_pnl_total": shadow_pnl_total,
+        "shadow_win_count": shadow_win_count,
+        "shadow_loss_count": shadow_loss_count,
+        "shadow_pnl_model": shadow_pnl_model,
+        "shadow_pnl_model_status_counts": shadow_pnl_model_status_counts,
+        "pnl_accounting_status": "PNL_COMPUTED_REPLAY_ONLY_SYNTHETIC_SHADOW_MODEL_R35C_R5C_NOT_BROKER_NOT_PAPER_NOT_LIVE",
         "candidate_count": _count_true(persisted_strategy_decisions, "candidate"),
         "blocker_count": _count_non_null(persisted_strategy_decisions, "blocker_name"),
         "regime_pass_count": _count_true(persisted_strategy_decisions, "regime_pass"),
@@ -2315,8 +2864,8 @@ def build_run_summary_payload(
         "feature_row_count": len(persisted_feature_rows),
         "strategy_row_count": len(persisted_strategy_decisions),
         "risk_row_count": len(persisted_risk_outputs),
-        "execution_shadow_row_count": len(persisted_execution_shadow_results or ()),
-        "execution_shadow_filled_count": _count_true(persisted_execution_shadow_results or (), "filled"),
+        "execution_shadow_row_count": len(execution_shadow_rows),
+        "execution_shadow_filled_count": shadow_trade_count,
 
         "feature_side_breakdown": _value_breakdown(persisted_feature_rows, "side"),
         "feature_leg_breakdown": _value_breakdown(persisted_feature_rows, "leg"),
@@ -2962,45 +3511,250 @@ def main(argv: list[str]) -> int:
     )
     writer.write_engine_result(engine_result, run_context.artifact_plan)
 
+    # R35C/R4C: write an early compact official run summary immediately after
+    # engine_result is available, before heavy row-artifact exports. This is
+    # artifact-only and does not change replay decisions, risk, execution shadow,
+    # broker state, or Redis streams.
+    try:
+        replay_artifacts_dir = Path(run_context.artifact_plan.artifacts_dir)
+        replay_artifacts_dir.mkdir(parents=True, exist_ok=True)
+        # R35C/R4J2: minimal early summary must not call build_run_summary_payload.
+        # This fallback is written before heavy row artifacts and is artifact-only.
+        early_stage_records = getattr(engine_result, "stage_records", []) or []
+        early_stage_names = [getattr(x, "stage_name", None) for x in early_stage_records]
+        early_stage_names = [str(x) for x in early_stage_names if x is not None]
+        early_run_summary_payload = {
+            "schema_version": "r35c_r4j2_early_minimal_run_summary_v1",
+            "summary_write_mode": "early_minimal_r35c_r4j2",
+            "run_id": getattr(run_context, "run_id", None),
+            "dataset_id": getattr(selection_plan, "dataset_id", None),
+            "selection_mode": getattr(selection_plan, "selection_mode", None),
+            "trading_dates": [str(x) for x in (getattr(selection_plan, "trading_dates", []) or [])],
+            "replay_scope": getattr(topology_plan, "scope", None),
+            "stage_count": getattr(engine_result, "stage_count", None),
+            "stage_names": early_stage_names,
+            "started_at": getattr(engine_result, "engine_started_at", None),
+            "completed_at": getattr(engine_result, "engine_finished_at", None),
+            "engine_final_state": getattr(getattr(engine_result, "final_state", None), "value", getattr(engine_result, "final_state", None)),
+            "artifact_note": "Early minimal official summary written before heavy row artifacts.",
+            "paper_live_enabled": False,
+            "broker_order_attempted": False,
+        }
+        early_run_summary_json_path = replay_artifacts_dir / "10_run_summary.json"
+        early_run_summary_csv_path = replay_artifacts_dir / "11_run_summary.csv"
+        early_run_summary_json_path.write_text(
+            json.dumps(early_run_summary_payload, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
+            encoding="utf-8",
+        )
+        write_run_summary_csv(early_run_summary_csv_path, early_run_summary_payload)
+    except Exception as exc:
+        try:
+            (Path(run_context.artifact_plan.artifacts_dir) / "10_run_summary_early_write_error.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "r35c_r4c_early_summary_error_v1",
+                        "error": repr(exc),
+                        "paper_live_enabled": False,
+                        "broker_order_attempted": False,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                    ensure_ascii=False,
+                    default=str,
+                ) + "\n",
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
+
     replay_artifacts_dir = Path(run_context.artifact_plan.artifacts_dir)
     replay_artifacts_dir.mkdir(parents=True, exist_ok=True)
 
+    def _r35b_json_slim(value):
+        """R35B/R4S replay artifact slimming.
+
+        This is artifact-only. It does not change in-memory replay decisions.
+        Use SCALPX_REPLAY_ARTIFACT_ROW_CAP=500 to persist small samples instead
+        of multi-GB row artifacts.
+        """
+        try:
+            cap = int(os.environ.get("SCALPX_REPLAY_ARTIFACT_ROW_CAP", "0") or "0")
+        except Exception:
+            cap = 0
+
+        heavy_keys = {
+            "candidate_json",
+            "arbitration_json",
+            "candidates",
+            "candidate",
+            "all_candidates",
+            "feature_payload",
+            "feature_json",
+            "feature",
+            "features",
+            "feature_row",
+            "feature_rows",
+            "linked_feature",
+            "linked_feature_row",
+            "decision_payload",
+            "payload",
+            "raw",
+            "raw_payload",
+            "raw_frame",
+            "debug",
+            "debug_payload",
+            "context",
+            "snapshot",
+        }
+
+        def slim(obj, depth=0):
+            if depth > 6:
+                return "<omitted_by_R35B_R4S:max_depth>"
+
+            if isinstance(obj, list):
+                # R35C/R4O4: preserve R4L/R4J top-level cap marker.
+                # R4L/R4J may already append a truncation marker. The older
+                # R35B/R4S nested slim pass must not drop that marker.
+                existing_marker = None
+                body = obj
+                if obj and isinstance(obj[-1], dict) and (
+                    obj[-1].get("_r35c_r4l_top_level_truncated")
+                    or obj[-1].get("_r35c_r4j_top_level_truncated")
+                ):
+                    existing_marker = obj[-1]
+                    body = obj[:-1]
+
+                original_len = len(body)
+                selected = body[:cap] if cap and cap > 0 else body
+                out = [slim(x, depth + 1) for x in selected]
+
+                if existing_marker is not None:
+                    out.append(slim(existing_marker, depth + 1))
+                elif cap and cap > 0 and original_len > cap:
+                    out.append({
+                        "_r35b_r4s_truncated": True,
+                        "original_len": original_len,
+                        "persisted_len": len(selected),
+                        "cap": cap,
+                        "reason": "SCALPX_REPLAY_ARTIFACT_ROW_CAP",
+                    })
+                return out
+
+            if isinstance(obj, dict):
+                out = {}
+                for k, v in obj.items():
+                    if k in heavy_keys:
+                        out[k] = f"<omitted_by_R35B_R4S:{k}>"
+                    else:
+                        out[k] = slim(v, depth + 1)
+                return out
+
+            return obj
+
+        return slim(value)
+
+    def _r35b_write_compact_json(path, value):
+        # R35C/R4J2: hard top-level row cap before JSON serialization.
+        # R35B/R4S slimmed nested payloads, but R4H proved top-level row files
+        # could still become multi-hundred-MB. This is artifact-only.
+        try:
+            hard_cap = int(os.environ.get("SCALPX_REPLAY_ARTIFACT_ROW_CAP", "0") or "0")
+        except Exception:
+            hard_cap = 0
+
+        # R35C/R4R2: force default cap for known row artifact files.
+        # Artifact-only guard: if env cap is missing inside recursive replay,
+        # still cap the four huge row artifact JSON files to 50 rows.
+        row_artifact_names = {
+            "features_rows.json",
+            "strategy_decisions.json",
+            "risk_outputs.json",
+            "execution_shadow_results.json",
+        }
+        if (not hard_cap or hard_cap <= 0) and getattr(path, "name", "") in row_artifact_names:
+            hard_cap = 50
+
+        payload = value
+        if hard_cap and hard_cap > 0 and isinstance(value, list) and len(value) > hard_cap:
+            payload = list(value[:hard_cap])
+            payload.append({
+                "_r35c_r4j_top_level_truncated": True,
+                "original_len": len(value),
+                "persisted_len": hard_cap,
+                "cap": hard_cap,
+                "reason": "SCALPX_REPLAY_ARTIFACT_ROW_CAP hard top-level cap before write",
+            })
+
+        path.write_text(
+            json.dumps(_r35b_json_slim(payload), separators=(",", ":"), ensure_ascii=False, default=str) + "\n",
+            encoding="utf-8",
+        )
+
     persisted_feature_rows = build_persisted_feature_rows(transport.feature_frames)
 
-    (replay_artifacts_dir / "features_rows.json").write_text(
-        json.dumps(persisted_feature_rows, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
-        encoding="utf-8",
-    )
+    # R35C/R4L: force cap row lists before artifact writes.
+    # This is artifact-only. It does not change in-memory replay decisions,
+    # risk outputs, execution shadow, broker state, or Redis streams.
+    def _r35c_r4l_force_row_cap(label, rows):
+        try:
+            cap = int(os.environ.get("SCALPX_REPLAY_ARTIFACT_ROW_CAP", "0") or "0")
+        except Exception:
+            cap = 0
+        if cap and cap > 0 and isinstance(rows, list) and len(rows) > cap:
+            out = list(rows[:cap])
+            out.append({
+                "_r35c_r4l_top_level_truncated": True,
+                "label": label,
+                "original_len": len(rows),
+                "persisted_len": cap,
+                "cap": cap,
+                "reason": "SCALPX_REPLAY_ARTIFACT_ROW_CAP force cap before artifact write",
+            })
+            return out
+        return rows
+
+    persisted_feature_rows = _r35c_r4l_force_row_cap("features_rows", persisted_feature_rows)
+    _r35b_write_compact_json(replay_artifacts_dir / "features_rows.json", persisted_feature_rows)
     persisted_strategy_decisions = build_persisted_strategy_decisions(
         transport.strategy_decisions,
         persisted_feature_rows,
     )
 
-    (replay_artifacts_dir / "strategy_decisions.json").write_text(
-        json.dumps(persisted_strategy_decisions, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
-        encoding="utf-8",
-    )
+    persisted_strategy_decisions = _r35c_r4l_force_row_cap("strategy_decisions", persisted_strategy_decisions)
+    _r35b_write_compact_json(replay_artifacts_dir / "strategy_decisions.json", persisted_strategy_decisions)
     persisted_risk_outputs = build_persisted_risk_outputs(
         transport.risk_outputs,
         persisted_strategy_decisions,
     )
 
-    (replay_artifacts_dir / "risk_outputs.json").write_text(
-        json.dumps(persisted_risk_outputs, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
-        encoding="utf-8",
-    )
+    persisted_risk_outputs = _r35c_r4l_force_row_cap("risk_outputs", persisted_risk_outputs)
+    _r35b_write_compact_json(replay_artifacts_dir / "risk_outputs.json", persisted_risk_outputs)
 
     persisted_execution_shadow_results = [dict(row) for row in transport.execution_shadow_results]
 
-    (replay_artifacts_dir / "execution_shadow_results.json").write_text(
-        json.dumps(persisted_execution_shadow_results, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n",
-        encoding="utf-8",
-    )
+    persisted_execution_shadow_results = _r35c_r4l_force_row_cap("execution_shadow_results", persisted_execution_shadow_results)
+    _r35b_write_compact_json(replay_artifacts_dir / "execution_shadow_results.json", persisted_execution_shadow_results)
 
     # B3_R36A_LATE_REPLAY_ANALYSIS_EXPORTS_AFTER_ROW_ARTIFACTS_BEGIN
     # Offline replay analysis exports. Runs after row artifacts are materialized.
     try:
-        writer.write_b3_r32_analysis_exports(run_context)
+        if os.environ.get("SCALPX_REPLAY_SKIP_B3_R32_EXPORTS", "0").strip().lower() in {"1", "true", "yes"}:
+            (replay_artifacts_dir / "b3_r32_analysis_exports_status.json").write_text(
+                json.dumps(
+                    {
+                        "status": "skipped",
+                        "reason": "SCALPX_REPLAY_SKIP_B3_R32_EXPORTS enabled by R35B_R4G3 to avoid heavy features_rows.json readback",
+                        "paper_live_enabled": False,
+                        "broker_order_attempted": False,
+                    },
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                    default=str,
+                ) + "\n",
+                encoding="utf-8",
+            )
+        else:
+            writer.write_b3_r32_analysis_exports(run_context)
     except Exception as exc:
         try:
             writer.write_json_artifact(

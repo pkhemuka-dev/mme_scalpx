@@ -157,7 +157,115 @@ ERROR_STREAM_MAXLEN: Final[int] = 10_000
 
 
 # BEGIN BATCH26B_EXECUTION_ENTRY_HARD_ARMING_HELPER
+
+# BEGIN R38TZK_EXECUTION_REAL_LIVE_ONE_EVENT_ARMING
+_R38TZK_REAL_LIVE_SCOPE_ACK_PREFIX = (
+    "USER_APPROVED_ONE_REAL_LIVE_MICRO_EVENT_1LOT_NO_RETRY_NO_AVERAGING_STOP_AFTER_FIRST_ATTEMPT_"
+)
+
+def _r38tzk_truthy(value) -> bool:
+    return str(value or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+        "on",
+        "allow",
+        "allowed",
+    }
+
+def _r38tzk_env_int(name: str, default: int = 0) -> int:
+    try:
+        import os as _r38tzk_os
+        return int(str(_r38tzk_os.environ.get(name, default)).strip() or default)
+    except Exception:
+        return default
+
+def _r38tzk_execution_real_live_one_event_entry_allowed():
+    """
+    Real-live one-event execution hard arming.
+
+    Scope:
+    - Allows execution's own hard arming gate only.
+    - Does not bypass risk.
+    - Does not bypass broker safety.
+    - Does not relax strategy thresholds.
+    - Does not create candidates.
+    - Does not force ENTER.
+    - Requires exact one-live-event / one-order / one-lot env scope.
+    """
+
+    import os as _r38tzk_os
+
+    forbidden_truthy = (
+        "SCALPX_OBSERVE_ONLY",
+        "B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY",
+        "SCALPX_ENABLE_PAPER",
+        "MME_ENABLE_PAPER",
+        "SCALPX_PAPER_ARMED",
+        "SCALPX_CONTROLLED_PAPER_ARMED",
+        "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME",
+    )
+    bad = [k for k in forbidden_truthy if _r38tzk_truthy(_r38tzk_os.environ.get(k))]
+    if bad:
+        return False, "r38tzk_real_live_forbidden_paper_or_observe_env:" + ",".join(bad)
+
+    if str(_r38tzk_os.environ.get("SCALPX_RUNTIME_MODE", "")).strip().lower() != "live":
+        return False, "r38tzk_real_live_runtime_mode_not_live"
+
+    required_truthy = (
+        "SCALPX_TRADING_ENABLED",
+        "SCALPX_ALLOW_LIVE_ORDERS",
+        "SCALPX_ENABLE_LIVE",
+        "MME_ENABLE_LIVE",
+        "SCALPX_ALLOW_REAL_LIVE",
+        "SCALPX_REAL_LIVE_ALLOWED",
+        "SCALPX_ALLOW_BROKER_ORDERS",
+        "SCALPX_LIVE_ONE_EVENT_ONLY",
+        "SCALPX_NO_RETRY",
+        "SCALPX_DISABLE_RETRY",
+        "SCALPX_DISABLE_AVERAGING",
+    )
+    missing = [k for k in required_truthy if not _r38tzk_truthy(_r38tzk_os.environ.get(k))]
+    if missing:
+        return False, "r38tzk_real_live_missing_required_env:" + ",".join(missing)
+
+    exact_one_envs = (
+        "SCALPX_MAX_LIVE_EVENTS",
+        "SCALPX_MAX_ORDERS",
+        "SCALPX_ORDER_LOTS",
+        "SCALPX_ORDER_MAX_LOTS",
+        "MME_ORDER_LOTS",
+        "MME_MAX_LOTS",
+    )
+    bad_one = [k for k in exact_one_envs if _r38tzk_env_int(k, 0) != 1]
+    if bad_one:
+        return False, "r38tzk_real_live_not_exactly_one_event_order_lot:" + ",".join(bad_one)
+
+    if _r38tzk_truthy(_r38tzk_os.environ.get("SCALPX_AVERAGING_ENABLED")):
+        return False, "r38tzk_real_live_averaging_enabled"
+
+    flat_ok = (
+        _r38tzk_truthy(_r38tzk_os.environ.get("SCALPX_POSITION_FLAT_VERIFIED"))
+        or _r38tzk_truthy(_r38tzk_os.environ.get("SCALPX_FLAT_POSITION_VERIFIED"))
+    )
+    if not flat_ok:
+        return False, "r38tzk_real_live_flat_position_not_verified"
+
+    ack = str(_r38tzk_os.environ.get("SCALPX_REAL_LIVE_SCOPE_ACK", "")).strip()
+    if not ack.startswith(_R38TZK_REAL_LIVE_SCOPE_ACK_PREFIX):
+        return False, "r38tzk_real_live_scope_ack_missing_or_bad"
+
+    return True, "execution_entry_armed_r38tzk_real_live_one_event"
+# END R38TZK_EXECUTION_REAL_LIVE_ONE_EVENT_ARMING
+
+
 def _batch26b_execution_entry_hard_arming_verdict():
+    live_allowed, live_reason = _r38tzk_execution_real_live_one_event_entry_allowed()
+    if live_allowed:
+        return True, live_reason
+
+
     """
     Execution-owned hard gate for ENTRY broker calls.
 
@@ -362,6 +470,49 @@ def _health_status_from_execution_mode(mode: str, broker_degraded: bool) -> str:
         return N.HEALTH_STATUS_WARN
     return N.HEALTH_STATUS_OK
 
+
+
+# BEGIN R38TZQ_BROKER_QUANTITY_UNITS_PATCH
+def _r38tzq_resolve_nfo_lot_size(option_symbol: str, option_token: str) -> int:
+    """Resolve NFO lot_size from local instrument master for broker quantity units."""
+    try:
+        import csv as _r38tzq_csv
+        from pathlib import Path as _r38tzq_Path
+
+        symbol = _safe_str(option_symbol).upper()
+        token = _safe_str(option_token)
+        csv_path = _r38tzq_Path("data/instruments/nfo_instruments.csv")
+        if not csv_path.exists():
+            return 0
+
+        with csv_path.open(newline="", encoding="utf-8", errors="replace") as f:
+            reader = _r38tzq_csv.DictReader(f)
+            for row in reader:
+                row_symbol = _safe_str(
+                    row.get("tradingsymbol") or row.get("trading_symbol")
+                ).upper()
+                row_token = _safe_str(row.get("instrument_token"))
+                if (token and row_token == token) or (symbol and row_symbol == symbol):
+                    lot_size = _safe_int(row.get("lot_size"), 0)
+                    if lot_size > 0:
+                        return lot_size
+    except Exception:
+        return 0
+    return 0
+
+
+def _r38tzq_compute_broker_qty_units(
+    *,
+    qty_lots: int,
+    option_symbol: str,
+    option_token: str,
+) -> tuple[int, int]:
+    lots = _safe_int(qty_lots, 0)
+    lot_size = _r38tzq_resolve_nfo_lot_size(option_symbol, option_token)
+    if lots <= 0 or lot_size <= 0:
+        return 0, lot_size
+    return lots * lot_size, lot_size
+# END R38TZQ_BROKER_QUANTITY_UNITS_PATCH
 
 # =============================================================================
 # Internal models
@@ -1275,6 +1426,15 @@ class ExecutionService:
             self._reject_decision(decision, "missing_entry_contract")
             return
 
+        broker_qty_units, broker_lot_size = _r38tzq_compute_broker_qty_units(
+            qty_lots=qty_lots,
+            option_symbol=option_symbol,
+            option_token=option_token,
+        )
+        if broker_qty_units <= 0:
+            self._reject_decision(decision, "entry_lot_size_unresolved_or_zero")
+            return
+
         requested_limit_price = _safe_decimal(
             decision.metadata.get("limit_price"),
             Decimal("0"),
@@ -1304,12 +1464,28 @@ class ExecutionService:
                 self._fail_decision(decision, entry_arm_reason)
                 return
 
+            # R38KJ_CANONICAL_BROKER_API_ENTRY_CALL
+            # Execution keeps internal client_order_id/option_token in extra_params,
+            # but calls the active broker adapter using its canonical API signature.
             broker_order = self.broker.place_entry_order(
-                client_order_id=client_order_id,
-                option_symbol=option_symbol,
-                option_token=option_token,
-                qty_lots=pending.qty_lots,
-                limit_price=requested_limit_price,
+                tradingsymbol=option_symbol,
+                exchange="NFO",
+                transaction_type="BUY",
+                quantity=broker_qty_units,
+                product="NRML",
+                order_type="LIMIT",
+                price=requested_limit_price,
+                tag=client_order_id[:20],
+                extra_params={
+                    "client_order_id": client_order_id,
+                    "option_token": option_token,
+                    "qty_lots": pending.qty_lots,
+                    "entry_mode": entry_mode,
+                    "strike": strike,
+                    "r38kj_controlled_paper_entry": "1",
+                    "r38ga_no_broker_live": "1",
+                    "r38ga_stop_after_one": "1",
+                },
             )
         except Exception as exc:
             self._apply_broker_failure_mode(
@@ -1324,7 +1500,11 @@ class ExecutionService:
 
         pending.broker_order_id = _safe_str(broker_order.get("broker_order_id"))
         pending.broker_status = _status_upper(broker_order.get("status"))
-        pending.filled_lots = _safe_int(broker_order.get("filled_quantity"), 0)
+        filled_units_for_pending = _safe_int(
+            broker_order.get("filled_units"),
+            _safe_int(broker_order.get("filled_quantity"), 0),
+        )
+        pending.filled_lots = pending.qty_lots if filled_units_for_pending > 0 else 0
         pending.avg_fill_price = _safe_str(broker_order.get("avg_fill_price"))
         self.pending_order = pending
 
@@ -1342,7 +1522,7 @@ class ExecutionService:
             decision=decision,
             broker_order=broker_order,
             requested_limit_price=requested_limit_price,
-            quantity=pending.qty_lots,
+            quantity=broker_qty_units,
             entry_mode=entry_mode,
         )
         self._publish_ack(
@@ -1441,7 +1621,7 @@ class ExecutionService:
             decision=decision,
             broker_order=broker_order,
             requested_limit_price=exit_limit or Decimal("0"),
-            quantity=pending.qty_lots,
+            quantity=_safe_int(self.position_state.get("qty_units"), pending.qty_lots),
             entry_mode=pending.entry_mode,
         )
         self._publish_ack(
@@ -1473,7 +1653,16 @@ class ExecutionService:
         if _is_open_broker_status(pending.broker_status):
             return
 
-        if pending.broker_status == "FILLED":
+        # R38KX_COMPLETE_STATUS_FILL_NORMALIZATION
+        # Zerodha and the R38KR no-broker paper adapter use COMPLETE for a terminal
+        # filled order. Execution lifecycle expects FILLED before applying ledger /
+        # position updates, so normalize COMPLETE to FILLED at this seam.
+        if pending.broker_status in {"FILLED", "COMPLETE"}:
+            if pending.broker_status == "COMPLETE":
+                broker_order = dict(broker_order)
+                broker_order.setdefault("broker_status", "COMPLETE")
+                broker_order["status"] = "FILLED"
+                pending.broker_status = "FILLED"
             if pending.intent == "ENTRY":
                 self._apply_entry_fill(pending, broker_order, current_ns)
             else:
@@ -1521,8 +1710,11 @@ class ExecutionService:
             else N.POSITION_SIDE_LONG_PUT
         )
 
-        qty_lots = _safe_int(broker_order.get("filled_quantity"), pending.qty_lots)
-        qty_units = _safe_int(broker_order.get("filled_units"), qty_lots)
+        qty_units = _safe_int(
+            broker_order.get("filled_units"),
+            _safe_int(broker_order.get("filled_quantity"), pending.qty_lots),
+        )
+        qty_lots = pending.qty_lots
 
         avg_fill_price = _safe_decimal(broker_order.get("avg_fill_price"))
         broker_order_id = _safe_str(broker_order.get("broker_order_id"))
@@ -2819,3 +3011,289 @@ def a6_live_r2h_execution_activation_gate_precheck(
         "real_live_forbidden": True,
     }
 # --- END A6-LIVE-R2H CONTROLLED PAPER ACTIVATION GATE ---
+
+# ===== R38X_EXECUTION_LOCK_AND_NOGROUP_GUARD_PATCH =====
+# Controlled-runtime safety patch.
+# Purpose:
+# - Execution must not fatal if an empty Redis stream/group surface disappears.
+# - Execution lock refresh may fail if the lock expired/vanished; reacquire only if absent or same owner.
+# Safety:
+# - No order is emitted.
+# - No threshold is changed.
+# - No Redis delete/XDEL/XTRIM/FLUSH.
+# - Lock is never stolen from another owner.
+
+def _r38x_exec_text(value):
+    if isinstance(value, bytes):
+        return value.decode("utf-8", "replace")
+    return "" if value is None else str(value)
+
+
+def _r38x_exec_is_nogroup_error(exc: Exception) -> bool:
+    text = _r38x_exec_text(exc)
+    return "NOGROUP" in text or "no such key" in text.lower() or "consumer group" in text.lower()
+
+
+def _r38x_exec_create_group_if_missing(redis_client, stream_name: str, group_name: str) -> bool:
+    try:
+        redis_client.xgroup_create(name=stream_name, groupname=group_name, id="$", mkstream=True)
+        return True
+    except Exception as exc:
+        if "BUSYGROUP" in _r38x_exec_text(exc):
+            return True
+        return False
+
+
+_R38X_ORIGINAL_EXEC_REFRESH_LOCK_IF_DUE = ExecutionService._refresh_lock_if_due
+
+
+def _r38x_refresh_lock_if_due(self, current_ns: int) -> None:
+    if current_ns - self._last_lock_refresh_ns < self.lock_refresh_ms * 1_000_000:
+        return
+
+    ok = RX.refresh_lock(
+        N.KEY_LOCK_EXECUTION,
+        self.instance_id,
+        ttl_ms=self.lock_ttl_ms,
+        client=self.redis,
+    )
+
+    if not ok:
+        owner = _r38x_exec_text(self.redis.get(N.KEY_LOCK_EXECUTION))
+        reacquired = False
+
+        # Safe reacquire only when lock is absent. Never steal from another owner.
+        if owner == "":
+            try:
+                reacquired = bool(
+                    self.redis.set(
+                        N.KEY_LOCK_EXECUTION,
+                        self.instance_id,
+                        nx=True,
+                        px=int(self.lock_ttl_ms),
+                    )
+                )
+            except Exception:
+                reacquired = False
+
+        # If same owner is still present but refresh helper returned false, extend only same-owned lock.
+        elif owner == self.instance_id:
+            try:
+                reacquired = bool(self.redis.pexpire(N.KEY_LOCK_EXECUTION, int(self.lock_ttl_ms)))
+            except Exception:
+                reacquired = False
+
+        if not reacquired:
+            raise LockOwnershipError(
+                f"execution lock refresh failed; ownership lost owner={owner!r} instance_id={self.instance_id!r}"
+            )
+
+    self.execution_state["lock_owned"] = 1
+    self.execution_state["updated_at_ns"] = current_ns
+    self.execution_state["ts_ns"] = current_ns
+    self._last_lock_refresh_ns = current_ns
+
+
+ExecutionService._refresh_lock_if_due = _r38x_refresh_lock_if_due
+
+
+_R38X_ORIGINAL_EXEC_POLL_DECISIONS = ExecutionService._poll_decisions
+
+
+def _r38x_poll_decisions(self, current_ns: int) -> bool:
+    try:
+        return _R38X_ORIGINAL_EXEC_POLL_DECISIONS(self, current_ns)
+    except Exception as exc:
+        if _r38x_exec_is_nogroup_error(exc):
+            repaired = _r38x_exec_create_group_if_missing(
+                self.redis,
+                N.STREAM_DECISIONS_MME,
+                N.GROUP_EXEC,
+            )
+            try:
+                self._record_exception(
+                    "r38x_poll_decisions_group_repaired" if repaired else "r38x_poll_decisions_group_repair_failed",
+                    exc,
+                )
+            except Exception:
+                pass
+            if repaired:
+                # R9I_DECISIONS_NOGROUP_RETRY_ON_REPAIR
+                # After guarded XGROUP CREATE ... MKSTREAM / BUSYGROUP-tolerant repair,
+                # retry the decisions XREADGROUP once instead of waiting for a later loop.
+                # Safety: decisions stream/group only; no DEL/XDEL/XTRIM/FLUSH; no order emission.
+                with contextlib.suppress(Exception):
+                    LOGGER.warning(
+                        "r9i_decisions_group_recreated=true stream=%s group=%s no_order=true",
+                        N.STREAM_DECISIONS_MME,
+                        N.GROUP_EXEC,
+                    )
+                try:
+                    return _R38X_ORIGINAL_EXEC_POLL_DECISIONS(self, current_ns)
+                except Exception as retry_exc:
+                    with contextlib.suppress(Exception):
+                        self._record_exception(
+                            "r9i_poll_decisions_retry_failed_after_group_repair",
+                            retry_exc,
+                        )
+                    if self.fail_fast:
+                        raise
+                    return False
+        raise
+
+
+ExecutionService._poll_decisions = _r38x_poll_decisions
+# ===== END R38X_EXECUTION_LOCK_AND_NOGROUP_GUARD_PATCH =====
+
+
+# ===== BEGIN R10D_NOGROUP_RECOVERY_FINAL_OVERRIDE_STATIC_ONLY_NO_ORDER =====
+# Purpose:
+# - Harden controlled-paper execution decision polling after R9N/R9Q showed
+#   "NOGROUP the consumer group this client was blocked on no longer exists".
+# - Recreate only the decisions stream consumer group with MKSTREAM.
+# - Retry XREADGROUP up to 3 total attempts.
+# - No DEL/XDEL/XTRIM/FLUSH. No order emission from repair path.
+# - If unrepaired, fail closed for this poll cycle by returning False.
+def _r10d_exc_chain_text(exc: BaseException) -> str:
+    parts = []
+    seen = set()
+    cur = exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        parts.append(f"{type(cur).__name__}: {cur}")
+        cur = getattr(cur, "__cause__", None) or getattr(cur, "__context__", None)
+    return " | ".join(parts)
+
+
+def _r10d_is_nogroup_error(exc: BaseException) -> bool:
+    text = _r10d_exc_chain_text(exc).lower()
+    return "nogroup" in text and (
+        "consumer group" in text
+        or "no such key" in text
+        or "xreadgroup" in text
+        or "blocked on no longer exists" in text
+    )
+
+
+def _r10d_create_group_if_missing(redis_client, stream_name: str, group_name: str) -> bool:
+    try:
+        redis_client.xgroup_create(stream_name, group_name, id="$", mkstream=True)
+        return True
+    except Exception as exc:
+        txt = _r10d_exc_chain_text(exc).lower()
+        if "busygroup" in txt:
+            return True
+        with contextlib.suppress(Exception):
+            LOGGER.error(
+                "r10d_decisions_group_repair_failed stream=%s group=%s error=%s no_order=true",
+                stream_name,
+                group_name,
+                _r10d_exc_chain_text(exc),
+            )
+        return False
+
+
+def _r10d_poll_decisions_final(self: ExecutionService, current_ns: int) -> bool:
+    response = None
+    last_exc = None
+
+    for attempt in range(1, 4):
+        try:
+            response = RX.xreadgroup(
+                N.GROUP_EXEC,
+                self.consumer_name,
+                {N.STREAM_DECISIONS_MME: RX.STREAM_ID_NEW_ONLY},
+                count=32,
+                block_ms=self.stream_block_ms,
+                client=self.redis,
+            )
+            if attempt > 1:
+                with contextlib.suppress(Exception):
+                    LOGGER.warning(
+                        "r10d_decisions_xreadgroup_recovered=true attempt=%s stream=%s group=%s no_order=true",
+                        attempt,
+                        N.STREAM_DECISIONS_MME,
+                        N.GROUP_EXEC,
+                    )
+            break
+        except Exception as exc:
+            last_exc = exc
+            if not _r10d_is_nogroup_error(exc):
+                self._record_exception("poll_decisions", exc)
+                if self.fail_fast:
+                    raise
+                return False
+
+            repaired = _r10d_create_group_if_missing(
+                self.redis,
+                N.STREAM_DECISIONS_MME,
+                N.GROUP_EXEC,
+            )
+            with contextlib.suppress(Exception):
+                self._record_exception(
+                    "r10d_poll_decisions_nogroup_repair_attempt"
+                    if repaired
+                    else "r10d_poll_decisions_nogroup_repair_failed",
+                    exc,
+                )
+                LOGGER.warning(
+                    "r10d_decisions_group_repair_attempt attempt=%s repaired=%s stream=%s group=%s no_order=true",
+                    attempt,
+                    repaired,
+                    N.STREAM_DECISIONS_MME,
+                    N.GROUP_EXEC,
+                )
+
+            if not repaired:
+                if self.fail_fast:
+                    raise
+                return False
+
+    if response is None:
+        if last_exc is not None:
+            with contextlib.suppress(Exception):
+                self._record_exception("r10d_poll_decisions_nogroup_unrecovered_fail_closed", last_exc)
+            if self.fail_fast:
+                raise last_exc
+        return False
+
+    progressed = False
+    for _stream_name, entries in response or []:
+        for stream_id, fields in entries:
+            progressed = True
+            try:
+                decision = self._parse_decision(stream_id, fields)
+                self._handle_decision(decision, current_ns)
+            except DecisionContractError as exc:
+                self._publish_malformed_decision_reject(
+                    fields=fields,
+                    stream_id=stream_id,
+                    reason=str(exc),
+                )
+                self._record_exception(
+                    "decision_contract_rejected",
+                    exc,
+                    extra={"stream_id": stream_id},
+                )
+            except Exception as exc:
+                self._record_exception(
+                    "handle_decision",
+                    exc,
+                    extra={"stream_id": stream_id},
+                )
+                if self.fail_fast:
+                    raise
+            finally:
+                with contextlib.suppress(Exception):
+                    RX.xack(
+                        N.STREAM_DECISIONS_MME,
+                        N.GROUP_EXEC,
+                        [stream_id],
+                        client=self.redis,
+                    )
+    return progressed
+
+
+ExecutionService._poll_decisions = _r10d_poll_decisions_final
+# ===== END R10D_NOGROUP_RECOVERY_FINAL_OVERRIDE_STATIC_ONLY_NO_ORDER =====
+
