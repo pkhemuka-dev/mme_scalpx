@@ -179,7 +179,10 @@ def _r38kr_allow_controlled_paper_no_broker() -> bool:
         and _r38kr_truthy(os.environ.get("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"))
         and _r38kr_truthy(os.environ.get("SCALPX_CONTROLLED_PAPER_ARMED"))
         and _r38kr_truthy(os.environ.get("SCALPX_PAPER_ARMED"))
-        and os.environ.get("SCALPX_CONTROLLED_PAPER_SCOPE_ACK") == official_ack
+        and (
+            os.environ.get("SCALPX_CONTROLLED_PAPER_SCOPE_ACK") == official_ack
+            or os.environ.get("SCALPX_CONTROLLED_PAPER_NO_BROKER_ACK") == official_ack
+        )
         and not _r38kr_truthy(os.environ.get("SCALPX_ENABLE_LIVE"))
         and not _r38kr_truthy(os.environ.get("SCALPX_REAL_LIVE_ALLOWED"))
         and not _r38kr_truthy(os.environ.get("SCALPX_ALLOW_REAL_LIVE"))
@@ -232,13 +235,351 @@ class _R38KRControlledPaperNoBrokerBroker:
 
     def _paper_order(self, *, intent: str, **kwargs: Any) -> dict[str, Any]:
         import time as _r38kr_time
+        from decimal import Decimal, InvalidOperation
+
+        def _positive_decimal(value: Any) -> Decimal | None:
+            if value is None:
+                return None
+            text = str(value).strip()
+            if not text:
+                return None
+            try:
+                out = Decimal(text)
+            except (InvalidOperation, ValueError):
+                return None
+            return out if out > 0 else None
 
         extra = kwargs.get("extra_params") if isinstance(kwargs.get("extra_params"), dict) else {}
+        quote = extra.get("quote") if isinstance(extra.get("quote"), dict) else {}
+
+        def _lookup(*names: str) -> Any:
+            for name in names:
+                for src in (kwargs, extra, quote):
+                    if isinstance(src, dict) and name in src:
+                        return src.get(name)
+            return None
+
         client_order_id = str(extra.get("client_order_id") or kwargs.get("tag") or "")
         broker_order_id = f"R38KR-PAPER-{_r38kr_time.time_ns()}"
         quantity = int(kwargs.get("quantity") or 0)
-        price = "" if kwargs.get("price") is None else str(kwargs.get("price"))
+        raw_intent = str(intent or "").strip().lower()
+        transaction_type = str(kwargs.get("transaction_type") or "").strip().upper()
 
+        bid = _positive_decimal(_lookup("bid", "best_bid", "option_bid", "selected_option_bid"))
+        ask = _positive_decimal(_lookup("ask", "best_ask", "option_ask", "selected_option_ask"))
+        ltp = _positive_decimal(_lookup("ltp", "last_price", "option_ltp", "selected_option_ltp"))
+        limit_price = _positive_decimal(_lookup("limit_price", "requested_limit_price"))
+        legacy_price = _positive_decimal(_lookup("price"))
+
+        # R38TF_EXACT_CANDIDATE_QUOTE_RESOLVER_V1
+        #
+        # The execution contract supplies token, symbol and limit price.
+        # For controlled paper only, resolve missing BID/ASK from a fresh
+        # Redis market-data object whose token AND symbol exactly match.
+        # There is deliberately no LTP or limit-price fallback.
+        if bid is None or ask is None:
+            try:
+                import json as _r38tf_json
+                import os as _r38tf_os
+                import time as _r38tf_time
+                import redis as _r38tf_redis
+
+                def _r38tf_token(value):
+                    text = str(value or "").strip()
+                    if text.endswith(".0"):
+                        text = text[:-2]
+                    return text
+
+                def _r38tf_symbol(value):
+                    text = str(value or "").strip().upper()
+                    if ":" in text:
+                        text = text.rsplit(":", 1)[-1]
+                    return text
+
+                candidate_token = _r38tf_token(
+                    _lookup(
+                        "option_token",
+                        "instrument_token",
+                        "instrument_key",
+                        "instrument_id",
+                        "token",
+                    )
+                )
+                candidate_symbol = _r38tf_symbol(
+                    _lookup(
+                        "option_symbol",
+                        "tradingsymbol",
+                        "trading_symbol",
+                        "symbol",
+                    )
+                )
+
+                token_names = {
+                    "option_token",
+                    "instrument_token",
+                    "instrument_key",
+                    "instrument_id",
+                    "token",
+                    "security_id",
+                }
+                symbol_names = {
+                    "option_symbol",
+                    "tradingsymbol",
+                    "trading_symbol",
+                    "symbol",
+                }
+                bid_names = {
+                    "bid",
+                    "best_bid",
+                    "best_bid_price",
+                    "option_bid",
+                    "selected_option_bid",
+                    "bid_price",
+                    "bid_px",
+                }
+                ask_names = {
+                    "ask",
+                    "best_ask",
+                    "best_ask_price",
+                    "option_ask",
+                    "selected_option_ask",
+                    "ask_price",
+                    "ask_px",
+                }
+
+                def _r38tf_scan(
+                    value,
+                    inherited_token="",
+                    inherited_symbol="",
+                ):
+                    if isinstance(value, dict):
+                        local_token = inherited_token
+                        local_symbol = inherited_symbol
+
+                        for key, item in value.items():
+                            name = str(key).strip().lower()
+
+                            if name in token_names:
+                                parsed = _r38tf_token(item)
+                                if parsed:
+                                    local_token = parsed
+
+                            if name in symbol_names:
+                                parsed = _r38tf_symbol(item)
+                                if parsed:
+                                    local_symbol = parsed
+
+                        local_bid = None
+                        local_ask = None
+
+                        for key, item in value.items():
+                            name = str(key).strip().lower()
+
+                            if name in bid_names and local_bid is None:
+                                local_bid = _positive_decimal(item)
+
+                            if name in ask_names and local_ask is None:
+                                local_ask = _positive_decimal(item)
+
+                        if (
+                            local_token == candidate_token
+                            and local_symbol == candidate_symbol
+                            and local_bid is not None
+                            and local_ask is not None
+                        ):
+                            return local_bid, local_ask
+
+                        for key, item in value.items():
+                            child_token = local_token
+                            child_symbol = local_symbol
+
+                            if _r38tf_token(key) == candidate_token:
+                                child_token = candidate_token
+
+                            if _r38tf_symbol(key) == candidate_symbol:
+                                child_symbol = candidate_symbol
+
+                            found = _r38tf_scan(
+                                item,
+                                child_token,
+                                child_symbol,
+                            )
+                            if found is not None:
+                                return found
+
+                    elif isinstance(value, list):
+                        for item in value:
+                            found = _r38tf_scan(
+                                item,
+                                inherited_token,
+                                inherited_symbol,
+                            )
+                            if found is not None:
+                                return found
+
+                    return None
+
+                if candidate_token and candidate_symbol:
+                    redis_url = _r38tf_os.environ.get(
+                        "REDIS_URL", ""
+                    ).strip()
+
+                    if redis_url:
+                        client = _r38tf_redis.from_url(
+                            redis_url,
+                            decode_responses=True,
+                        )
+                    else:
+                        client = _r38tf_redis.Redis(
+                            host=_r38tf_os.environ.get(
+                                "REDIS_HOST", "127.0.0.1"
+                            ),
+                            port=int(
+                                _r38tf_os.environ.get(
+                                    "REDIS_PORT", "6379"
+                                )
+                            ),
+                            db=int(
+                                _r38tf_os.environ.get(
+                                    "REDIS_DB", "0"
+                                )
+                            ),
+                            decode_responses=True,
+                        )
+
+                    now_ms = _r38tf_time.time_ns() // 1_000_000
+
+                    stream_specs = (
+                        (
+                            "ticks:mme:opt:selected:zerodha:stream",
+                            50,
+                            5000,
+                        ),
+                        (
+                            "features:mme:stream",
+                            20,
+                            15000,
+                        ),
+                    )
+
+                    for stream, count, max_age_ms in stream_specs:
+                        for stream_id, fields in client.xrevrange(
+                            stream,
+                            count=count,
+                        ):
+                            try:
+                                stream_ms = int(
+                                    str(stream_id).split("-", 1)[0]
+                                )
+                            except Exception:
+                                continue
+
+                            age_ms = now_ms - stream_ms
+
+                            if age_ms < 0 or age_ms > max_age_ms:
+                                continue
+
+                            roots = [fields]
+
+                            for raw in fields.values():
+                                if not isinstance(raw, str):
+                                    continue
+
+                                raw = raw.strip()
+
+                                if not raw.startswith(("{", "[")):
+                                    continue
+
+                                try:
+                                    roots.append(
+                                        _r38tf_json.loads(raw)
+                                    )
+                                except Exception:
+                                    continue
+
+                            resolved = None
+
+                            for root in roots:
+                                resolved = _r38tf_scan(root)
+                                if resolved is not None:
+                                    break
+
+                            if resolved is not None:
+                                resolved_bid, resolved_ask = resolved
+
+                                if bid is None:
+                                    bid = resolved_bid
+
+                                if ask is None:
+                                    ask = resolved_ask
+
+                                break
+
+                        if bid is not None and ask is not None:
+                            break
+
+            except Exception:
+                # Preserve the existing fail-closed rejection behaviour.
+                pass
+
+        is_entry = raw_intent == "entry" or transaction_type == "BUY"
+        is_exit = raw_intent == "exit" or transaction_type == "SELL"
+
+        fill_model = "ASK_BID_REALISTIC_FAIL_CLOSED"
+
+        if is_entry:
+            fill_price_dec = ask
+            fill_side = "ASK"
+            rejection_reason = "" if ask is not None else "missing_ask_for_entry"
+        elif is_exit:
+            fill_price_dec = bid
+            fill_side = "BID"
+            rejection_reason = "" if bid is not None else "missing_bid_for_exit"
+        else:
+            fill_price_dec = None
+            fill_side = "UNKNOWN"
+            rejection_reason = "unknown_intent_or_transaction_type"
+
+        if rejection_reason:
+            order = {
+                "ok": False,
+                "broker": self.broker,
+                "provider_id": self.provider_id,
+                "intent": intent,
+                "order_id": broker_order_id,
+                "broker_order_id": broker_order_id,
+                "client_order_id": client_order_id,
+                "status": "REJECTED",
+                "broker_status": "REJECTED",
+                "filled_quantity": 0,
+                "filled_units": 0,
+                "avg_fill_price": "",
+                "tradingsymbol": str(kwargs.get("tradingsymbol") or ""),
+                "exchange": str(kwargs.get("exchange") or ""),
+                "transaction_type": transaction_type,
+                "quantity": quantity,
+                "product": str(kwargs.get("product") or ""),
+                "order_type": str(kwargs.get("order_type") or ""),
+                "price": "",
+                "limit_price": "" if limit_price is None else str(limit_price),
+                "legacy_price": "" if legacy_price is None else str(legacy_price),
+                "quote_bid": "" if bid is None else str(bid),
+                "quote_ask": "" if ask is None else str(ask),
+                "quote_ltp": "" if ltp is None else str(ltp),
+                "fill_model": fill_model,
+                "fill_side": fill_side,
+                "paper_fill_rejected": True,
+                "paper_fill_rejection_reason": rejection_reason,
+                "tag": str(kwargs.get("tag") or ""),
+                "paper_only": True,
+                "no_broker_order": True,
+                "r38kr_controlled_paper_no_broker": True,
+                "detail": "controlled paper fill rejected fail-closed; missing required ASK/BID quote; no Kite/broker order sent",
+            }
+            self._orders[broker_order_id] = order
+            return dict(order)
+
+        price = str(fill_price_dec)
         order = {
             "ok": True,
             "broker": self.broker,
@@ -254,16 +595,25 @@ class _R38KRControlledPaperNoBrokerBroker:
             "avg_fill_price": price,
             "tradingsymbol": str(kwargs.get("tradingsymbol") or ""),
             "exchange": str(kwargs.get("exchange") or ""),
-            "transaction_type": str(kwargs.get("transaction_type") or ""),
+            "transaction_type": transaction_type,
             "quantity": quantity,
             "product": str(kwargs.get("product") or ""),
             "order_type": str(kwargs.get("order_type") or ""),
             "price": price,
+            "limit_price": "" if limit_price is None else str(limit_price),
+            "legacy_price": "" if legacy_price is None else str(legacy_price),
+            "quote_bid": "" if bid is None else str(bid),
+            "quote_ask": "" if ask is None else str(ask),
+            "quote_ltp": "" if ltp is None else str(ltp),
+            "fill_model": fill_model,
+            "fill_side": fill_side,
+            "paper_fill_rejected": False,
+            "paper_fill_rejection_reason": "",
             "tag": str(kwargs.get("tag") or ""),
             "paper_only": True,
             "no_broker_order": True,
             "r38kr_controlled_paper_no_broker": True,
-            "detail": "controlled paper fill simulated locally; no Kite/broker order sent",
+            "detail": "controlled paper ASK/BID fill simulated locally; no Kite/broker order sent",
         }
         self._orders[broker_order_id] = order
         return dict(order)

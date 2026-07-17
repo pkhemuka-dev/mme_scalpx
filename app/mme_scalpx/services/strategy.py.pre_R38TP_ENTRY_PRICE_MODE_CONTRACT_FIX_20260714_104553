@@ -864,265 +864,92 @@ def _r38tz_env_int(name: str, default: int = 0) -> int:
     except Exception:
         return default
 
-# R38VWY_HARD_LIVE_SCOPE_ATTEMPT_LATCH_V1
-def _r38tz_live_one_event_env_scope_allows(
-    *,
-    family: str,
-    side: str,
-    action: str,
-    token: str,
-    symbol: str,
-    entry_mode: str,
-    qty: int,
-) -> bool:
+def _r38tz_live_one_event_env_scope_allows(*, family: str, side: str, action: str, token: str, symbol: str, qty: int) -> bool:
     family = _r38ee_upper(family)
     side = _r38ee_upper(side)
     action = _r38ee_upper(action)
     token = _r38ee_text(token)
     symbol = _r38ee_upper(symbol)
-    entry_mode = _r38ee_upper(entry_mode)
-
     try:
         qty_int = int(qty or 0)
     except Exception:
         qty_int = 0
 
-    if family != "MIST":
-        return False
-    if entry_mode != "DIRECT":
-        return False
-    if side not in {"CALL", "PUT"}:
-        return False
     if action not in {"ENTER_CALL", "ENTER_PUT"}:
         return False
-    if (
-        side == "CALL"
-        and action != "ENTER_CALL"
-    ) or (
-        side == "PUT"
-        and action != "ENTER_PUT"
-    ):
-        return False
-    if not token or not symbol:
+    if not family or not action or not token or not symbol:
         return False
     if qty_int != 1:
         return False
 
-    if (
-        _r38ee_env_truthy("SCALPX_OBSERVE_ONLY")
-        or _r38ee_env_truthy(
-            "B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY"
-        )
-    ):
+    if _r38ee_env_truthy("SCALPX_OBSERVE_ONLY") or _r38ee_env_truthy("B1_PROFIT_CLASSIC_RUNTIME_OBSERVE_ONLY"):
         return False
 
-    if not (
-        _r38ee_env_truthy("SCALPX_ENABLE_LIVE")
-        and _r38ee_env_truthy("MME_ENABLE_LIVE")
-    ):
+    if not (_r38ee_env_truthy("SCALPX_ENABLE_LIVE") and _r38ee_env_truthy("MME_ENABLE_LIVE")):
+        return False
+    if not (_r38ee_env_truthy("SCALPX_REAL_LIVE_ALLOWED") and _r38ee_env_truthy("SCALPX_ALLOW_REAL_LIVE") and _r38ee_env_truthy("SCALPX_ALLOW_BROKER_ORDERS")):
         return False
 
-    if not (
-        _r38ee_env_truthy("SCALPX_REAL_LIVE_ALLOWED")
-        and _r38ee_env_truthy(
-            "SCALPX_ALLOW_REAL_LIVE"
-        )
-        and _r38ee_env_truthy(
-            "SCALPX_ALLOW_BROKER_ORDERS"
-        )
-    ):
+    if _r38ee_env_truthy("SCALPX_ENABLE_PAPER") or _r38ee_env_truthy("MME_ENABLE_PAPER") or _r38ee_env_truthy("SCALPX_PAPER_ARMED") or _r38ee_env_truthy("SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"):
         return False
 
-    if (
-        _r38ee_env_truthy("SCALPX_ENABLE_PAPER")
-        or _r38ee_env_truthy("MME_ENABLE_PAPER")
-        or _r38ee_env_truthy("SCALPX_PAPER_ARMED")
-        or _r38ee_env_truthy(
-            "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME"
-        )
-    ):
+    if not (_r38ee_env_truthy("SCALPX_POSITION_FLAT_VERIFIED") or _r38ee_env_truthy("SCALPX_FLAT_POSITION_VERIFIED")):
         return False
 
-    if not (
-        _r38ee_env_truthy(
-            "SCALPX_POSITION_FLAT_VERIFIED"
-        )
-        or _r38ee_env_truthy(
-            "SCALPX_FLAT_POSITION_VERIFIED"
-        )
-    ):
+    if not _r38ee_env_truthy("SCALPX_LIVE_ONE_EVENT_ONLY"):
+        return False
+    if _r38tz_env_int("SCALPX_MAX_LIVE_EVENTS", 0) != 1:
+        return False
+    if _r38tz_env_int("SCALPX_MAX_ORDERS", 0) != 1:
+        return False
+    if _r38tz_env_int("SCALPX_ORDER_LOTS", 0) != 1:
+        return False
+    if _r38tz_env_int("SCALPX_ORDER_MAX_LOTS", 0) != 1:
+        return False
+    if _r38tz_env_int("MME_ORDER_LOTS", 0) != 1:
+        return False
+    if _r38tz_env_int("MME_MAX_LOTS", 0) != 1:
         return False
 
-    if not _r38ee_env_truthy(
-        "SCALPX_LIVE_ONE_EVENT_ONLY"
-    ):
+    if not (_r38ee_env_truthy("SCALPX_NO_RETRY") and _r38ee_env_truthy("SCALPX_DISABLE_RETRY")):
+        return False
+    if not (_r38ee_env_truthy("SCALPX_DISABLE_AVERAGING") and not _r38ee_env_truthy("SCALPX_AVERAGING_ENABLED")):
         return False
 
-    if _r38tz_env_int(
-        "SCALPX_MAX_LIVE_EVENTS",
-        0,
-    ) != 1:
+    ack = _r38ee_env_text("SCALPX_REAL_LIVE_SCOPE_ACK")
+    if not ack.startswith(_R38TZ_REAL_LIVE_SCOPE_ACK_PREFIX):
         return False
 
-    if _r38tz_env_int(
-        "SCALPX_MAX_ORDERS",
-        0,
-    ) != 1:
-        return False
+    return True
 
-    for key in (
-        "SCALPX_ORDER_LOTS",
-        "SCALPX_ORDER_MAX_LOTS",
-        "MME_ORDER_LOTS",
-        "MME_MAX_LOTS",
-    ):
-        if _r38tz_env_int(key, 0) != 1:
-            return False
-
-    if not (
-        _r38ee_env_truthy("SCALPX_NO_RETRY")
-        and _r38ee_env_truthy(
-            "SCALPX_DISABLE_RETRY"
-        )
-    ):
-        return False
-
-    if not (
-        _r38ee_env_truthy(
-            "SCALPX_DISABLE_AVERAGING"
-        )
-        and not _r38ee_env_truthy(
-            "SCALPX_AVERAGING_ENABLED"
-        )
-    ):
-        return False
-
-    ack = _r38ee_env_text(
-        "SCALPX_REAL_LIVE_SCOPE_ACK"
-    )
-
-    if not ack.startswith(
-        _R38TZ_REAL_LIVE_SCOPE_ACK_PREFIX
-    ):
-        return False
-
-    authorization_id = _r38ee_env_text(
-        "SCALPX_REAL_LIVE_AUTHORIZATION_ID"
-    )
-    expected_family = _r38ee_upper(
-        _r38ee_env_text(
-            "SCALPX_REAL_LIVE_FAMILY"
-        )
-    )
-    expected_side = _r38ee_upper(
-        _r38ee_env_text(
-            "SCALPX_REAL_LIVE_SIDE"
-        )
-    )
-    expected_action = _r38ee_upper(
-        _r38ee_env_text(
-            "SCALPX_REAL_LIVE_ACTION"
-        )
-    )
-    expected_token = _r38ee_text(
-        _r38ee_env_text(
-            "SCALPX_REAL_LIVE_INSTRUMENT_TOKEN"
-        )
-    )
-    expected_symbol = _r38ee_upper(
-        _r38ee_env_text(
-            "SCALPX_REAL_LIVE_OPTION_SYMBOL"
-        )
-    )
-    expected_entry_mode = _r38ee_upper(
-        _r38ee_env_text(
-            "SCALPX_REAL_LIVE_ENTRY_MODE"
-        )
-    )
-
-    if not authorization_id:
-        return False
-    if expected_family != "MIST":
-        return False
-    if expected_entry_mode != "DIRECT":
-        return False
-    if expected_side not in {"CALL", "PUT"}:
-        return False
-    if expected_action not in {
-        "ENTER_CALL",
-        "ENTER_PUT",
-    }:
-        return False
-    if (
-        expected_side == "CALL"
-        and expected_action != "ENTER_CALL"
-    ) or (
-        expected_side == "PUT"
-        and expected_action != "ENTER_PUT"
-    ):
-        return False
-    if not expected_token or not expected_symbol:
-        return False
-
-    return bool(
-        family == expected_family
-        and side == expected_side
-        and action == expected_action
-        and token == expected_token
-        and symbol == expected_symbol
-        and entry_mode == expected_entry_mode
-    )
-
-
-def _r38tz_live_one_event_bridge_allowed(
-    decision: Mapping[str, Any],
-) -> bool:
-    metadata = _r38ee_mapping(
-        decision.get("metadata")
-    )
-
+def _r38tz_live_one_event_bridge_allowed(decision: Mapping[str, Any]) -> bool:
+    metadata = _r38ee_mapping(decision.get("metadata"))
     family = _r38ee_text(
         decision.get("r38ee_extracted_family")
-        or decision.get(
-            "r38fe_decision_family_evidence"
-        )
-        or decision.get(
-            "activation_selected_family_id"
-        )
-        or decision.get(
-            "candidate_family_id_shadow"
-        )
+        or decision.get("r38fe_decision_family_evidence")
+        or decision.get("activation_selected_family_id")
+        or decision.get("candidate_family_id_shadow")
         or decision.get("strategy_family_id")
         or metadata.get("family_id")
         or metadata.get("strategy_family")
     )
     side = _r38ee_text(
         decision.get("r38ee_extracted_side")
-        or decision.get(
-            "r38fe_decision_side_evidence"
-        )
+        or decision.get("r38fe_decision_side_evidence")
         or decision.get("side")
         or metadata.get("side")
         or metadata.get("branch_id")
     )
     action = _r38ee_text(
         decision.get("r38ee_extracted_action")
-        or decision.get(
-            "r38fe_decision_action_evidence"
-        )
-        or decision.get(
-            "activation_selected_action"
-        )
-        or decision.get(
-            "candidate_action_shadow"
-        )
+        or decision.get("r38fe_decision_action_evidence")
+        or decision.get("activation_selected_action")
+        or decision.get("candidate_action_shadow")
         or decision.get("action")
     )
     token = _r38ee_text(
         decision.get("r38ee_extracted_token")
-        or decision.get(
-            "candidate_instrument_token_shadow"
-        )
+        or decision.get("candidate_instrument_token_shadow")
         or decision.get("instrument_token")
         or decision.get("instrument_key")
         or metadata.get("instrument_token")
@@ -1130,38 +957,22 @@ def _r38tz_live_one_event_bridge_allowed(
     )
     symbol = _r38ee_text(
         decision.get("r38ee_extracted_symbol")
-        or decision.get(
-            "candidate_symbol_shadow"
-        )
+        or decision.get("candidate_symbol_shadow")
         or decision.get("option_symbol")
         or decision.get("symbol")
         or metadata.get("option_symbol")
         or metadata.get("symbol")
     )
-    entry_mode = _r38ee_text(
-        decision.get("entry_mode")
-        or metadata.get("entry_mode")
-    )
-
     try:
-        qty = int(
-            _r38ee_text(
-                decision.get("qty")
-                or metadata.get("qty")
-                or 1
-            )
-            or 1
-        )
+        qty = int(_r38ee_text(decision.get("qty") or metadata.get("qty") or 1) or 1)
     except Exception:
         qty = 1
-
     return _r38tz_live_one_event_env_scope_allows(
         family=family,
         side=side,
         action=action,
         token=token,
         symbol=symbol,
-        entry_mode=entry_mode,
         qty=qty,
     )
 
@@ -1446,12 +1257,6 @@ def _r38qa_b1_exact_scope_raw_enter_promotion(decision: Mapping[str, Any]) -> di
         "quantity_lots": 1,
         "lots": 1,
         "order_type": "LIMIT",
-        # BEGIN R38VA_R38QA_ENTRY_MODE_CONTRACT_V1
-        # Projection-compatible entries must carry their mode in the
-        # canonical payload consumed by execution.
-        "entry_mode": "CONTROLLED_PAPER_PROJECTED",
-        "r38va_r38qa_entry_mode_contract": 1,
-        # END R38VA_R38QA_ENTRY_MODE_CONTRACT_V1
         "hold_only": 0,
         "activation_report_only": 0,
         "activation_action": env_action,
@@ -1501,10 +1306,6 @@ def _r38qa_b1_exact_scope_raw_enter_promotion(decision: Mapping[str, Any]) -> di
         "option_symbol": env_symbol,
         "strike": _r38rf_infer_strike_from_option_symbol(env_symbol),  # R38RJ_PROJECTED_ENTER_STRIKE_PAYLOAD_CONTRACT: metadata strike for execution contract
         "controlled_paper_scope_ack": env_ack,
-        # BEGIN R38VA_R38QA_ENTRY_MODE_METADATA_CONTRACT_V1
-        "entry_mode": "CONTROLLED_PAPER_PROJECTED",
-        "r38va_r38qa_entry_mode_contract": True,
-        # END R38VA_R38QA_ENTRY_MODE_METADATA_CONTRACT_V1
         "r38qa_b1_exact_scope_raw_enter_promotion_patch": True,
     })
     out["metadata"] = meta
@@ -1636,21 +1437,15 @@ def _r38ee_project_activation_selected_for_controlled_paper(decision: Mapping[st
         or _r38ee_upper(base.get("activation_selected_action")) in {"ENTER_CALL", "ENTER_PUT"}
     )
 
-    # BEGIN R38TP_CANONICAL_ENTRY_PRICE_CONTRACT_V1
-    # The projected decision's already-resolved price is authoritative.
-    # Do not let a stale candidate limit_price override candidate.price.
     r38tzd_price = _r38ee_text(
-        price
-        or candidate.get("option_price")
+        candidate.get("limit_price")
         or candidate.get("price")
-        or candidate.get("limit_price")
-        or selected.get("price")
         or selected.get("limit_price")
-        or base.get("price")
+        or selected.get("price")
         or base.get("limit_price")
+        or base.get("price")
         or base.get("candidate_price_shadow")
     )
-    # END R38TP_CANONICAL_ENTRY_PRICE_CONTRACT_V1
     r38tzd_entry_meta = _r38tzd_entry_contract_metadata(
         base=base,
         selected=selected,
@@ -1671,9 +1466,6 @@ def _r38ee_project_activation_selected_for_controlled_paper(decision: Mapping[st
         action=action,
         token=token,
         symbol=symbol,
-        entry_mode=_r38ee_text(
-            r38tzd_entry_meta.get("entry_mode")
-        ),
         qty=_r38tz_qty,
     )
 
@@ -5008,7 +4800,7 @@ else:
 #
 # Integrates:
 #   R38TMBQ4 exact open-position quote resolver
-#   R38TK3 target/stop/structural/time exit manager
+#   R38TK2 family target/stop/time exit manager
 #
 # This block does not directly write order/risk/execution streams and does not
 # call a broker. It may publish one canonical EXIT decision only through the
@@ -5033,7 +4825,7 @@ from app.mme_scalpx.services.strategy_family.position_exit_manager import (
 
 
 _R38TMB1_POLICY_ACK = (
-    "R38TK3_FAMILY_CONTRACT_EXIT_V3_TARGET5_STOP4_STRUCTURAL_TIME300"
+    "R38TK2_FAMILY_CONTRACT_EXIT_V2_CLOSE_TARGET5_STOP4_TIME90"
 )
 
 _R38TMB1_SCOPE_ACK = (
@@ -5698,7 +5490,7 @@ def _r38tmb1_exit_decision_allowed(
         or metadata.get(
             "exit_policy_version"
         )
-    ) != "R38TK3_FAMILY_CONTRACT_EXIT_V3_TARGET_STOP_STRUCTURAL_TIME":
+    ) != "R38TK2_FAMILY_CONTRACT_EXIT_V2_CLOSE":
         return False
 
     if not _r38tmb1_truthy(
@@ -5930,7 +5722,7 @@ def _r38tmb1_prepare_exit_payload(
                     "timestamp_domain"
                 ),
             "exit_policy_version":
-                "R38TK3_FAMILY_CONTRACT_EXIT_V3_TARGET_STOP_STRUCTURAL_TIME",
+                "R38TK2_FAMILY_CONTRACT_EXIT_V2_CLOSE",
             "r38tmb1_strategy_owned_exit": 1,
             "paper_exit_manager": True,
             "no_real_live": True,
@@ -5999,7 +5791,7 @@ def _r38tmb1_prepare_exit_payload(
             "r38tmb1_exit_gate_version":
                 "R38TMB1_ACTIVE_STRATEGY_EXIT_GATE_V1",
             "exit_policy_version":
-                "R38TK3_FAMILY_CONTRACT_EXIT_V3_TARGET_STOP_STRUCTURAL_TIME",
+                "R38TK2_FAMILY_CONTRACT_EXIT_V2_CLOSE",
             "metadata": metadata,
         }
     )

@@ -782,6 +782,7 @@ HASH_STATE_OPTION_CONFIRM: Final[str] = "state:option:confirm"
 HASH_STATE_RISK: Final[str] = "state:risk"
 HASH_STATE_POSITION_MME: Final[str] = "state:position:mme"
 HASH_STATE_EXECUTION: Final[str] = "state:execution"
+HASH_STATE_EXECUTION_REAL_LIVE_ATTEMPTS: Final[str] = "state:execution:real_live_attempts"
 HASH_STATE_RUNTIME: Final[str] = "state:runtime"
 HASH_STATE_MODE: Final[str] = "state:mode"
 HASH_STATE_LOGIN: Final[str] = "state:login"
@@ -799,6 +800,7 @@ LIVE_STATE_HASH_NAMES: Final[tuple[str, ...]] = (
     HASH_STATE_RISK,
     HASH_STATE_POSITION_MME,
     HASH_STATE_EXECUTION,
+    HASH_STATE_EXECUTION_REAL_LIVE_ATTEMPTS,
     HASH_STATE_RUNTIME,
     HASH_STATE_MODE,
     HASH_STATE_LOGIN,
@@ -1544,6 +1546,7 @@ STATE_HASH_OWNERS: Final[Mapping[str, str]] = MappingProxyType(
         HASH_STATE_RISK: SERVICE_RISK,
         HASH_STATE_POSITION_MME: SERVICE_EXECUTION,
         HASH_STATE_EXECUTION: SERVICE_EXECUTION,
+        HASH_STATE_EXECUTION_REAL_LIVE_ATTEMPTS: SERVICE_EXECUTION,
         HASH_STATE_RUNTIME: SERVICE_MAIN,
         HASH_STATE_MODE: SERVICE_MAIN,
         HASH_STATE_LOGIN: SERVICE_LOGIN,

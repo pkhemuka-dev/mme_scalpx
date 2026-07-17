@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+import json,sys,time
+from pathlib import Path
+from collections import defaultdict,Counter
+
+day=sys.argv[1] if len(sys.argv)>1 else time.strftime("%Y%m%d")
+
+def read_ndjson(p):
+    out=[]
+    if not p.exists(): return out
+    for line in p.read_text(encoding="utf-8",errors="replace").splitlines():
+        try:
+            if line.strip(): out.append(json.loads(line))
+        except Exception:
+            pass
+    return out
+
+def num(x):
+    try: return float(x)
+    except Exception: return 0.0
+
+raw_dir=Path("run/raw_capture_v31")/day
+raw_files=sorted(raw_dir.glob("*.ndjson")) if raw_dir.exists() else []
+raw_rows=0
+raw_by_file={}
+for p in raw_files:
+    try: rows=sum(1 for _ in p.open("r",encoding="utf-8",errors="replace"))
+    except Exception: rows=-1
+    raw_by_file[p.name]={"rows":rows,"bytes":p.stat().st_size}
+    raw_rows+=max(rows,0)
+
+exits=[]
+for p in sorted(Path("run").glob(f"paper_shadow_lifecycle_v*/exits_{day}.ndjson")):
+    for r in read_ndjson(p):
+        if isinstance(r,dict):
+            r["_source_file"]=str(p)
+            exits.append(r)
+
+wins=losses=0
+pnl=0.0
+by_action=defaultdict(lambda:{"count":0,"wins":0,"losses":0,"pnl":0.0})
+by_family=defaultdict(lambda:{"count":0,"wins":0,"losses":0,"pnl":0.0})
+by_symbol=defaultdict(lambda:{"count":0,"wins":0,"losses":0,"pnl":0.0})
+by_reason=Counter()
+
+for r in exits:
+    rpnl=num(r.get("pnl_rupees_net_proxy"))
+    win=rpnl>0
+    wins+=int(win); losses+=int(not win); pnl+=rpnl
+    for group,key in [(by_action,"action"),(by_family,"family_id"),(by_symbol,"symbol")]:
+        k=str(r.get(key) or "UNKNOWN")
+        group[k]["count"]+=1
+        group[k]["wins"]+=int(win)
+        group[k]["losses"]+=int(not win)
+        group[k]["pnl"]+=rpnl
+    by_reason[str(r.get("exit_reason") or "UNKNOWN")]+=1
+
+for d in list(by_action.values())+list(by_family.values())+list(by_symbol.values()):
+    d["pnl"]=round(d["pnl"],2)
+
+trade_count=len(exits)
+pnl=round(pnl,2)
+win_rate=round(wins/trade_count,4) if trade_count else 0.0
+
+blockers=[]
+if len(raw_files)<2: blockers.append("RAW_CAPTURE_FILES_LT_2")
+if raw_rows<100: blockers.append("RAW_CAPTURE_ROWS_LT_100")
+if trade_count<30: blockers.append("TRADE_SAMPLE_LT_30")
+if pnl<=0: blockers.append("PNL_NOT_POSITIVE")
+if win_rate<0.50: blockers.append("WIN_RATE_LT_50")
+if losses>wins: blockers.append("LOSSES_GT_WINS")
+
+print(json.dumps({
+ "classification":"V32_ECONOMIC_AUDIT_GATE_NO_START_NO_ORDER",
+ "day":day,
+ "raw_capture_dir":str(raw_dir),
+ "raw_capture_files":len(raw_files),
+ "raw_capture_rows":raw_rows,
+ "raw_capture_by_file":raw_by_file,
+ "trade_count":trade_count,
+ "wins":wins,
+ "losses":losses,
+ "win_rate":win_rate,
+ "pnl_rupees":pnl,
+ "by_action":dict(by_action),
+ "by_family":dict(by_family),
+ "by_symbol":dict(by_symbol),
+ "by_exit_reason":dict(by_reason),
+ "promotion_candidate":len(blockers)==0,
+ "promotion_blockers":blockers,
+ "promotion_rule":"raw_files>=2, raw_rows>=100, trades>=30, pnl>0, win_rate>=50%, losses<=wins",
+ "known_watchlist":["PUT/MISB","4150CE","15:00-15:14","4200CE small positive sample"],
+ "broker_order":0,
+ "paper_engine_order":0,
+ "risk_started":0,
+ "execution_started":0,
+ "redis_destructive":0
+},indent=2,sort_keys=True))

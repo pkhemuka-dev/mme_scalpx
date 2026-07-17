@@ -855,7 +855,6 @@ class PendingOrder:
     created_ts_ns: int
     strategy_family_id: str = ""
     branch_id: str = ""
-    exit_reason_code: str = ""
     broker_order_id: str = ""
     broker_status: str = "CREATED"
     filled_lots: int = 0
@@ -884,7 +883,6 @@ class PendingOrder:
             "strategy_family_id":
                 self.strategy_family_id,
             "branch_id": self.branch_id,
-            "exit_reason_code": self.exit_reason_code,
             "broker_order_id": self.broker_order_id,
             "broker_status": self.broker_status,
             "filled_lots": self.filled_lots,
@@ -924,11 +922,6 @@ class PendingOrder:
                 raw.get("branch_id")
                 or raw.get("side")
             ).upper(),
-            exit_reason_code=_safe_str(
-                raw.get("exit_reason_code")
-                or raw.get("reason_code")
-                or raw.get("reason")
-            ),
             broker_order_id=_safe_str(
                 raw.get("broker_order_id")
             ),
@@ -2195,8 +2188,7 @@ class ExecutionService:
             qty_lots=max(_safe_int(self.position_state.get("qty_lots"), 0), 1),
             requested_limit_price=str(exit_limit or Decimal("0")),
             entry_mode=_safe_str(
-                decision.entry_mode
-                or self.position_state.get("entry_mode"),
+                self.position_state.get("entry_mode"),
                 N.ENTRY_MODE_UNKNOWN,
             ),
             strike=_safe_str(
@@ -2219,11 +2211,6 @@ class ExecutionService:
                 )
                 or decision.side
             ).upper(),
-            exit_reason_code=_safe_str(
-                decision.reason_code
-                or decision.explain
-                or "exit"
-            ),
         )
 
         exit_qty_units = _safe_int(
@@ -2271,7 +2258,6 @@ class ExecutionService:
                     "strategy_family_id":
                         pending.strategy_family_id,
                     "branch_id": pending.branch_id,
-                    "exit_reason_code": pending.exit_reason_code,
                     "r38th_controlled_paper_exit": "1",
                     "r38th_no_real_broker": "1",
                     "r38th_no_real_live": "1",
@@ -2547,13 +2533,8 @@ class ExecutionService:
         pnl = (exit_price - entry_price) * Decimal(qty_units)
 
         prior_entry_mode = _safe_str(
-            pending.entry_mode
-            or self.position_state.get("entry_mode"),
-            N.ENTRY_MODE_UNKNOWN,
-        )
-        exit_reason_code = _safe_str(
-            pending.exit_reason_code,
-            "exit_fill",
+            self.position_state.get("entry_mode"),
+            pending.entry_mode or N.ENTRY_MODE_UNKNOWN,
         )
         prior_position_side = _safe_str(
             self.position_state.get("position_side"),
@@ -2582,7 +2563,7 @@ class ExecutionService:
             quantity=qty_units,
             price=exit_price,
             pnl=pnl,
-            reason=exit_reason_code,
+            reason="exit_fill",
             broker_order_id=_safe_str(broker_order.get("broker_order_id")),
             entry_mode=prior_entry_mode,
             position_side=prior_position_side,
@@ -2591,7 +2572,7 @@ class ExecutionService:
         self._publish_ack_simple(
             ack_type=N.ACK_EXIT_FILLED,
             decision_id=pending.decision_id,
-            reason=exit_reason_code,
+            reason="exit_filled",
             broker_order=broker_order,
             entry_mode=prior_entry_mode,
         )

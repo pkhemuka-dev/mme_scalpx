@@ -181,10 +181,20 @@ def _r38tzk_env_int(name: str, default: int = 0) -> int:
     except Exception:
         return default
 
-# R38VWY_HARD_LIVE_SCOPE_ATTEMPT_LATCH_V1
-def _r38tzk_execution_real_live_one_event_entry_allowed(
-    decision=None,
-):
+def _r38tzk_execution_real_live_one_event_entry_allowed():
+    """
+    Real-live one-event execution hard arming.
+
+    Scope:
+    - Allows execution's own hard arming gate only.
+    - Does not bypass risk.
+    - Does not bypass broker safety.
+    - Does not relax strategy thresholds.
+    - Does not create candidates.
+    - Does not force ENTER.
+    - Requires exact one-live-event / one-order / one-lot env scope.
+    """
+
     import os as _r38tzk_os
 
     forbidden_truthy = (
@@ -196,36 +206,12 @@ def _r38tzk_execution_real_live_one_event_entry_allowed(
         "SCALPX_CONTROLLED_PAPER_ARMED",
         "SCALPX_ALLOW_CONTROLLED_PAPER_RUNTIME",
     )
-
-    bad = [
-        key
-        for key in forbidden_truthy
-        if _r38tzk_truthy(
-            _r38tzk_os.environ.get(key)
-        )
-    ]
-
+    bad = [k for k in forbidden_truthy if _r38tzk_truthy(_r38tzk_os.environ.get(k))]
     if bad:
-        return (
-            False,
-            "r38tzk_real_live_forbidden_"
-            "paper_or_observe_env:"
-            + ",".join(bad),
-        )
+        return False, "r38tzk_real_live_forbidden_paper_or_observe_env:" + ",".join(bad)
 
-    if (
-        str(
-            _r38tzk_os.environ.get(
-                "SCALPX_RUNTIME_MODE",
-                "",
-            )
-        ).strip().lower()
-        != "live"
-    ):
-        return (
-            False,
-            "r38tzk_real_live_runtime_mode_not_live",
-        )
+    if str(_r38tzk_os.environ.get("SCALPX_RUNTIME_MODE", "")).strip().lower() != "live":
+        return False, "r38tzk_real_live_runtime_mode_not_live"
 
     required_truthy = (
         "SCALPX_TRADING_ENABLED",
@@ -240,321 +226,42 @@ def _r38tzk_execution_real_live_one_event_entry_allowed(
         "SCALPX_DISABLE_RETRY",
         "SCALPX_DISABLE_AVERAGING",
     )
-
-    missing = [
-        key
-        for key in required_truthy
-        if not _r38tzk_truthy(
-            _r38tzk_os.environ.get(key)
-        )
-    ]
-
+    missing = [k for k in required_truthy if not _r38tzk_truthy(_r38tzk_os.environ.get(k))]
     if missing:
-        return (
-            False,
-            "r38tzk_real_live_missing_required_env:"
-            + ",".join(missing),
-        )
+        return False, "r38tzk_real_live_missing_required_env:" + ",".join(missing)
 
-    for key in (
+    exact_one_envs = (
         "SCALPX_MAX_LIVE_EVENTS",
         "SCALPX_MAX_ORDERS",
         "SCALPX_ORDER_LOTS",
         "SCALPX_ORDER_MAX_LOTS",
         "MME_ORDER_LOTS",
         "MME_MAX_LOTS",
-    ):
-        if _r38tzk_env_int(key, 0) != 1:
-            return (
-                False,
-                "r38tzk_real_live_not_exactly_one:"
-                + key,
-            )
-
-    if _r38tzk_truthy(
-        _r38tzk_os.environ.get(
-            "SCALPX_AVERAGING_ENABLED"
-        )
-    ):
-        return (
-            False,
-            "r38tzk_real_live_averaging_enabled",
-        )
-
-    if not (
-        _r38tzk_truthy(
-            _r38tzk_os.environ.get(
-                "SCALPX_POSITION_FLAT_VERIFIED"
-            )
-        )
-        or _r38tzk_truthy(
-            _r38tzk_os.environ.get(
-                "SCALPX_FLAT_POSITION_VERIFIED"
-            )
-        )
-    ):
-        return (
-            False,
-            "r38tzk_real_live_flat_position_"
-            "not_verified",
-        )
-
-    ack = str(
-        _r38tzk_os.environ.get(
-            "SCALPX_REAL_LIVE_SCOPE_ACK",
-            "",
-        )
-    ).strip()
-
-    if not ack.startswith(
-        _R38TZK_REAL_LIVE_SCOPE_ACK_PREFIX
-    ):
-        return (
-            False,
-            "r38tzk_real_live_scope_ack_"
-            "missing_or_bad",
-        )
-
-    authorization_id = str(
-        _r38tzk_os.environ.get(
-            "SCALPX_REAL_LIVE_AUTHORIZATION_ID",
-            "",
-        )
-    ).strip()
-
-    if not authorization_id:
-        return (
-            False,
-            "r38tzk_real_live_authorization_"
-            "id_missing",
-        )
-
-    if decision is None:
-        return (
-            False,
-            "r38tzk_real_live_decision_missing",
-        )
-
-    metadata = (
-        getattr(decision, "metadata", {})
-        or {}
     )
+    bad_one = [k for k in exact_one_envs if _r38tzk_env_int(k, 0) != 1]
+    if bad_one:
+        return False, "r38tzk_real_live_not_exactly_one_event_order_lot:" + ",".join(bad_one)
 
-    family = str(
-        getattr(
-            decision,
-            "strategy_family_id",
-            "",
-        )
-        or metadata.get("strategy_family_id")
-        or metadata.get("strategy_family")
-        or ""
-    ).strip().upper()
+    if _r38tzk_truthy(_r38tzk_os.environ.get("SCALPX_AVERAGING_ENABLED")):
+        return False, "r38tzk_real_live_averaging_enabled"
 
-    side = str(
-        getattr(decision, "branch_id", "")
-        or getattr(decision, "side", "")
-        or metadata.get("branch_id")
-        or metadata.get("side")
-        or ""
-    ).strip().upper()
-
-    action = str(
-        getattr(decision, "action", "")
-        or ""
-    ).strip().upper()
-
-    token = str(
-        metadata.get("option_token")
-        or getattr(
-            decision,
-            "instrument_key",
-            "",
-        )
-        or ""
-    ).strip()
-
-    symbol = str(
-        metadata.get("option_symbol")
-        or metadata.get("symbol")
-        or ""
-    ).strip().upper()
-
-    entry_mode = str(
-        getattr(decision, "entry_mode", "")
-        or metadata.get("entry_mode")
-        or ""
-    ).strip().upper()
-
-    try:
-        qty_lots = int(
-            getattr(
-                decision,
-                "quantity_lots",
-                0,
-            )
-            or 0
-        )
-    except Exception:
-        qty_lots = 0
-
-    expected_family = str(
-        _r38tzk_os.environ.get(
-            "SCALPX_REAL_LIVE_FAMILY",
-            "",
-        )
-    ).strip().upper()
-
-    expected_side = str(
-        _r38tzk_os.environ.get(
-            "SCALPX_REAL_LIVE_SIDE",
-            "",
-        )
-    ).strip().upper()
-
-    expected_action = str(
-        _r38tzk_os.environ.get(
-            "SCALPX_REAL_LIVE_ACTION",
-            "",
-        )
-    ).strip().upper()
-
-    expected_token = str(
-        _r38tzk_os.environ.get(
-            "SCALPX_REAL_LIVE_INSTRUMENT_TOKEN",
-            "",
-        )
-    ).strip()
-
-    expected_symbol = str(
-        _r38tzk_os.environ.get(
-            "SCALPX_REAL_LIVE_OPTION_SYMBOL",
-            "",
-        )
-    ).strip().upper()
-
-    expected_entry_mode = str(
-        _r38tzk_os.environ.get(
-            "SCALPX_REAL_LIVE_ENTRY_MODE",
-            "",
-        )
-    ).strip().upper()
-
-    if expected_family != "MIST":
-        return (
-            False,
-            "r38tzk_real_live_family_not_mist",
-        )
-
-    if expected_entry_mode != "DIRECT":
-        return (
-            False,
-            "r38tzk_real_live_entry_mode_"
-            "not_direct",
-        )
-
-    if expected_side not in {"CALL", "PUT"}:
-        return (
-            False,
-            "r38tzk_real_live_expected_side_"
-            "invalid",
-        )
-
-    if expected_action not in {
-        "ENTER_CALL",
-        "ENTER_PUT",
-    }:
-        return (
-            False,
-            "r38tzk_real_live_expected_action_"
-            "invalid",
-        )
-
-    if (
-        expected_side == "CALL"
-        and expected_action != "ENTER_CALL"
-    ) or (
-        expected_side == "PUT"
-        and expected_action != "ENTER_PUT"
-    ):
-        return (
-            False,
-            "r38tzk_real_live_expected_"
-            "side_action_mismatch",
-        )
-
-    if not expected_token or not expected_symbol:
-        return (
-            False,
-            "r38tzk_real_live_exact_instrument_"
-            "scope_missing",
-        )
-
-    comparisons = (
-        (
-            family,
-            expected_family,
-            "family",
-        ),
-        (
-            side,
-            expected_side,
-            "side",
-        ),
-        (
-            action,
-            expected_action,
-            "action",
-        ),
-        (
-            token,
-            expected_token,
-            "token",
-        ),
-        (
-            symbol,
-            expected_symbol,
-            "symbol",
-        ),
-        (
-            entry_mode,
-            expected_entry_mode,
-            "entry_mode",
-        ),
+    flat_ok = (
+        _r38tzk_truthy(_r38tzk_os.environ.get("SCALPX_POSITION_FLAT_VERIFIED"))
+        or _r38tzk_truthy(_r38tzk_os.environ.get("SCALPX_FLAT_POSITION_VERIFIED"))
     )
+    if not flat_ok:
+        return False, "r38tzk_real_live_flat_position_not_verified"
 
-    for actual, expected, label in comparisons:
-        if actual != expected:
-            return (
-                False,
-                "r38tzk_real_live_"
-                + label
-                + "_scope_mismatch",
-            )
+    ack = str(_r38tzk_os.environ.get("SCALPX_REAL_LIVE_SCOPE_ACK", "")).strip()
+    if not ack.startswith(_R38TZK_REAL_LIVE_SCOPE_ACK_PREFIX):
+        return False, "r38tzk_real_live_scope_ack_missing_or_bad"
 
-    if qty_lots != 1:
-        return (
-            False,
-            "r38tzk_real_live_decision_qty_"
-            "not_one",
-        )
-
-    return (
-        True,
-        "execution_entry_armed_"
-        "r38tzk_real_live_one_event",
-    )
+    return True, "execution_entry_armed_r38tzk_real_live_one_event"
 # END R38TZK_EXECUTION_REAL_LIVE_ONE_EVENT_ARMING
 
 
-def _batch26b_execution_entry_hard_arming_verdict(
-    decision=None,
-):
-    live_allowed, live_reason = (
-        _r38tzk_execution_real_live_one_event_entry_allowed(
-            decision
-        )
-    )
+def _batch26b_execution_entry_hard_arming_verdict():
+    live_allowed, live_reason = _r38tzk_execution_real_live_one_event_entry_allowed()
     if live_allowed:
         return True, live_reason
 
@@ -855,7 +562,6 @@ class PendingOrder:
     created_ts_ns: int
     strategy_family_id: str = ""
     branch_id: str = ""
-    exit_reason_code: str = ""
     broker_order_id: str = ""
     broker_status: str = "CREATED"
     filled_lots: int = 0
@@ -884,7 +590,6 @@ class PendingOrder:
             "strategy_family_id":
                 self.strategy_family_id,
             "branch_id": self.branch_id,
-            "exit_reason_code": self.exit_reason_code,
             "broker_order_id": self.broker_order_id,
             "broker_status": self.broker_status,
             "filled_lots": self.filled_lots,
@@ -924,11 +629,6 @@ class PendingOrder:
                 raw.get("branch_id")
                 or raw.get("side")
             ).upper(),
-            exit_reason_code=_safe_str(
-                raw.get("exit_reason_code")
-                or raw.get("reason_code")
-                or raw.get("reason")
-            ),
             broker_order_id=_safe_str(
                 raw.get("broker_order_id")
             ),
@@ -1032,16 +732,6 @@ class ExecutionService:
             "fallback_execution_provider_id": getattr(N, "PROVIDER_STATUS_UNAVAILABLE", "UNAVAILABLE"),
             "provider_route_reason": "primary_only",
             "provider_failover_used": 0,
-            "real_live_entry_attempt_consumed": 0,
-            "real_live_entry_attempt_authorization_id": "",
-            "real_live_entry_attempt_decision_id": "",
-            "real_live_entry_attempt_ts_ns": 0,
-            "real_live_entry_attempt_family": "",
-            "real_live_entry_attempt_side": "",
-            "real_live_entry_attempt_action": "",
-            "real_live_entry_attempt_token": "",
-            "real_live_entry_attempt_symbol": "",
-            "real_live_entry_attempt_entry_mode": "",
             "updated_at_ns": 0,
             "ts_ns": 0,
         }
@@ -1101,62 +791,6 @@ class ExecutionService:
         )
         state["provider_route_reason"] = _safe_str(raw.get("provider_route_reason"), "primary_only")
         state["provider_failover_used"] = 1 if _safe_bool(raw.get("provider_failover_used"), False) else 0
-        state["real_live_entry_attempt_consumed"] = (
-            1
-            if _safe_bool(
-                raw.get(
-                    "real_live_entry_attempt_consumed"
-                ),
-                False,
-            )
-            else 0
-        )
-        state["real_live_entry_attempt_authorization_id"] = _safe_str(
-            raw.get(
-                "real_live_entry_attempt_authorization_id"
-            )
-        )
-        state["real_live_entry_attempt_decision_id"] = _safe_str(
-            raw.get(
-                "real_live_entry_attempt_decision_id"
-            )
-        )
-        state["real_live_entry_attempt_ts_ns"] = _safe_int(
-            raw.get(
-                "real_live_entry_attempt_ts_ns"
-            ),
-            0,
-        )
-        state["real_live_entry_attempt_family"] = _safe_str(
-            raw.get(
-                "real_live_entry_attempt_family"
-            )
-        ).upper()
-        state["real_live_entry_attempt_side"] = _safe_str(
-            raw.get(
-                "real_live_entry_attempt_side"
-            )
-        ).upper()
-        state["real_live_entry_attempt_action"] = _safe_str(
-            raw.get(
-                "real_live_entry_attempt_action"
-            )
-        ).upper()
-        state["real_live_entry_attempt_token"] = _safe_str(
-            raw.get(
-                "real_live_entry_attempt_token"
-            )
-        )
-        state["real_live_entry_attempt_symbol"] = _safe_str(
-            raw.get(
-                "real_live_entry_attempt_symbol"
-            )
-        ).upper()
-        state["real_live_entry_attempt_entry_mode"] = _safe_str(
-            raw.get(
-                "real_live_entry_attempt_entry_mode"
-            )
-        ).upper()
         state["updated_at_ns"] = _safe_int(
             raw.get("updated_at_ns") or raw.get("ts_ns"),
             0,
@@ -1765,14 +1399,10 @@ class ExecutionService:
             position_effect=_safe_str(payload.get("position_effect")),
             quantity_lots=_safe_int(payload.get("quantity_lots"), 0),
             instrument_key=_safe_str(payload.get("instrument_key")),
-            # BEGIN R38TP_ENTRY_MODE_METADATA_FALLBACK_V1
             entry_mode=_safe_str(
-                payload.get("entry_mode")
-                or row.get("entry_mode")
-                or metadata.get("entry_mode"),
+                payload.get("entry_mode") or row.get("entry_mode"),
                 N.ENTRY_MODE_UNKNOWN,
             ),
-            # END R38TP_ENTRY_MODE_METADATA_FALLBACK_V1
             system_state=_safe_str(payload.get("system_state")),
             explain=_safe_str(payload.get("explain")),
             blocker_code=_safe_str(payload.get("blocker_code")),
@@ -1909,178 +1539,10 @@ class ExecutionService:
 
         try:
             # BATCH26B_EXECUTION_ENTRY_HARD_ARMING_GUARD
-            entry_armed, entry_arm_reason = (
-                _batch26b_execution_entry_hard_arming_verdict(
-                    decision
-                )
-            )
+            entry_armed, entry_arm_reason = _batch26b_execution_entry_hard_arming_verdict()
             if not entry_armed:
-                self._fail_decision(
-                    decision,
-                    entry_arm_reason,
-                )
+                self._fail_decision(decision, entry_arm_reason)
                 return
-
-            if (
-                entry_arm_reason
-                == (
-                    "execution_entry_armed_"
-                    "r38tzk_real_live_one_event"
-                )
-            ):
-                import os as _r38vwy_os
-
-                authorization_id = _safe_str(
-                    _r38vwy_os.environ.get(
-                        "SCALPX_REAL_LIVE_AUTHORIZATION_ID"
-                    )
-                )
-
-                if not authorization_id:
-                    self._fail_decision(
-                        decision,
-                        "r38vwy_real_live_"
-                        "authorization_id_missing",
-                    )
-                    return
-
-                attempts = RX.hgetall(
-                    N.HASH_STATE_EXECUTION_REAL_LIVE_ATTEMPTS,
-                    client=self.redis,
-                )
-
-                if authorization_id in attempts:
-                    self._fail_decision(
-                        decision,
-                        "r38vwy_real_live_entry_"
-                        "attempt_already_consumed",
-                    )
-                    return
-
-                attempt_record = _json_dumps(
-                    {
-                        "authorization_id":
-                            authorization_id,
-                        "decision_id":
-                            decision.decision_id,
-                        "ts_event_ns":
-                            current_ns,
-                        "family":
-                            pending.strategy_family_id,
-                        "side":
-                            pending.branch_id,
-                        "action":
-                            decision.action,
-                        "option_token":
-                            option_token,
-                        "option_symbol":
-                            option_symbol,
-                        "entry_mode":
-                            entry_mode,
-                        "qty_lots":
-                            pending.qty_lots,
-                        "broker_call_started":
-                            0,
-                    }
-                )
-
-                latch_fields = {
-                    "real_live_entry_attempt_consumed":
-                        1,
-                    "real_live_entry_attempt_authorization_id":
-                        authorization_id,
-                    "real_live_entry_attempt_decision_id":
-                        decision.decision_id,
-                    "real_live_entry_attempt_ts_ns":
-                        current_ns,
-                    "real_live_entry_attempt_family":
-                        pending.strategy_family_id,
-                    "real_live_entry_attempt_side":
-                        pending.branch_id,
-                    "real_live_entry_attempt_action":
-                        decision.action,
-                    "real_live_entry_attempt_token":
-                        option_token,
-                    "real_live_entry_attempt_symbol":
-                        option_symbol,
-                    "real_live_entry_attempt_entry_mode":
-                        entry_mode,
-                    "updated_at_ns":
-                        current_ns,
-                    "ts_ns":
-                        current_ns,
-                }
-
-                self.execution_state.update(
-                    latch_fields
-                )
-
-                try:
-                    RX.write_hash_fields(
-                        N.HASH_STATE_EXECUTION_REAL_LIVE_ATTEMPTS,
-                        {
-                            authorization_id:
-                                attempt_record
-                        },
-                        client=self.redis,
-                    )
-                    RX.write_hash_fields(
-                        N.HASH_STATE_EXECUTION,
-                        latch_fields,
-                        client=self.redis,
-                    )
-
-                    persisted_attempts = RX.hgetall(
-                        N.HASH_STATE_EXECUTION_REAL_LIVE_ATTEMPTS,
-                        client=self.redis,
-                    )
-                    persisted_execution = RX.hgetall(
-                        N.HASH_STATE_EXECUTION,
-                        client=self.redis,
-                    )
-                except Exception as exc:
-                    self._fail_decision(
-                        decision,
-                        (
-                            "r38vwy_real_live_entry_"
-                            "attempt_latch_write_failed:"
-                            + type(exc).__name__
-                            + ":"
-                            + str(exc)
-                        ),
-                    )
-                    return
-
-                if (
-                    authorization_id
-                    not in persisted_attempts
-                    or not _safe_bool(
-                        persisted_execution.get(
-                            "real_live_entry_attempt_consumed"
-                        ),
-                        False,
-                    )
-                    or _safe_str(
-                        persisted_execution.get(
-                            "real_live_entry_attempt_"
-                            "authorization_id"
-                        )
-                    )
-                    != authorization_id
-                    or _safe_str(
-                        persisted_execution.get(
-                            "real_live_entry_attempt_"
-                            "decision_id"
-                        )
-                    )
-                    != decision.decision_id
-                ):
-                    self._fail_decision(
-                        decision,
-                        "r38vwy_real_live_entry_"
-                        "attempt_latch_verify_failed",
-                    )
-                    return
 
             # R38KJ_CANONICAL_BROKER_API_ENTRY_CALL
             # Execution keeps internal client_order_id/option_token in extra_params,
@@ -2195,8 +1657,7 @@ class ExecutionService:
             qty_lots=max(_safe_int(self.position_state.get("qty_lots"), 0), 1),
             requested_limit_price=str(exit_limit or Decimal("0")),
             entry_mode=_safe_str(
-                decision.entry_mode
-                or self.position_state.get("entry_mode"),
+                self.position_state.get("entry_mode"),
                 N.ENTRY_MODE_UNKNOWN,
             ),
             strike=_safe_str(
@@ -2219,11 +1680,6 @@ class ExecutionService:
                 )
                 or decision.side
             ).upper(),
-            exit_reason_code=_safe_str(
-                decision.reason_code
-                or decision.explain
-                or "exit"
-            ),
         )
 
         exit_qty_units = _safe_int(
@@ -2271,7 +1727,6 @@ class ExecutionService:
                     "strategy_family_id":
                         pending.strategy_family_id,
                     "branch_id": pending.branch_id,
-                    "exit_reason_code": pending.exit_reason_code,
                     "r38th_controlled_paper_exit": "1",
                     "r38th_no_real_broker": "1",
                     "r38th_no_real_live": "1",
@@ -2547,13 +2002,8 @@ class ExecutionService:
         pnl = (exit_price - entry_price) * Decimal(qty_units)
 
         prior_entry_mode = _safe_str(
-            pending.entry_mode
-            or self.position_state.get("entry_mode"),
-            N.ENTRY_MODE_UNKNOWN,
-        )
-        exit_reason_code = _safe_str(
-            pending.exit_reason_code,
-            "exit_fill",
+            self.position_state.get("entry_mode"),
+            pending.entry_mode or N.ENTRY_MODE_UNKNOWN,
         )
         prior_position_side = _safe_str(
             self.position_state.get("position_side"),
@@ -2582,7 +2032,7 @@ class ExecutionService:
             quantity=qty_units,
             price=exit_price,
             pnl=pnl,
-            reason=exit_reason_code,
+            reason="exit_fill",
             broker_order_id=_safe_str(broker_order.get("broker_order_id")),
             entry_mode=prior_entry_mode,
             position_side=prior_position_side,
@@ -2591,7 +2041,7 @@ class ExecutionService:
         self._publish_ack_simple(
             ack_type=N.ACK_EXIT_FILLED,
             decision_id=pending.decision_id,
-            reason=exit_reason_code,
+            reason="exit_filled",
             broker_order=broker_order,
             entry_mode=prior_entry_mode,
         )
@@ -4362,12 +3812,6 @@ def _r38sg_maybe_emit_order_intent(self, stream_id, fields, decision):
     strike = _r38sg_text(_r38sg_get(payload, "strike", "r38nl_projected_strike") or _r38sg_get(meta, "strike"))
     qty = _r38sg_text(_r38sg_get(payload, "qty", "quantity_lots", "lots") or _r38sg_get(meta, "qty", "quantity_lots", "lots"))
     limit_price = _r38sg_text(_r38sg_get(payload, "limit_price", "order_price", "price") or _r38sg_get(meta, "limit_price", "order_price", "price"))
-    # BEGIN R38TP_R38SG_ENTRY_MODE_PROPAGATION_V1
-    entry_mode = _r38sg_text(
-        _r38sg_get(payload, "entry_mode")
-        or _r38sg_get(meta, "entry_mode")
-    )
-    # END R38TP_R38SG_ENTRY_MODE_PROPAGATION_V1
     family = _r38sg_text(_r38sg_get(payload, "strategy_family_id", "family_id", "doctrine_id") or _r38sg_get(meta, "strategy_family_id", "family_id"))
     branch = _r38sg_text(_r38sg_get(payload, "branch_id", "side") or _r38sg_get(meta, "branch_id", "side") or option_side)
 
@@ -4394,7 +3838,6 @@ def _r38sg_maybe_emit_order_intent(self, stream_id, fields, decision):
         "quantity_lots": qty,
         "lots": qty,
         "order_type": "LIMIT",
-        "entry_mode": entry_mode,
         "price": limit_price,
         "limit_price": limit_price,
         "order_price": limit_price,
@@ -4444,7 +3887,6 @@ def _r38sg_maybe_emit_order_intent(self, stream_id, fields, decision):
         "qty", qty,
         "limit_price", limit_price,
         "order_type", "LIMIT",
-        "entry_mode", entry_mode,
         "position_effect", "OPEN",
         "paper_only", "1",
         "controlled_paper", "1",

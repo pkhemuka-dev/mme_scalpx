@@ -1,5 +1,69 @@
 from __future__ import annotations
 
+
+# R38QT_INCIDENT_LIVE_ORDER_GUARD_BEGIN
+# Incident guard after R38QT automated route overshot one-event scope.
+# Entry orders fail closed unless a reviewed reopen ACK is present.
+# Flatten/exit tags remain allowed so emergency broker-flat recovery is never blocked.
+def _r38qt_incident_truthy(_v):
+    return str(_v or "").strip().lower() in {"1", "true", "yes", "y", "on", "allow", "allowed"}
+
+def _r38qt_incident_guarded_place_order(_order_func, *args, **kwargs):
+    import os as _os
+    import pathlib as _pathlib
+    import hashlib as _hashlib
+    import time as _time
+
+    _tag = str(kwargs.get("tag") or "").strip().upper()
+    _is_flatten = _tag.startswith("R38QTFLAT") or _tag.startswith("FLATTEN") or _tag.startswith("EXIT")
+
+    # Emergency exits must remain available.
+    if _is_flatten:
+        return _order_func(*args, **kwargs)
+
+    _required_ack = "R38QT_REOPEN_AFTER_ONE_EVENT_ENFORCEMENT_PATCHED_AND_TESTED"
+    _ack = str(_os.environ.get("SCALPX_R38QT_REOPEN_LIVE_ACK", "") or "").strip()
+    if _ack != _required_ack:
+        raise RuntimeError(
+            "R38QT_LIVE_INCIDENT_LOCKDOWN: entry broker order blocked until one-event enforcement is reviewed"
+        )
+
+    if not _r38qt_incident_truthy(_os.environ.get("SCALPX_LIVE_ONE_EVENT_ONLY")):
+        raise RuntimeError("R38QT_LIVE_INCIDENT_LOCKDOWN: SCALPX_LIVE_ONE_EVENT_ONLY is required")
+
+    # R38QT_MIS_PRODUCT_NORMALIZE_PATCH
+    # Enforce broker product truth at the final broker boundary for real-live one-event entries.
+    # The incident used NRML although the scope required MIS. This converts empty/NRML to MIS
+    # only after exact reopen ACK + one-event guard checks above; other products still fail closed.
+    _product = str(kwargs.get("product") or kwargs.get("product_type") or "").strip().upper()
+    if _product in {"", "NRML"}:
+        kwargs["product"] = "MIS"
+        _product = "MIS"
+    if _product != "MIS":
+        raise RuntimeError(f"R38QT_LIVE_INCIDENT_LOCKDOWN: entry product must be MIS, got {_product or 'EMPTY'}")
+
+    _scope = str(_os.environ.get("SCALPX_REAL_LIVE_SCOPE_ACK", "") or "NO_ACK")
+    _scope_hash = _hashlib.sha256(_scope.encode()).hexdigest()[:16]
+    _guard_dir = _pathlib.Path(_os.environ.get("SCALPX_R38QT_ORDER_GUARD_DIR", "run/runtime/r38qt_order_guard"))
+    _guard_dir.mkdir(parents=True, exist_ok=True)
+    _lock = _guard_dir / f"one_entry_order_{_scope_hash}.lock"
+
+    try:
+        _fd = _os.open(str(_lock), _os.O_CREAT | _os.O_EXCL | _os.O_WRONLY)
+        with _os.fdopen(_fd, "w") as _f:
+            _f.write(f"ts={_time.time()}\n")
+            _f.write(f"tag={_tag}\n")
+            _f.write(f"product={_product}\n")
+            _f.write(f"scope_hash={_scope_hash}\n")
+            # R38QT_ROUTE_TRUTH_TRACE_PATCH
+            _f.write("route_truth=broker_boundary_entry_guarded_one_event_mis\n")
+    except FileExistsError:
+        raise RuntimeError("R38QT_LIVE_INCIDENT_LOCKDOWN: second entry order blocked for same real-live ACK")
+
+    return _order_func(*args, **kwargs)
+# R38QT_INCIDENT_LIVE_ORDER_GUARD_END
+
+
 """
 app/mme_scalpx/integrations/broker_api.py
 
@@ -622,7 +686,7 @@ class KiteTransportClient:
         access_token: str | None = None,
         provider_id: str | None = None,
     ) -> Any:
-        result = self.kite.place_order(**dict(payload))
+        result = _r38qt_incident_guarded_place_order(self.kite.place_order, **dict(payload))
         if isinstance(result, Mapping):
             return result
         return {"order_id": result}
@@ -1011,7 +1075,7 @@ class BaseBrokerAdapter:
         transport = self._require_transport()
 
         try:
-            raw = transport.place_order(
+            raw = _r38qt_incident_guarded_place_order(transport.place_order, 
                 payload,
                 access_token=self._transport_access_token(),
                 provider_id=self.provider_id,

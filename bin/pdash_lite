@@ -1,0 +1,5 @@
+#!/usr/bin/env python3
+from app.mme_scalpx.pdash.stream_lite import main
+
+if __name__ == "__main__":
+    raise SystemExit(main())

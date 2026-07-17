@@ -5299,24 +5299,6 @@ if "_BATCH7_ORIGINAL_SPLIT_OPTIONS" not in globals() and hasattr(FeatureEngine, 
             if not isinstance(result, tuple) or len(result) != 2:
                 return result
             call, put = result
-            # BEGIN R38TN_SPLIT_MEMBER_IDENTITY_GUARD_V1
-            # Batch 25V passes the raw selected-option hash here so CALL and PUT
-            # are independently sourced from their own members. Never overlay
-            # the rotating top-level active contract onto an already-split leg.
-            opt_active_map = (
-                dict(opt_active)
-                if isinstance(opt_active, Mapping)
-                else {}
-            )
-            if any(
-                key in opt_active_map
-                for key in (
-                    *_FEED_CALL_JSON_KEYS,
-                    *_FEED_PUT_JSON_KEYS,
-                )
-            ):
-                return call, put
-            # END R38TN_SPLIT_MEMBER_IDENTITY_GUARD_V1
             side = _normalize_side(_pick(opt_active, "side", "option_side"))
             if side == SIDE_CALL:
                 call = _batch7_preserve_active_option_truth(opt_active, call)
