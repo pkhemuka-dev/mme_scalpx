@@ -11,6 +11,7 @@ Purpose:
 
 This module writes only HSET status keys through redis-cli.
 """
+from app.mme_scalpx.services.strategy_family.position_exit_manager import normalize_controlled_paper_projected_exit_side
 
 import argparse
 import json
@@ -46,7 +47,7 @@ def fail_closed_payload(reason: str = "CONTROLLED_PAPER_NOT_ARMED") -> Dict[str,
         "source": SOURCE,
         "ts_epoch": ts,
         "has_position": "0",
-        "position_side": "FLAT",
+        "position_side": normalize_controlled_paper_projected_exit_side("FLAT"),
         "qty_lots": "0",
         "qty_units": "0",
         "symbol": "",

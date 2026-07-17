@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd /home/Lenovo/scalpx/projects/mme_scalpx || exit 1
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+exec .venv/bin/python bin/trade_quality_shadow_runner_v28.py "$@"

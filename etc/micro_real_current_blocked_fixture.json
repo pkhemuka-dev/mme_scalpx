@@ -1,0 +1,44 @@
+{
+  "fresh_monday_preflight": false,
+  "market_session_open": false,
+  "daily_stop_not_fired": false,
+
+  "broker_session_healthy": false,
+  "broker_flat": true,
+  "active_broker_orders_zero": false,
+  "sufficient_margin": false,
+
+  "provider_ready_classic": true,
+  "safe_to_consume": true,
+  "quote_fresh": false,
+
+  "tqag_decision": "VETO",
+  "tqag_hard_veto_count": 6,
+  "bid_qty_valid": false,
+  "ask_qty_valid": false,
+  "spread_acceptable": false,
+  "instrument_lock_valid": false,
+  "option_symbol_stable": false,
+  "underlying_option_aligned": false,
+  "no_chase": false,
+  "edge_after_cost_positive": false,
+  "timeframe_complete": false,
+  "data_gap_present": true,
+  "pending_order_present": false,
+  "entry_cutoff_passed": false,
+
+  "charges_configured": false,
+  "conservative_breakeven_points": 0,
+  "expected_move_points": 0,
+
+  "order_type": "MARKETABLE_LIMIT",
+  "max_order_attempts": 1,
+  "retry_count": 0,
+  "replacement_count": 0,
+  "averaging_allowed": false,
+  "max_lots": 1,
+  "max_positions": 1,
+  "max_events": 1,
+
+  "explicit_user_authorization": false
+}

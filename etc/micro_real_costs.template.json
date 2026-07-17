@@ -1,0 +1,22 @@
+{
+  "status": "UNCONFIGURED_BLOCK_REAL_ORDER",
+  "instrument_type": "NIFTY_OPTION_BUY",
+  "quantity_units": 65,
+  "cost_components_rupees": {
+    "brokerage_round_trip": null,
+    "stt_ctt": null,
+    "exchange_transaction_charge": null,
+    "gst": null,
+    "sebi_charge": null,
+    "stamp_duty": null,
+    "estimated_entry_slippage": null,
+    "estimated_exit_slippage": null,
+    "other": 0
+  },
+  "rules": {
+    "use_official_broker_exchange_rates": true,
+    "include_both_entry_and_exit_costs": true,
+    "conservative_cost_required": true,
+    "real_order_blocked_until_all_nulls_replaced": true
+  }
+}

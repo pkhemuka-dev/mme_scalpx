@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.mme_scalpx.services.strategy_family.position_exit_manager import normalize_controlled_paper_projected_exit_side
 
 # R29B_SELECTOR_STATE_SHADOW_PATCH_START
 try:
@@ -5191,9 +5192,11 @@ def _r38tmb1_position_identity(
     elif branch == "PE":
         branch = "PUT"
 
-    position_side = _r38tmb1_upper(
-        position.get(
-            "position_side"
+    position_side = normalize_controlled_paper_projected_exit_side(
+        _r38tmb1_upper(
+            position.get(
+                "position_side"
+            )
         )
     )
 
@@ -6297,3 +6300,682 @@ if not getattr(
     StrategyService._r38tmb1_exit_integration_installed = True
 
 # END R38TMB1_ACTIVE_STRATEGY_EXIT_GATE_V1
+
+
+
+# ===== R38VXFFW_R17B_SHADOW_CANDIDATE_STREAM_V1 =====
+# Diagnostic-only stream mirror for candidate evidence.
+# This block does not alter the execution-facing decision action.
+
+import json as _r17b_json
+import time as _r17b_time
+from collections.abc import Mapping as _r17b_Mapping
+
+_R17B_MARKER = "R38VXFFW_R17B_SHADOW_CANDIDATE_STREAM_V1"
+_R17B_SOURCE = "decisions:mme:stream"
+_R17B_SHADOW = "shadow:strategy:candidates:mme:stream"
+
+
+def _r17b_text(v, default=""):
+    if v is None:
+        return default
+    try:
+        return str(v)
+    except Exception:
+        return default
+
+
+def _r17b_upper(v):
+    return _r17b_text(v).strip().upper()
+
+
+def _r17b_truthy(v):
+    if isinstance(v, bool):
+        return v
+    return _r17b_upper(v) in {"1", "TRUE", "YES", "Y", "PASS", "OK"}
+
+
+def _r17b_map(v):
+    if isinstance(v, _r17b_Mapping):
+        return dict(v)
+    if isinstance(v, str) and v.strip():
+        try:
+            parsed = _r17b_json.loads(v)
+            if isinstance(parsed, _r17b_Mapping):
+                return dict(parsed)
+        except Exception:
+            return {}
+    return {}
+
+
+def _r17b_pick(m, *names, default=""):
+    if not isinstance(m, _r17b_Mapping):
+        return default
+    for name in names:
+        if name in m and m.get(name) not in (None, "", "null"):
+            return m.get(name)
+    lower = {str(k).lower(): k for k in m.keys()}
+    for name in names:
+        key = lower.get(str(name).lower())
+        if key is not None and m.get(key) not in (None, "", "null"):
+            return m.get(key)
+    return default
+
+
+def _r17b_json_field(fields, *names):
+    if not isinstance(fields, _r17b_Mapping):
+        return {}
+    for name in names:
+        data = _r17b_map(fields.get(name))
+        if data:
+            return data
+    lower = {str(k).lower(): k for k in fields.keys()}
+    for name in names:
+        key = lower.get(str(name).lower())
+        if key is not None:
+            data = _r17b_map(fields.get(key))
+            if data:
+                return data
+    return {}
+
+
+def _r17b_frames_from_cv(cv):
+    cv = _r17b_map(cv)
+
+    branch_frames = _r17b_map(cv.get("branch_frames"))
+    for key, frame in branch_frames.items():
+        frame = _r17b_map(frame)
+        if frame:
+            yield _r17b_text(key), frame
+
+    fs = _r17b_map(cv.get("family_surfaces"))
+    by_branch = _r17b_map(fs.get("surfaces_by_branch"))
+    for key, frame in by_branch.items():
+        frame = _r17b_map(frame)
+        if frame:
+            yield _r17b_text(key), frame
+
+    families = _r17b_map(fs.get("families"))
+    for family_id, family in families.items():
+        family = _r17b_map(family)
+        branches = _r17b_map(family.get("branches"))
+        for branch_id, frame in branches.items():
+            frame = _r17b_map(frame)
+            if frame:
+                yield f"{family_id}:{branch_id}", frame
+
+
+def _r17b_identity(key, frame):
+    family = _r17b_upper(_r17b_pick(frame, "strategy_family_id", "family_id", "doctrine_id", "family"))
+    side = _r17b_upper(_r17b_pick(frame, "branch_id", "side", "option_side", "branch"))
+
+    key_u = _r17b_upper(key)
+    if not side:
+        if "CALL" in key_u or key_u.endswith("CE"):
+            side = "CALL"
+        elif "PUT" in key_u or key_u.endswith("PE"):
+            side = "PUT"
+
+    if side == "CE":
+        side = "CALL"
+    if side == "PE":
+        side = "PUT"
+
+    return family, side
+
+
+def _r17b_selected(frame):
+    selected = (
+        _r17b_map(frame.get("selected_features"))
+        or _r17b_map(frame.get("option_features"))
+        or _r17b_map(frame.get("primary_features"))
+    )
+    tradability = _r17b_map(frame.get("tradability_surface")) or _r17b_map(frame.get("tradability"))
+    return selected, tradability
+
+
+def _r17b_rows(fields):
+    payload = _r17b_json_field(fields, "payload_json", "payload")
+    cv = (
+        _r17b_json_field(fields, "consumer_view_json")
+        or _r17b_map(payload.get("consumer_view"))
+        or _r17b_map(payload.get("consumer_view_json"))
+    )
+
+    if cv and "family_surfaces" not in cv:
+        fs = (
+            _r17b_json_field(fields, "family_surfaces_json")
+            or _r17b_map(payload.get("family_surfaces"))
+            or _r17b_map(payload.get("family_surfaces_json"))
+        )
+        if fs:
+            cv = dict(cv)
+            cv["family_surfaces"] = fs
+
+    base_action = _r17b_upper(_r17b_pick(payload, "action", default=_r17b_pick(fields, "action", default="")))
+    base_reason = _r17b_text(_r17b_pick(payload, "reason", default=_r17b_pick(fields, "reason", default="")))
+
+    out = []
+    for key, frame in _r17b_frames_from_cv(cv):
+        family, side = _r17b_identity(key, frame)
+        if side not in {"CALL", "PUT"}:
+            continue
+
+        selected, tradability = _r17b_selected(frame)
+
+        symbol = _r17b_text(
+            _r17b_pick(
+                selected,
+                "option_symbol",
+                "trading_symbol",
+                "symbol",
+                default=_r17b_pick(frame, "option_symbol", "trading_symbol", "symbol", default=""),
+            )
+        )
+        token = _r17b_text(
+            _r17b_pick(
+                selected,
+                "option_token",
+                "instrument_token",
+                "token",
+                default=_r17b_pick(frame, "option_token", "instrument_token", "token", default=""),
+            )
+        )
+
+        provider_ready = _r17b_truthy(_r17b_pick(frame, "provider_ready", default=False))
+        eligible = _r17b_truthy(_r17b_pick(frame, "eligible", default=False))
+        branch_ready = _r17b_truthy(_r17b_pick(frame, "branch_ready", "ready", default=False))
+        selected_present = _r17b_truthy(_r17b_pick(selected, "present", default=False))
+        tradability_ok = _r17b_truthy(
+            _r17b_pick(selected, "tradability_ok", default=_r17b_pick(tradability, "entry_pass", "tradability_ok", default=False))
+        )
+
+        ready = bool(family and side and symbol and token and provider_ready and eligible and branch_ready and selected_present and tradability_ok)
+
+        out.append(
+            {
+                "marker": _R17B_MARKER,
+                "service": "strategy_shadow_candidate",
+                "source_stream": _R17B_SOURCE,
+                "source_action": base_action or "HOLD",
+                "source_reason": base_reason,
+                "shadow_action": "SHADOW_CANDIDATE",
+                "shadow_candidate_ready": "1" if ready else "0",
+                "shadow_no_trade_path": "1",
+                "family": family,
+                "strategy_family_id": family,
+                "doctrine_id": family,
+                "side": side,
+                "branch_id": side,
+                "symbol": symbol,
+                "token": token,
+                "provider_ready": "1" if provider_ready else "0",
+                "eligible": "1" if eligible else "0",
+                "branch_ready": "1" if branch_ready else "0",
+                "selected_present": "1" if selected_present else "0",
+                "tradability_ok": "1" if tradability_ok else "0",
+                "setup_score": _r17b_text(_r17b_pick(frame, "setup_score", default="")),
+                "failed_stage": _r17b_text(_r17b_pick(frame, "failed_stage", "batch9_freeze_blocked_reason", "blocked_reason", default="")),
+                "selected_ltp": _r17b_text(_r17b_pick(selected, "ltp", default="")),
+                "selected_bid": _r17b_text(_r17b_pick(selected, "best_bid", "bid", default="")),
+                "selected_ask": _r17b_text(_r17b_pick(selected, "best_ask", "ask", default="")),
+                "selected_bid_qty": _r17b_text(_r17b_pick(selected, "bid_qty", "bid_qty_5", default="")),
+                "selected_ask_qty": _r17b_text(_r17b_pick(selected, "ask_qty", "ask_qty_5", default="")),
+                "created_at_ns": str(_r17b_time.time_ns()),
+            }
+        )
+
+    return out
+
+
+def _r17b_install():
+    try:
+        import redis as _r17b_redis
+    except Exception:
+        return False
+
+    redis_cls = getattr(_r17b_redis, "Redis", None)
+    if redis_cls is None:
+        return False
+
+    if getattr(redis_cls, "_r17b_shadow_candidate_installed", False):
+        return True
+
+    original = getattr(redis_cls, "xadd", None)
+    if original is None:
+        return False
+
+    def _r17b_xadd(self, name, fields, *args, **kwargs):
+        if _r17b_text(name) == _R17B_SOURCE and isinstance(fields, _r17b_Mapping):
+            try:
+                for row in _r17b_rows(fields)[:20]:
+                    original(self, _R17B_SHADOW, row, maxlen=20000, approximate=True)
+            except Exception:
+                pass
+        return original(self, name, fields, *args, **kwargs)
+
+    redis_cls.xadd = _r17b_xadd
+    redis_cls._r17b_shadow_candidate_installed = True
+    redis_cls._r17b_shadow_candidate_marker = _R17B_MARKER
+    return True
+
+
+_R17B_SHADOW_CANDIDATE_INSTALLED = _r17b_install()
+
+# ===== END R38VXFFW_R17B_SHADOW_CANDIDATE_STREAM_V1 =====
+
+
+
+# ===== R38VXFFW_R17D_REPAIR_SHADOW_EXTRACTOR_DECISION_SCHEMA_V1 =====
+# Repair R17B extractor to use actual compact decision schema.
+# Diagnostic-only: this redefines _r17b_rows only. It does not change decision action.
+
+_R17D_MARKER = "R38VXFFW_R17D_REPAIR_SHADOW_EXTRACTOR_DECISION_SCHEMA_V1"
+
+
+def _r17d_nonempty(*values):
+    for value in values:
+        if value not in (None, "", "null", "None"):
+            return value
+    return ""
+
+
+def _r17d_payload_from_fields(fields):
+    payload = _r17b_json_field(fields, "payload_json", "payload")
+    if not payload:
+        payload = {}
+    return payload
+
+
+def _r17d_pick_from_fields_and_payload(fields, payload, *names, default=""):
+    for name in names:
+        value = _r17b_pick(fields, name, default="")
+        if value not in (None, "", "null", "None"):
+            return value
+    for name in names:
+        value = _r17b_pick(payload, name, default="")
+        if value not in (None, "", "null", "None"):
+            return value
+    return default
+
+
+def _r17d_norm_side(value):
+    side = _r17b_upper(value)
+    if side == "CE":
+        return "CALL"
+    if side == "PE":
+        return "PUT"
+    if side in {"CALL", "PUT", "FLAT"}:
+        return side
+    return side
+
+
+def _r17d_candidate_row_from_decision_fields(fields):
+    payload = _r17d_payload_from_fields(fields)
+
+    source_action = _r17b_upper(
+        _r17d_pick_from_fields_and_payload(fields, payload, "action", default="HOLD")
+    ) or "HOLD"
+
+    side = _r17d_norm_side(
+        _r17d_pick_from_fields_and_payload(
+            fields,
+            payload,
+            "side",
+            "branch_id",
+            "option_side",
+            "position_side",
+            default="",
+        )
+    )
+
+    activation_action = _r17b_upper(
+        _r17d_pick_from_fields_and_payload(fields, payload, "activation_action", default="")
+    )
+    activation_observed = _r17b_upper(
+        _r17d_pick_from_fields_and_payload(fields, payload, "activation_observed_action", default="")
+    )
+
+    projected_side = _r17d_norm_side(
+        _r17d_pick_from_fields_and_payload(
+            fields,
+            payload,
+            "activation_branch_id",
+            "activation_side",
+            "projected_side",
+            "r38nl_projected_side",
+            default="",
+        )
+    )
+
+    # If top-level decision remains FLAT/HOLD, preserve that fact but use any
+    # activation/projected branch only for shadow evidence.
+    shadow_side = projected_side if projected_side in {"CALL", "PUT"} else side
+
+    family = _r17b_upper(
+        _r17d_pick_from_fields_and_payload(
+            fields,
+            payload,
+            "strategy_family_id",
+            "doctrine_id",
+            "family_id",
+            "family",
+            "activation_selected_family_id",
+            "r38nl_projected_strategy_family_id",
+            default="",
+        )
+    )
+
+    symbol = _r17b_text(
+        _r17d_pick_from_fields_and_payload(
+            fields,
+            payload,
+            "option_symbol",
+            "trading_symbol",
+            "symbol",
+            "activation_option_symbol",
+            "r38nl_projected_symbol",
+            default="",
+        )
+    )
+
+    token = _r17b_text(
+        _r17d_pick_from_fields_and_payload(
+            fields,
+            payload,
+            "instrument_token",
+            "option_token",
+            "token",
+            "activation_instrument_token",
+            "r38nl_projected_token",
+            default="",
+        )
+    )
+
+    reason = _r17b_text(
+        _r17d_pick_from_fields_and_payload(fields, payload, "reason", "blocked_reason", "failed_stage", default="")
+    )
+
+    # Do not claim trade readiness. This is evidence availability only.
+    has_identity = bool(family and shadow_side in {"CALL", "PUT"} and symbol and token)
+    activation_enter_seen = activation_action in {"ENTER", "ENTER_CALL", "ENTER_PUT"} or activation_observed in {"ENTER", "ENTER_CALL", "ENTER_PUT"}
+
+    return {
+        "marker": _R17D_MARKER,
+        "service": "strategy_shadow_candidate",
+        "source_stream": _R17B_SOURCE,
+        "source_action": source_action,
+        "source_side": side,
+        "source_reason": reason,
+        "shadow_action": "SHADOW_CANDIDATE",
+        "shadow_candidate_ready": "0",
+        "shadow_identity_present": "1" if has_identity else "0",
+        "shadow_activation_enter_seen": "1" if activation_enter_seen else "0",
+        "shadow_no_trade_path": "1",
+        "family": family,
+        "strategy_family_id": family,
+        "doctrine_id": family,
+        "side": shadow_side,
+        "branch_id": shadow_side,
+        "symbol": symbol,
+        "token": token,
+        "activation_action": activation_action,
+        "activation_observed_action": activation_observed,
+        "activation_promoted": _r17b_text(
+            _r17d_pick_from_fields_and_payload(fields, payload, "activation_promoted", default="")
+        ),
+        "activation_safe_to_promote": _r17b_text(
+            _r17d_pick_from_fields_and_payload(fields, payload, "activation_safe_to_promote", default="")
+        ),
+        "hold_only": _r17b_text(
+            _r17d_pick_from_fields_and_payload(fields, payload, "hold_only", default="")
+        ),
+        "confidence": _r17b_text(
+            _r17d_pick_from_fields_and_payload(fields, payload, "confidence", default="")
+        ),
+        "price": _r17b_text(
+            _r17d_pick_from_fields_and_payload(fields, payload, "price", default="")
+        ),
+        "qty": _r17b_text(
+            _r17d_pick_from_fields_and_payload(fields, payload, "qty", default="")
+        ),
+        "created_at_ns": str(_r17b_time.time_ns()),
+    }
+
+
+def _r17b_rows(fields):
+    # First use original R17B-style consumer_view path when available.
+    payload = _r17b_json_field(fields, "payload_json", "payload")
+    cv = (
+        _r17b_json_field(fields, "consumer_view_json")
+        or _r17b_map(payload.get("consumer_view"))
+        or _r17b_map(payload.get("consumer_view_json"))
+    )
+
+    if cv and "family_surfaces" not in cv:
+        fs = (
+            _r17b_json_field(fields, "family_surfaces_json")
+            or _r17b_map(payload.get("family_surfaces"))
+            or _r17b_map(payload.get("family_surfaces_json"))
+        )
+        if fs:
+            cv = dict(cv)
+            cv["family_surfaces"] = fs
+
+    rows = []
+    if cv:
+        base_action = _r17b_upper(_r17b_pick(payload, "action", default=_r17b_pick(fields, "action", default="")))
+        base_reason = _r17b_text(_r17b_pick(payload, "reason", default=_r17b_pick(fields, "reason", default="")))
+
+        for key, frame in _r17b_frames_from_cv(cv):
+            family, side = _r17b_identity(key, frame)
+            if side not in {"CALL", "PUT"}:
+                continue
+            selected, tradability = _r17b_selected(frame)
+            symbol = _r17b_text(
+                _r17b_pick(
+                    selected,
+                    "option_symbol",
+                    "trading_symbol",
+                    "symbol",
+                    default=_r17b_pick(frame, "option_symbol", "trading_symbol", "symbol", default=""),
+                )
+            )
+            token = _r17b_text(
+                _r17b_pick(
+                    selected,
+                    "option_token",
+                    "instrument_token",
+                    "token",
+                    default=_r17b_pick(frame, "option_token", "instrument_token", "token", default=""),
+                )
+            )
+            rows.append(
+                {
+                    "marker": _R17D_MARKER,
+                    "service": "strategy_shadow_candidate",
+                    "source_stream": _R17B_SOURCE,
+                    "source_action": base_action or "HOLD",
+                    "source_reason": base_reason,
+                    "shadow_action": "SHADOW_CANDIDATE",
+                    "shadow_candidate_ready": "0",
+                    "shadow_identity_present": "1" if (family and side and symbol and token) else "0",
+                    "shadow_activation_enter_seen": "0",
+                    "shadow_no_trade_path": "1",
+                    "family": family,
+                    "strategy_family_id": family,
+                    "doctrine_id": family,
+                    "side": side,
+                    "branch_id": side,
+                    "symbol": symbol,
+                    "token": token,
+                    "created_at_ns": str(_r17b_time.time_ns()),
+                }
+            )
+
+    # Compact live decisions have useful top-level fields even when JSON blobs are omitted.
+    direct = _r17d_candidate_row_from_decision_fields(fields)
+    if direct.get("shadow_identity_present") == "1" or direct.get("symbol") or direct.get("token"):
+        rows.append(direct)
+
+    return rows[:20]
+
+# ===== END R38VXFFW_R17D_REPAIR_SHADOW_EXTRACTOR_DECISION_SCHEMA_V1 =====
+
+
+
+# ===== R38VXFFW_R21B_SHADOW_ACTIVATION_REPORT_CANARY_V1 =====
+# Diagnostic-only shadow activation report.
+# Disabled unless SCALPX_SHADOW_ACTIVATION_CANARY=1.
+# It preserves the original strategy decision and writes only a shadow report.
+
+_R21B_MARKER = "R38VXFFW_R21B_SHADOW_ACTIVATION_REPORT_CANARY_V1"
+_R21B_SOURCE = "decisions:mme:stream"
+_R21B_SHADOW = "shadow:strategy:activation_canary:mme:stream"
+_R21B_ENV_KEY = "SCALPX_SHADOW_ACTIVATION_CANARY"
+
+try:
+    import os as _r21b_os
+    import time as _r21b_time
+    import json as _r21b_json
+    import redis as _r21b_redis
+except Exception:  # pragma: no cover
+    _r21b_os = None
+    _r21b_time = None
+    _r21b_json = None
+    _r21b_redis = None
+
+
+def _r21b_text(value):
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        try:
+            return value.decode("utf-8", "replace")
+        except Exception:
+            return str(value)
+    return str(value)
+
+
+def _r21b_upper(value):
+    return _r21b_text(value).strip().upper()
+
+
+def _r21b_enabled():
+    if _r21b_os is None:
+        return False
+    return _r21b_text(_r21b_os.environ.get(_R21B_ENV_KEY, "")).strip() == "1"
+
+
+def _r21b_map(fields):
+    if not isinstance(fields, dict):
+        return {}
+    out = {}
+    for k, v in fields.items():
+        out[_r21b_text(k)] = v
+    return out
+
+
+def _r21b_symbol_side(symbol):
+    s = _r21b_upper(symbol)
+    if s.endswith("CE"):
+        return "CALL"
+    if s.endswith("PE"):
+        return "PUT"
+    return ""
+
+
+def _r21b_counterfactual_rows(fields):
+    base = _r21b_map(fields)
+
+    rows = []
+    try:
+        prior_rows = _r17b_rows(base)  # provided by R17B/R17D patch surface
+    except Exception:
+        prior_rows = []
+
+    seen = set()
+    for row in prior_rows:
+        family = _r21b_upper(
+            row.get("family")
+            or row.get("strategy_family_id")
+            or row.get("doctrine_id")
+        )
+        symbol = _r21b_text(
+            row.get("symbol")
+            or row.get("option_symbol")
+            or row.get("trading_symbol")
+        ).strip()
+        token = _r21b_text(
+            row.get("token")
+            or row.get("instrument_token")
+            or row.get("option_token")
+        ).strip()
+
+        inferred_side = _r21b_symbol_side(symbol)
+        if inferred_side not in {"CALL", "PUT"}:
+            continue
+        if family not in {"MIST", "MISB"}:
+            continue
+        if not symbol or not token:
+            continue
+
+        key = (family, inferred_side, symbol, token)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        rows.append(
+            {
+                "marker": _R21B_MARKER,
+                "service": "strategy_shadow_activation_canary",
+                "source_stream": _R21B_SOURCE,
+                "shadow_stream": _R21B_SHADOW,
+                "shadow_no_trade_path": "1",
+                "counterfactual_only": "1",
+                "activation_mode_counterfactual": "paper_armed",
+                "would_promote_under_counterfactual": "1",
+                "counterfactual_action": "ENTER_" + inferred_side,
+                "family": family,
+                "side": inferred_side,
+                "branch_id": inferred_side,
+                "symbol": symbol,
+                "token": token,
+                "source_action": _r21b_text(row.get("source_action") or row.get("action") or "HOLD"),
+                "source_side": _r21b_text(row.get("source_side") or row.get("side") or "FLAT"),
+                "runtime_decision_preserved": "1",
+                "paper_started": "0",
+                "broker_allowed": "0",
+                "created_at_ns": str(_r21b_time.time_ns() if _r21b_time else 0),
+            }
+        )
+
+    return rows[:20]
+
+
+if _r21b_redis is not None and not getattr(_r21b_redis.Redis.xadd, "_r21b_shadow_activation_canary", False):
+    _R21B_PREV_XADD = _r21b_redis.Redis.xadd
+
+    def _r21b_xadd(self, name, fields, *args, **kwargs):
+        try:
+            if _r21b_enabled() and _r21b_text(name) == _R21B_SOURCE:
+                for report_row in _r21b_counterfactual_rows(fields):
+                    try:
+                        _R21B_PREV_XADD(
+                            self,
+                            _R21B_SHADOW,
+                            report_row,
+                            maxlen=5000,
+                            approximate=True,
+                        )
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        return _R21B_PREV_XADD(self, name, fields, *args, **kwargs)
+
+    _r21b_xadd._r21b_shadow_activation_canary = True
+    _r21b_redis.Redis.xadd = _r21b_xadd
+
+# ===== END R38VXFFW_R21B_SHADOW_ACTIVATION_REPORT_CANARY_V1 =====
+

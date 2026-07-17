@@ -1,0 +1,61 @@
+{
+  "schema": "trade_quality_authorization_v28_config.v1",
+  "mode": "SHADOW_ONLY",
+  "calibration_required": true,
+  "calibration_id": "UNSET",
+  "total_score_minimum": 75.0,
+  "component_minimum": 10.0,
+  "maximum_component_score": 20.0,
+  "minimum_net_edge_points": 0.25,
+  "order_type": "MARKETABLE_LIMIT",
+  "max_order_attempts": 1,
+  "retry_allowed": false,
+  "replacement_allowed": false,
+  "averaging_allowed": false,
+  "max_lots": 1,
+  "max_positions": 1,
+  "max_events": 1,
+  "policies": {
+    "OPENING": {
+      "start": "09:15",
+      "end": "09:45",
+      "minimum_score": 80.0,
+      "component_minimum": 11.0,
+      "observation_seconds": 60,
+      "max_hold_seconds": 300,
+      "spread_deterioration_fraction": 0.20,
+      "no_chase_atr_fraction": 0.30,
+      "no_chase_premium_fraction": 0.035
+    },
+    "MID_SESSION": {
+      "start": "09:45",
+      "end": "14:30",
+      "minimum_score": 75.0,
+      "component_minimum": 10.0,
+      "observation_seconds": 45,
+      "max_hold_seconds": 300,
+      "spread_deterioration_fraction": 0.25,
+      "no_chase_atr_fraction": 0.35,
+      "no_chase_premium_fraction": 0.040
+    },
+    "CLOSING": {
+      "start": "14:30",
+      "end": "14:50",
+      "minimum_score": 82.0,
+      "component_minimum": 12.0,
+      "observation_seconds": 30,
+      "max_hold_seconds": 180,
+      "spread_deterioration_fraction": 0.15,
+      "no_chase_atr_fraction": 0.25,
+      "no_chase_premium_fraction": 0.025
+    }
+  },
+  "promotion_policy": {
+    "real_money_enabled": false,
+    "paper_route_enabled": false,
+    "authorization_record_only": true,
+    "requires_replay_calibration": true,
+    "requires_one_clean_controlled_paper_retest_after_calibration": true,
+    "requires_separate_real_money_preflight": true
+  }
+}

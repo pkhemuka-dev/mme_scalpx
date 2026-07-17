@@ -618,3 +618,15 @@ class PositionExitManager:
 
 
 # R38TK2_CANONICAL_EXIT_POSITION_EFFECT_CLOSE_V1
+
+# LANE-X-R38VXFFW: controlled-paper projected exit normalization helper.
+def normalize_controlled_paper_projected_exit_side(value: object) -> str:
+    """Normalize transient controlled-paper projected exit state to UNKNOWN.
+
+    This helper is intentionally side-effect-free and does not alter Redis,
+    risk, execution, order routing, or broker behavior.
+    """
+    text = "" if value is None else str(value).strip().upper()
+    if text in {"CONTROLLED_PAPER_PROJECTED", "PROJECTED", "PAPER_PROJECTED"}:
+        return "UNKNOWN"
+    return text or "UNKNOWN"
